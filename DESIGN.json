@@ -1,0 +1,1106 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$meta": {
+      "project": "Capital Circle Institut",
+      "version": "2.0.0",
+      "description": "Design System — Dark Monochrome mit Gold-Akzent. 90% Schwarz/Weiß, 10% Metallic Gold.",
+      "stack": "Next.js 14 · Supabase · Chakra UI v2 · Hetzner Object Storage",
+      "primary_style": "Dark Monochrome Minimal — selektive Glassmorphism-Akzente auf Widgets/Modals",
+      "philosophy": "Schwarz und Weiß tragen 90% der UI. Gold tritt nur dort auf, wo Aktion, Fokus oder Bedeutung signalisiert werden soll.",
+      "last_updated": "2026-03-30"
+    },
+  
+    "colors": {
+      "$philosophy": "90% Monochrome (Schwarz/Weiß/Grau) + 10% Metallic Gold als einzige Signalfarbe. Kein zusätzliches Dekor-Grün/Rot — außer semantisch (Profit/Loss, Success/Error).",
+  
+      "base": {
+        "background": {
+          "primary":    "#07080A",
+          "secondary":  "#0C0D10",
+          "tertiary":   "#101114",
+          "elevated":   "#141519",
+          "overlay":    "rgba(7, 8, 10, 0.88)"
+        },
+        "surface": {
+          "DEFAULT":    "rgba(255, 255, 255, 0.04)",
+          "hover":      "rgba(255, 255, 255, 0.07)",
+          "active":     "rgba(255, 255, 255, 0.10)",
+          "glass":      "rgba(255, 255, 255, 0.05)",
+          "glassDark":  "rgba(0, 0, 0, 0.50)"
+        },
+        "border": {
+          "subtle":     "rgba(255, 255, 255, 0.05)",
+          "default":    "rgba(255, 255, 255, 0.09)",
+          "strong":     "rgba(255, 255, 255, 0.16)",
+          "focus":      "rgba(212, 175, 55, 0.55)"
+        }
+      },
+  
+      "mono": {
+        "$comment": "Das Rückgrat der UI — 90% aller Elemente leben in dieser Skala",
+        "0":    "#FFFFFF",
+        "50":   "#F8F8F8",
+        "100":  "#E8E8EA",
+        "200":  "#C4C4C8",
+        "300":  "#A0A0A6",
+        "400":  "#7C7C84",
+        "500":  "#58585E",
+        "600":  "#3A3A40",
+        "700":  "#26262C",
+        "800":  "#181820",
+        "850":  "#101114",
+        "900":  "#0C0D10",
+        "950":  "#07080A"
+      },
+  
+      "accent": {
+        "$comment": "Metallic Gold — einziger Farbakzent für CTAs, Fokus, aktive Zustände. Warm, premium, klar vom Monochrom getrennt.",
+        "gold": {
+          "50":      "#FFFBEB",
+          "100":     "#FEF3C7",
+          "200":     "#FDE68A",
+          "300":     "#FCD34D",
+          "400":     "#E8C547",
+          "500":     "#D4AF37",
+          "600":     "#B8860B",
+          "700":     "#92400E",
+          "800":     "#78350F",
+          "900":     "#451A03",
+          "950":     "#1C0F05",
+          "DEFAULT": "#D4AF37",
+          "light":   "#E8C547",
+          "dark":    "#A67C00",
+          "deeper":  "#92400E",
+          "glow":    "rgba(212, 175, 55, 0.28)",
+          "subtle":  "rgba(212, 175, 55, 0.10)"
+        },
+        "$legacy_blue_alias": "Historische Referenzen map auf gold.* — primär gold verwenden."
+      },
+  
+      "semantic": {
+        "$comment": "Nur für funktionale Zustände — niemals als Designfarbe. So dezent wie möglich.",
+        "success": {
+          "DEFAULT":  "#22C55E",
+          "subtle":   "rgba(34, 197, 94, 0.10)",
+          "text":     "#4ADE80"
+        },
+        "warning": {
+          "DEFAULT":  "#EAB308",
+          "subtle":   "rgba(234, 179, 8, 0.10)",
+          "text":     "#FDE047"
+        },
+        "error": {
+          "DEFAULT":  "#EF4444",
+          "subtle":   "rgba(239, 68, 68, 0.10)",
+          "text":     "#F87171"
+        },
+        "profit": {
+          "$comment": "Trading-spezifisch — nicht als allgemeines Grün nutzen",
+          "DEFAULT":  "#22C55E",
+          "subtle":   "rgba(34, 197, 94, 0.10)",
+          "text":     "#4ADE80"
+        },
+        "loss": {
+          "$comment": "Trading-spezifisch",
+          "DEFAULT":  "#EF4444",
+          "subtle":   "rgba(239, 68, 68, 0.10)",
+          "text":     "#F87171"
+        }
+      },
+  
+      "text": {
+        "primary":    "#F0F0F2",
+        "secondary":  "#9A9AA4",
+        "tertiary":   "#606068",
+        "disabled":   "#3A3A40",
+        "inverse":    "#07080A",
+        "accent":     "#D4AF37",
+        "onGlass":    "rgba(240, 240, 242, 0.92)"
+      },
+  
+      "chart": {
+        "$comment": "Charts primär monochrom — Gold als Highlight-Line",
+        "bullish":   "#22C55E",
+        "bearish":   "#EF4444",
+        "neutral":   "#58585E",
+        "primary":   "#D4AF37",
+        "volume":    "rgba(255, 255, 255, 0.12)",
+        "ma20":      "#D4AF37",
+        "ma50":      "rgba(255,255,255,0.40)",
+        "ma200":     "rgba(255,255,255,0.20)",
+        "grid":      "rgba(255, 255, 255, 0.04)",
+        "crosshair": "rgba(255, 255, 255, 0.18)"
+      }
+    },
+  
+    "typography": {
+      "$comment": "Radley (Überschriften) + Inter variable (Fließtext/UI) + JetBrains Mono (Zahlen/Daten).",
+  
+      "fonts": {
+        "heading": {
+          "family":  "'Radley', serif",
+          "weights": [400],
+          "cdn":     "https://fonts.googleapis.com/css2?family=Radley:ital@0;1&display=swap",
+          "usage":   "Alle Überschriften (h1–h6), Hero-, Section- und Card-Titel — nur Regular/Italic laut Google Fonts"
+        },
+        "body": {
+          "family":  "'Inter', sans-serif",
+          "weights": [100, 200, 300, 400, 500, 600, 700, 800, 900],
+          "cdn":     "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+          "usage":   "Body-Text, UI-Labels, Navigation, Beschreibungen, Buttons (font-optical-sizing: auto)"
+        },
+        "mono": {
+          "family":  "'JetBrains Mono', monospace",
+          "weights": [400, 500, 700],
+          "cdn":     "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap",
+          "usage":   "Preise, Prozentwerte, Tradingdaten, Timestamps, Codex-Nummern"
+        }
+      },
+
+      "cssClasses": {
+        "$comment": "In globals.css abbilden; Klassennamen exakt übernehmen.",
+        "radley-regular": {
+          "rules": {
+            "font-family": "\"Radley\", serif",
+            "font-weight": "400",
+            "font-style": "normal"
+          }
+        },
+        "radley-regular-italic": {
+          "rules": {
+            "font-family": "\"Radley\", serif",
+            "font-weight": "400",
+            "font-style": "italic"
+          }
+        },
+        "inter": {
+          "$comment": "Basis für variable Inter-Nutzung; Gewicht pro Komponente setzen (100–900).",
+          "rules": {
+            "font-family": "\"Inter\", sans-serif",
+            "font-optical-sizing": "auto",
+            "font-weight": "400",
+            "font-style": "normal"
+          }
+        },
+        "interWeights": {
+          "$comment": "Beispiele: .inter-medium (500), .inter-semibold (600), .inter-bold (700) — Namen frei wählbar (uniquifier).",
+          "examples": [".inter-medium", ".inter-semibold", ".inter-bold"]
+        }
+      },
+  
+      "scale": {
+        "xs":   { "size": "11px", "lineHeight": "16px", "tracking": "0.02em" },
+        "sm":   { "size": "13px", "lineHeight": "18px", "tracking": "0.01em" },
+        "base": { "size": "15px", "lineHeight": "22px", "tracking": "0" },
+        "md":   { "size": "16px", "lineHeight": "24px", "tracking": "0" },
+        "lg":   { "size": "18px", "lineHeight": "26px", "tracking": "-0.01em" },
+        "xl":   { "size": "20px", "lineHeight": "28px", "tracking": "-0.01em" },
+        "2xl":  { "size": "24px", "lineHeight": "32px", "tracking": "-0.02em" },
+        "3xl":  { "size": "30px", "lineHeight": "38px", "tracking": "-0.02em" },
+        "4xl":  { "size": "36px", "lineHeight": "44px", "tracking": "-0.03em" },
+        "5xl":  { "size": "48px", "lineHeight": "56px", "tracking": "-0.04em" },
+        "6xl":  { "size": "64px", "lineHeight": "72px", "tracking": "-0.05em" }
+      },
+  
+      "styles": {
+        "heroTitle":    { "font": "heading", "size": "5xl",  "weight": 400, "color": "text.primary" },
+        "sectionTitle": { "font": "heading", "size": "3xl",  "weight": 400, "color": "text.primary" },
+        "cardTitle":    { "font": "heading", "size": "xl",   "weight": 400, "color": "text.primary" },
+        "moduleTitle":  { "font": "heading", "size": "lg",   "weight": 400, "color": "text.primary" },
+        "bodyLarge":    { "font": "body",    "size": "md",   "weight": 400, "color": "text.primary" },
+        "body":         { "font": "body",    "size": "base", "weight": 400, "color": "text.secondary" },
+        "bodySmall":    { "font": "body",    "size": "sm",   "weight": 400, "color": "text.secondary" },
+        "label":        { "font": "body",    "size": "xs",   "weight": 500, "tracking": "0.08em", "transform": "uppercase", "color": "text.tertiary" },
+        "price":        { "font": "mono",    "size": "3xl",  "weight": 700, "color": "text.primary" },
+        "priceSmall":   { "font": "mono",    "size": "lg",   "weight": 500, "color": "text.primary" },
+        "percentage":   { "font": "mono",    "size": "sm",   "weight": 500 },
+        "dataPoint":    { "font": "mono",    "size": "xs",   "weight": 400, "color": "text.tertiary" },
+        "badge":        { "font": "body",    "size": "xs",   "weight": 500, "tracking": "0.04em" },
+        "nav":          { "font": "body",    "size": "sm",   "weight": 400, "color": "text.tertiary" }
+      }
+    },
+  
+    "spacing": {
+      "base": 4,
+      "scale": {
+        "0": "0px",   "1": "4px",   "2": "8px",   "3": "12px",
+        "4": "16px",  "5": "20px",  "6": "24px",  "7": "28px",
+        "8": "32px",  "10": "40px", "12": "48px", "14": "56px",
+        "16": "64px", "20": "80px", "24": "96px", "32": "128px"
+      },
+      "layout": {
+        "pageHorizontalPadding":        "24px",
+        "pageHorizontalPaddingMobile":  "16px",
+        "sectionVerticalSpacing":       "80px",
+        "cardPadding":                  "20px",
+        "cardPaddingLarge":             "28px",
+        "widgetPadding":                "16px",
+        "navHeight":                    "64px",
+        "sidebarWidth":                 "240px",
+        "sidebarCollapsedWidth":        "64px",
+        "contentMaxWidth":              "1280px",
+        "moduleMaxWidth":               "860px",
+        "adminMaxWidth":                "1440px"
+      }
+    },
+  
+    "borderRadius": {
+      "none":    "0px",
+      "sm":      "6px",
+      "DEFAULT": "10px",
+      "md":      "12px",
+      "lg":      "16px",
+      "xl":      "20px",
+      "2xl":     "24px",
+      "3xl":     "32px",
+      "full":    "9999px",
+      "semantic": {
+        "card":        "16px",
+        "widget":      "20px",
+        "button":      "10px",
+        "buttonPill":  "9999px",
+        "input":       "10px",
+        "badge":       "6px",
+        "avatar":      "9999px",
+        "modal":       "24px",
+        "tooltip":     "8px",
+        "progressBar": "9999px",
+        "table":       "12px"
+      }
+    },
+  
+    "shadows": {
+      "none":    "none",
+      "sm":      "0 1px 3px rgba(0,0,0,0.50)",
+      "DEFAULT": "0 4px 12px rgba(0,0,0,0.60)",
+      "md":      "0 8px 24px rgba(0,0,0,0.60)",
+      "lg":      "0 16px 48px rgba(0,0,0,0.70)",
+      "xl":      "0 24px 64px rgba(0,0,0,0.80)",
+      "inner":   "inset 0 1px 0 rgba(255,255,255,0.06)",
+      "card":    "0 4px 16px rgba(0,0,0,0.60), inset 0 1px 0 rgba(255,255,255,0.05)",
+      "glass":   "0 8px 32px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.07)",
+      "glow": {
+        "gold":     "0 0 24px rgba(212,175,55,0.22), 0 0 8px rgba(212,175,55,0.12)",
+        "goldWide": "0 0 48px rgba(212,175,55,0.15), 0 0 16px rgba(212,175,55,0.08)",
+        "white":    "0 0 24px rgba(255,255,255,0.08)",
+        "success":  "0 0 20px rgba(34,197,94,0.15)",
+        "error":    "0 0 20px rgba(239,68,68,0.15)"
+      }
+    },
+  
+    "glassmorphism": {
+      "$comment": "Nur für Widgets, Modals und Overlays. Content-Bereich bleibt clean und flach.",
+      "subtle": {
+        "background":     "rgba(255, 255, 255, 0.03)",
+        "backdropFilter": "blur(8px)",
+        "border":         "1px solid rgba(255, 255, 255, 0.07)",
+        "boxShadow":      "0 4px 16px rgba(0,0,0,0.50)"
+      },
+      "medium": {
+        "background":     "rgba(255, 255, 255, 0.05)",
+        "backdropFilter": "blur(16px)",
+        "border":         "1px solid rgba(255, 255, 255, 0.09)",
+        "boxShadow":      "0 8px 32px rgba(0,0,0,0.60), inset 0 1px 0 rgba(255,255,255,0.07)"
+      },
+      "strong": {
+        "background":     "rgba(255, 255, 255, 0.07)",
+        "backdropFilter": "blur(24px) saturate(1.4)",
+        "border":         "1px solid rgba(255, 255, 255, 0.12)",
+        "boxShadow":      "0 12px 40px rgba(0,0,0,0.70), inset 0 1px 0 rgba(255,255,255,0.09)"
+      },
+      "widget": {
+        "background":     "rgba(20, 21, 25, 0.82)",
+        "backdropFilter": "blur(20px) saturate(1.6)",
+        "border":         "1px solid rgba(255, 255, 255, 0.09)",
+        "boxShadow":      "0 8px 32px rgba(0,0,0,0.60), inset 0 1px 0 rgba(255,255,255,0.06)"
+      },
+      "modal": {
+        "background":     "rgba(10, 11, 14, 0.94)",
+        "backdropFilter": "blur(32px) saturate(1.5)",
+        "border":         "1px solid rgba(255, 255, 255, 0.09)",
+        "boxShadow":      "0 32px 80px rgba(0,0,0,0.90)"
+      },
+      "accentBorder": {
+        "background":     "rgba(255, 255, 255, 0.04)",
+        "backdropFilter": "blur(16px)",
+        "border":         "1px solid rgba(212, 175, 55, 0.25)",
+        "boxShadow":      "0 4px 24px rgba(0,0,0,0.60), 0 0 0 1px rgba(212,175,55,0.10)"
+      }
+    },
+  
+    "effects": {
+      "gradients": {
+        "accentPrimary":  "linear-gradient(135deg, #D4AF37 0%, #A67C00 100%)",
+        "accentSubtle":   "linear-gradient(135deg, rgba(212,175,55,0.12) 0%, rgba(146, 64, 14, 0.12) 100%)",
+        "surfaceUp":      "linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)",
+        "bgRadial":       "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(212,175,55,0.06) 0%, transparent 70%)",
+        "progressFill":   "linear-gradient(90deg, #A67C00 0%, #D4AF37 100%)",
+        "chartBullish":   "linear-gradient(180deg, rgba(34,197,94,0.15) 0%, rgba(34,197,94,0.00) 100%)",
+        "chartBearish":   "linear-gradient(180deg, rgba(239,68,68,0.15) 0%, rgba(239,68,68,0.00) 100%)",
+        "heroText":       "linear-gradient(135deg, #F0F0F2 60%, rgba(240,240,242,0.50) 100%)"
+      },
+      "backdropBlur": {
+        "sm":  "blur(4px)",
+        "md":  "blur(12px)",
+        "lg":  "blur(20px)",
+        "xl":  "blur(32px)"
+      }
+    },
+  
+    "animation": {
+      "duration": {
+        "instant":  "80ms",
+        "fast":     "150ms",
+        "base":     "220ms",
+        "slow":     "350ms",
+        "xslow":    "500ms",
+        "enter":    "400ms",
+        "page":     "500ms"
+      },
+      "easing": {
+        "default":    "cubic-bezier(0.16, 1, 0.3, 1)",
+        "spring":     "cubic-bezier(0.34, 1.56, 0.64, 1)",
+        "smooth":     "cubic-bezier(0.4, 0, 0.2, 1)",
+        "decelerate": "cubic-bezier(0, 0, 0.2, 1)",
+        "accelerate": "cubic-bezier(0.4, 0, 1, 1)"
+      },
+      "transitions": {
+        "default":   "all 220ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "colors":    "background-color 150ms ease, border-color 150ms ease, color 150ms ease",
+        "shadow":    "box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "transform": "transform 220ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "opacity":   "opacity 150ms ease"
+      },
+      "keyframes": {
+        "fadeInUp":     { "from": { "opacity": 0, "transform": "translateY(10px)" }, "to": { "opacity": 1, "transform": "translateY(0)" } },
+        "fadeIn":       { "from": { "opacity": 0 }, "to": { "opacity": 1 } },
+        "scaleIn":      { "from": { "opacity": 0, "transform": "scale(0.97)" }, "to": { "opacity": 1, "transform": "scale(1)" } },
+        "slideInRight": { "from": { "opacity": 0, "transform": "translateX(16px)" }, "to": { "opacity": 1, "transform": "translateX(0)" } },
+        "shimmer":      { "0%": { "backgroundPosition": "-200% 0" }, "100%": { "backgroundPosition": "200% 0" } },
+        "pulseGold":    { "0%, 100%": { "boxShadow": "0 0 16px rgba(212,175,55,0.15)" }, "50%": { "boxShadow": "0 0 32px rgba(212,175,55,0.35)" } }
+      },
+      "pageTransition": {
+        "initial":    { "opacity": 0, "y": 6 },
+        "animate":    { "opacity": 1, "y": 0 },
+        "exit":       { "opacity": 0, "y": -4 },
+        "transition": { "duration": 0.30, "ease": [0.16, 1, 0.3, 1] }
+      }
+    },
+  
+    "components": {
+  
+      "button": {
+        "base": {
+          "fontFamily":    "var(--font-body)",
+          "fontSize":      "14px",
+          "fontWeight":    "500",
+          "letterSpacing": "0.01em",
+          "borderRadius":  "10px",
+          "cursor":        "pointer",
+          "transition":    "all 150ms cubic-bezier(0.16, 1, 0.3, 1)",
+          "display":       "inline-flex",
+          "alignItems":    "center",
+          "gap":           "8px"
+        },
+        "sizes": {
+          "xs": { "padding": "6px 12px",  "height": "28px", "fontSize": "12px" },
+          "sm": { "padding": "8px 16px",  "height": "34px", "fontSize": "13px" },
+          "md": { "padding": "10px 20px", "height": "40px", "fontSize": "14px" },
+          "lg": { "padding": "12px 24px", "height": "48px", "fontSize": "15px" },
+          "xl": { "padding": "14px 32px", "height": "56px", "fontSize": "16px" }
+        },
+        "variants": {
+          "primary": {
+            "$comment": "Einziger farbiger Button — Gold als Call-to-Action",
+            "background":   "linear-gradient(135deg, #D4AF37 0%, #A67C00 100%)",
+            "color":        "#FFFFFF",
+            "border":       "none",
+            "boxShadow":    "0 0 20px rgba(212,175,55,0.20), inset 0 1px 0 rgba(255,255,255,0.12)",
+            "hover": {
+              "background": "linear-gradient(135deg, #E8C547 0%, #D4AF37 100%)",
+              "boxShadow":  "0 0 32px rgba(212,175,55,0.35), inset 0 1px 0 rgba(255,255,255,0.16)",
+              "transform":  "translateY(-1px)"
+            },
+            "active": { "transform": "translateY(0)", "boxShadow": "0 0 12px rgba(212,175,55,0.20)" }
+          },
+          "secondary": {
+            "background":   "rgba(255, 255, 255, 0.06)",
+            "color":        "#E8E8EA",
+            "border":       "1px solid rgba(255, 255, 255, 0.09)",
+            "hover": {
+              "background": "rgba(255, 255, 255, 0.10)",
+              "borderColor":"rgba(255, 255, 255, 0.16)",
+              "color":      "#F0F0F2"
+            }
+          },
+          "ghost": {
+            "background":   "transparent",
+            "color":        "#9A9AA4",
+            "border":       "1px solid transparent",
+            "hover": {
+              "background": "rgba(255, 255, 255, 0.05)",
+              "color":      "#F0F0F2"
+            }
+          },
+          "outline": {
+            "background":   "transparent",
+            "color":        "#D4AF37",
+            "border":       "1px solid rgba(212,175,55,0.40)",
+            "hover": {
+              "background": "rgba(212,175,55,0.08)",
+              "borderColor":"rgba(212,175,55,0.65)"
+            }
+          },
+          "danger": {
+            "background":   "rgba(239,68,68,0.10)",
+            "color":        "#F87171",
+            "border":       "1px solid rgba(239,68,68,0.22)",
+            "hover": {
+              "background": "rgba(239,68,68,0.16)",
+              "borderColor":"rgba(239,68,68,0.38)"
+            }
+          },
+          "white": {
+            "background":    "rgba(255,255,255,0.09)",
+            "color":         "#F0F0F2",
+            "border":        "1px solid rgba(255,255,255,0.16)",
+            "backdropFilter":"blur(8px)",
+            "hover": {
+              "background": "rgba(255,255,255,0.15)",
+              "borderColor":"rgba(255,255,255,0.26)"
+            }
+          }
+        },
+        "states": {
+          "disabled": { "opacity": 0.30, "cursor": "not-allowed", "pointerEvents": "none" },
+          "loading":  { "opacity": 0.65, "cursor": "not-allowed" }
+        }
+      },
+  
+      "card": {
+        "base": {
+          "background":     "rgba(255, 255, 255, 0.04)",
+          "backdropFilter": "blur(16px)",
+          "border":         "1px solid rgba(255, 255, 255, 0.08)",
+          "borderRadius":   "16px",
+          "padding":        "20px",
+          "boxShadow":      "0 4px 16px rgba(0,0,0,0.60), inset 0 1px 0 rgba(255,255,255,0.05)",
+          "transition":     "border-color 220ms ease, box-shadow 220ms ease, transform 220ms cubic-bezier(0.16,1,0.3,1)"
+        },
+        "variants": {
+          "default":   { "$extends": "base" },
+          "flat": {
+            "background":    "#101114",
+            "backdropFilter":"none",
+            "border":        "1px solid rgba(255,255,255,0.06)",
+            "boxShadow":     "none"
+          },
+          "elevated": {
+            "background":   "rgba(255,255,255,0.06)",
+            "boxShadow":    "0 8px 32px rgba(0,0,0,0.70), inset 0 1px 0 rgba(255,255,255,0.07)"
+          },
+          "interactive": {
+            "$extends": "base",
+            "cursor":   "pointer",
+            "hover": {
+              "borderColor":"rgba(255,255,255,0.15)",
+              "boxShadow":  "0 8px 32px rgba(0,0,0,0.70)",
+              "transform":  "translateY(-2px)"
+            }
+          },
+          "accentBorder": {
+            "$comment": "Gold-Akzent-Rahmen — sehr sparsam einsetzen",
+            "$extends":     "base",
+            "borderColor":  "rgba(212,175,55,0.28)",
+            "boxShadow":    "0 4px 24px rgba(0,0,0,0.60), 0 0 0 1px rgba(212,175,55,0.10)"
+          },
+          "locked": {
+            "$extends": "flat",
+            "opacity":  0.40,
+            "cursor":   "not-allowed",
+            "filter":   "grayscale(0.5)"
+          }
+        }
+      },
+  
+      "input": {
+        "base": {
+          "background":    "rgba(255, 255, 255, 0.04)",
+          "border":        "1px solid rgba(255, 255, 255, 0.09)",
+          "borderRadius":  "10px",
+          "color":         "#F0F0F2",
+          "fontFamily":    "var(--font-body)",
+          "fontSize":      "14px",
+          "padding":       "10px 14px",
+          "height":        "40px",
+          "outline":       "none",
+          "transition":    "border-color 150ms ease, box-shadow 150ms ease",
+          "placeholder":   { "color": "#3A3A40" }
+        },
+        "states": {
+          "hover":   { "borderColor": "rgba(255,255,255,0.16)" },
+          "focus":   { "borderColor": "rgba(212,175,55,0.65)", "boxShadow": "0 0 0 3px rgba(212,175,55,0.12)" },
+          "error":   { "borderColor": "rgba(239,68,68,0.55)",  "boxShadow": "0 0 0 3px rgba(239,68,68,0.10)" },
+          "success": { "borderColor": "rgba(34,197,94,0.55)",  "boxShadow": "0 0 0 3px rgba(34,197,94,0.10)" },
+          "disabled":{ "opacity": 0.38, "cursor": "not-allowed" }
+        },
+        "sizes": {
+          "sm": { "height": "34px", "fontSize": "13px", "padding": "8px 12px" },
+          "md": { "height": "40px", "fontSize": "14px", "padding": "10px 14px" },
+          "lg": { "height": "48px", "fontSize": "15px", "padding": "12px 16px" }
+        }
+      },
+  
+      "badge": {
+        "base": {
+          "display":       "inline-flex",
+          "alignItems":    "center",
+          "gap":           "4px",
+          "fontFamily":    "var(--font-body)",
+          "fontSize":      "11px",
+          "fontWeight":    "500",
+          "letterSpacing": "0.04em",
+          "borderRadius":  "6px",
+          "padding":       "3px 8px"
+        },
+        "variants": {
+          "default":  { "background": "rgba(255,255,255,0.07)",  "color": "#9A9AA4",  "border": "1px solid rgba(255,255,255,0.08)" },
+          "gold":     { "background": "rgba(212,175,55,0.12)",   "color": "#E8C547",  "border": "1px solid rgba(212,175,55,0.22)" },
+          "success":  { "background": "rgba(34,197,94,0.10)",    "color": "#4ADE80",  "border": "1px solid rgba(34,197,94,0.18)" },
+          "error":    { "background": "rgba(239,68,68,0.10)",    "color": "#F87171",  "border": "1px solid rgba(239,68,68,0.18)" },
+          "warning":  { "background": "rgba(234,179,8,0.10)",    "color": "#FDE047",  "border": "1px solid rgba(234,179,8,0.18)" },
+          "white":    { "background": "rgba(255,255,255,0.08)",  "color": "#E8E8EA",  "border": "1px solid rgba(255,255,255,0.14)" },
+          "locked":   { "background": "rgba(255,255,255,0.03)",  "color": "#3A3A40",  "border": "1px solid rgba(255,255,255,0.05)" },
+          "new":      { "background": "rgba(212,175,55,0.18)",   "color": "#E8C547",  "borderRadius": "9999px", "border": "1px solid rgba(212,175,55,0.30)" }
+        }
+      },
+  
+      "progressBar": {
+        "base": {
+          "background":   "#1A1B1F",
+          "borderRadius": "9999px",
+          "overflow":     "hidden"
+        },
+        "fill": {
+          "background":  "linear-gradient(90deg, #A67C00 0%, #D4AF37 100%)",
+          "borderRadius":"9999px",
+          "transition":  "width 600ms cubic-bezier(0.16, 1, 0.3, 1)",
+          "boxShadow":   "0 0 8px rgba(212,175,55,0.30)"
+        },
+        "sizes": {
+          "xs": { "height": "3px" },
+          "sm": { "height": "5px" },
+          "md": { "height": "8px" },
+          "lg": { "height": "12px" }
+        },
+        "variants": {
+          "default": { "fillColor": "#D4AF37" },
+          "mono":    { "fillColor": "rgba(255,255,255,0.55)", "boxShadow": "none" },
+          "success": { "fillColor": "#22C55E" },
+          "quiz":    { "height": "3px", "fillColor": "#D4AF37" }
+        }
+      },
+  
+      "navigation": {
+        "sidebar": {
+          "width":          "240px",
+          "collapsedWidth": "64px",
+          "background":     "rgba(7, 8, 10, 0.96)",
+          "backdropFilter": "blur(20px)",
+          "borderRight":    "1px solid rgba(255,255,255,0.06)",
+          "padding":        "16px 12px"
+        },
+        "item": {
+          "height":       "40px",
+          "borderRadius": "10px",
+          "padding":      "0 12px",
+          "color":        "#606068",
+          "fontSize":     "14px",
+          "fontWeight":   "400",
+          "gap":          "10px",
+          "transition":   "all 150ms ease",
+          "hover":  { "background": "rgba(255,255,255,0.05)", "color": "#E8E8EA" },
+          "active": {
+            "background":  "rgba(212,175,55,0.10)",
+            "color":       "#E8C547",
+            "fontWeight":  "500",
+            "borderLeft":  "2px solid #D4AF37"
+          }
+        },
+        "topbar": {
+          "height":         "64px",
+          "background":     "rgba(7, 8, 10, 0.92)",
+          "backdropFilter": "blur(20px)",
+          "borderBottom":   "1px solid rgba(255,255,255,0.06)",
+          "padding":        "0 24px"
+        },
+        "section": {
+          "fontSize":       "10px",
+          "fontWeight":     "500",
+          "letterSpacing":  "0.10em",
+          "textTransform":  "uppercase",
+          "color":          "#3A3A40",
+          "padding":        "8px 12px 4px",
+          "marginTop":      "12px"
+        }
+      },
+  
+      "avatar": {
+        "base": {
+          "borderRadius": "9999px",
+          "overflow":     "hidden",
+          "flexShrink":   0,
+          "background":   "rgba(212,175,55,0.12)",
+          "border":       "1px solid rgba(255,255,255,0.08)"
+        },
+        "sizes": {
+          "xs":  { "width": "24px", "height": "24px", "fontSize": "10px" },
+          "sm":  { "width": "32px", "height": "32px", "fontSize": "12px" },
+          "md":  { "width": "40px", "height": "40px", "fontSize": "14px" },
+          "lg":  { "width": "48px", "height": "48px", "fontSize": "16px" },
+          "xl":  { "width": "64px", "height": "64px", "fontSize": "20px" },
+          "2xl": { "width": "80px", "height": "80px", "fontSize": "24px" }
+        }
+      },
+  
+      "tooltip": {
+        "background":   "#1A1B1F",
+        "color":        "#E8E8EA",
+        "fontSize":     "12px",
+        "fontFamily":   "var(--font-body)",
+        "padding":      "6px 10px",
+        "borderRadius": "8px",
+        "border":       "1px solid rgba(255,255,255,0.09)",
+        "boxShadow":    "0 4px 16px rgba(0,0,0,0.70)",
+        "zIndex":       1000
+      },
+  
+      "modal": {
+        "overlay": {
+          "background":     "rgba(0, 0, 0, 0.75)",
+          "backdropFilter": "blur(4px)",
+          "zIndex":         100
+        },
+        "container": {
+          "background":     "rgba(10, 11, 14, 0.96)",
+          "backdropFilter": "blur(32px) saturate(1.4)",
+          "border":         "1px solid rgba(255,255,255,0.09)",
+          "borderRadius":   "24px",
+          "boxShadow":      "0 32px 80px rgba(0,0,0,0.90)",
+          "padding":        "32px",
+          "maxWidth":       "520px",
+          "width":          "90vw"
+        }
+      },
+  
+      "divider": {
+        "horizontal": { "borderTop":  "1px solid rgba(255,255,255,0.07)", "margin": "24px 0" },
+        "vertical":   { "borderLeft": "1px solid rgba(255,255,255,0.07)", "margin": "0 16px" }
+      },
+  
+      "moduleCard": {
+        "base": {
+          "background":   "rgba(255, 255, 255, 0.03)",
+          "border":       "1px solid rgba(255,255,255,0.07)",
+          "borderRadius": "16px",
+          "padding":      "20px",
+          "position":     "relative",
+          "overflow":     "hidden",
+          "transition":   "all 220ms cubic-bezier(0.16, 1, 0.3, 1)"
+        },
+        "states": {
+          "locked": {
+            "opacity":   0.38,
+            "cursor":    "not-allowed",
+            "filter":    "grayscale(0.5)",
+            "icon":      "Lock",
+            "iconColor": "#3A3A40"
+          },
+          "available": {
+            "cursor": "pointer",
+            "hover": {
+              "borderColor":"rgba(255,255,255,0.14)",
+              "background": "rgba(255,255,255,0.05)",
+              "transform":  "translateY(-2px)",
+              "boxShadow":  "0 8px 32px rgba(0,0,0,0.60)"
+            }
+          },
+          "inProgress": {
+            "borderColor":     "rgba(212,175,55,0.22)",
+            "borderLeftColor": "#D4AF37",
+            "borderLeftWidth": "2px"
+          },
+          "completed": {
+            "borderColor":    "rgba(34,197,94,0.16)",
+            "checkmarkColor": "#22C55E"
+          }
+        }
+      },
+  
+      "quizCard": {
+        "base": {
+          "maxWidth":     "640px",
+          "margin":       "0 auto",
+          "background":   "rgba(255,255,255,0.04)",
+          "border":       "1px solid rgba(255,255,255,0.08)",
+          "borderRadius": "16px",
+          "padding":      "28px"
+        },
+        "questionText": {
+          "fontSize":     "18px",
+          "fontWeight":   "600",
+          "fontFamily":   "var(--font-heading)",
+          "color":        "#F0F0F2",
+          "marginBottom": "24px",
+          "lineHeight":   "1.5"
+        },
+        "answerOption": {
+          "base": {
+            "background":   "rgba(255,255,255,0.03)",
+            "border":       "1px solid rgba(255,255,255,0.08)",
+            "borderRadius": "10px",
+            "padding":      "14px 16px",
+            "cursor":       "pointer",
+            "transition":   "all 150ms ease"
+          },
+          "hover":    { "background": "rgba(255,255,255,0.07)", "borderColor": "rgba(255,255,255,0.16)" },
+          "selected": { "background": "rgba(212,175,55,0.10)",  "borderColor": "rgba(212,175,55,0.35)", "color": "#E8C547" },
+          "correct":  { "background": "rgba(34,197,94,0.10)",   "borderColor": "rgba(34,197,94,0.35)",  "color": "#4ADE80" },
+          "incorrect":{ "background": "rgba(239,68,68,0.10)",   "borderColor": "rgba(239,68,68,0.35)",  "color": "#F87171" }
+        }
+      },
+  
+      "videoPlayer": {
+        "container": {
+          "borderRadius": "16px",
+          "overflow":     "hidden",
+          "background":   "#000000",
+          "aspectRatio":  "16/9",
+          "position":     "relative"
+        },
+        "controls": {
+          "background":   "linear-gradient(0deg, rgba(0,0,0,0.85) 0%, transparent 100%)",
+          "padding":      "16px",
+          "position":     "absolute",
+          "bottom":       0, "left": 0, "right": 0
+        },
+        "progressBar": {
+          "height":       "3px",
+          "background":   "rgba(255,255,255,0.18)",
+          "fillColor":    "#D4AF37",
+          "borderRadius": "9999px"
+        },
+        "playButton": {
+          "background":     "rgba(212,175,55,0.20)",
+          "backdropFilter": "blur(12px)",
+          "border":         "1px solid rgba(212,175,55,0.35)",
+          "borderRadius":   "9999px",
+          "width":          "56px",
+          "height":         "56px",
+          "color":          "#FFFFFF"
+        }
+      },
+  
+      "statWidget": {
+        "base": {
+          "background":     "rgba(20, 21, 25, 0.82)",
+          "backdropFilter": "blur(20px) saturate(1.6)",
+          "border":         "1px solid rgba(255,255,255,0.09)",
+          "borderRadius":   "20px",
+          "padding":        "18px 20px",
+          "boxShadow":      "0 8px 32px rgba(0,0,0,0.60), inset 0 1px 0 rgba(255,255,255,0.06)"
+        },
+        "label": {
+          "fontFamily":    "var(--font-body)",
+          "fontSize":      "11px",
+          "fontWeight":    "500",
+          "letterSpacing": "0.08em",
+          "textTransform": "uppercase",
+          "color":         "#606068"
+        },
+        "value": {
+          "fontFamily":    "var(--font-mono)",
+          "fontSize":      "28px",
+          "fontWeight":    "700",
+          "color":         "#F0F0F2",
+          "lineHeight":    "1"
+        },
+        "change": {
+          "positive": { "color": "#4ADE80", "fontSize": "12px", "fontFamily": "var(--font-mono)" },
+          "negative": { "color": "#F87171", "fontSize": "12px", "fontFamily": "var(--font-mono)" },
+          "neutral":  { "color": "#606068",  "fontSize": "12px", "fontFamily": "var(--font-mono)" }
+        }
+      },
+  
+      "codexAcceptanceFlow": {
+        "$comment": "Pflicht-Modal — nicht überspringbar",
+        "overlay": {
+          "background":     "rgba(0, 0, 0, 0.95)",
+          "backdropFilter": "blur(8px)",
+          "zIndex":         9999,
+          "position":       "fixed",
+          "inset":          0
+        },
+        "modal": {
+          "background":     "rgba(12, 13, 16, 0.98)",
+          "backdropFilter": "blur(32px)",
+          "border":         "1px solid rgba(255,255,255,0.09)",
+          "borderRadius":   "24px",
+          "boxShadow":      "0 32px 80px rgba(0,0,0,0.95)",
+          "padding":        "32px",
+          "maxWidth":       "580px",
+          "maxHeight":      "80vh",
+          "overflowY":      "auto",
+          "width":          "90vw"
+        },
+        "scrollbar": {
+          "width":            "4px",
+          "thumbColor":       "rgba(212,175,55,0.30)",
+          "thumbHoverColor":  "rgba(212,175,55,0.55)"
+        },
+        "accentLine": {
+          "background":   "linear-gradient(90deg, #D4AF37, #A67C00)",
+          "height":       "2px",
+          "borderRadius": "9999px",
+          "marginBottom": "24px"
+        },
+        "acceptButton": {
+          "locked":   { "opacity": 0.25, "cursor": "not-allowed", "pointerEvents": "none" },
+          "unlocked": { "$extends": "button.variants.primary" }
+        }
+      },
+  
+      "adminPanel": {
+        "table": {
+          "background":   "#0C0D10",
+          "border":       "1px solid rgba(255,255,255,0.07)",
+          "borderRadius": "12px",
+          "overflow":     "hidden"
+        },
+        "tableHeader": {
+          "fontSize":       "11px",
+          "fontWeight":     "500",
+          "letterSpacing":  "0.08em",
+          "textTransform":  "uppercase",
+          "color":          "#3A3A40",
+          "padding":        "12px 16px",
+          "background":     "rgba(255,255,255,0.02)",
+          "borderBottom":   "1px solid rgba(255,255,255,0.07)"
+        },
+        "tableRow": {
+          "base":  { "borderBottom": "1px solid rgba(255,255,255,0.05)", "transition": "background 150ms ease" },
+          "hover": { "background": "rgba(255,255,255,0.03)" }
+        },
+        "tableCell": {
+          "padding":  "14px 16px",
+          "fontSize": "14px",
+          "color":    "#9A9AA4"
+        }
+      },
+  
+      "notification": {
+        "toast": {
+          "background":     "rgba(18, 19, 24, 0.96)",
+          "backdropFilter": "blur(16px)",
+          "border":         "1px solid rgba(255,255,255,0.09)",
+          "borderRadius":   "12px",
+          "padding":        "14px 16px",
+          "boxShadow":      "0 8px 32px rgba(0,0,0,0.70)",
+          "minWidth":       "300px",
+          "maxWidth":       "420px"
+        },
+        "variants": {
+          "success": { "borderLeft": "3px solid #22C55E", "iconColor": "#4ADE80" },
+          "error":   { "borderLeft": "3px solid #EF4444", "iconColor": "#F87171" },
+          "warning": { "borderLeft": "3px solid #EAB308", "iconColor": "#FDE047" },
+          "info":    { "borderLeft": "3px solid #D4AF37", "iconColor": "#E8C547" }
+        }
+      },
+  
+      "skeleton": {
+        "background":     "rgba(255,255,255,0.05)",
+        "borderRadius":   "6px",
+        "animation":      "shimmer 1.8s infinite linear",
+        "backgroundImage":"linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.07) 50%, transparent 100%)",
+        "backgroundSize": "200% 100%"
+      }
+    },
+  
+    "layout": {
+      "grid": { "columns": 12, "gap": "24px", "mobileGap": "16px" },
+      "breakpoints": {
+        "sm": "640px", "md": "768px", "lg": "1024px", "xl": "1280px", "2xl": "1536px"
+      },
+      "zIndex": {
+        "base": 0, "card": 1, "dropdown": 10, "sticky": 20,
+        "overlay": 50, "modal": 100, "toast": 200, "tooltip": 300, "codex": 9999
+      },
+      "pages": {
+        "dashboard": { "layout": "sidebar + content", "widgetGrid": "repeat(auto-fill, minmax(260px, 1fr))" },
+        "module":    { "layout": "centered", "maxWidth": "860px", "padding": "40px 24px" },
+        "admin":     { "layout": "full-width", "maxWidth": "1440px", "padding": "32px 24px" }
+      }
+    },
+  
+    "iconography": {
+      "library":     "lucide-react",
+      "strokeWidth": { "thin": 1.25, "default": 1.5, "bold": 2.0 },
+      "size": {
+        "xs": "14px", "sm": "16px", "md": "20px",
+        "lg": "24px", "xl": "32px", "2xl": "48px"
+      },
+      "semantic": {
+        "lock": "Lock", "unlock": "Unlock", "complete": "CheckCircle2",
+        "play": "Play", "quiz": "HelpCircle", "module": "BookOpen",
+        "progress": "TrendingUp", "admin": "LayoutDashboard", "user": "User",
+        "logout": "LogOut", "back": "ChevronLeft", "next": "ChevronRight",
+        "menu": "Menu", "close": "X", "profit": "TrendingUp", "loss": "TrendingDown",
+        "codex": "ScrollText", "video": "Play", "certificate": "Award",
+        "search": "Search", "settings": "Settings", "notification": "Bell"
+      }
+    },
+  
+    "chakraUI": {
+      "$comment": "In theme.ts via extendTheme({ ... }) einbinden",
+      "config": {
+        "initialColorMode":   "dark",
+        "useSystemColorMode": false
+      },
+      "fonts": {
+        "heading": "'Radley', serif",
+        "body":    "'Inter', sans-serif",
+        "mono":    "'JetBrains Mono', monospace"
+      },
+      "colors": {
+        "brand": {
+          "50":  "#FFFBEB", "100": "#FEF3C7", "200": "#FDE68A",
+          "300": "#FCD34D", "400": "#E8C547", "500": "#D4AF37",
+          "600": "#B8860B", "700": "#A67C00", "800": "#92400E", "900": "#78350F"
+        },
+        "gray": {
+          "50":  "#F8F8F8", "100": "#E8E8EA", "200": "#C4C4C8",
+          "300": "#A0A0A6", "400": "#7C7C84", "500": "#58585E",
+          "600": "#3A3A40", "700": "#26262C", "800": "#181820",
+          "850": "#101114", "900": "#0C0D10", "950": "#07080A"
+        }
+      },
+      "styles": {
+        "global": {
+          "body": {
+            "bg":         "#07080A",
+            "color":      "#F0F0F2",
+            "fontFamily": "'Inter', sans-serif"
+          },
+          "::selection": {
+            "bg":    "rgba(212,175,55,0.30)",
+            "color": "#F0F0F2"
+          },
+          "::-webkit-scrollbar":       { "width": "5px" },
+          "::-webkit-scrollbar-track": { "bg": "transparent" },
+          "::-webkit-scrollbar-thumb": {
+            "bg":           "rgba(255,255,255,0.10)",
+            "borderRadius": "9999px",
+            "_hover":       { "bg": "rgba(255,255,255,0.18)" }
+          }
+        }
+      },
+      "components": {
+        "Button":   { "defaultProps": { "colorScheme": "brand" } },
+        "Input":    { "defaultProps": { "focusBorderColor": "brand.500" } },
+        "Select":   { "defaultProps": { "focusBorderColor": "brand.500" } },
+        "Textarea": { "defaultProps": { "focusBorderColor": "brand.500" } },
+        "Tabs":     { "defaultProps": { "colorScheme": "brand" } },
+        "Switch":   { "defaultProps": { "colorScheme": "brand" } },
+        "Checkbox": { "defaultProps": { "colorScheme": "brand" } },
+        "Progress": { "defaultProps": { "colorScheme": "brand" } }
+      }
+    },
+  
+    "cssVariables": {
+      "$comment": "In globals.css als :root { } einfügen",
+      ":root": {
+        "--color-bg-primary":      "#07080A",
+        "--color-bg-secondary":    "#0C0D10",
+        "--color-bg-tertiary":     "#101114",
+        "--color-bg-elevated":     "#141519",
+        "--color-surface":         "rgba(255, 255, 255, 0.04)",
+        "--color-surface-hover":   "rgba(255, 255, 255, 0.07)",
+        "--color-border-subtle":   "rgba(255, 255, 255, 0.05)",
+        "--color-border-default":  "rgba(255, 255, 255, 0.09)",
+        "--color-border-strong":   "rgba(255, 255, 255, 0.16)",
+        "--color-accent":          "#D4AF37",
+        "--color-accent-light":    "#E8C547",
+        "--color-accent-dark":     "#A67C00",
+        "--color-accent-glow":     "rgba(212, 175, 55, 0.18)",
+        "--color-accent-subtle":   "rgba(212, 175, 55, 0.08)",
+        "--color-text-primary":    "#F0F0F2",
+        "--color-text-secondary":  "#9A9AA4",
+        "--color-text-tertiary":   "#606068",
+        "--color-text-disabled":   "#3A3A40",
+        "--color-profit":          "#22C55E",
+        "--color-loss":            "#EF4444",
+        "--color-success":         "#22C55E",
+        "--color-error":           "#EF4444",
+        "--color-warning":         "#EAB308",
+        "--font-heading":          "'Radley', serif",
+        "--font-body":             "'Inter', sans-serif",
+        "--font-mono":             "'JetBrains Mono', monospace",
+        "--radius-card":           "16px",
+        "--radius-widget":         "20px",
+        "--radius-button":         "10px",
+        "--radius-input":          "10px",
+        "--radius-badge":          "6px",
+        "--radius-modal":          "24px",
+        "--shadow-card":           "0 4px 16px rgba(0,0,0,0.60), inset 0 1px 0 rgba(255,255,255,0.05)",
+        "--shadow-glass":          "0 8px 32px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.07)",
+        "--shadow-glow-accent":    "0 0 24px rgba(212,175,55,0.22), 0 0 8px rgba(212,175,55,0.12)",
+        "--glass-bg":              "rgba(255, 255, 255, 0.05)",
+        "--glass-blur":            "blur(20px) saturate(1.6)",
+        "--glass-border":          "1px solid rgba(255, 255, 255, 0.09)",
+        "--nav-height":            "64px",
+        "--sidebar-width":         "240px",
+        "--sidebar-collapsed":     "64px",
+        "--transition-default":    "all 220ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "--transition-fast":       "all 150ms ease"
+      }
+    },
+  
+    "usage_guidelines": {
+      "colorRules": [
+        "90% der UI: ausschließlich --color-bg-*, --color-surface, --color-text-* (Schwarz/Weiß/Grau)",
+        "Gold (#D4AF37) NUR für: primäre CTAs, aktive Nav-Items, Fokus-States, Progress-Bars, selektierte Quiz-Antworten",
+        "Grün & Rot ausschließlich für Trading-Semantik (Profit/Loss) und System-Feedback (Success/Error) — nie dekorativ",
+        "Keine weiteren Farben einführen — weder für Kategorien, Tags noch Illustrationen",
+        "Gradients: nur Gold-auf-Gold (accentPrimary) oder Weiß-Transparenz (surfaceUp)"
+      ],
+      "typographyRules": [
+        "Radley für alle Überschriften (h1–h6, Card-/Section-Titel): Klassen .radley-regular / .radley-regular-italic oder Chakra fonts.heading / CSS var(--font-heading)",
+        "Inter (variable, optical sizing) für Fließtext, UI, Labels, Nav, Buttons (fontFamily: var(--font-body), Klasse .inter bzw. Gewicht-Utilities)",
+        "JetBrains Mono für alle Zahlen ohne Ausnahme: Preise, %, Datum/Uhrzeit, IDs (fontFamily: var(--font-mono))",
+        "Keine zusätzlichen Schriftfamilien außer Radley, Inter, JetBrains Mono"
+      ],
+      "glassmorphismRules": [
+        "Glassmorphism nur auf: statWidget, Modals, Overlays, Topbar/Sidebar — nie auf Content-Karten",
+        "Immer will-change: transform bei backdrop-filter für GPU-Beschleunigung",
+        "Max. blur(32px) — darüber hinaus: Performance-Probleme"
+      ],
+      "chakraRules": [
+        "colorScheme: 'brand' in allen Chakra-Komponenten-defaultProps setzen",
+        "focusBorderColor: 'brand.500' für alle Input-artigen Komponenten",
+        "initialColorMode: 'dark' — niemals Light Mode aktivieren"
+      ],
+      "do": [
+        "CSS-Variablen (--color-*, --font-*, --radius-*, --shadow-*) statt hardcoded Werten",
+        "Hover: transform: translateY(-2px) + border-color Änderung",
+        "Animationen: max. 400ms, immer cubic-bezier(0.16, 1, 0.3, 1)",
+        "4px-Raster strikt einhalten — kein padding: 15px oder margin: 7px"
+      ],
+      "dont": [
+        "Keinen hellen Page-Background",
+        "Kein Glassmorphism auf Content-Karten oder Listenelemente",
+        "Kein blur() > 32px",
+        "Keine weiteren Farben außer dem definierten Gold-Akzent",
+        "Keine Schrift außer Radley (Überschriften), Inter (Text/UI), JetBrains Mono (Daten)"
+      ]
+    }
+  }

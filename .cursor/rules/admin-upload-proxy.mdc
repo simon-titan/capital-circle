@@ -1,0 +1,52 @@
+---
+description: Admin-Upload-Proxy: Datei-Uploads vom Browser zum Hetzner Object Storage
+alwaysApply: true
+---
+
+# Admin Upload Proxy — Bewährtes Protokoll
+
+Browser-Uploads direkt zum Hetzner Bucket scheitern immer an CORS (Preflight OPTIONS wird abgelehnt).
+`request.formData()` in Next.js 16 + Turbopack wirft ebenfalls Exceptions.
+
+## Funktionierendes Protokoll
+
+**Endpunkt:** `POST /api/admin/upload-proxy`
+
+**Metadaten:** als Query-Parameter in der URL  
+**Datei:** als roher Binary-Body (`file` direkt als Body, KEIN FormData)  
+**Dateiname:** als `X-File-Name`-Header (URL-encoded)
+
+```typescript
+// Client (fetch)
+const params = new URLSearchParams({ folder: "attachments", courseId, moduleId, videoId, attachmentId });
+await fetch(`/api/admin/upload-proxy?${params}`, {
+  method: "POST",
+  headers: {
+    "Content-Type": file.type || "application/octet-stream",
+    "X-File-Name": encodeURIComponent(file.name),
+  },
+  body: file,   // ← direkt das File-Objekt, KEIN FormData
+});
+
+// Client (XHR mit Fortschritt)
+xhr.open("POST", `/api/admin/upload-proxy?${params}`);
+xhr.setRequestHeader("Content-Type", file.type || "video/mp4");
+xhr.setRequestHeader("X-File-Name", encodeURIComponent(file.name));
+xhr.send(file);  // ← direkt das File-Objekt
+```
+
+**Server:** liest Body mit `request.arrayBuffer()` → `Buffer.from(ab)` → `putObjectBody(key, buffer, ct)`
+
+## Was NICHT funktioniert
+
+- `fetch` mit `FormData` → CORS Preflight → blockiert
+- `XMLHttpRequest` mit `FormData` → CORS Preflight → blockiert  
+- `request.formData()` in Next.js 16 Turbopack → Exception `invalid_multipart`
+- Presigned PUT direkt vom Browser → CORS Preflight → blockiert
+
+## Betroffene Dateien
+
+- `app/api/admin/upload-proxy/route.ts` — Server-Route
+- `components/admin/AttachmentManager.tsx` — Anhang-Upload
+- `components/admin/VideoManager.tsx` — Thumbnail-Upload
+- `components/admin/VideoUploader.tsx` — Video-Upload (XHR mit Fortschritt)

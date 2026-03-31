@@ -1,0 +1,195 @@
+/* FullCalendar angepasst an DESIGN.json (Dark Monochrome + Gold-Akzent) */
+
+.events-calendar-root .fc {
+  --fc-border-color: rgba(255, 255, 255, 0.1);
+  --fc-today-bg-color: rgba(212, 175, 55, 0.1);
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: rgba(255, 255, 255, 0.04);
+  --fc-list-event-hover-bg-color: rgba(255, 255, 255, 0.08);
+  font-family: var(--font-body, "Inter", sans-serif);
+  padding-top: 6px;
+}
+
+.events-calendar-root .fc-theme-standard td,
+.events-calendar-root .fc-theme-standard th {
+  border-color: var(--fc-border-color);
+}
+
+/* FullCalendar verbindet Buttons in .fc-button-group mit negativem Margin — hier sichtbare Lücken erzwingen */
+.events-calendar-root .fc-header-toolbar {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 22px !important;
+}
+
+.events-calendar-root .fc-toolbar {
+  gap: 16px;
+  margin-bottom: 20px !important;
+}
+
+.events-calendar-root .fc-toolbar-chunk {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px !important;
+}
+
+.events-calendar-root .fc-button-group {
+  display: inline-flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px !important;
+  vertical-align: middle;
+}
+
+.events-calendar-root .fc-button-group > .fc-button {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  float: none !important;
+}
+
+.events-calendar-root .fc-toolbar-title {
+  font-size: 1.35rem !important;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+}
+
+.events-calendar-root .fc-button {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 8px !important;
+  color: #e8e8ea !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  padding: 0.46em 1em !important;
+  box-shadow: none !important;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease !important;
+}
+
+.events-calendar-root .fc-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.events-calendar-root .fc-button-primary:not(:disabled):active,
+.events-calendar-root .fc-button-primary:not(:disabled).fc-button-active {
+  background: rgba(212, 175, 55, 0.18) !important;
+  border-color: rgba(212, 175, 55, 0.55) !important;
+  color: #e8c547 !important;
+}
+
+.events-calendar-root .fc-prev-button,
+.events-calendar-root .fc-next-button {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 999px !important;
+  padding: 0 !important;
+}
+
+.events-calendar-root .fc-col-header-cell {
+  padding: 8px 4px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.56);
+}
+
+.events-calendar-root .fc-daygrid-day-number {
+  font-family: var(--font-mono, "JetBrains Mono", monospace);
+  font-size: 12px;
+  padding: 6px 8px;
+  color: rgba(240, 240, 242, 0.9);
+}
+
+.events-calendar-root .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+  background: rgba(212, 175, 55, 0.36);
+  border-radius: 6px;
+  color: #0a0a0a;
+  font-weight: 600;
+}
+
+.events-calendar-root .fc-daygrid-day-frame {
+  min-height: 86px;
+}
+
+.events-calendar-root .fc-event {
+  border-radius: 7px !important;
+  border-width: 1px !important;
+  border-style: solid !important;
+  padding: 3px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+  box-shadow: none;
+}
+
+.events-calendar-root .fc-event-title,
+.events-calendar-root .fc-event-time {
+  font-family: var(--font-body, "Inter", sans-serif);
+}
+
+.events-calendar-root .fc-timegrid-axis-cushion,
+.events-calendar-root .fc-timegrid-slot-label-cushion {
+  font-family: var(--font-mono, "JetBrains Mono", monospace);
+  font-size: 11px;
+  color: rgba(240, 240, 242, 0.7);
+  padding: 0 8px;
+}
+
+.events-calendar-root .fc-timegrid-slot,
+.events-calendar-root .fc-timegrid-axis {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.events-calendar-root .fc-timegrid-slot {
+  height: 36px;
+}
+
+.events-calendar-root .fc-timegrid-col.fc-day-today {
+  background: rgba(212, 175, 55, 0.07);
+}
+
+.events-calendar-root .fc-list {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.events-calendar-root .fc-list-day-cushion {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f5f0e6;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.25);
+}
+
+.events-calendar-root .fc-list-event td {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.events-calendar-root .fc-list-event-time {
+  font-family: var(--font-mono, "JetBrains Mono", monospace);
+  color: #e8c547;
+}
+
+.events-calendar-root .fc-list-event-title {
+  color: #f0f0f2;
+  font-weight: 500;
+}
+
+.events-calendar-root .fc-list-event-dot {
+  border-color: currentcolor !important;
+  border-width: 6px !important;
+}
+
+.events-calendar-root .fc-list-event:hover td {
+  background: rgba(255, 255, 255, 0.08);
+}
