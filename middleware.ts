@@ -7,6 +7,8 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const { supabase, response } = createClient(request);
 
+  // API-Routen: getUser() ist nötig damit @supabase/ssr expirierte Tokens refresht und
+  // die frischen Cookies in den Response-Headers setzt. Ohne das werden RLS-Queries leer.
   if (pathname.startsWith("/api")) {
     await supabase.auth.getUser();
     return response;
@@ -29,18 +31,35 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
+  // Profil nur wenn Admin-/Onboarding-Logik wirklich nötig (nicht auf /login oder /register eingeloggt)
+  const needsProfile =
+    pathname.startsWith("/admin") ||
+    pathname === "/einsteig" ||
+    (!PUBLIC_PATHS.includes(pathname) && pathname !== "/");
+
+  if (!needsProfile) {
+    return response;
+  }
+
   const { data: rawProfile } = await supabase
     .from("profiles")
-    .select("codex_accepted,intro_video_watched,is_admin")
+    .select("codex_accepted,intro_video_watched,usage_agreement_accepted,is_admin")
     .eq("id", user.id)
     .single();
-  const profile = rawProfile as { codex_accepted?: boolean; intro_video_watched?: boolean; is_admin?: boolean } | null;
+  const profile = rawProfile as {
+    codex_accepted?: boolean;
+    intro_video_watched?: boolean;
+    usage_agreement_accepted?: boolean;
+    is_admin?: boolean;
+  } | null;
 
   if (pathname.startsWith("/admin") && !profile?.is_admin) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  const onboardingDone = Boolean(profile?.codex_accepted && profile?.intro_video_watched);
+  const onboardingDone = Boolean(
+    profile?.codex_accepted && profile?.intro_video_watched && profile?.usage_agreement_accepted,
+  );
 
   if (onboardingDone && pathname === "/einsteig") {
     return NextResponse.redirect(new URL("/dashboard", request.url));

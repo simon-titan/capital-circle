@@ -22,11 +22,14 @@ export type Database = {
           codex_accepted_at: string | null;
           intro_video_watched: boolean;
           intro_video_watched_at: string | null;
+          usage_agreement_accepted: boolean;
+          usage_agreement_accepted_at: string | null;
           streak_current: number;
           streak_longest: number;
           streak_last_activity: string | null;
           total_learning_minutes: number;
           learning_minutes_by_day?: Json | null;
+          streak_activity_by_day?: Json | null;
           is_admin: boolean;
           is_paid: boolean;
           created_at: string;

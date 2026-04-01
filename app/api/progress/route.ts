@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { addMinutesToDayMap, berlinCalendarDayKey, parseLearningMinutesByDay } from "@/lib/learning-daily";
-import { getModulePublishedPlaylist, type PlaylistVideoRow } from "@/lib/module-video";
+import {
+  addMinutesToDayMap,
+  berlinCalendarDayKey,
+  mergeStreakActivityDay,
+  parseLearningMinutesByDay,
+  parseStreakActivityByDay,
+} from "@/lib/learning-daily";
+import { getModulePlaylistDurationsOnly } from "@/lib/module-video";
 import { calculateStreak, maxPlausibleStreakDays, sanitizeStreakValue } from "@/lib/streak";
 
 type ProgressBody = {
@@ -26,7 +32,7 @@ function asProgressMap(raw: unknown): Record<string, number> {
   return out;
 }
 
-function watchedSecondsCapped(playlist: PlaylistVideoRow[], map: Record<string, number>): number {
+function watchedSecondsCapped(playlist: { id: string; duration_seconds: number | null }[], map: Record<string, number>): number {
   let watched = 0;
   for (const v of playlist) {
     const d = v.duration_seconds ?? 0;
@@ -101,19 +107,22 @@ export async function POST(request: Request) {
     { onConflict: "user_id,module_id" },
   );
 
-  const playlist = await getModulePublishedPlaylist(supabase, moduleId);
+  const [playlist, profileRes] = await Promise.all([
+    getModulePlaylistDurationsOnly(supabase, moduleId),
+    supabase
+      .from("profiles")
+      .select(
+        "created_at,streak_current,streak_longest,streak_last_activity,total_learning_minutes,learning_minutes_by_day,streak_activity_by_day",
+      )
+      .eq("id", userId)
+      .single(),
+  ]);
+  const { data: profile } = profileRes;
+
   const beforeWatched = watchedSecondsCapped(playlist, oldMap);
   const afterWatched = watchedSecondsCapped(playlist, mergedMap);
   const deltaSeconds = Math.max(0, afterWatched - beforeWatched);
   const deltaMinutes = Math.floor(deltaSeconds / 60);
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select(
-      "created_at,streak_current,streak_longest,streak_last_activity,total_learning_minutes,learning_minutes_by_day",
-    )
-    .eq("id", userId)
-    .single();
 
   const createdAt = profile?.created_at as string | null | undefined;
   const maxPlausible = maxPlausibleStreakDays(createdAt);
@@ -131,6 +140,10 @@ export async function POST(request: Request) {
   const dayKey = berlinCalendarDayKey(new Date());
   const learning_minutes_by_day =
     deltaMinutes > 0 ? addMinutesToDayMap(prevByDay, dayKey, deltaMinutes) : prevByDay;
+  const streak_activity_by_day = mergeStreakActivityDay(
+    parseStreakActivityByDay(profile?.streak_activity_by_day),
+    dayKey,
+  );
   const total_learning_minutes = Math.max(0, (profile?.total_learning_minutes ?? 0) + deltaMinutes);
 
   await supabase
@@ -141,6 +154,7 @@ export async function POST(request: Request) {
       streak_last_activity: nowIso,
       total_learning_minutes,
       learning_minutes_by_day,
+      streak_activity_by_day,
     })
     .eq("id", userId);
 

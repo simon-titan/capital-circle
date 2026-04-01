@@ -1,21 +1,24 @@
 import { Grid, GridItem } from "@chakra-ui/react";
 import { redirect } from "next/navigation";
 import { WelcomeCard } from "@/components/platform/WelcomeCard";
-import { LastVideoCard } from "@/components/platform/LastVideoCard";
-import { HomeworkCard } from "@/components/platform/HomeworkCard";
-import { UpcomingEventsCard } from "@/components/platform/UpcomingEventsCard";
+import {
+  DashboardLastVideoCard,
+  DashboardHomeworkCard,
+  DashboardEventsCard,
+} from "@/components/platform/DashboardCards";
 import {
   formatLearningTime,
   getActiveHomework,
+  getAcademyModulesOverview,
   getCurrentUserAndProfile,
   getHomeworkDashboardState,
   getLastWatchedModule,
   getMemberDays,
-  getRecommendedAcademyModule,
+  getRecommendedAcademyModuleFromOverview,
   getUpcomingEvents,
-  getWelcomeDashboardMetrics,
+  getWelcomeDashboardMetricsFromOverview,
 } from "@/lib/server-data";
-import { buildLearningWeekLast7, parseLearningMinutesByDay } from "@/lib/learning-daily";
+import { buildLearningWeekLast7, parseLearningMinutesByDay, parseStreakActivityByDay } from "@/lib/learning-daily";
 import { createClient } from "@/lib/supabase/server";
 import { maxPlausibleStreakDays, sanitizeStreakValue } from "@/lib/streak";
 
@@ -27,12 +30,15 @@ export default async function DashboardPage() {
 
   const userId = user.id;
 
+  const academyRows = await getAcademyModulesOverview(userId);
+  const supabase = await createClient();
+
   const [lastWatched, recommended, homework, events, welcomeMetrics] = await Promise.all([
     getLastWatchedModule(userId),
-    getRecommendedAcademyModule(userId),
+    getRecommendedAcademyModuleFromOverview(supabase, academyRows),
     getActiveHomework(),
     getUpcomingEvents(3),
-    getWelcomeDashboardMetrics(userId),
+    getWelcomeDashboardMetricsFromOverview(userId, academyRows, supabase),
   ]);
 
   const currentDate = new Intl.DateTimeFormat("de-DE", {
@@ -44,20 +50,18 @@ export default async function DashboardPage() {
 
   const displayName = profile.full_name || profile.username || "Mitglied";
   const memberDays = getMemberDays(profile.created_at);
-  const maxStreakDays = maxPlausibleStreakDays(profile.created_at);
   const streakDaysSanitized = sanitizeStreakValue(profile.streak_current ?? 0, profile.created_at);
   const streakLongestSanitized = Math.min(
     Math.max(
       streakDaysSanitized,
       sanitizeStreakValue(profile.streak_longest ?? 0, profile.created_at),
     ),
-    maxStreakDays,
+    maxPlausibleStreakDays(profile.created_at),
   );
   if (
     streakDaysSanitized !== (profile.streak_current ?? 0) ||
     streakLongestSanitized !== (profile.streak_longest ?? 0)
   ) {
-    const supabase = await createClient();
     await supabase
       .from("profiles")
       .update({
@@ -67,6 +71,9 @@ export default async function DashboardPage() {
       .eq("id", userId);
   }
   const streakDays = streakDaysSanitized;
+  const streakActivityByDay = parseStreakActivityByDay(
+    (profile as { streak_activity_by_day?: unknown }).streak_activity_by_day,
+  );
   const { label: learningLabel } = formatLearningTime(profile.total_learning_minutes);
   const learningWeekDays = buildLearningWeekLast7(
     parseLearningMinutesByDay((profile as { learning_minutes_by_day?: unknown }).learning_minutes_by_day),
@@ -84,7 +91,7 @@ export default async function DashboardPage() {
           dateLabel={currentDate}
           memberDays={memberDays}
           streakDays={streakDays}
-          streakMaxDays={maxStreakDays}
+          streakActivityByDay={streakActivityByDay}
           learningLabel={learningLabel}
           welcomeMetrics={welcomeMetrics}
           learningWeekDays={learningWeekDays}
@@ -93,21 +100,20 @@ export default async function DashboardPage() {
       </GridItem>
 
       <GridItem display="flex" flexDirection="column" minH={{ lg: "280px" }} colSpan={{ base: 1, lg: 2 }}>
-        <LastVideoCard lastWatched={lastWatched} recommended={recommended} />
+        <DashboardLastVideoCard lastWatched={lastWatched} recommended={recommended} />
       </GridItem>
 
       <GridItem colSpan={{ base: 1, lg: 2 }}>
         <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={{ base: 6, md: 6 }} alignItems="stretch">
           <GridItem minH={0}>
-            <HomeworkCard
+            <DashboardHomeworkCard
               homework={homework}
               initialOfficialDone={homeworkState.officialDone}
               initialCustomTasks={homeworkState.customTasks}
-              spotlight
             />
           </GridItem>
           <GridItem>
-            <UpcomingEventsCard events={events} spotlight />
+            <DashboardEventsCard events={events} />
           </GridItem>
         </Grid>
       </GridItem>

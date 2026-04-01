@@ -11,7 +11,7 @@ import { VideoAttachments, type VideoAttachmentItem } from "@/components/platfor
 import { ModuleNotes } from "@/components/platform/ModuleNotes";
 import type { PlaylistVideoRow } from "@/lib/module-video";
 
-type ModuleLearningClientProps = {
+export type ModuleLearningClientProps = {
   moduleId: string;
   playlist: PlaylistVideoRow[];
   initialVideoId: string | null;

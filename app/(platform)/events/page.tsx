@@ -1,6 +1,6 @@
 import { Stack } from "@chakra-ui/react";
 import { createClient } from "@/lib/supabase/server";
-import { EventsCalendar } from "@/components/platform/EventsCalendar";
+import { EventsPageCalendar } from "@/components/platform/EventsPageCards";
 import { EventsUpcomingShowcase } from "@/components/platform/EventsUpcomingShowcase";
 
 export default async function EventsPage() {
@@ -23,7 +23,7 @@ export default async function EventsPage() {
   return (
     <Stack spacing={{ base: 8, md: 10 }}>
       <EventsUpcomingShowcase events={upcoming ?? []} />
-      <EventsCalendar events={allEvents ?? []} />
+      <EventsPageCalendar events={allEvents ?? []} />
     </Stack>
   );
 }

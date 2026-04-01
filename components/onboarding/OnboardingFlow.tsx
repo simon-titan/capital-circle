@@ -9,16 +9,18 @@ import { SkyArchBackground } from "@/components/layout/SkyArchBackground";
 import { CodexStep } from "@/components/onboarding/CodexStep";
 import { IntroVideoStep } from "@/components/onboarding/IntroVideoStep";
 import { LoginStep } from "@/components/onboarding/LoginStep";
+import { UsageAgreementStep } from "@/components/onboarding/UsageAgreementStep";
 
 const easePremium = [0.16, 1, 0.3, 1] as const;
 
-type Phase = "loading" | "login" | "codex" | "intro";
+type Phase = "loading" | "login" | "codex" | "intro" | "agreement";
 
 export function OnboardingFlow() {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("loading");
 
   const resolvePhase = useCallback(async () => {
+    setPhase("loading");
     const supabase = createClient();
     const {
       data: { user },
@@ -29,7 +31,7 @@ export function OnboardingFlow() {
     }
     const { data: profile } = await supabase
       .from("profiles")
-      .select("codex_accepted, intro_video_watched")
+      .select("codex_accepted, intro_video_watched, usage_agreement_accepted")
       .eq("id", user.id)
       .single();
     if (!profile?.codex_accepted) {
@@ -38,6 +40,10 @@ export function OnboardingFlow() {
     }
     if (!profile?.intro_video_watched) {
       setPhase("intro");
+      return;
+    }
+    if (!profile?.usage_agreement_accepted) {
+      setPhase("agreement");
       return;
     }
     router.replace("/dashboard");
@@ -65,7 +71,8 @@ export function OnboardingFlow() {
           >
             {phase === "login" && <LoginStep onAuthenticated={resolvePhase} />}
             {phase === "codex" && <CodexStep onCompleted={() => setPhase("intro")} />}
-            {phase === "intro" && <IntroVideoStep />}
+            {phase === "intro" && <IntroVideoStep onCompleted={() => setPhase("agreement")} />}
+            {phase === "agreement" && <UsageAgreementStep />}
           </motion.div>
         </AnimatePresence>
       )}

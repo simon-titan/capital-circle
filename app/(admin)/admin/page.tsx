@@ -10,6 +10,9 @@ export default function AdminPage() {
       <Link href="/admin/events">Events verwalten</Link>
       <Link href="/admin/hausaufgaben">Hausaufgaben verwalten</Link>
       <Link href="/admin/mitglieder">Mitglieder ansehen</Link>
+      <Link href="/admin/arsenal">Arsenal</Link>
+      <Link href="/admin/live-sessions">Live Sessions</Link>
+      <Link href="/admin/analysis">Analyse</Link>
     </Stack>
   );
 }

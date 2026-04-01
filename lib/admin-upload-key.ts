@@ -6,11 +6,14 @@ export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]
 export type AdminUploadKeyInput = {
   fileName: string;
   contentType?: string;
-  folder?: "videos" | "attachments" | "covers";
+  folder?: "videos" | "attachments" | "covers" | "live-sessions";
   courseId?: string;
   moduleId?: string;
+  /** Bei folder=videos: Modul-Video-ID; bei folder=live-sessions: live_session_videos.id */
   videoId?: string;
   subcategoryId?: string;
+  /** Nur folder=live-sessions: live_sessions.id */
+  sessionId?: string;
   kind?: "original" | "thumbnail";
   attachmentId?: string;
 };
@@ -36,6 +39,18 @@ export function buildAdminStorageKey(body: AdminUploadKeyInput):
     const fileLeaf = kind === "thumbnail" ? "thumbnail.jpg" : "original.mp4";
     const sub = body.subcategoryId ? `${body.subcategoryId}/` : "";
     storageKey = `videos/${courseId}/${moduleId}/${sub}${videoId}/${fileLeaf}`;
+  } else if (folder === "live-sessions") {
+    const sessionId = body.sessionId;
+    const videoId = body.videoId;
+    if (!sessionId || !videoId) {
+      return { ok: false, error: "missing_live_session_ids", status: 400 };
+    }
+    if (![sessionId, videoId].every((id) => UUID_RE.test(id))) {
+      return { ok: false, error: "invalid_uuid", status: 400 };
+    }
+    const kind = body.kind ?? "original";
+    const fileLeaf = kind === "thumbnail" ? "thumbnail.jpg" : "original.mp4";
+    storageKey = `live-sessions/${sessionId}/${videoId}/${fileLeaf}`;
   } else if (folder === "attachments") {
     const courseId = body.courseId ?? "unknown";
     const moduleId = body.moduleId ?? "unknown";
@@ -50,7 +65,7 @@ export function buildAdminStorageKey(body: AdminUploadKeyInput):
   }
 
   const contentType =
-    folder === "videos" && (body.kind ?? "original") === "thumbnail"
+    (folder === "videos" || folder === "live-sessions") && (body.kind ?? "original") === "thumbnail"
       ? body.contentType || "image/jpeg"
       : body.contentType || "application/octet-stream";
 

@@ -41,6 +41,32 @@ function pruneDayMap(map: Record<string, number>, keepLastDays: number): Record<
   return pruned;
 }
 
+/** Streak-relevante Tage (Fortschritt gespeichert), Keys YYYY-MM-DD Europe/Berlin. */
+export function parseStreakActivityByDay(raw: unknown): Record<string, boolean> {
+  if (!raw || typeof raw !== "object") return {};
+  const out: Record<string, boolean> = {};
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (v === true) out[k] = true;
+  }
+  return out;
+}
+
+export function mergeStreakActivityDay(
+  existing: Record<string, boolean>,
+  dayKey: string,
+  keepLastDays = 21,
+): Record<string, boolean> {
+  const next = { ...existing, [dayKey]: true };
+  const keys = Object.keys(next).sort();
+  if (keys.length <= keepLastDays) return next;
+  const from = keys.length - keepLastDays;
+  const pruned: Record<string, boolean> = {};
+  for (let i = from; i < keys.length; i++) {
+    pruned[keys[i]!] = true;
+  }
+  return pruned;
+}
+
 export type LearningWeekDay = {
   dayKey: string;
   weekdayShort: string;

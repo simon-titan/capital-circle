@@ -19,13 +19,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: "missing_id" }, { status: 400 });
   }
 
-  const { data: profile } = await supabase.from("profiles").select("is_admin").eq("id", authData.user.id).single();
-
-  const { data: att, error: attErr } = await supabase
-    .from("video_attachments")
-    .select("id, storage_key, video_id")
-    .eq("id", attachmentId)
-    .maybeSingle();
+  const [{ data: profile }, { data: att, error: attErr }] = await Promise.all([
+    supabase.from("profiles").select("is_admin").eq("id", authData.user.id).single(),
+    supabase
+      .from("video_attachments")
+      .select("id, storage_key, video_id")
+      .eq("id", attachmentId)
+      .maybeSingle(),
+  ]);
 
   if (attErr || !att) {
     return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });

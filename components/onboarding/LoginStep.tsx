@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Button, HStack, Icon, Input, Link, Stack, Text } from "@chakra-ui/react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { SiInstagram, SiTiktok } from "react-icons/si";
 import { createClient } from "@/lib/supabase/client";
 import { Logo } from "@/components/brand/Logo";
@@ -17,7 +17,7 @@ type LoginStepProps = {
 };
 
 export function LoginStep({ onAuthenticated }: LoginStepProps) {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -26,16 +26,25 @@ export function LoginStep({ onAuthenticated }: LoginStepProps) {
   const onSubmit = async () => {
     setError(null);
     setLoading(true);
-    const { error: loginError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    setLoading(false);
-    if (loginError) {
-      setError(loginError.message);
-      return;
+    try {
+      if (process.env.NODE_ENV === "development") {
+        console.time("[Login] signInWithPassword");
+      }
+      const { error: loginError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (process.env.NODE_ENV === "development") {
+        console.timeEnd("[Login] signInWithPassword");
+      }
+      if (loginError) {
+        setError(loginError.message);
+        return;
+      }
+      await onAuthenticated();
+    } finally {
+      setLoading(false);
     }
-    await onAuthenticated();
   };
 
   return (

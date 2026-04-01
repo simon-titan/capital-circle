@@ -4,18 +4,20 @@ import { Box, Center, HStack, Spinner, Stack, Text } from "@chakra-ui/react";
 import Image from "next/image";
 import { Info } from "lucide-react";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { GlassVideoPlayer } from "@/components/ui/GlassVideoPlayer";
 import { createClient } from "@/lib/supabase/client";
 import { getIntroVideoUrl } from "@/lib/intro-video";
 
-export function IntroVideoStep() {
+type IntroVideoStepProps = {
+  onCompleted: () => void | Promise<void>;
+};
+
+export function IntroVideoStep({ onCompleted }: IntroVideoStepProps) {
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
   const supabase = createClient();
   const introVideoUrl = getIntroVideoUrl();
 
-  const goToDashboard = async () => {
+  const onVideoEnded = async () => {
     setLoading(true);
     const { data } = await supabase.auth.getUser();
     if (data.user) {
@@ -24,8 +26,8 @@ export function IntroVideoStep() {
         .update({ intro_video_watched: true, intro_video_watched_at: new Date().toISOString() })
         .eq("id", data.user.id);
     }
-    router.replace("/dashboard");
-    router.refresh();
+    setLoading(false);
+    await onCompleted();
   };
 
   return (
@@ -106,12 +108,13 @@ export function IntroVideoStep() {
             lineHeight="1.45"
             maxW="520px"
           >
-            Du wirst nach dem Video automatisch auf unsere Plattform weitergeleitet
+            Anschließend folgt die Vereinbarung zur Nutzung und Vertraulichkeit – erst danach erhältst du Zugang zur
+            Plattform
           </Text>
         </HStack>
 
         <Box position="relative" w="full" zIndex={2} mx={{ base: 0, md: 0 }}>
-          <GlassVideoPlayer src={introVideoUrl} onEnded={() => void goToDashboard()} />
+          <GlassVideoPlayer src={introVideoUrl} onEnded={() => void onVideoEnded()} />
         </Box>
       </Stack>
     </Stack>

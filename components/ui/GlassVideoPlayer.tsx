@@ -9,6 +9,7 @@ import {
   SliderFilledTrack,
   SliderThumb,
   SliderTrack,
+  Spinner,
   Text,
   useBreakpointValue,
 } from "@chakra-ui/react";
@@ -18,8 +19,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 type GlassVideoPlayerProps = {
   /** Direkte öffentliche URL (z. B. externes Intro) */
   src?: string;
-  /** S3-Key — Player holt Signed URL über /api/video-url */
+  /** S3-Key — Player holt Signed URL über presignApiPath (Standard: /api/video-url) */
   storageKey?: string;
+  /** GET-Endpoint mit ?key=… — JSON { ok, url } wie /api/video-url */
+  presignApiPath?: string;
   /** Nach Laden an diese Position springen (z. B. gespeicherter Fortschritt) */
   startAtSeconds?: number;
   onEnded?: () => void;
@@ -33,10 +36,16 @@ function formatTime(seconds: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function GlassVideoPlayer({ src, storageKey, startAtSeconds = 0, onEnded, onProgress }: GlassVideoPlayerProps) {
+export function GlassVideoPlayer({
+  src,
+  storageKey,
+  presignApiPath = "/api/video-url",
+  startAtSeconds = 0,
+  onEnded,
+  onProgress,
+}: GlassVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const shellRef = useRef<HTMLDivElement>(null);
-  const maxWatchedTime = useRef(0);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [resolvedSrc, setResolvedSrc] = useState<string | null>(src ?? null);
@@ -48,6 +57,7 @@ export function GlassVideoPlayer({ src, storageKey, startAtSeconds = 0, onEnded,
   const [progressPct, setProgressPct] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [buffering, setBuffering] = useState(false);
   const [volumePct, setVolumePct] = useState(85);
   const [muted, setMuted] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
@@ -78,7 +88,7 @@ export function GlassVideoPlayer({ src, storageKey, startAtSeconds = 0, onEnded,
       setUrlLoading(true);
       setLoadError(null);
       try {
-        const res = await fetch(`/api/video-url?key=${encodeURIComponent(storageKey)}`);
+        const res = await fetch(`${presignApiPath}?key=${encodeURIComponent(storageKey)}`);
         const json = (await res.json()) as {
           ok?: boolean;
           url?: string;
@@ -112,13 +122,12 @@ export function GlassVideoPlayer({ src, storageKey, startAtSeconds = 0, onEnded,
       cancelled = true;
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     };
-  }, [src, storageKey]);
+  }, [src, storageKey, presignApiPath]);
 
   const tick = useCallback(() => {
     const el = videoRef.current;
     if (!el) return;
     const t = el.currentTime;
-    if (t > maxWatchedTime.current) maxWatchedTime.current = t;
     setCurrent(t);
     if (el.duration > 0) {
       setProgressPct((t / el.duration) * 100);
@@ -129,10 +138,10 @@ export function GlassVideoPlayer({ src, storageKey, startAtSeconds = 0, onEnded,
   useEffect(() => {
     const el = videoRef.current;
     if (!el || !effectiveSrc) return;
-    maxWatchedTime.current = 0;
     setLoadError(null);
     setReady(false);
     setPlaying(false);
+    setBuffering(false);
     setCurrent(0);
     setProgressPct(0);
     setDuration(0);
@@ -260,7 +269,7 @@ export function GlassVideoPlayer({ src, storageKey, startAtSeconds = 0, onEnded,
     const el = videoRef.current;
     if (!el || !Number.isFinite(el.duration) || el.duration <= 0) return;
     const target = (pct / 100) * el.duration;
-    const clamped = Math.min(target, maxWatchedTime.current);
+    const clamped = Math.max(0, Math.min(target, el.duration));
     el.currentTime = clamped;
     setCurrent(clamped);
     setProgressPct((clamped / el.duration) * 100);
@@ -377,13 +386,13 @@ export function GlassVideoPlayer({ src, storageKey, startAtSeconds = 0, onEnded,
             if (start > 0 && Number.isFinite(el.duration) && el.duration > 0) {
               const clamped = Math.min(start, Math.max(0, el.duration - 0.5));
               el.currentTime = clamped;
-              maxWatchedTime.current = Math.max(maxWatchedTime.current, clamped);
               setCurrent(clamped);
               setProgressPct((clamped / el.duration) * 100);
             }
           }}
           onCanPlay={() => {
             setReady(true);
+            setBuffering(false);
             const v = videoRef.current;
             if (v && v.paused) {
               void v.play().catch(() => {
@@ -391,25 +400,33 @@ export function GlassVideoPlayer({ src, storageKey, startAtSeconds = 0, onEnded,
               });
             }
           }}
-          onPlay={() => setPlaying(true)}
+          onWaiting={() => setBuffering(true)}
+          onPlaying={() => setBuffering(false)}
+          onPlay={() => { setPlaying(true); setBuffering(false); }}
           onPause={() => setPlaying(false)}
           onTimeUpdate={tick}
           onEnded={() => {
             setPlaying(false);
             onEnded?.();
           }}
-          onSeeking={(e) => {
-            const video = e.currentTarget;
-            if (video.currentTime > maxWatchedTime.current) {
-              video.currentTime = maxWatchedTime.current;
-            }
-          }}
           onError={() => {
             setLoadError("Video konnte nicht geladen werden. URL oder Netzwerk pruefen.");
           }}
         />
 
-        {!playing && ready && (
+        {buffering && (
+          <Center
+            position="absolute"
+            inset={0}
+            zIndex={3}
+            pointerEvents="none"
+            bg="rgba(0, 0, 0, 0.35)"
+          >
+            <Spinner size="xl" color="brand.400" thickness="3px" speed="0.85s" />
+          </Center>
+        )}
+
+        {!playing && ready && !buffering && (
           <Center
             position="absolute"
             inset={0}

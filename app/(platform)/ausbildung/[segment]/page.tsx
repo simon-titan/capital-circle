@@ -2,7 +2,7 @@ import { Grid, GridItem, Heading, Stack, Text } from "@chakra-ui/react";
 import { notFound, redirect } from "next/navigation";
 import { ChakraLinkButton } from "@/components/platform/ChakraLinkButton";
 import { GlassCard } from "@/components/ui/GlassCard";
-import { ModuleLearningClient } from "@/components/platform/ModuleLearningClient";
+import { AusbildungModuleLearningClient } from "@/components/platform/AusbildungPageCards";
 import { createClient } from "@/lib/supabase/server";
 import { isModuleUnlocked } from "@/lib/progress";
 import { getModulePublishedPlaylist } from "@/lib/module-video";
@@ -145,7 +145,7 @@ export default async function AcademyModulePage({ params }: PageProps) {
               </Text>
             ) : null}
           </Stack>
-          <ModuleLearningClient
+          <AusbildungModuleLearningClient
             moduleId={mod.id}
             playlist={playlist}
             initialVideoId={lastVideoId}

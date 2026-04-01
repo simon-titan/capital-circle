@@ -1,6 +1,6 @@
-import { Box, Grid, GridItem, Heading, Text, VStack } from "@chakra-ui/react";
+import { Box, Grid, GridItem, Heading, HStack, Text, Tooltip, VStack } from "@chakra-ui/react";
 import { GlassCard } from "@/components/ui/GlassCard";
-import { CalendarDays, Flame } from "lucide-react";
+import { CalendarDays, Check, Flame } from "lucide-react";
 import type { LearningWeekDay } from "@/lib/learning-daily";
 import type { WelcomeDashboardMetrics } from "@/lib/welcome-metrics";
 import { WelcomeLearningWeek } from "@/components/platform/WelcomeLearningWeek";
@@ -17,7 +17,8 @@ type WelcomeCardProps = {
   dateLabel: string;
   memberDays: number;
   streakDays: number;
-  streakMaxDays: number;
+  /** YYYY-MM-DD (Berlin): Tag mit gespeichertem Fortschritt / Streak-Aktivität */
+  streakActivityByDay: Record<string, boolean>;
   learningLabel: string;
   welcomeMetrics: WelcomeDashboardMetrics;
   learningWeekDays: LearningWeekDay[];
@@ -29,7 +30,7 @@ export function WelcomeCard({
   dateLabel,
   memberDays,
   streakDays,
-  streakMaxDays,
+  streakActivityByDay,
   learningLabel,
   welcomeMetrics,
   learningWeekDays,
@@ -45,8 +46,6 @@ export function WelcomeCard({
           ? `Du bist ${streakDays} ${streakDays === 1 ? "Tag" : "Tage"} am Stück dabei — weiter so!`
           : "Starte heute deinen Streak: ein kurzer Besuch reicht, um die Serie zu beginnen.";
 
-  const streakBarPct = streakMaxDays > 0 ? Math.min(100, Math.round((streakDays / streakMaxDays) * 100)) : 0;
-
   return (
     <GlassCard hero p={{ base: 4, md: 5 }} position="relative">
       <Box position="relative" zIndex={1}>
@@ -60,24 +59,12 @@ export function WelcomeCard({
           <GridItem display="flex" flexDirection="column">
             <Box mb={3}>
               <Text
-                as="span"
-                display="inline-block"
-                className="inter-medium"
-                fontSize="xs"
-                textTransform="uppercase"
-                letterSpacing="0.14em"
-                color="rgba(255, 255, 255, 0.5)"
-                mb={2}
-              >
-                Willkommen zurück
-              </Text>
-              <Text
                 className="radley-regular-italic"
                 fontSize={{ base: "lg", md: "xl" }}
                 color="rgba(245, 236, 210, 0.88)"
                 lineHeight={1.35}
               >
-                Schön, dass du wieder da bist.
+                Willkommen zurück. Lass uns weitermachen.
               </Text>
             </Box>
             <Heading
@@ -131,9 +118,30 @@ export function WelcomeCard({
           </GridItem>
 
           <GridItem display="flex" flexDirection="column">
-            <Box className="welcome-streak-hot" borderRadius="18px" p={{ base: 3, md: 4 }} position="relative" overflow="hidden" flex="1" minH={0}>
-              <Box position="relative" zIndex={1} display="flex" flexDirection={{ base: "column", sm: "row" }} gap={4} alignItems={{ sm: "center" }} justifyContent="space-between" h="100%">
-                <Box display="flex" alignItems="center" gap={4}>
+            <Box
+              className="welcome-streak-hot"
+              borderRadius="18px"
+              p={{ base: 3, md: 4 }}
+              position="relative"
+              overflow="hidden"
+              flex="1"
+              minH={0}
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <Box
+                position="relative"
+                zIndex={1}
+                w="100%"
+                display="flex"
+                flexDirection="column"
+                alignItems="center"
+                justifyContent="center"
+                gap={4}
+                textAlign="center"
+              >
+                <Box display="flex" alignItems="center" gap={4} flexShrink={0} justifyContent="center">
                   <Box
                     className="welcome-streak-flame"
                     borderRadius="16px"
@@ -168,20 +176,70 @@ export function WelcomeCard({
                     </Text>
                   </Box>
                 </Box>
-                <Box flex="1" minW={{ sm: "140px" }}>
-                  <Text className="inter-medium" fontSize="xs" color="rgba(255,255,255,0.4)" mb={2}>
-                    Zur Bestleistung ({streakMaxDays} T. möglich)
+                <Box flex="1" minW={0} w="100%" maxW="420px" mx="auto">
+                  <Text className="inter-medium" fontSize="xs" color="rgba(255,255,255,0.45)" mb={2} letterSpacing="0.06em">
+                    Letzte 7 Tage
                   </Text>
-                  <Box h="7px" borderRadius="full" bg="rgba(0,0,0,0.35)" overflow="hidden" border="1px solid rgba(255,160,80,0.25)">
-                    <Box
-                      h="100%"
-                      w={`${streakBarPct}%`}
-                      borderRadius="full"
-                      bg="linear-gradient(90deg, #ff8a3c 0%, #ffb454 40%, #e8c547 100%)"
-                      boxShadow="0 0 18px rgba(255, 150, 60, 0.5)"
-                      transition="width 0.5s ease"
-                    />
-                  </Box>
+                  <HStack spacing={{ base: 0.5, sm: 1 }} justify="center" align="flex-start" w="100%">
+                    {learningWeekDays.map((d) => {
+                      const active = d.minutes > 0 || Boolean(streakActivityByDay[d.dayKey]);
+                      const detail =
+                        d.minutes > 0
+                          ? `${d.labelDe}: aktiv (${d.minutes} Min. Lernzeit)`
+                          : streakActivityByDay[d.dayKey]
+                            ? `${d.labelDe}: Streak-Aktivität (Fortschritt gespeichert)`
+                            : `${d.labelDe}: keine erfasste Aktivität`;
+                      return (
+                        <Tooltip
+                          key={d.dayKey}
+                          label={detail}
+                          placement="top"
+                          hasArrow
+                          bg="rgba(12, 12, 12, 0.95)"
+                          color="var(--color-text-primary)"
+                          borderWidth="1px"
+                          borderColor="rgba(212, 175, 55, 0.45)"
+                          px={3}
+                          py={2}
+                          borderRadius="md"
+                          fontSize="sm"
+                        >
+                          <Box flex="1" minW={0} textAlign="center" cursor="default">
+                            <Text className="inter-medium" fontSize="10px" color="rgba(255,255,255,0.5)" textTransform="capitalize" noOfLines={1}>
+                              {d.weekdayShort}
+                            </Text>
+                            <Box display="flex" justifyContent="center" mt={1.5} aria-hidden>
+                              {active ? (
+                                <Box
+                                  display="flex"
+                                  alignItems="center"
+                                  justifyContent="center"
+                                  w="26px"
+                                  h="26px"
+                                  borderRadius="full"
+                                  bg="rgba(212, 175, 55, 0.18)"
+                                  border="1px solid rgba(212, 175, 55, 0.45)"
+                                >
+                                  <Check size={15} strokeWidth={2.6} color="#e8c547" aria-hidden />
+                                </Box>
+                              ) : (
+                                <Box
+                                  w="26px"
+                                  h="26px"
+                                  borderRadius="full"
+                                  border="1px dashed rgba(255,255,255,0.18)"
+                                  bg="rgba(0,0,0,0.2)"
+                                />
+                              )}
+                            </Box>
+                          </Box>
+                        </Tooltip>
+                      );
+                    })}
+                  </HStack>
+                  <Text className="inter" fontSize="10px" color="rgba(255,255,255,0.38)" mt={2} lineHeight="short" textAlign="center">
+                    Haken = Lernzeit oder Streak-Aktivität (Fortschritt). 
+                  </Text>
                 </Box>
               </Box>
             </Box>

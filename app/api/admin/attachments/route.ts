@@ -28,6 +28,8 @@ export async function POST(request: Request) {
     content_type?: string | null;
     size_bytes?: number | null;
     position?: number;
+    arsenal_kind?: "template" | "pdf" | null;
+    arsenal_category_id?: string | null;
   };
   if (!body.video_id?.trim() || !body.storage_key?.trim() || !body.filename?.trim()) {
     return NextResponse.json({ ok: false, error: "missing_fields" }, { status: 400 });
@@ -41,10 +43,43 @@ export async function POST(request: Request) {
       content_type: body.content_type ?? null,
       size_bytes: body.size_bytes ?? null,
       position: body.position ?? 0,
+      arsenal_kind: body.arsenal_kind ?? null,
+      arsenal_category_id: body.arsenal_category_id?.trim() || null,
     })
     .select("*")
     .single();
   if (insertErr) return NextResponse.json({ ok: false, error: insertErr.message }, { status: 400 });
+  return NextResponse.json({ ok: true, item: data });
+}
+
+export async function PATCH(request: Request) {
+  const { supabase, error } = await requireAdmin();
+  if (error) return error;
+  const body = (await request.json()) as {
+    id: string;
+    arsenal_kind?: "template" | "pdf" | null;
+    arsenal_category_id?: string | null;
+  };
+  if (!body.id?.trim()) {
+    return NextResponse.json({ ok: false, error: "missing_id" }, { status: 400 });
+  }
+  const patch: Record<string, unknown> = {};
+  if ("arsenal_kind" in body) {
+    patch.arsenal_kind = body.arsenal_kind ?? null;
+  }
+  if ("arsenal_category_id" in body) {
+    patch.arsenal_category_id = body.arsenal_category_id?.trim() || null;
+  }
+  if (Object.keys(patch).length === 0) {
+    return NextResponse.json({ ok: false, error: "nothing_to_update" }, { status: 400 });
+  }
+  const { data, error: upErr } = await supabase
+    .from("video_attachments")
+    .update(patch)
+    .eq("id", body.id.trim())
+    .select("*")
+    .single();
+  if (upErr) return NextResponse.json({ ok: false, error: upErr.message }, { status: 400 });
   return NextResponse.json({ ok: true, item: data });
 }
 

@@ -19,9 +19,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: "missing_key" }, { status: 400 });
   }
 
-  const { data: profile } = await supabase.from("profiles").select("is_admin").eq("id", authData.user.id).single();
-
-  const { data: video } = await supabase.from("videos").select("id, is_published, storage_key").eq("storage_key", key).maybeSingle();
+  const [{ data: profile }, { data: video }] = await Promise.all([
+    supabase.from("profiles").select("is_admin").eq("id", authData.user.id).single(),
+    supabase.from("videos").select("id, is_published, storage_key").eq("storage_key", key).maybeSingle(),
+  ]);
 
   if (!video) {
     return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });

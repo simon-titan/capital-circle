@@ -257,10 +257,13 @@ export async function getLastWatchedModule(userId: string): Promise<LastWatchedM
   return (await pickFirstVisible("updated_at")) ?? (await pickFirstVisible("video_progress_seconds"));
 }
 
-/** Erstes freigeschaltetes, nicht abgeschlossenes Modul (Reihenfolge: Kurs, dann order_index). */
-export async function getRecommendedAcademyModule(userId: string): Promise<RecommendedModuleData | null> {
-  const supabase = await createClient();
-  const rows = await getAcademyModulesOverview(userId);
+type ServerSupabase = Awaited<ReturnType<typeof createClient>>;
+
+/** Erstes freigeschaltetes, nicht abgeschlossenes Modul aus bereits geladenem Academy-Overview (kein zweites getAcademyModulesOverview). */
+export async function getRecommendedAcademyModuleFromOverview(
+  supabase: ServerSupabase,
+  rows: AcademyModuleRow[],
+): Promise<RecommendedModuleData | null> {
   const pick = rows.find((r) => r.unlocked && !r.completed);
   if (!pick) return null;
   const previewVideoStorageKey = await getPrimaryPublishedVideoStorageKey(supabase, pick.id);
@@ -278,6 +281,13 @@ export async function getRecommendedAcademyModule(userId: string): Promise<Recom
     durationSecondsTotal: pick.totalDurationSeconds,
     progressPercent: pick.progressPercent,
   };
+}
+
+/** Erstes freigeschaltetes, nicht abgeschlossenes Modul (Reihenfolge: Kurs, dann order_index). */
+export async function getRecommendedAcademyModule(userId: string): Promise<RecommendedModuleData | null> {
+  const supabase = await createClient();
+  const rows = await getAcademyModulesOverview(userId);
+  return getRecommendedAcademyModuleFromOverview(supabase, rows);
 }
 
 export async function getAcademyModulesOverview(
@@ -389,10 +399,12 @@ export async function getAcademyModulesOverview(
   return out;
 }
 
-/** Gesamtfortschritt und Modul-/Video-Kennzahlen für die Welcome-Card (Institut). */
-export async function getWelcomeDashboardMetrics(userId: string): Promise<WelcomeDashboardMetrics> {
-  const rows = await getAcademyModulesOverview(userId, { signThumbnails: false });
-  const supabase = await createClient();
+/** Gesamtfortschritt und Modul-/Video-Kennzahlen für die Welcome-Card — nutzt bestehendes Academy-Overview (ein Bulk-Playlist-Call). */
+export async function getWelcomeDashboardMetricsFromOverview(
+  userId: string,
+  rows: AcademyModuleRow[],
+  supabase: ServerSupabase,
+): Promise<WelcomeDashboardMetrics> {
   const moduleIds = rows.map((r) => r.id);
   if (moduleIds.length === 0) {
     return {
@@ -444,6 +456,13 @@ export async function getWelcomeDashboardMetrics(userId: string): Promise<Welcom
     completedVideos,
     totalVideos,
   };
+}
+
+/** Gesamtfortschritt und Modul-/Video-Kennzahlen für die Welcome-Card (Institut). */
+export async function getWelcomeDashboardMetrics(userId: string): Promise<WelcomeDashboardMetrics> {
+  const rows = await getAcademyModulesOverview(userId, { signThumbnails: false });
+  const supabase = await createClient();
+  return getWelcomeDashboardMetricsFromOverview(userId, rows, supabase);
 }
 
 export type HomeworkRow = {
@@ -568,4 +587,352 @@ export function formatLearningTime(totalMinutes: number | null | undefined): { h
   const minutes = m % 60;
   const label = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
   return { hours, minutes, label };
+}
+
+export type ArsenalCardRow = {
+  id: string;
+  category: string;
+  title: string;
+  description: string | null;
+  external_url: string | null;
+  /** S3 key under covers/ — signed URLs via /api/cover-url */
+  logo_storage_key: string | null;
+  feature_bullets: unknown;
+  position: number;
+  created_at: string;
+};
+
+export async function getArsenalCards(category: "tools" | "fremdkapital"): Promise<ArsenalCardRow[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("arsenal_cards")
+    .select("*")
+    .eq("category", category)
+    .order("position", { ascending: true });
+  return (data as ArsenalCardRow[] | null) ?? [];
+}
+
+export type ArsenalAttachmentListItem = {
+  id: string;
+  filename: string;
+  video_id: string;
+  video_title: string;
+  module_id: string;
+  module_title: string;
+  course_id: string;
+  course_title: string;
+  course_slug: string | null;
+  arsenal_category_id: string | null;
+  category_name: string | null;
+};
+
+export async function getArsenalAttachmentsByKind(kind: "template" | "pdf"): Promise<ArsenalAttachmentListItem[]> {
+  const supabase = await createClient();
+  const { data: rows, error } = await supabase
+    .from("video_attachments")
+    .select("id, filename, video_id, arsenal_category_id")
+    .eq("arsenal_kind", kind);
+  if (error || !rows?.length) return [];
+
+  const catIds = [...new Set(rows.map((r) => (r as { arsenal_category_id?: string | null }).arsenal_category_id).filter(Boolean) as string[])];
+  let catNameById = new Map<string, string>();
+  if (catIds.length > 0) {
+    const { data: cats } = await supabase.from("arsenal_attachment_categories").select("id, name").in("id", catIds);
+    catNameById = new Map((cats ?? []).map((c) => [c.id as string, c.name as string]));
+  }
+
+  const videoIds = [...new Set(rows.map((r) => r.video_id))];
+  const { data: videos } = await supabase
+    .from("videos")
+    .select("id, title, is_published, module_id")
+    .in("id", videoIds);
+
+  const published = (videos ?? []).filter((v) => v.is_published && v.module_id);
+  const videoById = new Map(published.map((v) => [v.id, v]));
+  const moduleIds = [...new Set(published.map((v) => v.module_id).filter(Boolean) as string[])];
+
+  const { data: modules } = await supabase
+    .from("modules")
+    .select("id, title, course_id, is_published")
+    .in("id", moduleIds);
+
+  const modPublished = (modules ?? []).filter((m) => m.is_published && m.course_id);
+  const modMap = new Map(modPublished.map((m) => [m.id, m]));
+  const courseIds = [...new Set(modPublished.map((m) => m.course_id).filter(Boolean) as string[])];
+
+  const { data: courses } = await supabase.from("courses").select("id, title, slug").in("id", courseIds);
+  const courseMap = new Map((courses ?? []).map((c) => [c.id, c]));
+
+  const out: ArsenalAttachmentListItem[] = [];
+  for (const r of rows) {
+    const v = videoById.get(r.video_id);
+    if (!v) continue;
+    const mod = v.module_id ? modMap.get(v.module_id) : undefined;
+    if (!mod) continue;
+    const course = courseMap.get(mod.course_id);
+    if (!course) continue;
+    const aid = (r as { arsenal_category_id?: string | null }).arsenal_category_id ?? null;
+    out.push({
+      id: r.id,
+      filename: r.filename,
+      video_id: r.video_id,
+      video_title: v.title,
+      module_id: mod.id,
+      module_title: mod.title,
+      course_id: course.id,
+      course_title: course.title,
+      course_slug: course.slug,
+      arsenal_category_id: aid,
+      category_name: aid ? catNameById.get(aid) ?? null : null,
+    });
+  }
+  return out;
+}
+
+export type LiveSessionCategoryRow = {
+  id: string;
+  title: string;
+  position: number;
+};
+
+export type LiveSessionListItem = {
+  id: string;
+  title: string;
+  description: string | null;
+  recorded_at: string | null;
+  thumbnailSignedUrl: string | null;
+  category: { id: string; title: string };
+  event: { id: string; title: string; start_time: string } | null;
+};
+
+export type LiveSessionVideoRow = {
+  id: string;
+  title: string;
+  description: string | null;
+  storage_key: string;
+  thumbnail_key: string | null;
+  thumbnailSignedUrl: string | null;
+  duration_seconds: number | null;
+  position: number;
+  subcategoryId: string | null;
+  subcategoryTitle: string | null;
+};
+
+export type LiveSessionDetailData = {
+  id: string;
+  title: string;
+  description: string | null;
+  recorded_at: string | null;
+  thumbnailSignedUrl: string | null;
+  category: { id: string; title: string };
+  event: { id: string; title: string; start_time: string } | null;
+  playlist: LiveSessionVideoRow[];
+};
+
+export async function getLiveSessionCategories(): Promise<LiveSessionCategoryRow[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("live_session_categories")
+    .select("id, title, position")
+    .order("position", { ascending: true });
+  return (data as LiveSessionCategoryRow[] | null) ?? [];
+}
+
+/** @param categoryId null = alle Kategorien */
+export async function getLiveSessions(categoryId: string | null): Promise<LiveSessionListItem[]> {
+  const supabase = await createClient();
+  let q = supabase
+    .from("live_sessions")
+    .select(
+      `
+      id,
+      title,
+      description,
+      recorded_at,
+      thumbnail_storage_key,
+      live_session_categories ( id, title ),
+      events ( id, title, start_time )
+    `,
+    )
+    .order("recorded_at", { ascending: false, nullsFirst: false });
+  if (categoryId) {
+    q = q.eq("category_id", categoryId);
+  }
+  const { data } = await q;
+  const rows =
+    (data ?? []) as Array<{
+      id: string;
+      title: string;
+      description: string | null;
+      recorded_at: string | null;
+      thumbnail_storage_key: string | null;
+      live_session_categories:
+        | { id: string; title: string }
+        | { id: string; title: string }[]
+        | null;
+      events: { id: string; title: string; start_time: string } | { id: string; title: string; start_time: string }[] | null;
+    }>;
+
+  const out: LiveSessionListItem[] = [];
+  for (const r of rows) {
+    const catRaw = r.live_session_categories;
+    const cat = Array.isArray(catRaw) ? catRaw[0] : catRaw;
+    if (!cat) continue;
+    const thumb = r.thumbnail_storage_key?.trim()
+      ? await signThumbnail(r.thumbnail_storage_key)
+      : null;
+    const evRaw = r.events;
+    const ev = Array.isArray(evRaw) ? evRaw[0] : evRaw;
+    out.push({
+      id: r.id,
+      title: r.title,
+      description: r.description,
+      recorded_at: r.recorded_at,
+      thumbnailSignedUrl: thumb,
+      category: { id: cat.id, title: cat.title },
+      event: ev
+        ? { id: ev.id, title: ev.title, start_time: ev.start_time }
+        : null,
+    });
+  }
+  return out;
+}
+
+export async function getLiveSessionDetail(sessionId: string): Promise<LiveSessionDetailData | null> {
+  const supabase = await createClient();
+  const { data: session } = await supabase
+    .from("live_sessions")
+    .select(
+      `
+      id,
+      title,
+      description,
+      recorded_at,
+      thumbnail_storage_key,
+      live_session_categories ( id, title ),
+      events ( id, title, start_time )
+    `,
+    )
+    .eq("id", sessionId)
+    .maybeSingle();
+
+  if (!session) return null;
+
+  const { data: subRows } = await supabase
+    .from("live_session_subcategories")
+    .select("id, title, position")
+    .eq("session_id", sessionId)
+    .order("position", { ascending: true });
+
+  const { data: vidRows } = await supabase
+    .from("live_session_videos")
+    .select("id, title, description, storage_key, thumbnail_key, duration_seconds, position, subcategory_id")
+    .eq("session_id", sessionId)
+    .order("position", { ascending: true });
+
+  type Vid = {
+    id: string;
+    title: string;
+    description: string | null;
+    storage_key: string;
+    thumbnail_key: string | null;
+    duration_seconds: number | null;
+    position: number;
+    subcategory_id: string | null;
+  };
+
+  const videos = (vidRows ?? []) as Vid[];
+  const subsOrdered = (subRows ?? []).sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+
+  const playlist: LiveSessionVideoRow[] = [];
+
+  const pushVid = async (v: Vid, subId: string | null, subTitle: string | null) => {
+    const thumb = await signThumbnail(v.thumbnail_key);
+    playlist.push({
+      id: v.id,
+      title: v.title,
+      description: v.description,
+      storage_key: v.storage_key,
+      thumbnail_key: v.thumbnail_key,
+      thumbnailSignedUrl: thumb,
+      duration_seconds: v.duration_seconds,
+      position: v.position,
+      subcategoryId: subId,
+      subcategoryTitle: subTitle,
+    });
+  };
+
+  const direct = videos.filter((v) => !v.subcategory_id).sort((a, b) => a.position - b.position);
+  for (const v of direct) {
+    await pushVid(v, null, null);
+  }
+
+  for (const sub of subsOrdered) {
+    const inSub = videos
+      .filter((v) => v.subcategory_id === sub.id)
+      .sort((a, b) => a.position - b.position);
+    for (const v of inSub) {
+      await pushVid(v, sub.id, sub.title as string);
+    }
+  }
+
+  const s = session as {
+    id: string;
+    title: string;
+    description: string | null;
+    recorded_at: string | null;
+    thumbnail_storage_key: string | null;
+    live_session_categories:
+      | { id: string; title: string }
+      | { id: string; title: string }[]
+      | null;
+    events: { id: string; title: string; start_time: string } | { id: string; title: string; start_time: string }[] | null;
+  };
+
+  const catRaw = s.live_session_categories;
+  const cat = Array.isArray(catRaw) ? catRaw[0] : catRaw;
+  const evRaw = s.events;
+  const ev = Array.isArray(evRaw) ? evRaw[0] : evRaw;
+  const sessionThumb = await signThumbnail(s.thumbnail_storage_key);
+
+  return {
+    id: s.id,
+    title: s.title,
+    description: s.description,
+    recorded_at: s.recorded_at,
+    thumbnailSignedUrl: sessionThumb,
+    category: cat ? { id: cat.id, title: cat.title } : { id: "", title: "" },
+    event: ev ? { id: ev.id, title: ev.title, start_time: ev.start_time } : null,
+    playlist,
+  };
+}
+
+export type AnalysisPostRow = {
+  id: string;
+  title: string;
+  /** TipTap JSON (String) oder Legacy-Klartext */
+  content: string;
+  excerpt: string | null;
+  /** Legacy: großes Bild am Beitrag; bei neuen Artikeln oft Cover nutzen */
+  image_storage_key: string | null;
+  cover_image_storage_key: string | null;
+  post_type: string;
+  published_at: string;
+  created_at: string;
+};
+
+export async function getAnalysisPosts(filter: "weekly" | "daily" | "all"): Promise<AnalysisPostRow[]> {
+  const supabase = await createClient();
+  let q = supabase.from("analysis_posts").select("*").order("published_at", { ascending: false });
+  if (filter !== "all") {
+    q = q.eq("post_type", filter);
+  }
+  const { data } = await q;
+  return (data as AnalysisPostRow[] | null) ?? [];
+}
+
+export async function getAnalysisPostById(id: string): Promise<AnalysisPostRow | null> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("analysis_posts").select("*").eq("id", id).maybeSingle();
+  return (data as AnalysisPostRow | null) ?? null;
 }

@@ -12,6 +12,10 @@ import {
   Flex,
   HStack,
   IconButton,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -27,11 +31,16 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
+  BookOpen,
   Calendar,
+  ChevronDown,
   GraduationCap,
   LayoutDashboard,
+  LineChart,
   LogOut,
-  Menu,
+  Menu as MenuIcon,
+  Package,
+  Radio,
   Search,
   UserRound,
 } from "lucide-react";
@@ -40,7 +49,23 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/events", label: "Events", icon: Calendar },
   { href: "/ausbildung", label: "Institut", icon: GraduationCap },
+  { href: "/codex", label: "Codex", icon: BookOpen },
+  { href: "/live-session", label: "Live Session", icon: Radio },
+  { href: "/analysis", label: "Analyse", icon: LineChart },
 ] as const;
+
+const arsenalSubLinks = [
+  { href: "/arsenal/tools", label: "Tools & Software" },
+  { href: "/arsenal/fremdkapital", label: "Fremdkapital" },
+  { href: "/arsenal/templates", label: "Templates" },
+  { href: "/arsenal/pdfs", label: "PDFs" },
+] as const;
+
+function isNavActive(pathname: string | null, href: string): boolean {
+  if (!pathname) return false;
+  if (href === "/dashboard") return pathname === "/dashboard";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function TopBar() {
   const pathname = usePathname();
@@ -48,6 +73,8 @@ export function TopBar() {
   const supabase = createClient();
   const { isOpen: drawerOpen, onOpen: onDrawerOpen, onClose: onDrawerClose } = useDisclosure();
   const { isOpen: searchOpen, onOpen: onSearchOpen, onClose: onSearchClose } = useDisclosure();
+
+  const arsenalActive = pathname?.startsWith("/arsenal") ?? false;
 
   const onLogout = async () => {
     await supabase.auth.signOut();
@@ -70,8 +97,7 @@ export function TopBar() {
     <Stack gap={3} w="100%">
       <Stack gap={2}>
         {navItems.map((item) => {
-          const active =
-            pathname === item.href || (item.href !== "/dashboard" && Boolean(pathname?.startsWith(item.href)));
+          const active = isNavActive(pathname, item.href);
           const Icon = item.icon;
           return (
             <Button
@@ -94,6 +120,35 @@ export function TopBar() {
               className="inter-medium"
             >
               {item.label}
+            </Button>
+          );
+        })}
+        <Text fontSize="xs" color="var(--color-text-tertiary)" className="inter-semibold" pt={1}>
+          Arsenal
+        </Text>
+        {arsenalSubLinks.map((sub) => {
+          const active = pathname === sub.href || pathname?.startsWith(`${sub.href}/`);
+          return (
+            <Button
+              key={sub.href}
+              as={Link}
+              href={sub.href}
+              onClick={onNavigate}
+              size="sm"
+              variant={active ? "solid" : "ghost"}
+              justifyContent="flex-start"
+              pl={6}
+              bg={active ? "rgba(212, 175, 55, 0.28)" : "transparent"}
+              color="var(--color-text-primary)"
+              borderWidth="1px"
+              borderColor={active ? "rgba(212, 175, 55, 0.45)" : "transparent"}
+              _hover={{
+                bg: active ? "rgba(212, 175, 55, 0.38)" : "rgba(255, 255, 255, 0.06)",
+              }}
+              borderRadius="md"
+              className="inter-medium"
+            >
+              {sub.label}
             </Button>
           );
         })}
@@ -141,6 +196,18 @@ export function TopBar() {
     </Stack>
   );
 
+  const navButtonSx = {
+    bg: "rgba(212, 175, 55, 0.4)",
+    borderColor: "rgba(212, 175, 55, 0.5)",
+    _hover: { bg: "rgba(212, 175, 55, 0.5)" },
+  };
+
+  const navGhostSx = {
+    bg: "transparent",
+    borderColor: "transparent",
+    _hover: { bg: "rgba(255, 255, 255, 0.07)" },
+  };
+
   return (
     <>
       <Box
@@ -161,7 +228,7 @@ export function TopBar() {
           px={{ base: 4, md: 8 }}
           py={3}
           align="center"
-          gap={{ base: 2, md: 4 }}
+          gap={{ base: 2, md: 2 }}
           flexWrap="wrap"
           justify="space-between"
         >
@@ -171,10 +238,17 @@ export function TopBar() {
             </Box>
           </Link>
 
-          <Flex display={{ base: "none", md: "flex" }} flex="1" justify="center" align="center" gap={1} flexWrap="wrap" px={2}>
+          <Flex
+            display={{ base: "none", md: "flex" }}
+            flex="1"
+            justify="center"
+            align="center"
+            gap={1}
+            flexWrap="wrap"
+            px={1}
+          >
             {navItems.map((item) => {
-              const active =
-                pathname === item.href || (item.href !== "/dashboard" && Boolean(pathname?.startsWith(item.href)));
+              const active = isNavActive(pathname, item.href);
               const Icon = item.icon;
               return (
                 <Button
@@ -184,13 +258,9 @@ export function TopBar() {
                   size="sm"
                   variant={active ? "solid" : "ghost"}
                   leftIcon={<Icon size={18} strokeWidth={2} />}
-                  bg={active ? "rgba(212, 175, 55, 0.4)" : "transparent"}
+                  {...(active ? navButtonSx : navGhostSx)}
                   color="var(--color-text-primary)"
                   borderWidth="1px"
-                  borderColor={active ? "rgba(212, 175, 55, 0.5)" : "transparent"}
-                  _hover={{
-                    bg: active ? "rgba(212, 175, 55, 0.5)" : "rgba(255, 255, 255, 0.07)",
-                  }}
                   borderRadius="md"
                   className="inter-medium"
                 >
@@ -198,6 +268,44 @@ export function TopBar() {
                 </Button>
               );
             })}
+            <Menu placement="bottom" isLazy>
+              <MenuButton
+                as={Button}
+                size="sm"
+                variant={arsenalActive ? "solid" : "ghost"}
+                leftIcon={<Package size={18} strokeWidth={2} />}
+                rightIcon={<ChevronDown size={14} />}
+                {...(arsenalActive ? navButtonSx : navGhostSx)}
+                color="var(--color-text-primary)"
+                borderWidth="1px"
+                borderRadius="md"
+                className="inter-medium"
+                px={3}
+              >
+                Arsenal
+              </MenuButton>
+              <MenuList
+                bg="rgba(12, 13, 16, 0.98)"
+                borderColor="rgba(212, 175, 55, 0.35)"
+                boxShadow="0 8px 32px rgba(0,0,0,0.5)"
+                py={1}
+                minW="220px"
+              >
+                {arsenalSubLinks.map((sub) => (
+                  <MenuItem
+                    key={sub.href}
+                    as={Link}
+                    href={sub.href}
+                    bg="transparent"
+                    color="var(--color-text-primary)"
+                    _hover={{ bg: "rgba(212, 175, 55, 0.12)" }}
+                    className="inter-medium"
+                  >
+                    {sub.label}
+                  </MenuItem>
+                ))}
+              </MenuList>
+            </Menu>
           </Flex>
 
           <HStack spacing={1} display={{ base: "none", md: "flex" }}>
@@ -232,7 +340,7 @@ export function TopBar() {
           <IconButton
             display={{ base: "flex", md: "none" }}
             aria-label="Menü"
-            icon={<Menu size={22} />}
+            icon={<MenuIcon size={22} />}
             variant="ghost"
             onClick={onDrawerOpen}
           />

@@ -264,21 +264,6 @@ export function CodexStep({ onCompleted }: CodexStepProps) {
           <PillarColumn title="Mindset Laws" rules={mindsetLaws} />
         </Box>
 
-        <Box textAlign="center" py={{ base: 4, md: 6 }} px={{ base: 2, md: 6 }} borderY="1px solid rgba(255, 255, 255, 0.08)">
-          <Text
-            as="blockquote"
-            fontSize={{ base: "xl", md: "2xl", lg: "3xl" }}
-            lineHeight={{ base: "1.45", md: "1.4" }}
-            className="radley-regular-italic"
-            color="rgba(252, 252, 252, 0.96)"
-            sx={{
-              textShadow: "0 2px 28px rgba(0, 0, 0, 0.75)",
-            }}
-          >
-            &quot;Du folgst dem Codex oder du bezahlst dafuer im Trading.&quot;
-          </Text>
-        </Box>
-
         <Box
           borderRadius="20px"
           p={{ base: 5, md: 6 }}

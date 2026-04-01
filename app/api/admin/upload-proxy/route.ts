@@ -38,6 +38,7 @@ export async function POST(request: Request) {
     courseId: qs("courseId"),
     moduleId: qs("moduleId"),
     videoId: qs("videoId"),
+    sessionId: qs("sessionId"),
     subcategoryId: qs("subcategoryId"),
     kind: qs("kind") as AdminUploadKeyInput["kind"] | undefined,
     attachmentId: qs("attachmentId"),

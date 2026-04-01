@@ -73,14 +73,19 @@ export async function GET() {
 
   const service = getServiceClient();
 
-  const { data: authUsers, error: listErr } = await service.auth.admin.listUsers({ perPage: 500 });
+  const [listResult, profilesResult] = await Promise.all([
+    service.auth.admin.listUsers({ perPage: 500 }),
+    service
+      .from("profiles")
+      .select("id,full_name,username,is_admin,is_paid,codex_accepted,discord_username,created_at"),
+  ]);
+
+  const { data: authUsers, error: listErr } = listResult;
   if (listErr) {
     return NextResponse.json({ ok: false, error: listErr.message }, { status: 500 });
   }
 
-  const { data: profiles } = await service
-    .from("profiles")
-    .select("id,full_name,username,is_admin,is_paid,codex_accepted,discord_username,created_at");
+  const { data: profiles } = profilesResult;
 
   const profileMap = new Map((profiles ?? []).map((p) => [p.id as string, p]));
 

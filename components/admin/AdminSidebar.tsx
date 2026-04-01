@@ -12,6 +12,9 @@ const links = [
   { href: "/admin/events", label: "Events" },
   { href: "/admin/hausaufgaben", label: "Hausaufgaben" },
   { href: "/admin/mitglieder", label: "Mitglieder" },
+  { href: "/admin/arsenal", label: "Arsenal" },
+  { href: "/admin/live-sessions", label: "Live Sessions" },
+  { href: "/admin/analysis", label: "Analyse" },
 ];
 
 export function AdminSidebar() {
