@@ -1,5 +1,6 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { sendWelcomeMail } from "@/lib/email/welcome-mail";
 import { requireAdmin } from "@/lib/supabase/admin-auth";
 
 /** Service-Role-Client — nur serverseitig, nie im Browser. */
@@ -58,6 +59,12 @@ export async function POST(request: Request) {
       { ok: false, error: `Nutzer angelegt, aber Profil-Update fehlgeschlagen: ${profileErr.message}` },
       { status: 500 },
     );
+  }
+
+  try {
+    await sendWelcomeMail(email.trim(), password.trim(), fullName?.trim());
+  } catch (mailErr) {
+    console.error("[welcome-mail] Fehler:", mailErr);
   }
 
   return NextResponse.json({
