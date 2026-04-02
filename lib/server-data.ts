@@ -599,6 +599,7 @@ export type ArsenalCardRow = {
   logo_storage_key: string | null;
   feature_bullets: unknown;
   position: number;
+  sort_order?: number;
   created_at: string;
 };
 
@@ -608,6 +609,7 @@ export async function getArsenalCards(category: "tools" | "fremdkapital"): Promi
     .from("arsenal_cards")
     .select("*")
     .eq("category", category)
+    .order("sort_order", { ascending: true })
     .order("position", { ascending: true });
   return (data as ArsenalCardRow[] | null) ?? [];
 }

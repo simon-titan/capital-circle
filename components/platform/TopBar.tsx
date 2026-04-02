@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Badge,
   Box,
   Button,
   Drawer,
@@ -31,30 +32,35 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
+  BookMarked,
   BookOpen,
   Calendar,
   ChevronDown,
   GraduationCap,
   LayoutDashboard,
-  LineChart,
   LogOut,
   Menu as MenuIcon,
   Package,
-  Radio,
   Search,
   UserRound,
 } from "lucide-react";
 
-const navItems = [
+const navItems: Array<{
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  badge?: string;
+}> = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/events", label: "Events", icon: Calendar },
-  { href: "/ausbildung", label: "Institut", icon: GraduationCap },
   { href: "/codex", label: "Codex", icon: BookOpen },
-  { href: "/live-session", label: "Live Session", icon: Radio },
-  { href: "/analysis", label: "Analyse", icon: LineChart },
-] as const;
+  { href: "/ausbildung", label: "Institut", icon: GraduationCap },
+  { href: "/trading-journal", label: "Trading Journal", icon: BookMarked, badge: "Demnächst" },
+  { href: "/events", label: "Events", icon: Calendar },
+];
 
 const arsenalSubLinks = [
+  { href: "/analysis", label: "Analyse" },
+  { href: "/live-session", label: "Live Session" },
   { href: "/arsenal/tools", label: "Tools & Software" },
   { href: "/arsenal/fremdkapital", label: "Fremdkapital" },
   { href: "/arsenal/templates", label: "Templates" },
@@ -74,7 +80,10 @@ export function TopBar() {
   const { isOpen: drawerOpen, onOpen: onDrawerOpen, onClose: onDrawerClose } = useDisclosure();
   const { isOpen: searchOpen, onOpen: onSearchOpen, onClose: onSearchClose } = useDisclosure();
 
-  const arsenalActive = pathname?.startsWith("/arsenal") ?? false;
+  const arsenalActive = !!pathname &&
+    (pathname.startsWith("/arsenal") ||
+      pathname.startsWith("/analysis") ||
+      pathname.startsWith("/live-session"));
 
   const onLogout = async () => {
     await supabase.auth.signOut();
@@ -119,7 +128,14 @@ export function TopBar() {
               borderRadius="md"
               className="inter-medium"
             >
-              {item.label}
+              <HStack as="span" spacing={2}>
+                <span>{item.label}</span>
+                {item.badge ? (
+                  <Badge colorScheme="yellow" fontSize="0.65rem" px={1.5} py={0} borderRadius="md">
+                    {item.badge}
+                  </Badge>
+                ) : null}
+              </HStack>
             </Button>
           );
         })}
@@ -223,13 +239,13 @@ export function TopBar() {
         boxShadow="0 4px 28px rgba(0, 0, 0, 0.55)"
       >
         <Flex
-          maxW="1200px"
+          maxW="1440px"
           mx="auto"
           px={{ base: 4, md: 8 }}
           py={3}
           align="center"
           gap={{ base: 2, md: 2 }}
-          flexWrap="wrap"
+          flexWrap={{ base: "wrap", md: "nowrap" }}
           justify="space-between"
         >
           <Link href="/dashboard" aria-label="Zum Dashboard" style={{ display: "block", lineHeight: 0 }}>
@@ -264,7 +280,14 @@ export function TopBar() {
                   borderRadius="md"
                   className="inter-medium"
                 >
-                  {item.label}
+                  <HStack as="span" spacing={2}>
+                    <span>{item.label}</span>
+                    {item.badge ? (
+                      <Badge colorScheme="yellow" fontSize="0.65rem" px={1.5} py={0} borderRadius="md">
+                        {item.badge}
+                      </Badge>
+                    ) : null}
+                  </HStack>
                 </Button>
               );
             })}

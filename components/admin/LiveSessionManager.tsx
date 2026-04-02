@@ -195,6 +195,17 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
   const [thumbBusy, setThumbBusy] = useState(false);
   const videoFileRef = useRef<HTMLInputElement>(null);
 
+  const [recapCategoryId, setRecapCategoryId] = useState("");
+  const [recapTitle, setRecapTitle] = useState("");
+  const [recapRecordedAt, setRecapRecordedAt] = useState("");
+  const [recapDesc, setRecapDesc] = useState("");
+  const [recapSource, setRecapSource] = useState<"url" | "file">("file");
+  const [recapUrl, setRecapUrl] = useState("");
+  const [recapBusy, setRecapBusy] = useState(false);
+  const [recapProgress, setRecapProgress] = useState(0);
+  const [recapStatus, setRecapStatus] = useState<string | null>(null);
+  const recapFileRef = useRef<HTMLInputElement>(null);
+
   const loadCategories = useCallback(async () => {
     const supabase = createClient();
     const { data } = await supabase
@@ -470,11 +481,119 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
     (a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime(),
   );
 
+  const submitRecap = async () => {
+    if (!recapCategoryId || !recapTitle.trim()) {
+      setRecapStatus("Kategorie und Titel sind Pflicht.");
+      return;
+    }
+    if (recapSource === "url") {
+      const u = recapUrl.trim();
+      if (!u || !/^https?:\/\//i.test(u)) {
+        setRecapStatus("Bitte eine gültige Video-URL (https://…) angeben.");
+        return;
+      }
+    }
+    if (recapSource === "file" && !recapFileRef.current?.files?.[0]) {
+      setRecapStatus("Bitte eine Videodatei wählen oder auf „Externe URL“ wechseln.");
+      return;
+    }
+
+    setRecapBusy(true);
+    setRecapProgress(0);
+    setRecapStatus(null);
+    const supabase = createClient();
+    const recordedAt = recapRecordedAt ? new Date(recapRecordedAt).toISOString() : null;
+    const videoId = crypto.randomUUID();
+
+    const { data: sess, error: sErr } = await supabase
+      .from("live_sessions")
+      .insert({
+        category_id: recapCategoryId,
+        title: recapTitle.trim(),
+        description: recapDesc.trim() || null,
+        recorded_at: recordedAt,
+        position: sessions.length,
+      })
+      .select("id")
+      .single();
+
+    if (sErr || !sess?.id) {
+      setRecapBusy(false);
+      setRecapStatus(sErr?.message ?? "Session konnte nicht angelegt werden.");
+      return;
+    }
+    const sessionId = sess.id as string;
+
+    try {
+      if (recapSource === "url") {
+        const { error: vErr } = await supabase.from("live_session_videos").insert({
+          id: videoId,
+          session_id: sessionId,
+          subcategory_id: null,
+          title: recapTitle.trim(),
+          description: recapDesc.trim() || null,
+          storage_key: recapUrl.trim(),
+          position: 0,
+        });
+        if (vErr) {
+          setRecapStatus(vErr.message);
+          setRecapBusy(false);
+          return;
+        }
+      } else {
+        const file = recapFileRef.current?.files?.[0];
+        if (!file) {
+          setRecapStatus("Keine Datei gewählt.");
+          setRecapBusy(false);
+          return;
+        }
+        if (!file.type.startsWith("video/")) {
+          setRecapStatus("Bitte eine Videodatei (z. B. MP4) wählen.");
+          setRecapBusy(false);
+          return;
+        }
+        const storageKey = await uploadLiveSessionVideoViaProxy(file, { sessionId, videoId }, setRecapProgress);
+        const durationSeconds = await readVideoDuration(file);
+        const { error: vErr } = await supabase.from("live_session_videos").insert({
+          id: videoId,
+          session_id: sessionId,
+          subcategory_id: null,
+          title: recapTitle.trim(),
+          description: recapDesc.trim() || null,
+          storage_key: storageKey,
+          duration_seconds: durationSeconds,
+          position: 0,
+        });
+        if (vErr) {
+          setRecapStatus(vErr.message);
+          setRecapBusy(false);
+          return;
+        }
+      }
+    } catch (e) {
+      setRecapStatus(e instanceof Error ? e.message : "Fehler beim Speichern.");
+      setRecapBusy(false);
+      return;
+    }
+
+    setRecapBusy(false);
+    setRecapProgress(0);
+    void loadSessions();
+    setRecapCategoryId("");
+    setRecapTitle("");
+    setRecapRecordedAt("");
+    setRecapDesc("");
+    setRecapUrl("");
+    if (recapFileRef.current) recapFileRef.current.value = "";
+    setRecapStatus("Recap gespeichert (Session + Video).");
+  };
+
   return (
     <Tabs variant="enclosed" colorScheme="yellow">
       <TabList flexWrap="wrap">
         <Tab>Kategorien</Tab>
         <Tab>Sessions</Tab>
+        <Tab>Recap</Tab>
         <Tab>Videos &amp; Abschnitte</Tab>
       </TabList>
       <TabPanels>
@@ -659,6 +778,93 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                 </HStack>
               ))}
             </Stack>
+          </Stack>
+        </TabPanel>
+
+        <TabPanel px={0} pt={6}>
+          <Stack gap={4} maxW="720px">
+            <Text fontSize="sm" color="gray.400">
+              Schnellablauf für Zoom-Aufzeichnungen und Recaps: neue Live Session mit Video (Hetzner-Upload oder externe
+              URL).
+            </Text>
+            <Box>
+              <FormLabel fontSize="xs">Kategorie</FormLabel>
+              <Select
+                placeholder="Kategorie wählen"
+                value={recapCategoryId}
+                onChange={(e) => setRecapCategoryId(e.target.value)}
+                bg="whiteAlpha.50"
+                maxW="400px"
+                sx={adminSelectStyles.sx}
+              >
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.title}
+                  </option>
+                ))}
+              </Select>
+            </Box>
+            <Input
+              placeholder="Titel"
+              value={recapTitle}
+              onChange={(e) => setRecapTitle(e.target.value)}
+              bg="whiteAlpha.50"
+            />
+            <Box>
+              <FormLabel fontSize="xs">Datum / Aufzeichnung</FormLabel>
+              <Input
+                type="datetime-local"
+                value={recapRecordedAt}
+                onChange={(e) => setRecapRecordedAt(e.target.value)}
+                bg="whiteAlpha.50"
+                maxW="280px"
+              />
+            </Box>
+            <Textarea
+              placeholder="Beschreibung (optional)"
+              value={recapDesc}
+              onChange={(e) => setRecapDesc(e.target.value)}
+              bg="whiteAlpha.50"
+            />
+            <Box>
+              <FormLabel fontSize="xs">Video-Quelle</FormLabel>
+              <Select
+                value={recapSource}
+                onChange={(e) => setRecapSource(e.target.value as "url" | "file")}
+                bg="whiteAlpha.50"
+                maxW="320px"
+                sx={adminSelectStyles.sx}
+              >
+                <option value="file">Datei-Upload (Hetzner Storage)</option>
+                <option value="url">Externe Video-URL (z. B. Zoom-Cloud)</option>
+              </Select>
+            </Box>
+            {recapSource === "url" ? (
+              <Input
+                placeholder="https://…"
+                value={recapUrl}
+                onChange={(e) => setRecapUrl(e.target.value)}
+                bg="whiteAlpha.50"
+              />
+            ) : (
+              <Box>
+                <input ref={recapFileRef} type="file" accept="video/*" hidden />
+                <Button size="sm" variant="outline" onClick={() => recapFileRef.current?.click()}>
+                  Videodatei wählen
+                </Button>
+              </Box>
+            )}
+            {recapBusy || recapProgress > 0 ? (
+              <Progress value={recapProgress} size="sm" borderRadius="full" colorScheme="blue" maxW="400px" />
+            ) : null}
+            <Button colorScheme="yellow" onClick={() => void submitRecap()} isLoading={recapBusy} isDisabled={recapBusy}>
+              Recap speichern
+            </Button>
+            {recapStatus ? (
+              <Text fontSize="sm" color="green.300">
+                {recapStatus}
+              </Text>
+            ) : null}
           </Stack>
         </TabPanel>
 

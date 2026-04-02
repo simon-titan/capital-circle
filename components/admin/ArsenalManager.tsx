@@ -17,8 +17,10 @@ import {
   Text,
   Textarea,
 } from "@chakra-ui/react";
+import { DraggableList } from "@/components/admin/DraggableList";
 import { createClient } from "@/lib/supabase/client";
 import { Trash2 } from "lucide-react";
+import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 
 type ArsenalCard = {
@@ -30,6 +32,8 @@ type ArsenalCard = {
   logo_storage_key: string | null;
   feature_bullets: unknown;
   position: number;
+  /** Manuelle Reihenfolge (Admin); fällt auf position zurück wenn nicht gesetzt */
+  sort_order?: number;
 };
 
 type ModuleWithCourse = {
@@ -110,7 +114,15 @@ async function uploadArsenalCardLogo(file: File): Promise<string> {
   return json.storageKey;
 }
 
-function CardsPanel({ category, label }: { category: "tools" | "fremdkapital"; label: string }) {
+function CardsPanel({
+  category,
+  label,
+  enableReorder = false,
+}: {
+  category: "tools" | "fremdkapital";
+  label: string;
+  enableReorder?: boolean;
+}) {
   const [items, setItems] = useState<ArsenalCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
@@ -134,9 +146,12 @@ function CardsPanel({ category, label }: { category: "tools" | "fremdkapital"; l
 
   const load = useCallback(async () => {
     const supabase = createClient();
-    const { data } = await supabase.from("arsenal_cards").select("*").eq("category", category).order("position", {
-      ascending: true,
-    });
+    const { data } = await supabase
+      .from("arsenal_cards")
+      .select("*")
+      .eq("category", category)
+      .order("sort_order", { ascending: true })
+      .order("position", { ascending: true });
     setItems((data as ArsenalCard[]) ?? []);
     setLoading(false);
   }, [category]);
@@ -163,6 +178,7 @@ function CardsPanel({ category, label }: { category: "tools" | "fremdkapital"; l
         external_url: externalUrl.trim() || null,
         feature_bullets: bullets,
         position: items.length,
+        sort_order: items.length,
       })
       .select("*")
       .single();
@@ -208,6 +224,21 @@ function CardsPanel({ category, label }: { category: "tools" | "fremdkapital"; l
     const supabase = createClient();
     const { error } = await supabase.from("arsenal_cards").delete().eq("id", id);
     if (!error) setItems((prev) => prev.filter((x) => x.id !== id));
+  };
+
+  const onReorder = async (orderedIds: string[]) => {
+    const next = orderedIds
+      .map((id, position) => {
+        const row = items.find((x) => x.id === id);
+        return row ? { ...row, sort_order: position, position } : null;
+      })
+      .filter(Boolean) as ArsenalCard[];
+    setItems(next);
+    await fetch("/api/admin/arsenal", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reorder: true, category, orderedIds }),
+    });
   };
 
   const setCardLogo = async (cardId: string, file: File) => {
@@ -265,6 +296,92 @@ function CardsPanel({ category, label }: { category: "tools" | "fremdkapital"; l
       </Text>
     );
   }
+
+  const renderCardRow = (c: ArsenalCard, dragHandle?: ReactNode) => (
+    <HStack
+      key={c.id}
+      justify="space-between"
+      align="flex-start"
+      flexWrap="wrap"
+      gap={3}
+      p={3}
+      borderRadius="md"
+      borderWidth="1px"
+      borderColor="whiteAlpha.200"
+      bg="blackAlpha.300"
+    >
+      {dragHandle ? <Box flexShrink={0}>{dragHandle}</Box> : null}
+      <HStack align="flex-start" gap={3} minW={0} flex="1">
+        <Box
+          w="64px"
+          h="64px"
+          borderRadius="md"
+          borderWidth="1px"
+          borderColor="whiteAlpha.150"
+          bg="blackAlpha.500"
+          overflow="hidden"
+          flexShrink={0}
+        >
+          {c.logo_storage_key?.trim() ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`/api/cover-url?key=${encodeURIComponent(c.logo_storage_key.trim())}`}
+              alt=""
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+            />
+          ) : (
+            <Text fontSize="xs" color="gray.600" p={1} textAlign="center">
+              —
+            </Text>
+          )}
+        </Box>
+        <Box minW={0}>
+          <Text fontWeight="600" noOfLines={2}>
+            {c.title}
+          </Text>
+          {c.external_url ? (
+            <Text fontSize="xs" color="gray.400" noOfLines={1}>
+              {c.external_url}
+            </Text>
+          ) : null}
+        </Box>
+      </HStack>
+      <HStack flexWrap="wrap" gap={2}>
+        <input
+          id={`arsenal-card-logo-${c.id}`}
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            e.target.value = "";
+            if (f) void setCardLogo(c.id, f);
+          }}
+        />
+        <Button
+          size="xs"
+          variant="outline"
+          isDisabled={busy}
+          onClick={() => document.getElementById(`arsenal-card-logo-${c.id}`)?.click()}
+        >
+          Logo ändern
+        </Button>
+        {c.logo_storage_key?.trim() ? (
+          <Button size="xs" variant="ghost" isDisabled={busy} onClick={() => void clearCardLogo(c.id)}>
+            Logo entfernen
+          </Button>
+        ) : null}
+        <IconButton
+          aria-label="Löschen"
+          size="sm"
+          variant="outline"
+          colorScheme="red"
+          icon={<Trash2 size={16} />}
+          onClick={() => void remove(c.id)}
+        />
+      </HStack>
+    </HStack>
+  );
 
   return (
     <Stack gap={6}>
@@ -352,90 +469,11 @@ function CardsPanel({ category, label }: { category: "tools" | "fremdkapital"; l
       </Stack>
 
       <Stack gap={2}>
-        {items.map((c) => (
-          <HStack
-            key={c.id}
-            justify="space-between"
-            align="flex-start"
-            flexWrap="wrap"
-            gap={3}
-            p={3}
-            borderRadius="md"
-            borderWidth="1px"
-            borderColor="whiteAlpha.200"
-            bg="blackAlpha.300"
-          >
-            <HStack align="flex-start" gap={3} minW={0} flex="1">
-              <Box
-                w="64px"
-                h="64px"
-                borderRadius="md"
-                borderWidth="1px"
-                borderColor="whiteAlpha.150"
-                bg="blackAlpha.500"
-                overflow="hidden"
-                flexShrink={0}
-              >
-                {c.logo_storage_key?.trim() ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={`/api/cover-url?key=${encodeURIComponent(c.logo_storage_key.trim())}`}
-                    alt=""
-                    style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                  />
-                ) : (
-                  <Text fontSize="xs" color="gray.600" p={1} textAlign="center">
-                    —
-                  </Text>
-                )}
-              </Box>
-              <Box minW={0}>
-                <Text fontWeight="600" noOfLines={2}>
-                  {c.title}
-                </Text>
-                {c.external_url ? (
-                  <Text fontSize="xs" color="gray.400" noOfLines={1}>
-                    {c.external_url}
-                  </Text>
-                ) : null}
-              </Box>
-            </HStack>
-            <HStack flexWrap="wrap" gap={2}>
-              <input
-                id={`arsenal-card-logo-${c.id}`}
-                type="file"
-                accept="image/*"
-                style={{ display: "none" }}
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  e.target.value = "";
-                  if (f) void setCardLogo(c.id, f);
-                }}
-              />
-              <Button
-                size="xs"
-                variant="outline"
-                isDisabled={busy}
-                onClick={() => document.getElementById(`arsenal-card-logo-${c.id}`)?.click()}
-              >
-                Logo ändern
-              </Button>
-              {c.logo_storage_key?.trim() ? (
-                <Button size="xs" variant="ghost" isDisabled={busy} onClick={() => void clearCardLogo(c.id)}>
-                  Logo entfernen
-                </Button>
-              ) : null}
-              <IconButton
-                aria-label="Löschen"
-                size="sm"
-                variant="outline"
-                colorScheme="red"
-                icon={<Trash2 size={16} />}
-                onClick={() => void remove(c.id)}
-              />
-            </HStack>
-          </HStack>
-        ))}
+        {enableReorder ? (
+          <DraggableList items={items} onReorder={onReorder} renderItem={(c, handle) => renderCardRow(c, handle)} />
+        ) : (
+          items.map((c) => renderCardRow(c))
+        )}
       </Stack>
     </Stack>
   );
@@ -845,7 +883,7 @@ export function ArsenalManager() {
           <CardsPanel category="tools" label="Tools & Software" />
         </TabPanel>
         <TabPanel>
-          <CardsPanel category="fremdkapital" label="Fremdkapital" />
+          <CardsPanel category="fremdkapital" label="Fremdkapital" enableReorder />
         </TabPanel>
         <TabPanel>
           <CategoriesPanel />

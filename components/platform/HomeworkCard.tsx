@@ -23,8 +23,8 @@ import {
 } from "@chakra-ui/react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import type { HomeworkCustomTaskRow, HomeworkRow } from "@/lib/server-data";
-import { ClipboardList, Plus, Trash2 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Plus, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 
 type HomeworkCardProps = {
   homework: HomeworkRow | null;
@@ -163,6 +163,28 @@ export function HomeworkCard({
   }, [newTitle, newNotes, homeworkId, onClose]);
 
   const hasContent = Boolean(homework) || customTasks.length > 0;
+  const customDoneCount = customTasks.filter((task) => task.done).length;
+  const allCustomDone = customTasks.length > 0 && customDoneCount === customTasks.length;
+  const weekGoalReached = officialDone || allCustomDone;
+  const sliderItems: Array<{ kind: "official"; id: string } | { kind: "custom"; id: string }> = [
+    ...(homework ? [{ kind: "official" as const, id: homework.id }] : []),
+    ...customTasks.map((task) => ({ kind: "custom" as const, id: task.id })),
+  ];
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+
+  useEffect(() => {
+    if (sliderItems.length === 0) {
+      setActiveSlideIndex(0);
+      return;
+    }
+    if (activeSlideIndex > sliderItems.length - 1) {
+      setActiveSlideIndex(sliderItems.length - 1);
+    }
+  }, [activeSlideIndex, sliderItems.length]);
+
+  const activeSlide = sliderItems[activeSlideIndex] ?? null;
+  const activeCustomTask =
+    activeSlide?.kind === "custom" ? customTasks.find((task) => task.id === activeSlide.id) ?? null : null;
   const due = homework?.due_date ?? null;
   const status = dueStatus(due);
   const dueDate = due ? new Date(due + (due.includes("T") ? "" : "T12:00:00")) : null;
@@ -257,56 +279,53 @@ export function HomeworkCard({
             pointerEvents="none"
           />
 
-          <Box display="flex" flexDirection="column" alignItems="center" textAlign="center" gap={2.5}>
-            {homework ? (
-              <HStack
-                spacing={3}
-                py={2}
-                px={3}
-                borderRadius="12px"
-                bg="rgba(212, 175, 55, 0.12)"
-                border="1px solid rgba(212, 175, 55, 0.32)"
-                minW="120px"
-                justify="center"
-              >
-                <Text className="jetbrains-mono" fontSize="lg" fontWeight={500} lineHeight={1} color="var(--color-text-primary)">
-                  {dayNum}
-                </Text>
-                {month ? (
-                  <Text className="inter-medium" fontSize="xs" textTransform="uppercase" letterSpacing="0.14em" color="var(--color-accent-gold-light)">
-                    {month}
-                  </Text>
-                ) : null}
-              </HStack>
-            ) : (
-              <HStack
-                spacing={2}
-                py={2}
-                px={4}
-                borderRadius="12px"
-                bg="rgba(212, 175, 55, 0.14)"
-                border="1px solid rgba(212, 175, 55, 0.38)"
-                justify="center"
-              >
-                <Text className="inter-semibold" fontSize="sm" color="var(--color-accent-gold-light)" letterSpacing="0.06em">
-                  Eigene Liste
-                </Text>
-              </HStack>
-            )}
+          {weekGoalReached ? (
+            <HStack
+              spacing={2}
+              align="center"
+              justify="center"
+              mb={3}
+              py={2}
+              px={3}
+              borderRadius="10px"
+              bg="rgba(74, 222, 128, 0.14)"
+              border="1px solid rgba(74, 222, 128, 0.4)"
+            >
+              <CheckCircle2 size={16} />
+              <Text className="inter-semibold" fontSize="sm" color="rgba(187, 247, 208, 0.95)">
+                Stark! Deine Wochenaufgabe ist erledigt.
+              </Text>
+            </HStack>
+          ) : null}
 
-            <Text className="inter" fontSize="xs" color="var(--color-text-muted)" textTransform="uppercase" letterSpacing="0.08em">
-              {homework ? (
-                <>
+          <Box display="flex" flexDirection="column" alignItems="center" textAlign="center" gap={2.5}>
+            {activeSlide?.kind === "official" && homework ? (
+              <>
+                <HStack
+                  spacing={3}
+                  py={2}
+                  px={3}
+                  borderRadius="12px"
+                  bg="rgba(212, 175, 55, 0.12)"
+                  border="1px solid rgba(212, 175, 55, 0.32)"
+                  minW="120px"
+                  justify="center"
+                >
+                  <Text className="jetbrains-mono" fontSize="lg" fontWeight={500} lineHeight={1} color="var(--color-text-primary)">
+                    {dayNum}
+                  </Text>
+                  {month ? (
+                    <Text className="inter-medium" fontSize="xs" textTransform="uppercase" letterSpacing="0.14em" color="var(--color-accent-gold-light)">
+                      {month}
+                    </Text>
+                  ) : null}
+                </HStack>
+
+                <Text className="inter" fontSize="xs" color="var(--color-text-muted)" textTransform="uppercase" letterSpacing="0.08em">
                   {weekday}
                   {homework.week_number != null ? ` · Woche ${homework.week_number}` : ""}
-                </>
-              ) : (
-                "Persönliche Aufgaben"
-              )}
-            </Text>
+                </Text>
 
-            {homework ? (
-              <>
                 <Text as="h3" className="radley-regular" fontSize="md" fontWeight={400} lineHeight="short" noOfLines={3} color="var(--color-text-primary)">
                   {homework.title}
                 </Text>
@@ -371,64 +390,99 @@ export function HomeworkCard({
                   </Checkbox>
                 </Box>
               </>
-            ) : (
-              <Text className="inter" fontSize="sm" color="rgba(240, 240, 242, 0.72)" textAlign="center">
-                Keine offizielle Aufgabe aktiv — nutze die Liste für deine eigenen Schritte.
-              </Text>
-            )}
+            ) : null}
+
+            {activeSlide?.kind === "custom" && activeCustomTask ? (
+              <>
+                <HStack
+                  spacing={2}
+                  py={2}
+                  px={4}
+                  borderRadius="12px"
+                  bg="rgba(212, 175, 55, 0.14)"
+                  border="1px solid rgba(212, 175, 55, 0.38)"
+                  justify="center"
+                >
+                  <Text className="inter-semibold" fontSize="sm" color="var(--color-accent-gold-light)" letterSpacing="0.06em">
+                    Eigene Aufgabe
+                  </Text>
+                </HStack>
+                <Text className="inter" fontSize="xs" color="var(--color-text-muted)" textTransform="uppercase" letterSpacing="0.08em">
+                  Persönliche Checkliste
+                </Text>
+                <HStack align="flex-start" spacing={2} w="100%" maxW="420px">
+                  <Checkbox
+                    isChecked={activeCustomTask.done}
+                    isDisabled={Boolean(busyIds[activeCustomTask.id])}
+                    onChange={(e) => void toggleCustom(activeCustomTask.id, e.target.checked)}
+                    mt={1}
+                    colorScheme="yellow"
+                    sx={{
+                      ".chakra-checkbox__control": {
+                        borderColor: "rgba(212, 175, 55, 0.45)",
+                        _checked: {
+                          bg: "linear-gradient(135deg, #e8c547 0%, #a67c00 100%)",
+                          borderColor: "#e8c547",
+                        },
+                      },
+                    }}
+                  />
+                  <Box flex="1" textAlign="left" pt={0.5}>
+                    <Text
+                      className="inter-semibold"
+                      fontSize="sm"
+                      color={activeCustomTask.done ? "rgba(245, 236, 210, 0.45)" : "rgba(245, 236, 210, 0.92)"}
+                      textDecoration={activeCustomTask.done ? "line-through" : undefined}
+                      noOfLines={2}
+                    >
+                      {activeCustomTask.title}
+                    </Text>
+                    {activeCustomTask.notes ? (
+                      <Text className="inter" fontSize="xs" color="rgba(245, 236, 210, 0.62)" mt={0.5} noOfLines={3}>
+                        {activeCustomTask.notes}
+                      </Text>
+                    ) : null}
+                  </Box>
+                  <IconButton
+                    aria-label="Aufgabe entfernen"
+                    icon={<Trash2 size={16} />}
+                    size="xs"
+                    variant="ghost"
+                    color="rgba(255,255,255,0.35)"
+                    _hover={{ color: "#fca5a5", bg: "rgba(239,68,68,0.12)" }}
+                    isDisabled={Boolean(busyIds[activeCustomTask.id])}
+                    onClick={() => void removeCustom(activeCustomTask.id)}
+                  />
+                </HStack>
+              </>
+            ) : null}
+
+            {sliderItems.length > 1 ? (
+              <HStack justify="space-between" align="center" w="100%" maxW="420px" pt={1}>
+                <IconButton
+                  aria-label="Vorherige Aufgabe"
+                  icon={<ChevronLeft size={16} />}
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setActiveSlideIndex((prev) => (prev - 1 + sliderItems.length) % sliderItems.length)}
+                />
+                <Text className="jetbrains-mono" fontSize="xs" color="var(--color-text-muted)">
+                  {activeSlideIndex + 1}/{sliderItems.length}
+                </Text>
+                <IconButton
+                  aria-label="Nächste Aufgabe"
+                  icon={<ChevronRight size={16} />}
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setActiveSlideIndex((prev) => (prev + 1) % sliderItems.length)}
+                />
+              </HStack>
+            ) : null}
 
             {customTasks.length > 0 ? (
-              <VStack align="stretch" w="100%" maxW="420px" spacing={2.5} pt={1.5}>
-                <Text className="inter-medium" fontSize="xs" letterSpacing="0.1em" color="rgba(255,255,255,0.45)" textAlign="left">
-                  Eigene Aufgaben
-                </Text>
-                {customTasks.map((task) => (
-                  <HStack key={task.id} align="flex-start" spacing={2} w="100%">
-                    <Checkbox
-                      isChecked={task.done}
-                      isDisabled={Boolean(busyIds[task.id])}
-                      onChange={(e) => void toggleCustom(task.id, e.target.checked)}
-                      mt={1}
-                      colorScheme="yellow"
-                      sx={{
-                        ".chakra-checkbox__control": {
-                          borderColor: "rgba(212, 175, 55, 0.45)",
-                          _checked: {
-                            bg: "linear-gradient(135deg, #e8c547 0%, #a67c00 100%)",
-                            borderColor: "#e8c547",
-                          },
-                        },
-                      }}
-                    />
-                    <Box flex="1" textAlign="left" pt={0.5}>
-                      <Text
-                        className="inter-semibold"
-                        fontSize="sm"
-                        color={task.done ? "rgba(245, 236, 210, 0.45)" : "rgba(245, 236, 210, 0.92)"}
-                        textDecoration={task.done ? "line-through" : undefined}
-                        noOfLines={1}
-                      >
-                        {task.title}
-                      </Text>
-                      {task.notes ? (
-                        <Text className="inter" fontSize="xs" color="rgba(245, 236, 210, 0.62)" mt={0.5} noOfLines={2}>
-                          {task.notes}
-                        </Text>
-                      ) : null}
-                    </Box>
-                    <IconButton
-                      aria-label="Aufgabe entfernen"
-                      icon={<Trash2 size={16} />}
-                      size="xs"
-                      variant="ghost"
-                      color="rgba(255,255,255,0.35)"
-                      _hover={{ color: "#fca5a5", bg: "rgba(239,68,68,0.12)" }}
-                      isDisabled={Boolean(busyIds[task.id])}
-                      onClick={() => void removeCustom(task.id)}
-                    />
-                  </HStack>
-                ))}
-              </VStack>
+              <Text className="jetbrains-mono" fontSize="xs" color={allCustomDone ? "rgba(187, 247, 208, 0.95)" : "rgba(255,255,255,0.5)"}>
+                Eigene Aufgaben: {customDoneCount}/{customTasks.length} erledigt
+              </Text>
             ) : null}
 
             <HStack spacing={3} flexWrap="wrap" justify="center" pt={2.5} w="100%">

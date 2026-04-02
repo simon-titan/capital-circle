@@ -82,6 +82,12 @@ export function GlassVideoPlayer({
       return;
     }
 
+    if (/^https?:\/\//i.test(storageKey.trim())) {
+      setResolvedSrc(storageKey.trim());
+      setUrlLoading(false);
+      return;
+    }
+
     let cancelled = false;
 
     const fetchUrl = async () => {

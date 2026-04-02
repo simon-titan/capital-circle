@@ -1,14 +1,29 @@
-import { Box, Heading, Text, VStack } from "@chakra-ui/react";
+"use client";
+
+import { Box, Heading, HStack, IconButton, Text } from "@chakra-ui/react";
 import Link from "next/link";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { EventFeatureCard, type EventFeatureItem } from "@/components/platform/EventFeatureCard";
 import type { EventRow } from "@/lib/server-data";
-import { CalendarCheck2 } from "lucide-react";
+import { CalendarCheck2, ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { keyframes } from "@emotion/react";
 
 type UpcomingEventsCardProps = {
   events: EventRow[];
   spotlight?: boolean;
 };
+
+const eventSlideIn = keyframes`
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.992);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+`;
 
 function toFeatureItem(ev: EventRow): EventFeatureItem {
   return {
@@ -25,6 +40,20 @@ function toFeatureItem(ev: EventRow): EventFeatureItem {
 
 /** Gleiche Inhalts-Struktur wie EventsUpcomingShowcase + EventFeatureCard, kompakter fürs Dashboard. */
 export function UpcomingEventsCard({ events }: UpcomingEventsCardProps) {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    if (events.length === 0) {
+      setActiveIndex(0);
+      return;
+    }
+    if (activeIndex > events.length - 1) {
+      setActiveIndex(events.length - 1);
+    }
+  }, [activeIndex, events.length]);
+
+  const activeEvent = events[activeIndex] ?? null;
+
   return (
     <GlassCard dashboard h="100%">
       <Box display="flex" alignItems="flex-start" gap={3} mb={{ base: 5, md: 6 }}>
@@ -77,16 +106,34 @@ export function UpcomingEventsCard({ events }: UpcomingEventsCardProps) {
           </Text>
         </Box>
       ) : (
-        <VStack spacing={{ base: 3, md: 4 }} align="stretch" w="100%">
-          {events.map((ev, index) => (
-            <EventFeatureCard
-              key={ev.id}
-              event={toFeatureItem(ev)}
-              variant={index === 0 ? "featured" : index === 2 ? "compact" : "standard"}
-              embedded
-            />
-          ))}
-        </VStack>
+        <Box>
+          {activeEvent ? (
+            <Box key={activeEvent.id} animation={`${eventSlideIn} 280ms ease-out`}>
+              <EventFeatureCard event={toFeatureItem(activeEvent)} variant="featured" embedded />
+            </Box>
+          ) : null}
+          {events.length > 1 ? (
+            <HStack justify="space-between" align="center" mt={3}>
+              <IconButton
+                aria-label="Vorheriger Termin"
+                icon={<ChevronLeft size={16} />}
+                size="sm"
+                variant="ghost"
+                onClick={() => setActiveIndex((prev) => (prev - 1 + events.length) % events.length)}
+              />
+              <Text className="jetbrains-mono" fontSize="xs" color="var(--color-text-muted)">
+                {activeIndex + 1}/{events.length}
+              </Text>
+              <IconButton
+                aria-label="Nächster Termin"
+                icon={<ChevronRight size={16} />}
+                size="sm"
+                variant="ghost"
+                onClick={() => setActiveIndex((prev) => (prev + 1) % events.length)}
+              />
+            </HStack>
+          ) : null}
+        </Box>
       )}
 
       {events.length > 0 ? (
