@@ -7,6 +7,8 @@ const VIDEO_EXT = /\.(mp4|webm|mov)$/i;
 const THUMB_EXT = /^thumbnail\.(jpe?g|png|webp)$/i;
 
 export type ParsedModuleFolder = {
+  /** Roher Ordnername im Bucket (z. B. `Module_Title`), eindeutiger Anker für Sync */
+  storageFolderKey: string;
   folderTitle: string;
   slugBase: string;
   thumbnailKey: string | null;
@@ -53,6 +55,7 @@ export function parseModuleScanKeys(rawKeys: string[]): Map<string, ParsedModule
     let entry = byModule.get(moduleFolder);
     if (!entry) {
       entry = {
+        storageFolderKey: moduleFolder,
         folderTitle: humanizeFolder(moduleFolder),
         slugBase: slugifySegment(moduleFolder),
         thumbnailKey: null,
@@ -136,60 +139,61 @@ export async function syncParsedModulesToCourse(
 
   for (const [, folder] of parsed) {
     try {
-      const { data: existing } = await supabase
+      const { data: byStorage } = await supabase
+        .from("modules")
+        .select("id,title,slug")
+        .eq("course_id", courseId)
+        .eq("storage_folder_key", folder.storageFolderKey)
+        .maybeSingle();
+
+      const { data: bySlug } = await supabase
         .from("modules")
         .select("id,title,slug")
         .eq("course_id", courseId)
         .eq("slug", folder.slugBase)
         .maybeSingle();
 
+      const { data: byTitle } = await supabase
+        .from("modules")
+        .select("id,slug")
+        .eq("course_id", courseId)
+        .eq("title", folder.folderTitle)
+        .maybeSingle();
+
+      /** Reihenfolge: Storage-Ordnername (am zuverlässigsten), dann Slug, dann Titel */
+      const matchRow = byStorage?.id ? byStorage : bySlug?.id ? bySlug : byTitle?.id ? byTitle : null;
+
       let moduleId: string;
-      if (existing?.id) {
-        moduleId = existing.id;
-        const updates: Record<string, unknown> = {};
+      if (matchRow?.id) {
+        moduleId = matchRow.id;
+        const updates: Record<string, unknown> = { storage_folder_key: folder.storageFolderKey };
         if (folder.thumbnailKey) updates.thumbnail_storage_key = folder.thumbnailKey;
-        if (Object.keys(updates).length) {
-          await supabase.from("modules").update(updates).eq("id", moduleId);
+        if (!matchRow.slug) {
+          updates.slug = await nextUniqueModuleSlug(supabase, folder.slugBase);
         }
+        await supabase.from("modules").update(updates).eq("id", moduleId);
       } else {
-        const { data: byTitle } = await supabase
+        nextOrder += 1;
+        const uniqueSlug = await nextUniqueModuleSlug(supabase, folder.slugBase);
+        const { data: inserted, error: insErr } = await supabase
           .from("modules")
-          .select("id,slug")
-          .eq("course_id", courseId)
-          .eq("title", folder.folderTitle)
-          .maybeSingle();
-        if (byTitle?.id) {
-          moduleId = byTitle.id;
-          const updates: Record<string, unknown> = {};
-          if (!byTitle.slug) {
-            updates.slug = await nextUniqueModuleSlug(supabase, folder.slugBase);
-          }
-          if (folder.thumbnailKey) updates.thumbnail_storage_key = folder.thumbnailKey;
-          if (Object.keys(updates).length) {
-            await supabase.from("modules").update(updates).eq("id", moduleId);
-          }
-        } else {
-          nextOrder += 1;
-          const uniqueSlug = await nextUniqueModuleSlug(supabase, folder.slugBase);
-          const { data: inserted, error: insErr } = await supabase
-            .from("modules")
-            .insert({
-              course_id: courseId,
-              title: folder.folderTitle,
-              description: null,
-              order_index: nextOrder,
-              is_published: true,
-              slug: uniqueSlug,
-              thumbnail_storage_key: folder.thumbnailKey,
-            })
-            .select("id")
-            .single();
-          if (insErr || !inserted?.id) {
-            errors.push(`${folder.folderTitle}: ${insErr?.message ?? "insert failed"}`);
-            continue;
-          }
-          moduleId = inserted.id;
+          .insert({
+            course_id: courseId,
+            title: folder.folderTitle,
+            description: null,
+            order_index: nextOrder,
+            is_published: true,
+            slug: uniqueSlug,
+            thumbnail_storage_key: folder.thumbnailKey,
+            storage_folder_key: folder.storageFolderKey,
+          })
+          .select("id")
+          .single();
+        if (insErr || !inserted?.id) {
+          errors.push(`${folder.folderTitle}: ${insErr?.message ?? "insert failed"}`);
+          continue;
         }
+        moduleId = inserted.id;
       }
 
       modulesTouched += 1;

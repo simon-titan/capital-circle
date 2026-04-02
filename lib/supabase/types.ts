@@ -109,6 +109,19 @@ export type Database = {
       discord_invites: {
         Row: Record<string, unknown>;
       };
+      discord_connections: {
+        Row: {
+          id: string;
+          user_id: string;
+          discord_user_id: string;
+          discord_username: string | null;
+          discord_access_token: string | null;
+          discord_refresh_token: string | null;
+          connected_at: string;
+        };
+        Insert: Record<string, unknown>;
+        Update: Record<string, unknown>;
+      };
     };
   };
 };

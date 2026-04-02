@@ -23,6 +23,7 @@ import {
 } from "@chakra-ui/react";
 import { CalendarDays, CheckCircle2, Flame, Link2, Link2Off, LogOut, Upload, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
+import { DiscordGlyph } from "@/components/platform/DiscordBanner";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { createClient } from "@/lib/supabase/client";
 import { getDiscordAuthUrl } from "@/lib/discord";
@@ -62,6 +63,8 @@ export default function SettingsPage() {
   const [username, setUsername] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [discordUsername, setDiscordUsername] = useState<string | null>(null);
+  const [discordUserId, setDiscordUserId] = useState<string | null>(null);
+  const [discordConnectedAt, setDiscordConnectedAt] = useState<string | null>(null);
   const [streakCurrent, setStreakCurrent] = useState(0);
   const [streakLongest, setStreakLongest] = useState(0);
   const [learningMinutes, setLearningMinutes] = useState(0);
@@ -116,6 +119,21 @@ export default function SettingsPage() {
       setUsername(profile.username ?? "");
       setAvatarUrl(profile.avatar_url ?? "");
       setDiscordUsername(profile.discord_username);
+
+      const { data: dcRow } = await supabase
+        .from("discord_connections")
+        .select("discord_username, discord_user_id, connected_at")
+        .eq("user_id", authData.user.id)
+        .maybeSingle();
+
+      if (dcRow) {
+        setDiscordUserId((dcRow.discord_user_id as string | null) ?? null);
+        setDiscordConnectedAt((dcRow.connected_at as string | null) ?? null);
+        if (dcRow.discord_username) setDiscordUsername(dcRow.discord_username as string);
+      } else {
+        setDiscordUserId(null);
+        setDiscordConnectedAt(null);
+      }
       setStreakCurrent(profile.streak_current ?? 0);
       setStreakLongest(profile.streak_longest ?? 0);
       setLearningMinutes(profile.total_learning_minutes ?? 0);
@@ -198,6 +216,7 @@ export default function SettingsPage() {
   const disconnectDiscord = async () => {
     if (!profileId) return;
     setDisconnectingDiscord(true);
+    const { error: dcError } = await supabase.from("discord_connections").delete().eq("user_id", profileId);
     const { error } = await supabase
       .from("profiles")
       .update({
@@ -209,10 +228,10 @@ export default function SettingsPage() {
       .eq("id", profileId);
 
     setDisconnectingDiscord(false);
-    if (error) {
+    if (dcError || error) {
       toast({
         title: "Discord konnte nicht getrennt werden",
-        description: error.message,
+        description: dcError?.message ?? error?.message,
         status: "error",
         duration: 4000,
         isClosable: true,
@@ -221,6 +240,8 @@ export default function SettingsPage() {
     }
 
     setDiscordUsername(null);
+    setDiscordUserId(null);
+    setDiscordConnectedAt(null);
     toast({
       title: "Discord getrennt",
       status: "success",
@@ -454,29 +475,97 @@ export default function SettingsPage() {
         </GridItem>
 
         <GridItem>
-          <GlassCard>
-            <Stack spacing={4}>
-              <Text className="inter-semibold" color="var(--color-text-primary)" fontSize="lg">
-                Discord
-              </Text>
-              <Text color="var(--color-text-secondary)" fontSize="sm">
-                {discordUsername ? `Verbunden als ${discordUsername}` : "Noch nicht verbunden"}
-              </Text>
-              <HStack>
-                <Button as="a" href={getDiscordAuthUrl()} leftIcon={<Icon as={Link2} boxSize={4} />} colorScheme="yellow">
+          <GlassCard highlight>
+            <Stack spacing={5}>
+              <Flex direction={{ base: "column", sm: "row" }} gap={4} align={{ base: "flex-start", sm: "flex-start" }}>
+                <Flex
+                  align="center"
+                  justify="center"
+                  w="52px"
+                  h="52px"
+                  borderRadius="14px"
+                  flexShrink={0}
+                  bg="rgba(88, 101, 242, 0.18)"
+                  border="1px solid rgba(88, 101, 242, 0.45)"
+                  color="#5865F2"
+                >
+                  <DiscordGlyph size={28} />
+                </Flex>
+                <VStack align="flex-start" spacing={1} flex={1}>
+                  <Text
+                    className="inter-medium"
+                    fontSize="xs"
+                    letterSpacing="0.1em"
+                    textTransform="uppercase"
+                    color="rgba(255,255,255,0.45)"
+                  >
+                    Community
+                  </Text>
+                  <Text className="inter-semibold" color="var(--color-text-primary)" fontSize="xl">
+                    Discord
+                  </Text>
+                  <Text className="inter" color="var(--color-text-secondary)" fontSize="sm" lineHeight="tall">
+                    {discordUsername
+                      ? "Dein Account ist mit Discord verknüpft. Du kannst die Verknüpfung jederzeit trennen und neu verbinden."
+                      : "Verbinde deinen Discord Account, um Zugang zum exklusiven Community-Server zu erhalten."}
+                  </Text>
+                </VStack>
+              </Flex>
+
+              {discordUsername ? (
+                <Box
+                  p={4}
+                  borderRadius="14px"
+                  border="1px solid rgba(34, 197, 94, 0.35)"
+                  bg="linear-gradient(165deg, rgba(34, 197, 94, 0.1) 0%, rgba(8, 8, 8, 0.45) 55%)"
+                >
+                  <Stack spacing={3}>
+                    <HStack spacing={2}>
+                      <Icon as={CheckCircle2} boxSize={5} color="rgb(34, 197, 94)" />
+                      <Text className="inter-semibold" color="var(--color-text-primary)" fontSize="md">
+                        Verbunden
+                      </Text>
+                    </HStack>
+                    <Text className="jetbrains-mono" fontSize="lg" color="rgba(34, 197, 94, 0.95)">
+                      {discordUsername.startsWith("@") ? discordUsername : `@${discordUsername}`}
+                    </Text>
+                    {discordUserId ? (
+                      <Text fontSize="xs" className="jetbrains-mono" color="var(--color-text-muted)">
+                        ID: {discordUserId}
+                      </Text>
+                    ) : null}
+                    {discordConnectedAt ? (
+                      <Text fontSize="sm" className="inter" color="var(--color-text-secondary)">
+                        Verbunden seit {formatDate(discordConnectedAt)}
+                      </Text>
+                    ) : null}
+                    <Button
+                      variant="outline"
+                      colorScheme="red"
+                      leftIcon={<Icon as={Link2Off} boxSize={4} />}
+                      onClick={disconnectDiscord}
+                      isLoading={disconnectingDiscord}
+                      alignSelf="flex-start"
+                      borderRadius="10px"
+                    >
+                      Verknüpfung trennen
+                    </Button>
+                  </Stack>
+                </Box>
+              ) : (
+                <Button
+                  as="a"
+                  href={getDiscordAuthUrl()}
+                  leftIcon={<Icon as={Link2} boxSize={4} />}
+                  alignSelf="flex-start"
+                  borderRadius="10px"
+                  bg="linear-gradient(135deg, var(--color-accent-gold-dark) 0%, var(--color-accent-gold-light) 100%)"
+                  color="#0a0a0a"
+                  _hover={{ filter: "brightness(1.06)", boxShadow: "0 0 24px rgba(212, 175, 55, 0.35)" }}
+                >
                   Discord verbinden
                 </Button>
-                {discordUsername ? (
-                  <Button
-                    variant="outline"
-                    leftIcon={<Icon as={Link2Off} boxSize={4} />}
-                    onClick={disconnectDiscord}
-                    isLoading={disconnectingDiscord}
-                  >
-                    Trennen
-                  </Button>
-                ) : null}
-              </HStack>
+              )}
             </Stack>
           </GlassCard>
         </GridItem>

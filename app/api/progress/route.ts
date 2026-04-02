@@ -19,6 +19,8 @@ type ProgressBody = {
   /** Modul vollständig abgeschlossen (z. B. nach Quiz) */
   completed?: boolean;
   quizPassed?: boolean;
+  /** Letzter Test-Score (0–100), z. B. für Sidebar „Nicht bestanden“ */
+  quizLastScore?: number | null;
   videoProgressMap?: Record<string, number>;
 };
 
@@ -57,7 +59,7 @@ export async function POST(request: Request) {
 
   const { data: existing } = await supabase
     .from("user_progress")
-    .select("video_progress_by_video,last_video_id,video_completed,completed,quiz_passed,completed_at")
+    .select("video_progress_by_video,last_video_id,video_completed,completed,quiz_passed,quiz_last_score,completed_at")
     .eq("user_id", userId)
     .eq("module_id", moduleId)
     .maybeSingle();
@@ -87,6 +89,12 @@ export async function POST(request: Request) {
 
   const quiz_passed = typeof body.quizPassed === "boolean" ? body.quizPassed : Boolean(existing?.quiz_passed);
 
+  let quiz_last_score: number | null =
+    typeof existing?.quiz_last_score === "number" ? existing.quiz_last_score : null;
+  if (typeof body.quizLastScore === "number" && Number.isFinite(body.quizLastScore)) {
+    quiz_last_score = Math.max(0, Math.min(100, Math.floor(body.quizLastScore)));
+  }
+
   const completed_at = completed
     ? ((existing?.completed_at as string | null | undefined) ?? nowIso)
     : ((existing?.completed_at as string | null | undefined) ?? null);
@@ -99,6 +107,7 @@ export async function POST(request: Request) {
       video_completed,
       completed,
       quiz_passed,
+      quiz_last_score,
       completed_at,
       last_video_id: lastVideoId,
       video_progress_by_video: mergedMap,

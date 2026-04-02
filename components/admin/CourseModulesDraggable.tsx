@@ -1,17 +1,89 @@
 "use client";
 
-import { Badge, Button, HStack, Stack, Text } from "@chakra-ui/react";
+import {
+  Badge,
+  Button,
+  FormControl,
+  FormLabel,
+  HStack,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Select,
+  Stack,
+  Text,
+} from "@chakra-ui/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { DraggableList } from "@/components/admin/DraggableList";
-import { Pencil } from "lucide-react";
+import { ArrowRightLeft, Pencil } from "lucide-react";
 
 type Mod = { id: string; title: string; order_index: number };
 
-export function CourseModulesDraggable({ courseId, initialModules }: { courseId: string; initialModules: Mod[] }) {
+type CourseOption = { id: string; title: string };
+
+export function CourseModulesDraggable({
+  courseId,
+  initialModules,
+  allCourses = [],
+}: {
+  courseId: string;
+  initialModules: Mod[];
+  /** Alle Kurse für „Modul verschieben“ (ohne aktuellen werden gefiltert) */
+  allCourses?: CourseOption[];
+}) {
   const router = useRouter();
   const [items, setItems] = useState(initialModules);
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [moveModule, setMoveModule] = useState<Mod | null>(null);
+  const [targetCourseId, setTargetCourseId] = useState("");
+  const [moveLoading, setMoveLoading] = useState(false);
+  const [moveError, setMoveError] = useState<string | null>(null);
+
+  const otherCourses = useMemo(
+    () => allCourses.filter((c) => c.id !== courseId),
+    [allCourses, courseId],
+  );
+
+  const openMove = useCallback(
+    (m: Mod) => {
+      setMoveModule(m);
+      setMoveError(null);
+      setTargetCourseId(otherCourses[0]?.id ?? "");
+      setMoveOpen(true);
+    },
+    [otherCourses],
+  );
+
+  const confirmMove = useCallback(async () => {
+    if (!moveModule?.id || !targetCourseId) return;
+    setMoveLoading(true);
+    setMoveError(null);
+    try {
+      const res = await fetch(`/api/admin/modules/${moveModule.id}/move`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetCourseId }),
+      });
+      const json = (await res.json()) as { ok?: boolean; error?: string };
+      if (!json.ok) {
+        setMoveError(json.error ?? "Verschieben fehlgeschlagen.");
+        setMoveLoading(false);
+        return;
+      }
+      setMoveOpen(false);
+      setMoveModule(null);
+      router.refresh();
+    } catch {
+      setMoveError("Netzwerkfehler.");
+    }
+    setMoveLoading(false);
+  }, [moveModule, router, targetCourseId]);
 
   const onReorder = useCallback(
     async (orderedIds: string[]) => {
@@ -43,6 +115,7 @@ export function CourseModulesDraggable({ courseId, initialModules }: { courseId:
   }
 
   return (
+    <>
     <DraggableList
       items={items}
       onReorder={onReorder}
@@ -90,8 +163,73 @@ export function CourseModulesDraggable({ courseId, initialModules }: { courseId:
           >
             Bearbeiten
           </Button>
+          {otherCourses.length > 0 ? (
+            <Button
+              size="sm"
+              variant="outline"
+              borderColor="whiteAlpha.300"
+              color="gray.200"
+              leftIcon={<ArrowRightLeft size={14} />}
+              flexShrink={0}
+              onClick={() => openMove(item)}
+            >
+              Verschieben
+            </Button>
+          ) : null}
         </HStack>
       )}
     />
+    <Modal isOpen={moveOpen} onClose={() => !moveLoading && setMoveOpen(false)} isCentered size="md">
+      <ModalOverlay bg="rgba(7, 8, 10, 0.75)" backdropFilter="blur(8px)" />
+      <ModalContent bg="gray.900" borderWidth="1px" borderColor="whiteAlpha.200">
+        <ModalHeader className="inter-semibold" fontWeight={600} color="gray.100">
+          Modul verschieben
+        </ModalHeader>
+        <ModalCloseButton isDisabled={moveLoading} />
+        <ModalBody>
+          <Stack spacing={4}>
+            <Text className="inter" fontSize="sm" color="gray.400">
+              {moveModule ? (
+                <>
+                  „<Text as="span" fontWeight={600} color="gray.200">{moveModule.title}</Text>“ in einen anderen Kurs legen.
+                  Reihenfolge dort: ans Ende der Liste.
+                </>
+              ) : null}
+            </Text>
+            <FormControl>
+              <FormLabel className="inter" fontSize="xs" color="gray.500">
+                Ziel-Kurs
+              </FormLabel>
+              <Select
+                value={targetCourseId}
+                onChange={(e) => setTargetCourseId(e.target.value)}
+                borderColor="whiteAlpha.200"
+                isDisabled={moveLoading}
+              >
+                {otherCourses.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.title}
+                  </option>
+                ))}
+              </Select>
+            </FormControl>
+            {moveError ? (
+              <Text className="inter" fontSize="sm" color="red.300">
+                {moveError}
+              </Text>
+            ) : null}
+          </Stack>
+        </ModalBody>
+        <ModalFooter gap={3}>
+          <Button variant="ghost" onClick={() => setMoveOpen(false)} isDisabled={moveLoading}>
+            Abbrechen
+          </Button>
+          <Button colorScheme="yellow" onClick={() => void confirmMove()} isLoading={moveLoading} isDisabled={!targetCourseId}>
+            Verschieben
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+    </>
   );
 }

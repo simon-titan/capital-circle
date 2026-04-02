@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Box, Button, Flex, Grid, GridItem, Text } from "@chakra-ui/react";
+import { Badge, Box, Button, Grid, GridItem, HStack, Stack, Text } from "@chakra-ui/react";
 import { GlassVideoPlayer } from "@/components/ui/GlassVideoPlayer";
 import { QuizModal, type QuizMode, type QuizQuestion } from "@/components/platform/QuizModal";
 import { VideoPlaylist, isPlaylistIndexUnlocked } from "@/components/platform/VideoPlaylist";
@@ -19,6 +19,9 @@ export type ModuleLearningClientProps = {
   questions: QuizQuestion[];
   quizMode: QuizMode;
   passThreshold: number;
+  /** Aus user_progress (Server) */
+  initialQuizPassed?: boolean;
+  initialQuizLastScore?: number | null;
   initialNoteContent: string;
   attachmentsByVideoId: Record<string, VideoAttachmentItem[]>;
 };
@@ -47,10 +50,16 @@ export function ModuleLearningClient({
   questions,
   quizMode,
   passThreshold,
+  initialQuizPassed = false,
+  initialQuizLastScore = null,
   initialNoteContent,
   attachmentsByVideoId,
 }: ModuleLearningClientProps) {
   const [quizOpen, setQuizOpen] = useState(false);
+  const [quizPassed, setQuizPassed] = useState(Boolean(initialQuizPassed));
+  const [quizLastScore, setQuizLastScore] = useState<number | null>(
+    typeof initialQuizLastScore === "number" ? initialQuizLastScore : null,
+  );
   const [lastProgress, setLastProgress] = useState(0);
   const lastProgressRef = useRef(lastProgress);
   useEffect(() => {
@@ -76,6 +85,7 @@ export function ModuleLearningClient({
       videoCompleted?: boolean;
       completed?: boolean;
       quizPassed?: boolean;
+      quizLastScore?: number;
       videoProgressMap?: Record<string, number>;
     }) => {
       await fetch("/api/progress", {
@@ -88,6 +98,7 @@ export function ModuleLearningClient({
           videoCompleted: payload.videoCompleted,
           completed: payload.completed,
           quizPassed: payload.quizPassed,
+          quizLastScore: payload.quizLastScore,
           videoProgressMap: payload.videoProgressMap,
         }),
       });
@@ -112,16 +123,20 @@ export function ModuleLearningClient({
     return () => clearInterval(interval);
   }, [current, postProgress]);
 
-  const onPassed = async () => {
-    const vid = current?.id;
+  const onQuizResult = async ({ score, passed }: { score: number; passed: boolean }) => {
+    const vid = current?.id ?? null;
+    const lp = lastProgressRef.current;
     const map = progressMapRef.current;
-    const merged = vid ? { ...map, [vid]: Math.max(map[vid] ?? 0, lastProgress) } : map;
+    const merged = vid ? { ...map, [vid]: Math.max(map[vid] ?? 0, lp) } : map;
+    setQuizPassed(passed);
+    setQuizLastScore(score);
     await postProgress({
-      progressSeconds: lastProgress,
+      progressSeconds: lp,
       videoId: vid,
       videoCompleted: true,
-      completed: true,
-      quizPassed: true,
+      completed: passed,
+      quizPassed: passed,
+      quizLastScore: score,
       videoProgressMap: merged,
     });
   };
@@ -190,6 +205,14 @@ export function ModuleLearningClient({
     [activeIndex, lastProgress, playlist, postProgress],
   );
 
+  const quizStatusLabel = !hasQuiz
+    ? null
+    : quizPassed
+      ? "Bestanden"
+      : quizLastScore !== null
+        ? "Nicht bestanden"
+        : "Offen";
+
   if (!playlist.length) {
     const introFallback = process.env.NEXT_PUBLIC_INTRO_VIDEO_URL ?? "";
     return (
@@ -200,6 +223,42 @@ export function ModuleLearningClient({
         {introFallback ? (
           <GlassVideoPlayer src={introFallback} onProgress={(seconds) => setLastProgress(Math.floor(seconds))} />
         ) : null}
+        {hasQuiz ? (
+          <Stack spacing={3} mt={4} mb={6} maxW="md">
+            <Text
+              className="inter"
+              fontSize="xs"
+              textTransform="uppercase"
+              letterSpacing="0.08em"
+              color="var(--color-text-muted)"
+            >
+              Modul-Test
+            </Text>
+            {quizStatusLabel ? (
+              <Badge
+                px={2}
+                py={0.5}
+                borderRadius="md"
+                fontSize="xs"
+                className="inter-medium"
+                w="fit-content"
+                colorScheme={quizPassed ? "green" : quizLastScore !== null ? "yellow" : "gray"}
+              >
+                {quizStatusLabel}
+              </Badge>
+            ) : null}
+            <Button
+              variant="outline"
+              size="sm"
+              w="fit-content"
+              onClick={() => setQuizOpen(true)}
+              borderColor="rgba(212,175,55,0.45)"
+              color="var(--color-accent-gold-light)"
+            >
+              {quizPassed ? "Test wiederholen" : quizLastScore !== null ? "Erneut versuchen" : "Test starten"}
+            </Button>
+          </Stack>
+        ) : null}
         {quizOpen ? (
           <QuizModal
             isOpen
@@ -207,7 +266,7 @@ export function ModuleLearningClient({
             questions={questions}
             quizMode={quizMode}
             passThreshold={passThreshold}
-            onPassed={onPassed}
+            onQuizResult={onQuizResult}
           />
         ) : null}
         <ModuleNotes moduleId={moduleId} initialContent={initialNoteContent} />
@@ -217,13 +276,6 @@ export function ModuleLearningClient({
 
   return (
     <Box>
-      {hasQuiz ? (
-        <Flex justify="flex-end" mb={4}>
-          <Button variant="outline" onClick={() => setQuizOpen(true)}>
-            Quiz jetzt starten
-          </Button>
-        </Flex>
-      ) : null}
       <Grid
         templateColumns={{ base: "1fr", lg: "minmax(0, 5fr) minmax(280px, 2fr)" }}
         gap={{ base: 6, lg: 8 }}
@@ -255,6 +307,36 @@ export function ModuleLearningClient({
               progressMap={progressMap}
               onSelect={onSelectVideo}
             />
+            {hasQuiz ? (
+              <Stack spacing={3} mt={6} pt={6} borderTopWidth="1px" borderColor="rgba(255,255,255,0.08)">
+                <Text
+                  className="inter"
+                  fontSize="xs"
+                  textTransform="uppercase"
+                  letterSpacing="0.08em"
+                  color="var(--color-text-muted)"
+                >
+                  Modul-Test
+                </Text>
+                <HStack spacing={2} flexWrap="wrap">
+                  {quizStatusLabel ? (
+                    <Badge
+                      px={2}
+                      py={0.5}
+                      borderRadius="md"
+                      fontSize="xs"
+                      className="inter-medium"
+                      colorScheme={quizPassed ? "green" : quizLastScore !== null ? "yellow" : "gray"}
+                    >
+                      {quizStatusLabel}
+                    </Badge>
+                  ) : null}
+                </HStack>
+                <Button variant="outline" size="sm" w="full" onClick={() => setQuizOpen(true)} borderColor="rgba(212,175,55,0.45)" color="var(--color-accent-gold-light)">
+                  {quizPassed ? "Test wiederholen" : quizLastScore !== null ? "Erneut versuchen" : "Test starten"}
+                </Button>
+              </Stack>
+            ) : null}
           </Box>
         </GridItem>
       </Grid>
@@ -265,7 +347,7 @@ export function ModuleLearningClient({
           questions={questions}
           quizMode={quizMode}
           passThreshold={passThreshold}
-          onPassed={onPassed}
+          onQuizResult={onQuizResult}
         />
       ) : null}
     </Box>

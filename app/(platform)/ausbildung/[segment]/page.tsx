@@ -67,7 +67,7 @@ export default async function AcademyModulePage({ params }: PageProps) {
 
   const { data: progress } = await supabase
     .from("user_progress")
-    .select("last_video_id,video_progress_by_video")
+    .select("last_video_id,video_progress_by_video,quiz_passed,quiz_last_score")
     .eq("user_id", user.id)
     .eq("module_id", mod.id)
     .maybeSingle();
@@ -153,6 +153,10 @@ export default async function AcademyModulePage({ params }: PageProps) {
             questions={Array.isArray(quiz?.questions) ? (quiz.questions as never[]) : []}
             quizMode={quiz?.quiz_mode === "single_page" ? "single_page" : "multi_page"}
             passThreshold={typeof quiz?.pass_threshold === "number" ? quiz.pass_threshold : 100}
+            initialQuizPassed={Boolean(progress?.quiz_passed)}
+            initialQuizLastScore={
+              typeof progress?.quiz_last_score === "number" ? progress.quiz_last_score : null
+            }
             initialNoteContent={initialNoteContent}
             attachmentsByVideoId={attachmentsByVideoId}
           />

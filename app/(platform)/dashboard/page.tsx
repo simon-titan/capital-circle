@@ -1,5 +1,6 @@
 import { Grid, GridItem } from "@chakra-ui/react";
 import { redirect } from "next/navigation";
+import { DiscordBanner } from "@/components/platform/DiscordBanner";
 import { WelcomeCard } from "@/components/platform/WelcomeCard";
 import {
   DashboardLastVideoCard,
@@ -83,6 +84,12 @@ export default async function DashboardPage() {
 
   const homeworkState = await getHomeworkDashboardState(userId, homework);
 
+  const { data: discordConnection } = await supabase
+    .from("discord_connections")
+    .select("discord_username")
+    .eq("user_id", userId)
+    .maybeSingle();
+
   return (
     <Grid gap={{ base: 6, md: 8 }} templateColumns={{ base: "1fr", lg: "1fr 1fr" }}>
       <GridItem colSpan={{ base: 1, lg: 2 }}>
@@ -97,6 +104,10 @@ export default async function DashboardPage() {
           learningWeekDays={learningWeekDays}
           weekLearningLabel={weekLearningLabel}
         />
+      </GridItem>
+
+      <GridItem colSpan={{ base: 1, lg: 2 }}>
+        <DiscordBanner discordUsername={(discordConnection?.discord_username as string | null) ?? null} />
       </GridItem>
 
       <GridItem display="flex" flexDirection="column" minH={{ lg: "280px" }} colSpan={{ base: 1, lg: 2 }}>

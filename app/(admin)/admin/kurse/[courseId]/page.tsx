@@ -11,6 +11,7 @@ export default async function CoursePage({ params }: PageProps) {
   const { courseId } = await params;
   const supabase = await createClient();
   const { data: course } = await supabase.from("courses").select("id,title,slug").eq("id", courseId).single();
+  const { data: allCoursesRows } = await supabase.from("courses").select("id,title").order("created_at", { ascending: false });
   const { data: modules } = await supabase
     .from("modules")
     .select("id,title,order_index")
@@ -45,7 +46,11 @@ export default async function CoursePage({ params }: PageProps) {
         </Link>
       </HStack>
 
-      <CourseModulesDraggable courseId={courseId} initialModules={moduleItems} />
+      <CourseModulesDraggable
+        courseId={courseId}
+        initialModules={moduleItems}
+        allCourses={(allCoursesRows ?? []) as Array<{ id: string; title: string }>}
+      />
     </Stack>
   );
 }

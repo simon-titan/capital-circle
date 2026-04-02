@@ -5,7 +5,7 @@ import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } 
 import { CSS } from "@dnd-kit/utilities";
 import { Box, Button, Flex, Heading, Progress, Stack, Text } from "@chakra-ui/react";
 import { CheckCircle2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type BaseQuestion = {
   id: string;
@@ -39,7 +39,8 @@ type QuizModalProps = {
   questions: QuizQuestion[];
   quizMode?: QuizMode;
   passThreshold?: number;
-  onPassed: () => Promise<void> | void;
+  /** Nach Auswertung (bestanden oder nicht) — Fortschritt / Score persistieren */
+  onQuizResult: (result: { score: number; passed: boolean }) => Promise<void> | void;
 };
 
 type QuestionAnswer = string | boolean | number[] | null;
@@ -220,11 +221,19 @@ function QuestionRenderer({
   );
 }
 
-export function QuizModal({ isOpen, onClose, questions, onPassed, quizMode = "multi_page", passThreshold = 100 }: QuizModalProps) {
+export function QuizModal({ isOpen, onClose, questions, onQuizResult, quizMode = "multi_page", passThreshold = 100 }: QuizModalProps) {
   const normalizedQuestions = useMemo(() => questions.map(normalizeQuestion), [questions]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, QuestionAnswer>>({});
   const [result, setResult] = useState<{ score: number; passed: boolean } | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setAnswers({});
+      setCurrentIndex(0);
+      setResult(null);
+    }
+  }, [isOpen]);
   const total = normalizedQuestions.length;
   const current = normalizedQuestions[currentIndex] ?? null;
 
@@ -243,9 +252,7 @@ export function QuizModal({ isOpen, onClose, questions, onPassed, quizMode = "mu
     const score = Math.round((correct / total) * 100);
     const passed = score >= passThreshold;
     setResult({ score, passed });
-    if (passed) {
-      await onPassed();
-    }
+    await onQuizResult({ score, passed });
   };
 
   const canMoveNext = current ? questionAnswered(current, answers[current.id] ?? null) : false;
