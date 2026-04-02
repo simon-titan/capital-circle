@@ -70,6 +70,8 @@ export function ModuleForm({ courseId, moduleId, initialModule }: ModuleFormProp
   const [status, setStatus] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [thumbUploading, setThumbUploading] = useState(false);
+  /** Feedback für Video-Thumbnail-Uploads (pro Video-ID) */
+  const [videoThumbStatus, setVideoThumbStatus] = useState<Record<string, string>>({});
 
   // ── Zentraler Video- und Subkategorie-State ──
   const [allVideos, setAllVideos] = useState<VideoRow[]>([]);
@@ -141,6 +143,7 @@ export function ModuleForm({ courseId, moduleId, initialModule }: ModuleFormProp
     picker.onchange = async () => {
       const file = picker.files?.[0];
       if (!file || !moduleId) return;
+      setVideoThumbStatus((prev) => ({ ...prev, [item.id]: "Wird hochgeladen…" }));
       try {
         const params = new URLSearchParams({
           folder: "videos",
@@ -158,9 +161,16 @@ export function ModuleForm({ courseId, moduleId, initialModule }: ModuleFormProp
           },
           body: file,
         });
-        const json = (await res.json()) as { ok?: boolean; storageKey?: string };
-        if (json.ok && json.storageKey) await patchVideo(item.id, { thumbnail_key: json.storageKey });
-      } catch { /* stabil */ }
+        const json = (await res.json()) as { ok?: boolean; storageKey?: string; error?: string };
+        if (!res.ok || !json.ok || !json.storageKey) {
+          setVideoThumbStatus((prev) => ({ ...prev, [item.id]: json.error || "Upload fehlgeschlagen." }));
+          return;
+        }
+        await patchVideo(item.id, { thumbnail_key: json.storageKey });
+        setVideoThumbStatus((prev) => ({ ...prev, [item.id]: "Gespeichert." }));
+      } catch (e) {
+        setVideoThumbStatus((prev) => ({ ...prev, [item.id]: e instanceof Error ? e.message : "Fehler." }));
+      }
     };
     picker.click();
   };
@@ -553,9 +563,22 @@ export function ModuleForm({ courseId, moduleId, initialModule }: ModuleFormProp
                                   )}
                                 </Box>
                               </Box>
-                              <Button mt={2} size="sm" colorScheme="blue" leftIcon={<ImagePlus size={16} />} onClick={() => void onUploadThumbnailForVideo(item)}>
+                              <Button mt={2} size="sm" colorScheme="blue" leftIcon={<ImagePlus size={16} />} onClick={() => void onUploadThumbnailForVideo(item)}
+                                isLoading={videoThumbStatus[item.id] === "Wird hochgeladen…"}
+                                isDisabled={videoThumbStatus[item.id] === "Wird hochgeladen…"}
+                              >
                                 Vorschaubild hochladen
                               </Button>
+                              {videoThumbStatus[item.id] && videoThumbStatus[item.id] !== "Wird hochgeladen…" ? (
+                                <Text
+                                  mt={1}
+                                  fontSize="xs"
+                                  className="inter"
+                                  color={videoThumbStatus[item.id].includes("fehlgeschlagen") || videoThumbStatus[item.id].includes("Fehler") ? "red.300" : "green.300"}
+                                >
+                                  {videoThumbStatus[item.id]}
+                                </Text>
+                              ) : null}
                             </FormControl>
 
                             {/* Titel */}

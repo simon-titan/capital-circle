@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Button, Progress, Text } from "@chakra-ui/react";
+import { Box, Button, HStack, Progress, Text } from "@chakra-ui/react";
 import { useCallback, useRef, useState } from "react";
 
 function readVideoDuration(file: File): Promise<number | null> {
@@ -86,6 +86,8 @@ export function VideoUploader({ courseId, moduleId, subcategoryId, onUploaded, d
   const [progress, setProgress] = useState(0);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [fileSize, setFileSize] = useState<number | null>(null);
 
   const onPick = useCallback(async () => {
     inputRef.current?.click();
@@ -99,15 +101,17 @@ export function VideoUploader({ courseId, moduleId, subcategoryId, onUploaded, d
       return;
     }
 
+    setFileName(file.name);
+    setFileSize(file.size);
     setBusy(true);
     setProgress(0);
-    setStatus("Vorbereiten…");
+    setStatus("Dauer wird ermittelt…");
 
     const videoId = crypto.randomUUID();
     const durationSeconds = await readVideoDuration(file);
 
     try {
-      setStatus("Upload…");
+      setStatus("Video wird hochgeladen…");
       const storageKey = await uploadVideoViaProxy(
         file,
         { courseId, moduleId, videoId, subcategoryId },
@@ -121,6 +125,8 @@ export function VideoUploader({ courseId, moduleId, subcategoryId, onUploaded, d
       setBusy(false);
     }
   };
+
+  const isError = !busy && !!status && (status.includes("fehlgeschlagen") || status.includes("Fehler") || status.includes("Bitte"));
 
   return (
     <Box
@@ -148,24 +154,53 @@ export function VideoUploader({ courseId, moduleId, subcategoryId, onUploaded, d
         isLoading={busy}
         isDisabled={disabled || busy}
       >
-        Videodatei auswählen (z. B. MP4)
+        Videodatei auswählen (z. B. MP4)
       </Button>
       <Text mt={2} fontSize="sm" className="inter" color="gray.400">
         Upload läuft über diese App zum Object Storage (kein direkter Browser-Zugriff auf den Bucket nötig). Danach
         erscheint das Video in der Liste oben.
       </Text>
-      {busy || progress > 0 ? (
-        <Progress
-          value={progress}
-          size="sm"
+
+      {busy ? (
+        <Box
           mt={3}
-          borderRadius="full"
-          colorScheme="blue"
-          bg="whiteAlpha.100"
-        />
-      ) : null}
-      {status ? (
-        <Text mt={2} fontSize="sm" className="inter" color="blue.200">
+          p={3}
+          borderRadius="10px"
+          borderWidth="1px"
+          borderColor="rgba(59, 130, 246, 0.4)"
+          bg="rgba(30, 58, 138, 0.15)"
+        >
+          <HStack justify="space-between" mb={1} flexWrap="wrap" gap={1}>
+            <Text fontSize="sm" className="inter-semibold" color="blue.200" noOfLines={1} maxW="75%">
+              {fileName ?? "Video…"}
+            </Text>
+            <Text fontSize="sm" className="jetbrains-mono" color="blue.300" flexShrink={0}>
+              {progress}%
+            </Text>
+          </HStack>
+          {fileSize ? (
+            <Text fontSize="xs" color="gray.400" className="inter" mb={2}>
+              {(fileSize / 1024 / 1024).toFixed(1)} MB
+              {progress > 0 && progress < 100
+                ? ` — ${((fileSize / 1024 / 1024) * (progress / 100)).toFixed(1)} MB übertragen`
+                : ""}
+            </Text>
+          ) : null}
+          <Progress
+            value={progress}
+            size="sm"
+            borderRadius="full"
+            colorScheme="blue"
+            bg="whiteAlpha.100"
+            hasStripe={progress < 100}
+            isAnimated={progress < 100}
+          />
+          {status ? (
+            <Text fontSize="xs" color="blue.300" className="inter" mt={2}>{status}</Text>
+          ) : null}
+        </Box>
+      ) : status ? (
+        <Text mt={2} fontSize="sm" className="inter" color={isError ? "red.300" : "green.300"}>
           {status}
         </Text>
       ) : null}

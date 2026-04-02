@@ -3,7 +3,7 @@
 import { Box, Button, Flex, HStack, Input, InputGroup, InputLeftElement, Select, Stack, Text } from "@chakra-ui/react";
 import type { ArsenalAttachmentListItem } from "@/lib/server-data";
 import { FileDown, FileText, Layers, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 export type ArsenalBrowserAccent = "purple" | "orange";
 
@@ -97,6 +97,7 @@ export function ArsenalAttachmentsBrowser({
   const [videoId, setVideoId] = useState<string>("all");
   const [categoryId, setCategoryId] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const modules = useMemo(() => {
     const m = new Map<string, string>();
@@ -141,9 +142,27 @@ export function ArsenalAttachmentsBrowser({
     });
   }, [items, moduleId, videoId, categoryId, search]);
 
-  const onDownload = (attachmentId: string) => {
-    window.open(`/api/attachment-url?id=${encodeURIComponent(attachmentId)}`, "_blank", "noopener,noreferrer");
-  };
+  const onDownload = useCallback(async (attachmentId: string, filename: string) => {
+    setLoadingId(attachmentId);
+    try {
+      const res = await fetch(`/api/attachment-url?id=${encodeURIComponent(attachmentId)}`);
+      const json = (await res.json()) as { ok?: boolean; url?: string; error?: string };
+      if (!json.ok || !json.url) {
+        console.error(json.error ?? "attachment-url failed");
+        return;
+      }
+      const a = document.createElement("a");
+      a.href = json.url;
+      a.download = filename;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } finally {
+      setLoadingId(null);
+    }
+  }, []);
 
   const onModuleChange = (v: string) => {
     setModuleId(v);
@@ -331,7 +350,8 @@ export function ArsenalAttachmentsBrowser({
               </HStack>
               <Button
                 size="sm"
-                onClick={() => onDownload(it.id)}
+                onClick={() => void onDownload(it.id, it.filename)}
+                isLoading={loadingId === it.id}
                 bg={a.downloadBg}
                 borderWidth="1px"
                 borderColor={a.downloadBorder}

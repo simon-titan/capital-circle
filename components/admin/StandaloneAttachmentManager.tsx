@@ -1,8 +1,8 @@
 "use client";
 
-import { Box, Button, FormLabel, HStack, IconButton, Input, Select, Stack, Text } from "@chakra-ui/react";
+import { Box, Button, FormLabel, HStack, IconButton, Input, Progress, Select, Stack, Text } from "@chakra-ui/react";
 import { FileDown, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export type StandaloneAttachmentRow = {
@@ -35,37 +35,59 @@ const adminSelectStyles = {
   sx: { "& option": { bg: "#0c0d10" } },
 };
 
-async function uploadStandaloneProxy(
+/** XHR-Upload mit Fortschritt — Metadaten als Query-Parameter, Datei als raw Body. */
+function uploadStandaloneViaXhr(
   file: File,
   meta: { attachmentId: string },
+  onProgress: (pct: number) => void,
 ): Promise<string> {
-  const params = new URLSearchParams({
-    folder: "standalone-attachments",
-    attachmentId: meta.attachmentId,
+  return new Promise((resolve, reject) => {
+    const params = new URLSearchParams({
+      folder: "standalone-attachments",
+      attachmentId: meta.attachmentId,
+    });
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `/api/admin/upload-proxy?${params.toString()}`);
+    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+    xhr.setRequestHeader("X-File-Name", encodeURIComponent(file.name));
+    xhr.upload.onprogress = (ev) => {
+      if (ev.lengthComputable) onProgress(Math.round((ev.loaded / ev.total) * 100));
+    };
+    xhr.onload = () => {
+      if (xhr.status < 200 || xhr.status >= 300) {
+        try {
+          const j = JSON.parse(xhr.responseText) as { error?: string };
+          reject(new Error(j.error || `Upload fehlgeschlagen (${xhr.status})`));
+        } catch {
+          reject(new Error(`Upload fehlgeschlagen (${xhr.status})`));
+        }
+        return;
+      }
+      try {
+        const j = JSON.parse(xhr.responseText) as { ok?: boolean; storageKey?: string; error?: string };
+        if (!j.ok || !j.storageKey) reject(new Error(j.error || "Upload fehlgeschlagen"));
+        else resolve(j.storageKey);
+      } catch {
+        reject(new Error("Ungültige Server-Antwort"));
+      }
+    };
+    xhr.onerror = () => reject(new Error("Netzwerkfehler beim Upload"));
+    xhr.send(file);
   });
-  const res = await fetch(`/api/admin/upload-proxy?${params.toString()}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": file.type || "application/octet-stream",
-      "X-File-Name": encodeURIComponent(file.name),
-    },
-    body: file,
-  });
-  const json = (await res.json()) as { ok?: boolean; storageKey?: string; error?: string };
-  if (!res.ok || !json.ok || !json.storageKey) {
-    throw new Error(json.error || `Upload fehlgeschlagen (${res.status}).`);
-  }
-  return json.storageKey;
 }
 
 export function StandaloneAttachmentManager() {
+  const inputRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<StandaloneAttachmentRow[]>([]);
   const [categories, setCategories] = useState<ArsenalCatRow[]>([]);
   const [kind, setKind] = useState<"pdf" | "template">("pdf");
   const [categoryId, setCategoryId] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [fileSize, setFileSize] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFilename, setEditFilename] = useState("");
   const [editCategoryId, setEditCategoryId] = useState("");
@@ -154,45 +176,50 @@ export function StandaloneAttachmentManager() {
     setStatus("Gespeichert.");
   };
 
-  const onPick = async () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = kind === "pdf" ? ".pdf,application/pdf" : "application/*,.doc,.docx";
-    input.onchange = async () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      setBusy(true);
-      setStatus(null);
-      const attachmentId = crypto.randomUUID();
-      try {
-        const storageKey = await uploadStandaloneProxy(file, { attachmentId });
-        const create = await fetch("/api/admin/standalone-attachments", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            storage_key: storageKey,
-            filename: file.name,
-            content_type: file.type || null,
-            size_bytes: file.size,
-            kind,
-            category_id: categoryId || null,
-            position: items.length,
-          }),
-        });
-        const cj = (await create.json()) as { ok?: boolean; item?: StandaloneAttachmentRow; error?: string };
-        if (!cj.ok || !cj.item) {
-          setStatus(cj.error || "DB-Eintrag fehlgeschlagen.");
-          setBusy(false);
-          return;
-        }
-        setItems((prev) => [...prev, cj.item!]);
-        setStatus("Hochgeladen.");
-      } catch (e) {
-        setStatus(e instanceof Error ? e.message : "Fehler.");
+  const onPick = () => {
+    inputRef.current?.click();
+  };
+
+  const onChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setFileName(file.name);
+    setFileSize(file.size);
+    setBusy(true);
+    setProgress(0);
+    setStatus("Datei wird hochgeladen…");
+
+    const attachmentId = crypto.randomUUID();
+    try {
+      const storageKey = await uploadStandaloneViaXhr(file, { attachmentId }, setProgress);
+      setStatus("In Datenbank speichern…");
+      const create = await fetch("/api/admin/standalone-attachments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          storage_key: storageKey,
+          filename: file.name,
+          content_type: file.type || null,
+          size_bytes: file.size,
+          kind,
+          category_id: categoryId || null,
+          position: items.length,
+        }),
+      });
+      const cj = (await create.json()) as { ok?: boolean; item?: StandaloneAttachmentRow; error?: string };
+      if (!cj.ok || !cj.item) {
+        setStatus(cj.error || "DB-Eintrag fehlgeschlagen.");
+        setBusy(false);
+        return;
       }
-      setBusy(false);
-    };
-    input.click();
+      setItems((prev) => [...prev, cj.item!]);
+      setStatus("Hochgeladen.");
+    } catch (e) {
+      setStatus(e instanceof Error ? e.message : "Fehler.");
+    }
+    setBusy(false);
   };
 
   const remove = async (id: string) => {
@@ -204,6 +231,8 @@ export function StandaloneAttachmentManager() {
       setItems((prev) => prev.filter((x) => x.id !== id));
     }
   };
+
+  const isError = !busy && !!status && (status.includes("fehlgeschlagen") || status.includes("Fehler") || status.includes("Bitte"));
 
   if (loading) {
     return (
@@ -222,6 +251,13 @@ export function StandaloneAttachmentManager() {
       borderColor="whiteAlpha.200"
       bg="rgba(0,0,0,0.2)"
     >
+      <input
+        ref={inputRef}
+        type="file"
+        accept={kind === "pdf" ? ".pdf,application/pdf" : "application/*,.doc,.docx"}
+        hidden
+        onChange={(ev) => void onChange(ev)}
+      />
       <HStack justify="space-between" align="flex-start" flexWrap="wrap" gap={3}>
         <Box flex="1" minW="200px">
           <FormLabel
@@ -279,7 +315,7 @@ export function StandaloneAttachmentManager() {
           size="md"
           colorScheme="blue"
           variant="solid"
-          onClick={() => void onPick()}
+          onClick={onPick}
           isLoading={busy}
           isDisabled={busy}
           flexShrink={0}
@@ -287,6 +323,46 @@ export function StandaloneAttachmentManager() {
           Datei hochladen
         </Button>
       </HStack>
+
+      {busy ? (
+        <Box
+          p={3}
+          borderRadius="10px"
+          borderWidth="1px"
+          borderColor="rgba(59, 130, 246, 0.4)"
+          bg="rgba(30, 58, 138, 0.15)"
+        >
+          <HStack justify="space-between" mb={1} flexWrap="wrap" gap={1}>
+            <Text fontSize="sm" className="inter-semibold" color="blue.200" noOfLines={1} maxW="75%">
+              {fileName ?? "Datei…"}
+            </Text>
+            <Text fontSize="sm" className="jetbrains-mono" color="blue.300" flexShrink={0}>
+              {progress}%
+            </Text>
+          </HStack>
+          {fileSize ? (
+            <Text fontSize="xs" color="gray.400" className="inter" mb={2}>
+              {(fileSize / 1024 / 1024).toFixed(2)} MB
+              {progress > 0 && progress < 100
+                ? ` — ${((fileSize / 1024 / 1024) * (progress / 100)).toFixed(2)} MB übertragen`
+                : ""}
+            </Text>
+          ) : null}
+          <Progress
+            value={progress}
+            size="sm"
+            borderRadius="full"
+            colorScheme="blue"
+            bg="whiteAlpha.100"
+            hasStripe={progress < 100}
+            isAnimated={progress < 100}
+          />
+          {status ? (
+            <Text fontSize="xs" color="blue.300" className="inter" mt={2}>{status}</Text>
+          ) : null}
+        </Box>
+      ) : null}
+
       {items.length === 0 ? (
         <Text fontSize="sm" color="gray.500" className="inter">
           Noch keine eigenständigen Dateien.
@@ -317,6 +393,7 @@ export function StandaloneAttachmentManager() {
                       </Text>
                       <Text fontSize="xs" color="gray.500">
                         {a.kind}
+                        {a.size_bytes ? ` · ${(a.size_bytes / 1024 / 1024).toFixed(2)} MB` : ""}
                         {a.category_id ? ` · ${catLabel ?? `Kat ${a.category_id.slice(0, 8)}…`}` : ""}
                       </Text>
                     </Box>
@@ -399,12 +476,11 @@ export function StandaloneAttachmentManager() {
           })}
         </Stack>
       )}
-      {status ? (
-        <Box>
-          <Text fontSize="sm" color="blue.200" className="inter">
-            {status}
-          </Text>
-        </Box>
+
+      {!busy && status ? (
+        <Text fontSize="sm" color={isError ? "red.300" : "green.300"} className="inter">
+          {status}
+        </Text>
       ) : null}
     </Stack>
   );
