@@ -17,12 +17,6 @@ import {
   MenuButton,
   MenuItem,
   MenuList,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalHeader,
-  ModalOverlay,
   Stack,
   Text,
   useDisclosure,
@@ -41,7 +35,6 @@ import {
   LogOut,
   Menu as MenuIcon,
   Package,
-  Search,
   UserRound,
 } from "lucide-react";
 
@@ -61,6 +54,7 @@ const navItems: Array<{
 const arsenalSubLinks = [
   { href: "/analysis", label: "Analyse" },
   { href: "/live-session", label: "Live Session" },
+  { href: "/hausaufgabe", label: "Hausaufgabe & Checkliste" },
   { href: "/arsenal/tools", label: "Tools & Software" },
   { href: "/arsenal/fremdkapital", label: "Fremdkapital" },
   { href: "/arsenal/templates", label: "Templates" },
@@ -78,22 +72,17 @@ export function TopBar() {
   const router = useRouter();
   const supabase = createClient();
   const { isOpen: drawerOpen, onOpen: onDrawerOpen, onClose: onDrawerClose } = useDisclosure();
-  const { isOpen: searchOpen, onOpen: onSearchOpen, onClose: onSearchClose } = useDisclosure();
 
   const arsenalActive = !!pathname &&
     (pathname.startsWith("/arsenal") ||
       pathname.startsWith("/analysis") ||
-      pathname.startsWith("/live-session"));
+      pathname.startsWith("/live-session") ||
+      pathname.startsWith("/hausaufgabe"));
 
   const onLogout = async () => {
     await supabase.auth.signOut();
     router.push("/einsteig");
     router.refresh();
-  };
-
-  const openSearchAfterDrawer = () => {
-    onDrawerClose();
-    window.setTimeout(() => onSearchOpen(), 200);
   };
 
   const NavRow = ({
@@ -182,16 +171,6 @@ export function TopBar() {
             className="inter-medium"
           >
             Einstellungen
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            justifyContent="flex-start"
-            leftIcon={<Search size={18} />}
-            onClick={() => openSearchAfterDrawer()}
-            className="inter-medium"
-          >
-            Suche
           </Button>
           <Button
             size="sm"
@@ -342,14 +321,6 @@ export function TopBar() {
               _hover={{ bg: "rgba(212, 175, 55, 0.15)" }}
             />
             <IconButton
-              aria-label="Suche"
-              icon={<Search size={22} strokeWidth={2} />}
-              variant="ghost"
-              borderRadius="md"
-              onClick={onSearchOpen}
-              _hover={{ bg: "rgba(212, 175, 55, 0.15)" }}
-            />
-            <IconButton
               aria-label="Abmelden"
               icon={<LogOut size={22} strokeWidth={2} />}
               variant="ghost"
@@ -386,20 +357,6 @@ export function TopBar() {
         </DrawerContent>
       </Drawer>
 
-      <Modal isOpen={searchOpen} onClose={onSearchClose} isCentered>
-        <ModalOverlay bg="rgba(7, 8, 10, 0.75)" backdropFilter="blur(8px)" />
-        <ModalContent className="glass-card-highlight" mx={4}>
-          <ModalHeader className="inter-semibold" fontWeight={600}>
-            Suche
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            <Text className="inter" fontSize="sm" color="var(--color-text-muted)">
-              Die globale Suche ist in Kürze verfügbar. Bis dahin findest du Inhalte über Dashboard, Events und Institut.
-            </Text>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
     </>
   );
 }

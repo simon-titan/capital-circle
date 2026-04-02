@@ -16,6 +16,7 @@ type EventItem = {
   event_type: string | null;
   color?: string | null;
   external_url?: string | null;
+  live_session_id?: string | null;
 };
 
 export function EventsPageCalendar({ events }: { events: EventItem[] }) {

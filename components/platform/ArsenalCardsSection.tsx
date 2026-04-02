@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Button, SimpleGrid, Stack, Text, Wrap, WrapItem } from "@chakra-ui/react";
+import { Badge, Box, Button, Flex, SimpleGrid, Stack, Text, Wrap, WrapItem } from "@chakra-ui/react";
 import type { ArsenalCardRow } from "@/lib/server-data";
 import { ExternalLink } from "lucide-react";
 
@@ -41,6 +41,12 @@ const ACCENTS = {
 
 export type ArsenalCardsAccent = "blue" | "green" | "gold";
 
+const LOGO_BG: Record<string, { bg: string }> = {
+  transparent: { bg: "transparent" },
+  white: { bg: "rgba(255, 255, 255, 0.98)" },
+  dark: { bg: "rgba(10, 10, 12, 0.96)" },
+};
+
 function ArsenalCardTile({
   card,
   accent,
@@ -52,12 +58,12 @@ function ArsenalCardTile({
   const hasUrl = Boolean(card.external_url?.trim());
   const hasDesc = Boolean(card.description?.trim());
   const hasLogo = Boolean(card.logo_storage_key?.trim());
-  const placeholder =
-    !hasUrl && bullets.length === 0 && !hasDesc && !hasLogo;
+  const placeholder = !hasUrl && bullets.length === 0 && !hasDesc && !hasLogo;
+  const featured = Boolean(card.is_featured);
+  const logoBgKey = card.logo_bg === "white" || card.logo_bg === "dark" ? card.logo_bg : "transparent";
+  const logoStrip = LOGO_BG[logoBgKey] ?? LOGO_BG.transparent;
 
-  const logoSrc = hasLogo
-    ? `/api/cover-url?key=${encodeURIComponent(card.logo_storage_key!.trim())}`
-    : null;
+  const logoSrc = hasLogo ? `/api/cover-url?key=${encodeURIComponent(card.logo_storage_key!.trim())}` : null;
 
   return (
     <Box
@@ -65,13 +71,18 @@ function ArsenalCardTile({
       p={{ base: 5, md: 6 }}
       borderRadius="14px"
       borderWidth="1px"
-      borderColor="rgba(212, 175, 55, 0.22)"
+      borderColor={featured ? "rgba(232, 197, 71, 0.45)" : "rgba(212, 175, 55, 0.22)"}
       borderLeft={accent.borderLeft}
       position="relative"
       overflow="hidden"
       h="100%"
       display="flex"
       flexDirection="column"
+      boxShadow={
+        featured
+          ? "0 0 36px rgba(212, 175, 55, 0.22), 0 0 0 1px rgba(212, 175, 55, 0.38), inset 0 1px 0 rgba(255,255,255,0.06)"
+          : undefined
+      }
     >
       <Box
         position="absolute"
@@ -82,17 +93,35 @@ function ArsenalCardTile({
         zIndex={0}
       />
       <Stack gap={3} position="relative" zIndex={1} flex="1" align="stretch">
+        {featured ? (
+          <Badge
+            alignSelf="flex-start"
+            px={2.5}
+            py={0.5}
+            borderRadius="full"
+            bg="rgba(212, 175, 55, 0.2)"
+            color="var(--color-accent-gold-light)"
+            borderWidth="1px"
+            borderColor="rgba(212, 175, 55, 0.45)"
+            className="inter-medium"
+            fontSize="10px"
+            textTransform="uppercase"
+            letterSpacing="0.12em"
+          >
+            Empfohlen
+          </Badge>
+        ) : null}
+
+        {/* Rahmen randfüllend: cover (kein Letterboxing), ohne Innenabstand */}
         <Box
           w="100%"
-          minH="80px"
-          maxH="120px"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
+          h={{ base: "76px", md: "88px" }}
+          flexShrink={0}
+          position="relative"
           borderRadius="md"
           borderWidth="1px"
-          borderColor="rgba(212, 175, 55, 0.15)"
-          bg="rgba(0, 0, 0, 0.2)"
+          borderColor="rgba(212, 175, 55, 0.42)"
+          bg={logoStrip.bg}
           overflow="hidden"
         >
           {logoSrc ? (
@@ -100,12 +129,22 @@ function ArsenalCardTile({
             <img
               src={logoSrc}
               alt=""
-              style={{ maxWidth: "100%", maxHeight: "112px", width: "auto", height: "auto", objectFit: "contain" }}
+              style={{
+                display: "block",
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                objectPosition: "center",
+              }}
             />
           ) : (
-            <Text className="inter" fontSize="xs" color="var(--color-text-tertiary)">
-              Kein Logo
-            </Text>
+            <Flex h="100%" minH="100%" align="center" justify="center" px={2}>
+              <Text className="inter" fontSize="xs" color="var(--color-text-tertiary)">
+                Kein Logo
+              </Text>
+            </Flex>
           )}
         </Box>
 

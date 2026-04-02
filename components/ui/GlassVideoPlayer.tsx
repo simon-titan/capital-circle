@@ -411,9 +411,14 @@ export function GlassVideoPlayer({
           onPlay={() => { setPlaying(true); setBuffering(false); }}
           onPause={() => setPlaying(false)}
           onTimeUpdate={tick}
-          onEnded={() => {
+          onEnded={(e) => {
             setPlaying(false);
-            onEnded?.();
+            const el = e.currentTarget;
+            const dur = el.duration;
+            // Nur als echtes Ende werten — verhindert falsche „100%“ bei Navigation/Unmount
+            if (Number.isFinite(dur) && dur > 0 && el.currentTime >= dur * 0.95) {
+              onEnded?.();
+            }
           }}
           onError={() => {
             setLoadError("Video konnte nicht geladen werden. URL oder Netzwerk pruefen.");

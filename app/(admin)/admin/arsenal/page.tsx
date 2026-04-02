@@ -1,5 +1,6 @@
 import { Stack, Text } from "@chakra-ui/react";
 import { ArsenalManager } from "@/components/admin/ArsenalManager";
+import { StandaloneAttachmentManager } from "@/components/admin/StandaloneAttachmentManager";
 
 export default function AdminArsenalPage() {
   return (
@@ -12,6 +13,7 @@ export default function AdminArsenalPage() {
           Tools, Fremdkapital, eigene Kategorien für Templates/PDFs sowie Datei-Uploads pro Modul/Video.
         </Text>
       </Stack>
+      <StandaloneAttachmentManager />
       <ArsenalManager />
     </Stack>
   );

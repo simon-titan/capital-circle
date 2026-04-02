@@ -75,6 +75,7 @@ export function LastVideoCard({ lastWatched, recommended }: LastVideoCardProps) 
       module,
       videoProgressSeconds,
       lastVideoDurationSeconds,
+      videoProgressPercent,
       progressPercent,
       durationSecondsTotal,
       lastVideoTitle,
@@ -82,11 +83,10 @@ export function LastVideoCard({ lastWatched, recommended }: LastVideoCardProps) 
       lastVideoStorageKey,
     } = lastWatched;
     const href = moduleHref({ id: module.id, slug: module.slug });
-    const modulePct = durationSecondsTotal > 0 ? Math.min(100, Math.max(0, progressPercent ?? 0)) : 0;
-    const lessonPct =
-      lastVideoDurationSeconds > 0
-        ? Math.min(100, Math.round((Math.min(videoProgressSeconds, lastVideoDurationSeconds) / lastVideoDurationSeconds) * 100))
-        : 0;
+    // Modul-Fortschritt: progressPercent kommt bereits korrekt aus server-data (inkl. Fallback ohne duration)
+    const modulePct = Math.min(100, Math.max(0, progressPercent ?? 0));
+    // Video-Fortschritt: videoProgressPercent aus server-data (korrekt auch ohne duration_seconds in DB)
+    const lessonPct = videoProgressPercent;
 
     const title = lastVideoTitle || module.title;
     const moduleLine = module.title.startsWith("Modul") ? module.title : `Modul: ${module.title}`;
@@ -158,12 +158,16 @@ export function LastVideoCard({ lastWatched, recommended }: LastVideoCardProps) 
           <Flex align="center" gap={2} mb={5} color="rgba(255,255,255,0.5)">
             <Clock size={16} strokeWidth={2} aria-hidden />
             <Text className="inter" fontSize="sm">
-              {formatLessonDurationSeconds(lastVideoDurationSeconds)}
+              {lastVideoDurationSeconds > 0
+                ? formatLessonDurationSeconds(lastVideoDurationSeconds)
+                : durationSecondsTotal > 0
+                  ? formatLessonDurationSeconds(durationSecondsTotal)
+                  : "—"}
             </Text>
           </Flex>
 
           <Box display="flex" flexDirection="column" gap={5} mb={5}>
-            <ProgressLabeled label="Lektion Fortschritt" value={lessonPct} sx={progressSxLesson} />
+            <ProgressLabeled label="Video Fortschritt" value={lessonPct} sx={progressSxLesson} />
             <ProgressLabeled label="Modul Fortschritt" value={modulePct} sx={progressSxModule} />
           </Box>
 
@@ -210,7 +214,7 @@ export function LastVideoCard({ lastWatched, recommended }: LastVideoCardProps) 
             boxShadow="0 4px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.35)"
           >
             <Text className="inter-semibold" fontSize="xs" letterSpacing="0.06em" textTransform="uppercase">
-              Nächste Lektion
+              Nächstes Video
             </Text>
           </Box>
 
@@ -259,7 +263,7 @@ export function LastVideoCard({ lastWatched, recommended }: LastVideoCardProps) 
           </Flex>
 
           <Box display="flex" flexDirection="column" gap={5} mb={5}>
-            <ProgressLabeled label="Lektion Fortschritt" value={0} sx={progressSxLesson} />
+            <ProgressLabeled label="Video Fortschritt" value={0} sx={progressSxLesson} />
             <ProgressLabeled label="Modul Fortschritt" value={modulePct} sx={progressSxModule} />
           </Box>
 

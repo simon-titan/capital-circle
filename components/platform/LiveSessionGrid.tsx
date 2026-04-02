@@ -133,16 +133,46 @@ export function LiveSessionGrid({ categories, sessions }: Props) {
                   <Text className="radley-regular" fontSize="lg" color="var(--color-text-primary)" noOfLines={2}>
                     {s.title}
                   </Text>
-                  {s.recorded_at ? (
-                    <HStack spacing={2} color="rgba(147, 197, 253, 0.85)" fontSize="xs" className="inter">
-                      <Calendar size={14} aria-hidden />
-                      <Text>{new Date(s.recorded_at).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })}</Text>
-                    </HStack>
-                  ) : null}
-                  {s.event ? (
-                    <Text className="inter" fontSize="xs" color="var(--color-text-muted)" noOfLines={2}>
-                      Event: {s.event.title}
+                  {s.description ? (
+                    <Text className="inter" fontSize="sm" color="var(--color-text-muted)" noOfLines={2} lineHeight={1.55}>
+                      {s.description}
                     </Text>
+                  ) : null}
+                  {(() => {
+                    const primaryIso = s.event?.start_time ?? s.recorded_at;
+                    if (!primaryIso) return null;
+                    const caption = s.event ? "Live-Termin" : "Aufzeichnung";
+                    return (
+                      <Stack gap={0.5}>
+                        <Text fontSize="10px" letterSpacing="0.08em" textTransform="uppercase" className="inter-semibold" color="rgba(147, 197, 253, 0.75)">
+                          {caption}
+                        </Text>
+                        <HStack spacing={2} color="rgba(147, 197, 253, 0.95)" fontSize="sm" className="inter-semibold">
+                          <Calendar size={16} aria-hidden />
+                          <Text>
+                            {new Date(primaryIso).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })}
+                          </Text>
+                        </HStack>
+                      </Stack>
+                    );
+                  })()}
+                  {s.event ? (
+                    <Box
+                      px={3}
+                      py={2.5}
+                      borderRadius="lg"
+                      borderWidth="1px"
+                      borderColor="rgba(100, 170, 240, 0.5)"
+                      bg="rgba(74, 144, 217, 0.14)"
+                      boxShadow="0 0 20px rgba(74, 144, 217, 0.12)"
+                    >
+                      <Text fontSize="10px" letterSpacing="0.1em" textTransform="uppercase" className="inter-semibold" color="rgba(191, 219, 254, 0.9)" mb={1}>
+                        Kalender-Event
+                      </Text>
+                      <Text className="inter" fontSize="sm" color="rgba(226, 232, 240, 0.98)" fontWeight={500} noOfLines={3} lineHeight={1.45}>
+                        {s.event.title}
+                      </Text>
+                    </Box>
                   ) : null}
                   <Box mt="auto" pt={2}>
                     <ChakraLinkButton

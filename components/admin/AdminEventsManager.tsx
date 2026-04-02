@@ -22,7 +22,7 @@ export function AdminEventsManager({ initialEvents }: { initialEvents: EventItem
   const [description, setDescription] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  const [eventType, setEventType] = useState("webinar");
+  const [eventType, setEventType] = useState("Q&A");
   const [eventColor, setEventColor] = useState<string>("#D4AF37");
   const [externalUrl, setExternalUrl] = useState("");
   const [weeklyRepeat, setWeeklyRepeat] = useState(false);
@@ -131,9 +131,9 @@ export function AdminEventsManager({ initialEvents }: { initialEvents: EventItem
       <Input type="datetime-local" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
       <Input placeholder="Externer Link (optional)" value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} />
       <Select value={eventType} onChange={(e) => setEventType(e.target.value)}>
-        <option value="live_session">live_session</option>
-        <option value="webinar">webinar</option>
-        <option value="deadline">deadline</option>
+        <option value="Q&A">Q&A</option>
+        <option value="Livetrading">Livetrading</option>
+        <option value="BIAS">BIAS</option>
       </Select>
       <Stack spacing={2}>
         <Text fontSize="sm">Event-Farbe</Text>

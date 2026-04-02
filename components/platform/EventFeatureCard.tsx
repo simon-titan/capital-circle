@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Button, HStack, Text, VStack } from "@chakra-ui/react";
+import { Badge, Box, Button, HStack, Text, VStack } from "@chakra-ui/react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { AppleBrandIcon, GoogleCalendarBrandIcon } from "@/components/platform/eventCalendarBrandIcons";
 
@@ -18,12 +18,19 @@ export type EventFeatureItem = {
 type EventFeatureCardProps = {
   event: EventFeatureItem;
   variant?: "featured" | "standard" | "compact";
-  /** Eingebettet z. B. in Dashboard: weniger Padding, keine Kalender-Hilfetext-Zeile */
+  /** Eingebettet z. B. in Dashboard: weniger Padding */
   embedded?: boolean;
+  /** Nächstes anstehendes Event: Gold-Ring + Badge (Dashboard / Events-Übersicht) */
+  nextEventSpotlight?: boolean;
 };
 
 /** Einzelnes Event als hervorgehobene Glass-Card (DESIGN.json: Radley, Inter, Mono, Accent Blue). */
-export function EventFeatureCard({ event, variant = "standard", embedded = false }: EventFeatureCardProps) {
+export function EventFeatureCard({
+  event,
+  variant = "standard",
+  embedded = false,
+  nextEventSpotlight = false,
+}: EventFeatureCardProps) {
   const start = new Date(event.start_time);
   const end = event.end_time ? new Date(event.end_time) : null;
 
@@ -39,7 +46,13 @@ export function EventFeatureCard({ event, variant = "standard", embedded = false
   const detailsForGoogle = `${event.description ?? ""}${event.external_url ? `\n\nLink: ${event.external_url}` : ""}`;
   const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${googleStart}/${googleEnd}&details=${encodeURIComponent(detailsForGoogle)}`;
   const isFeatured = variant === "featured";
-  const pad = embedded ? { base: 3, md: isFeatured ? 4 : 3 } : { base: 4, md: isFeatured ? 5 : 4 };
+  const pad = embedded ? { base: 2.5, md: isFeatured ? 3.5 : 2.5 } : { base: 3, md: isFeatured ? 4 : 3 };
+  const spotlightShadow =
+    nextEventSpotlight && isFeatured
+      ? embedded
+        ? "0 0 36px rgba(212, 175, 55, 0.35), 0 0 0 1px rgba(232, 197, 71, 0.5)"
+        : "0 0 40px rgba(212, 175, 55, 0.3), 0 0 0 1px rgba(232, 197, 71, 0.48)"
+      : undefined;
 
   const exportIcs = () => {
     const ics = buildIcs(event);
@@ -52,7 +65,7 @@ export function EventFeatureCard({ event, variant = "standard", embedded = false
     URL.revokeObjectURL(url);
   };
 
-  return (
+  const glassCard = (
     <GlassCard
       position="relative"
       overflow="hidden"
@@ -62,14 +75,24 @@ export function EventFeatureCard({ event, variant = "standard", embedded = false
       p={pad}
       borderRadius={embedded ? "12px" : "16px"}
       className={isFeatured ? "glass-card-highlight" : undefined}
+      boxShadow={
+        spotlightShadow ??
+        (isFeatured && !embedded ? "0 0 32px rgba(212, 175, 55, 0.22), 0 0 0 1px rgba(212, 175, 55, 0.35)" : undefined)
+      }
       transition="transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease"
       _hover={
         embedded
           ? { borderColor: "rgba(212, 175, 55, 0.55)" }
-          : {
-              transform: "translateY(-4px)",
-              boxShadow: "0 16px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(212, 175, 55, 0.28)",
-            }
+          : isFeatured
+            ? {
+                transform: "translateY(-3px)",
+                boxShadow:
+                  "0 0 40px rgba(212, 175, 55, 0.32), 0 16px 40px rgba(0, 0, 0, 0.38), 0 0 0 1px rgba(212, 175, 55, 0.42)",
+              }
+            : {
+                transform: "translateY(-3px)",
+                boxShadow: "0 12px 36px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(212, 175, 55, 0.24)",
+              }
       }
     >
       <Box
@@ -82,20 +105,43 @@ export function EventFeatureCard({ event, variant = "standard", embedded = false
         pointerEvents="none"
       />
 
-      <Box display="flex" gap={embedded ? 2 : 3} flex="1" flexDir="column" alignItems="center" textAlign="center">
+      {nextEventSpotlight && isFeatured ? (
+        <Badge
+          position="absolute"
+          top={embedded ? 2 : 3}
+          right={embedded ? 2 : 3}
+          zIndex={3}
+          px={2.5}
+          py={1}
+          borderRadius="full"
+          bg="rgba(212, 175, 55, 0.22)"
+          color="var(--color-accent-gold-light)"
+          borderWidth="1px"
+          borderColor="rgba(232, 197, 71, 0.45)"
+          className="inter-medium"
+          fontSize="10px"
+          textTransform="uppercase"
+          letterSpacing="0.14em"
+          pointerEvents="none"
+        >
+          Nächstes Event
+        </Badge>
+      ) : null}
+
+      <Box display="flex" gap={embedded ? 1.5 : 2.5} flex="1" flexDir="column" alignItems="center" textAlign="center">
         <HStack
-          spacing={embedded ? 2 : 3}
-          py={embedded ? 1.5 : 2}
-          px={embedded ? 2.5 : 3}
-          borderRadius="12px"
-          bg="rgba(212, 175, 55, 0.12)"
-          border="1px solid rgba(212, 175, 55, 0.32)"
-          minW={embedded ? "120px" : "140px"}
+          spacing={embedded ? 1.5 : 2}
+          py={embedded ? 1 : 1.5}
+          px={embedded ? 2 : 2.5}
+          borderRadius="10px"
+          bg="rgba(212, 175, 55, 0.1)"
+          border="1px solid rgba(212, 175, 55, 0.28)"
+          minW={embedded ? "108px" : "128px"}
           justify="center"
         >
           <Text
             className="jetbrains-mono"
-            fontSize={embedded ? (isFeatured ? "lg" : "md") : isFeatured ? "xl" : "lg"}
+            fontSize={embedded ? (isFeatured ? "md" : "sm") : isFeatured ? "lg" : "md"}
             fontWeight={500}
             lineHeight={1}
             color="var(--color-text-primary)"
@@ -151,7 +197,12 @@ export function EventFeatureCard({ event, variant = "standard", embedded = false
           </Box>
         ) : null}
 
-        <Text className="jetbrains-mono" fontSize="sm" color="var(--color-text-muted)">
+        <Text
+          className="inter-semibold"
+          fontSize={embedded ? "sm" : "md"}
+          letterSpacing="0.02em"
+          color="var(--color-accent-gold-light)"
+        >
           {timeStart}
           {timeEnd ? ` – ${timeEnd}` : ""}
         </Text>
@@ -201,15 +252,24 @@ export function EventFeatureCard({ event, variant = "standard", embedded = false
               Apple Kalender
             </Button>
           </HStack>
-          {embedded ? null : (
-            <Text className="inter" fontSize="xs" color="var(--color-text-muted)" textAlign="center" lineHeight="1.5" maxW="280px" px={1}>
-              Google öffnet eine vorausgefüllte Terminerstellung. Apple lädt eine .ics-Datei zum Import in den Apple Kalender herunter.
-            </Text>
-          )}
         </VStack>
       </Box>
     </GlassCard>
   );
+
+  if (nextEventSpotlight && isFeatured) {
+    return (
+      <Box
+        className={embedded ? "event-next-spotlight-ring event-next-spotlight-ring--embedded" : "event-next-spotlight-ring"}
+        position="relative"
+        h="100%"
+      >
+        {glassCard}
+      </Box>
+    );
+  }
+
+  return glassCard;
 }
 
 function toCalendarStamp(isoDate: string): string {

@@ -157,10 +157,12 @@ export function AnalysisFeed({ posts }: { posts: AnalysisPostRow[] }) {
                     </Text>
                   </HStack>
                   <Text className="inter" fontSize="sm" color="var(--color-text-tertiary)">
-                    {new Date(post.published_at).toLocaleString("de-DE", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}
+                    {post.analysis_date
+                      ? new Date(post.analysis_date).toLocaleDateString("de-DE", { dateStyle: "long" })
+                      : new Date(post.published_at).toLocaleString("de-DE", {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        })}
                   </Text>
                   <Text className="inter" fontSize="sm" color="var(--color-text-secondary)" lineHeight={1.65} noOfLines={6}>
                     {teaser}

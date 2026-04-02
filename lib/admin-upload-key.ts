@@ -6,7 +6,7 @@ export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]
 export type AdminUploadKeyInput = {
   fileName: string;
   contentType?: string;
-  folder?: "videos" | "attachments" | "covers" | "live-sessions";
+  folder?: "videos" | "attachments" | "covers" | "live-sessions" | "standalone-attachments";
   courseId?: string;
   moduleId?: string;
   /** Bei folder=videos: Modul-Video-ID; bei folder=live-sessions: live_session_videos.id */
@@ -59,6 +59,11 @@ export function buildAdminStorageKey(body: AdminUploadKeyInput):
       body.attachmentId && UUID_RE.test(body.attachmentId) ? body.attachmentId : randomUUID();
     const safeName = body.fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
     storageKey = `attachments/${courseId}/${moduleId}/${videoId}/${attId}/${safeName}`;
+  } else if (folder === "standalone-attachments") {
+    const attId =
+      body.attachmentId && UUID_RE.test(body.attachmentId) ? body.attachmentId : randomUUID();
+    const safeName = body.fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+    storageKey = `standalone-attachments/${attId}/${safeName}`;
   } else {
     const safeName = body.fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
     storageKey = `${folder}/${Date.now()}-${safeName}`;

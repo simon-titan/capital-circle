@@ -21,8 +21,9 @@ import listPlugin from "@fullcalendar/list";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import { useMemo, useState } from "react";
 import { GlassCard } from "@/components/ui/GlassCard";
+import { ChakraLinkButton } from "@/components/platform/ChakraLinkButton";
 import { AppleBrandIcon, GoogleCalendarBrandIcon } from "@/components/platform/eventCalendarBrandIcons";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, Radio } from "lucide-react";
 import "./eventsCalendar.theme.css";
 
 type EventItem = {
@@ -34,6 +35,8 @@ type EventItem = {
   event_type: string | null;
   color?: string | null;
   external_url?: string | null;
+  /** ID der verknüpften Live Session (falls vorhanden) */
+  live_session_id?: string | null;
 };
 
 type EventsCalendarProps = {
@@ -187,6 +190,38 @@ export function EventsCalendar({ events }: EventsCalendarProps) {
             <Text className="inter" fontSize="sm" color="rgba(240, 240, 242, 0.88)" mb={6} whiteSpace="pre-wrap" lineHeight="tall">
               {selected?.description || "Keine Beschreibung hinterlegt."}
             </Text>
+            {selected?.live_session_id ? (
+              <Box
+                mb={4}
+                p={3}
+                borderRadius="12px"
+                borderWidth="1px"
+                borderColor="rgba(100, 170, 240, 0.5)"
+                bg="rgba(74, 144, 217, 0.12)"
+                boxShadow="0 0 20px rgba(74, 144, 217, 0.1)"
+              >
+                <Text
+                  className="inter-semibold"
+                  fontSize="xs"
+                  textTransform="uppercase"
+                  letterSpacing="0.1em"
+                  color="rgba(147, 197, 253, 0.9)"
+                  mb={2}
+                >
+                  Aufzeichnung verfügbar
+                </Text>
+                <ChakraLinkButton
+                  href={`/live-session/${selected.live_session_id}`}
+                  onClick={onClose}
+                  size="sm"
+                  colorScheme="blue"
+                  variant="solid"
+                  leftIcon={<Radio size={16} aria-hidden />}
+                >
+                  Recap ansehen
+                </ChakraLinkButton>
+              </Box>
+            ) : null}
             {selected?.external_url ? (
               <Button
                 as="a"

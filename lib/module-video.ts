@@ -1,4 +1,4 @@
-import type { createClient } from "@/lib/supabase/server";
+﻿import type { createClient } from "@/lib/supabase/server";
 import { getPresignedGetUrl } from "@/lib/storage";
 
 type ServerClient = Awaited<ReturnType<typeof createClient>>;
@@ -19,13 +19,17 @@ export type PlaylistVideoRow = {
 /** Mindest-Sekunden bei fehlender Dauer in der DB (kein 1-Sekunden-Scrub als „fertig“). */
 const MIN_WATCHED_SECONDS_WHEN_NO_DURATION = 30;
 
+/** Mindest-Anteil der Videodauer der angesehen sein muss (90%). */
+const MIN_WATCHED_RATIO = 0.9;
+
 /** Video gilt als vollständig angesehen (Fortschritt nahe Dauer). */
 export function isPlaylistVideoDone(v: PlaylistVideoRow, progressMap: Record<string, number>): boolean {
   const d = v.duration_seconds ?? 0;
   const w = progressMap[v.id] ?? 0;
   // Ohne verlässliche Dauer: nur nach ausreichend langer Wiedergabe als fertig zählen
   if (d <= 0) return w >= MIN_WATCHED_SECONDS_WHEN_NO_DURATION;
-  return d > 0 && w >= d - 1;
+  // Mit Dauer: mindestens 90% gesehen (robuster als d-1 bei kurzen Videos)
+  return w >= d * MIN_WATCHED_RATIO;
 }
 
 async function signKey(key: string | null | undefined): Promise<string | null> {

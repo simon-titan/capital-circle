@@ -172,13 +172,7 @@ export default function SettingsPage() {
     if (!profileId) return;
     setUploadingAvatar(true);
     try {
-      const params = new URLSearchParams({
-        folder: "attachments",
-        kind: "thumbnail",
-        attachmentId: profileId,
-      });
-
-      const response = await fetch(`/api/admin/upload-proxy?${params.toString()}`, {
+      const response = await fetch("/api/profile/avatar", {
         method: "POST",
         headers: {
           "Content-Type": file.type || "application/octet-stream",
@@ -195,7 +189,7 @@ export default function SettingsPage() {
       setAvatarUrl(payload.storageKey);
       toast({
         title: "Avatar hochgeladen",
-        description: "Der Upload war erfolgreich. Speichere jetzt dein Profil.",
+        description: "Dein Profilbild wurde erfolgreich gespeichert.",
         status: "success",
         duration: 3500,
         isClosable: true,

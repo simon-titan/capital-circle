@@ -43,7 +43,7 @@ export async function POST(request: Request) {
   const base = {
     title: body.title,
     description: body.description ?? null,
-    event_type: body.event_type ?? "webinar",
+    event_type: body.event_type ?? "Q&A",
     color: body.color ?? "#D4AF37",
     external_url: body.external_url ?? null,
     created_by: userId,

@@ -48,8 +48,16 @@ export default async function LiveSessionDetailPage({ params }: PageProps) {
               {detail.description}
             </Text>
           ) : null}
-          {detail.recorded_at ? (
-            <Text className="inter" fontSize="xs" color="var(--color-text-muted)">
+          {detail.event ? (
+            <Text className="inter-semibold" fontSize="sm" color="rgba(147, 197, 253, 0.95)">
+              Live am:{" "}
+              {new Date(detail.event.start_time).toLocaleString("de-DE", {
+                dateStyle: "full",
+                timeStyle: "short",
+              })}
+            </Text>
+          ) : detail.recorded_at ? (
+            <Text className="inter" fontSize="sm" color="var(--color-text-muted)">
               Aufzeichnung:{" "}
               {new Date(detail.recorded_at).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })}
             </Text>
@@ -60,11 +68,14 @@ export default async function LiveSessionDetailPage({ params }: PageProps) {
               py={2}
               borderRadius="md"
               borderWidth="1px"
-              borderColor="rgba(100, 170, 240, 0.35)"
-              bg="rgba(74, 144, 217, 0.08)"
+              borderColor="rgba(100, 170, 240, 0.4)"
+              bg="rgba(74, 144, 217, 0.1)"
             >
-              <Text className="inter" fontSize="xs" color="rgba(191, 219, 254, 0.95)">
-                Verknüpftes Event: {detail.event.title}
+              <Text fontSize="10px" letterSpacing="0.08em" textTransform="uppercase" className="inter-semibold" color="rgba(147, 197, 253, 0.85)" mb={1}>
+                Kalender-Event
+              </Text>
+              <Text className="inter" fontSize="sm" color="rgba(191, 219, 254, 0.98)">
+                {detail.event.title}
               </Text>
             </Box>
           ) : null}

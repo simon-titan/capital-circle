@@ -6,7 +6,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Box, Button, Flex, Heading, Progress, Stack, Text } from "@chakra-ui/react";
 import { CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type BaseQuestion = {
   id: string;
@@ -234,6 +234,7 @@ export function QuizModal({
   nextModuleHref = null,
 }: QuizModalProps) {
   const router = useRouter();
+  const navigatedRef = useRef(false);
   const normalizedQuestions = useMemo(() => questions.map(normalizeQuestion), [questions]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, QuestionAnswer>>({});
@@ -244,8 +245,22 @@ export function QuizModal({
       setAnswers({});
       setCurrentIndex(0);
       setResult(null);
+      navigatedRef.current = false;
     }
   }, [isOpen]);
+
+  /** Nach Bestehen automatisch zum nächsten Modul (oder Übersicht), optional sofort per Button. */
+  useEffect(() => {
+    if (!result?.passed) return;
+    const href = nextModuleHref?.trim() || "/ausbildung";
+    const t = window.setTimeout(() => {
+      if (navigatedRef.current) return;
+      navigatedRef.current = true;
+      onClose();
+      router.push(href);
+    }, 2000);
+    return () => window.clearTimeout(t);
+  }, [result, nextModuleHref, onClose, router]);
   const total = normalizedQuestions.length;
   const current = normalizedQuestions[currentIndex] ?? null;
 
@@ -345,7 +360,7 @@ export function QuizModal({
             </Box>
             <Text className="inter" color="var(--color-text-muted)" fontSize="sm">
               {result.passed
-                ? "Du kannst jetzt mit dem nächsten Modul weitermachen."
+                ? "Du wirst in Kürze automatisch zum nächsten Modul weitergeleitet — oder tippe unten auf die Schaltfläche."
                 : "Du bist nah dran - prüfe die Antworten und versuche es erneut."}
             </Text>
             {!result.passed ? (
@@ -361,9 +376,10 @@ export function QuizModal({
             ) : (
               <Button
                 onClick={() => {
+                  if (navigatedRef.current) return;
+                  navigatedRef.current = true;
                   onClose();
-                  const href = nextModuleHref?.trim() || "/ausbildung";
-                  router.push(href);
+                  router.push(nextModuleHref?.trim() || "/ausbildung");
                 }}
                 className="quiz-success-cta"
                 color="var(--color-white)"

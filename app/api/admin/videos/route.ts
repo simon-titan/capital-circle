@@ -7,9 +7,31 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const moduleId = url.searchParams.get("moduleId");
   const subcategoryId = url.searchParams.get("subcategoryId");
+  const allForModule = url.searchParams.get("allForModule");
+
   if (!moduleId && !subcategoryId) {
     return NextResponse.json({ ok: false, error: "missing_parent" }, { status: 400 });
   }
+
+  // Alle Videos eines Moduls (direkte + alle Subkategorien) auf einmal laden
+  if (allForModule === "1" && moduleId) {
+    const { data: subs } = await supabase
+      .from("subcategories")
+      .select("id")
+      .eq("module_id", moduleId);
+    const subIds = (subs ?? []).map((s: { id: string }) => s.id);
+
+    let q = supabase.from("videos").select("*").order("position", { ascending: true });
+    if (subIds.length > 0) {
+      q = q.or(`module_id.eq.${moduleId},subcategory_id.in.(${subIds.join(",")})`);
+    } else {
+      q = q.eq("module_id", moduleId);
+    }
+    const { data, error: qErr } = await q;
+    if (qErr) return NextResponse.json({ ok: false, error: qErr.message }, { status: 400 });
+    return NextResponse.json({ ok: true, items: data ?? [] });
+  }
+
   let q = supabase.from("videos").select("*").order("position", { ascending: true });
   if (subcategoryId) {
     q = q.eq("subcategory_id", subcategoryId);

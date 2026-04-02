@@ -1,6 +1,6 @@
 import { Grid, GridItem, Heading, Text } from "@chakra-ui/react";
 import { redirect } from "next/navigation";
-import { ModuleCard } from "@/components/platform/ModuleCard";
+import { InstitutAccordion } from "@/components/platform/InstitutAccordion";
 import { createClient } from "@/lib/supabase/server";
 import { getAcademyModulesOverview } from "@/lib/server-data";
 
@@ -28,13 +28,7 @@ export default async function AusbildungPage() {
             Noch keine veröffentlichten Module.
           </Text>
         ) : (
-          <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", xl: "repeat(3, 1fr)" }} gap={6}>
-            {modules.map((m) => (
-              <GridItem key={m.id}>
-                <ModuleCard module={m} />
-              </GridItem>
-            ))}
-          </Grid>
+          <InstitutAccordion modules={modules} />
         )}
       </GridItem>
     </Grid>

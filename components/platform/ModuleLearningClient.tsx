@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Badge, Box, Button, Grid, GridItem, HStack, Stack, Text } from "@chakra-ui/react";
+import { Badge, Box, Button, Grid, GridItem, HStack, Stack, Text, Tooltip } from "@chakra-ui/react";
 import { GlassVideoPlayer } from "@/components/ui/GlassVideoPlayer";
 import { QuizModal, type QuizMode, type QuizQuestion } from "@/components/platform/QuizModal";
 import { VideoPlaylist, isPlaylistIndexUnlocked } from "@/components/platform/VideoPlaylist";
@@ -76,6 +76,13 @@ export function ModuleLearningClient({
   useEffect(() => {
     lastProgressRef.current = lastProgress;
   }, [lastProgress]);
+
+  /** Ref sofort setzen (nicht nur nach Re-Render), damit onVideoEnded nach timeupdate/ended zuverlässig prüfen kann. */
+  const onPlayerProgress = useCallback((seconds: number) => {
+    const s = Math.floor(seconds);
+    lastProgressRef.current = s;
+    setLastProgress(s);
+  }, []);
   const [progressMap, setProgressMap] = useState<Record<string, number>>(() => ({ ...initialProgressMap }));
   const progressMapRef = useRef(progressMap);
   useEffect(() => {
@@ -85,8 +92,25 @@ export function ModuleLearningClient({
   const [activeIndex, setActiveIndex] = useState(() => pickStartIndex(playlist, initialVideoId, initialProgressMap));
   const hasQuiz = useMemo(() => questions.length > 0, [questions.length]);
 
+  /** Alle Playlist-Videos als „fertig“ (für Quiz-Startpflicht). */
+  const allVideosWatched = useMemo(() => {
+    if (!playlist.length) return true;
+    return playlist.every((v) => isPlaylistVideoDone(v, progressMap));
+  }, [playlist, progressMap]);
+
+  /** Manueller Quiz-Start nur, wenn alle Videos durchgesehen oder Modul bereits abgeschlossen (Wiederholung). */
+  const quizStartBlocked = hasQuiz && !allVideosWatched && !moduleCompleted;
+
   const current = playlist[activeIndex] ?? null;
-  const startAtSeconds = current ? Math.max(0, progressMap[current.id] ?? 0) : 0;
+  // startAtSeconds auf max. 85% der Dauer begrenzen: verhindert dass das Video sofort endet
+  // und onVideoEnded feuert wenn gespeicherter Fortschritt nahe am Ende liegt.
+  const startAtSeconds = (() => {
+    if (!current) return 0;
+    const saved = progressMap[current.id] ?? 0;
+    const dur = current.duration_seconds ?? 0;
+    const maxStart = dur > 0 ? dur * 0.85 : saved;
+    return Math.max(0, Math.min(saved, maxStart));
+  })();
   const currentAttachments = current ? attachmentsByVideoId[current.id] ?? [] : [];
 
   const postProgress = useCallback(
@@ -125,34 +149,16 @@ export function ModuleLearningClient({
         ...progressMapRef.current,
         [current.id]: Math.max(progressMapRef.current[current.id] ?? 0, progress),
       };
+      // Nur Fortschritt speichern — kein completed/videoCompleted setzen.
+      // Das Abschließen passiert ausschließlich über onVideoEnded (zuverlässig durch den Player).
       void postProgress({
         progressSeconds: progress,
         videoId: current.id,
         videoProgressMap: map,
       });
-
-      // Fallback: natives video "ended" feuert z. B. nach Seek ans Ende nicht — Modul trotzdem abschließen
-      if (playlist.length > 0 && !hasQuiz && !moduleCompletedRef.current) {
-        const last = playlist[playlist.length - 1]!;
-        const mergedForLast = {
-          ...map,
-          [last.id]: Math.max(map[last.id] ?? 0, current.id === last.id ? progress : map[last.id] ?? 0),
-        };
-        if (isPlaylistVideoDone(last, mergedForLast)) {
-          moduleCompletedRef.current = true;
-          setModuleCompleted(true);
-          void postProgress({
-            progressSeconds: Math.max(progress, mergedForLast[last.id] ?? 0),
-            videoId: last.id,
-            videoCompleted: true,
-            completed: true,
-            videoProgressMap: mergedForLast,
-          });
-        }
-      }
     }, 5000);
     return () => clearInterval(interval);
-  }, [current, postProgress, playlist, hasQuiz]);
+  }, [current, postProgress]);
 
   const onQuizResult = async ({ score, passed }: { score: number; passed: boolean }) => {
     const vid = current?.id ?? null;
@@ -179,19 +185,27 @@ export function ModuleLearningClient({
   const onVideoEnded = useCallback(() => {
     if (!current) return;
     const dur = current.duration_seconds ?? 0;
-    const endedSeconds = dur > 0 ? dur : Math.max(lastProgress, progressMapRef.current[current.id] ?? 0);
+    // Sicherheitscheck: nur die in DIESER Session tatsächlich geschauten Sekunden prüfen.
+    // progressMapRef enthält ggf. alte DB-Werte → darf hier NICHT verwendet werden,
+    // sonst gilt ein Video das beim Start ans Ende seeked sofort als fertig.
+    const sessionWatched = lastProgressRef.current;
+    if (dur > 0 && sessionWatched < dur * 0.85) return;
+    const endedSeconds = dur > 0 ? dur : Math.max(lastProgressRef.current, progressMapRef.current[current.id] ?? 0);
 
     if (activeIndex < playlist.length - 1) {
-      const next = playlist[activeIndex + 1];
+      const nextVideo = playlist[activeIndex + 1]!;
       const newMap = {
         ...progressMapRef.current,
         [current.id]: Math.max(progressMapRef.current[current.id] ?? 0, endedSeconds),
       };
       progressMapRef.current = newMap;
       setProgressMap(newMap);
+      // videoId = nächstes Video (last_video_id in DB). progressSeconds: 0 — Fortschritt des
+      // aktuellen Videos steht nur in videoProgressMap; sonst schreibt die API fälschlich
+      // endedSeconds unter nextVideo.id in video_progress_by_video (Kaskaden-Bug).
       void postProgress({
-        progressSeconds: endedSeconds,
-        videoId: current.id,
+        progressSeconds: 0,
+        videoId: nextVideo.id,
         videoCompleted: false,
         videoProgressMap: newMap,
       });
@@ -217,14 +231,15 @@ export function ModuleLearningClient({
       moduleCompletedRef.current = true;
       setModuleCompleted(true);
     }
-    if (hasQuiz) setQuizOpen(true);
-  }, [activeIndex, current, hasQuiz, lastProgress, playlist, postProgress]);
+    // Quiz nur öffnen wenn Modul noch NICHT abgeschlossen (erster Durchlauf)
+    if (hasQuiz && !moduleCompletedRef.current) setQuizOpen(true);
+  }, [activeIndex, current, hasQuiz, playlist, postProgress]);
 
   const onSelectVideo = useCallback(
     async (idx: number) => {
       if (idx === activeIndex || idx < 0 || idx >= playlist.length) return;
       if (!isPlaylistIndexUnlocked(playlist, progressMapRef.current, idx)) return;
-      const next = playlist[idx];
+      const next = playlist[idx]!;
       const cur = playlist[activeIndex];
       const secs = lastProgress;
       const base = { ...progressMapRef.current };
@@ -232,6 +247,7 @@ export function ModuleLearningClient({
         base[cur.id] = Math.max(base[cur.id] ?? 0, Math.floor(secs));
       }
       setProgressMap(base);
+      // videoId = Ziel-Video (next), damit last_video_id in DB korrekt gesetzt wird
       await postProgress({
         progressSeconds: cur ? base[cur.id] ?? 0 : 0,
         videoId: next.id,
@@ -260,7 +276,7 @@ export function ModuleLearningClient({
           Kein veröffentlichtes Video in diesem Modul. Platzhalter-Intro wird angezeigt, falls konfiguriert.
         </Text>
         {introFallback ? (
-          <GlassVideoPlayer src={introFallback} onProgress={(seconds) => setLastProgress(Math.floor(seconds))} />
+          <GlassVideoPlayer src={introFallback} onProgress={onPlayerProgress} />
         ) : null}
         {hasQuiz ? (
           <Stack spacing={3} mt={4} mb={6} maxW="md">
@@ -286,16 +302,31 @@ export function ModuleLearningClient({
                 {quizStatusLabel}
               </Badge>
             ) : null}
-            <Button
-              variant="outline"
-              size="sm"
-              w="fit-content"
-              onClick={() => setQuizOpen(true)}
-              borderColor="rgba(212,175,55,0.45)"
-              color="var(--color-accent-gold-light)"
+            <Tooltip
+              label="Schau zuerst alle Videos dieses Moduls zu Ende."
+              isDisabled={!quizStartBlocked}
+              hasArrow
+              openDelay={200}
             >
-              {quizPassed ? "Test wiederholen" : quizLastScore !== null ? "Erneut versuchen" : "Test starten"}
-            </Button>
+              <span style={{ width: "fit-content", display: "inline-block" }}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  w="fit-content"
+                  isDisabled={quizStartBlocked}
+                  onClick={() => setQuizOpen(true)}
+                  borderColor="rgba(212,175,55,0.45)"
+                  color="var(--color-accent-gold-light)"
+                >
+                  {quizPassed ? "Test wiederholen" : quizLastScore !== null ? "Erneut versuchen" : "Test starten"}
+                </Button>
+              </span>
+            </Tooltip>
+            {quizStartBlocked ? (
+              <Text className="inter" fontSize="xs" color="var(--color-text-muted)">
+                Der Test ist verfügbar, sobald alle Videos vollständig angesehen sind.
+              </Text>
+            ) : null}
           </Stack>
         ) : null}
         {quizOpen ? (
@@ -356,7 +387,7 @@ export function ModuleLearningClient({
             key={current.id}
             storageKey={current.storage_key}
             startAtSeconds={startAtSeconds}
-            onProgress={(seconds) => setLastProgress(Math.floor(seconds))}
+            onProgress={onPlayerProgress}
             onEnded={onVideoEnded}
           />
           {moduleCompleted ? (
@@ -432,9 +463,31 @@ export function ModuleLearningClient({
                     </Badge>
                   ) : null}
                 </HStack>
-                <Button variant="outline" size="sm" w="full" onClick={() => setQuizOpen(true)} borderColor="rgba(212,175,55,0.45)" color="var(--color-accent-gold-light)">
-                  {quizPassed ? "Test wiederholen" : quizLastScore !== null ? "Erneut versuchen" : "Test starten"}
-                </Button>
+                <Tooltip
+                  label="Schau zuerst alle Videos dieses Moduls zu Ende."
+                  isDisabled={!quizStartBlocked}
+                  hasArrow
+                  openDelay={200}
+                >
+                  <span style={{ width: "100%", display: "block" }}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      w="full"
+                      isDisabled={quizStartBlocked}
+                      onClick={() => setQuizOpen(true)}
+                      borderColor="rgba(212,175,55,0.45)"
+                      color="var(--color-accent-gold-light)"
+                    >
+                      {quizPassed ? "Test wiederholen" : quizLastScore !== null ? "Erneut versuchen" : "Test starten"}
+                    </Button>
+                  </span>
+                </Tooltip>
+                {quizStartBlocked ? (
+                  <Text className="inter" fontSize="xs" color="var(--color-text-muted)">
+                    Der Test ist verfügbar, sobald alle Videos vollständig angesehen sind.
+                  </Text>
+                ) : null}
               </Stack>
             ) : null}
           </Box>

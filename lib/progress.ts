@@ -1,5 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 
+/** Vorgänger-Modul-ID: größter order_index kleiner als current (Lücken in der Reihe erlaubt). */
+function previousModuleIdFromOrderedIndices(
+  courseMap: Map<number, string>,
+  orderIndex: number,
+): string | undefined {
+  const sorted = [...courseMap.keys()].sort((a, b) => a - b);
+  const pos = sorted.indexOf(orderIndex);
+  if (pos <= 0) return undefined;
+  const prevOrder = sorted[pos - 1]!;
+  return courseMap.get(prevOrder);
+}
+
 export async function isModuleUnlocked(userId: string, moduleId: string): Promise<boolean> {
   const supabase = await createClient();
   const { data: currentModule } = await supabase
@@ -8,23 +20,32 @@ export async function isModuleUnlocked(userId: string, moduleId: string): Promis
     .eq("id", moduleId)
     .single();
   if (!currentModule) return false;
-  if (currentModule.order_index === 1) return true;
 
-  const { data: previousModule } = await supabase
+  const { data: siblings } = await supabase
     .from("modules")
-    .select("id")
-    .eq("course_id", currentModule.course_id)
-    .eq("order_index", currentModule.order_index - 1)
-    .single();
+    .select("id,order_index")
+    .eq("course_id", currentModule.course_id);
 
-  if (!previousModule) return false;
+  const courseMap = new Map<number, string>();
+  for (const row of siblings ?? []) {
+    const oi = row.order_index;
+    if (typeof oi === "number") courseMap.set(oi, row.id as string);
+  }
+
+  const sortedOrders = [...courseMap.keys()].sort((a, b) => a - b);
+  const minOrder = sortedOrders.length ? sortedOrders[0]! : currentModule.order_index;
+  // Erstes Modul im Kurs (kleinster order_index) — deckt auch Legacy order_index 0 ab
+  if (currentModule.order_index === minOrder) return true;
+
+  const prevId = previousModuleIdFromOrderedIndices(courseMap, currentModule.order_index);
+  if (!prevId) return false;
 
   const { data: previousProgress } = await supabase
     .from("user_progress")
     .select("completed")
     .eq("user_id", userId)
-    .eq("module_id", previousModule.id)
-    .single();
+    .eq("module_id", prevId)
+    .maybeSingle();
 
   return Boolean(previousProgress?.completed);
 }
@@ -47,8 +68,14 @@ export function isModuleUnlockedFromMaps(
   orderIndexToModuleId: Map<string, Map<number, string>>,
   completedByModuleId: Map<string, boolean>,
 ): boolean {
-  if (module.order_index === 1) return true;
-  const prevId = orderIndexToModuleId.get(module.course_id)?.get(module.order_index - 1);
+  const courseMap = orderIndexToModuleId.get(module.course_id);
+  if (!courseMap || courseMap.size === 0) return true;
+
+  const sortedOrders = [...courseMap.keys()].sort((a, b) => a - b);
+  const minOrder = sortedOrders[0]!;
+  if (module.order_index === minOrder) return true;
+
+  const prevId = previousModuleIdFromOrderedIndices(courseMap, module.order_index);
   if (!prevId) return false;
   return Boolean(completedByModuleId.get(prevId));
 }

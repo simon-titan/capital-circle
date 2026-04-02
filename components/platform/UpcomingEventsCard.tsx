@@ -109,7 +109,12 @@ export function UpcomingEventsCard({ events }: UpcomingEventsCardProps) {
         <Box>
           {activeEvent ? (
             <Box key={activeEvent.id} animation={`${eventSlideIn} 280ms ease-out`}>
-              <EventFeatureCard event={toFeatureItem(activeEvent)} variant="featured" embedded />
+              <EventFeatureCard
+                event={toFeatureItem(activeEvent)}
+                variant="featured"
+                embedded
+                nextEventSpotlight={activeIndex === 0}
+              />
             </Box>
           ) : null}
           {events.length > 1 ? (

@@ -133,6 +133,31 @@ a {
     inset 0 1px 0 rgba(255, 255, 255, 0.09);
 }
 
+@keyframes event-next-spotlight-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(212, 175, 55, 0.42),
+      0 0 28px rgba(212, 175, 55, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px rgba(232, 197, 71, 0.55),
+      0 0 44px rgba(212, 175, 55, 0.32);
+  }
+}
+
+.event-next-spotlight-ring {
+  border-radius: 18px;
+  padding: 2px;
+  background: linear-gradient(135deg, rgba(232, 197, 71, 0.55), rgba(212, 175, 55, 0.12));
+  animation: event-next-spotlight-pulse 2.8s ease-in-out infinite;
+}
+
+.event-next-spotlight-ring--embedded {
+  border-radius: 14px;
+}
+
 /* Dashboard: gleiche Familie wie Institut-Rings / Lernzeit-Woche (HERO-UI-SPEZIFIKATION) */
 .glass-card-dashboard {
   background:

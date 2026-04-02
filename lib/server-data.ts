@@ -28,6 +28,8 @@ export async function getCurrentUserAndProfile() {
 export type LastWatchedModuleData = {
   videoProgressSeconds: number;
   lastVideoDurationSeconds: number;
+  /** Fortschritt des zuletzt angesehenen Videos in % (0–100), auch wenn duration_seconds fehlt. */
+  videoProgressPercent: number;
   completed: boolean;
   progressPercent: number;
   watchedSecondsTotal: number;
@@ -208,15 +210,28 @@ async function lastWatchedDataFromProgressRow(
   const thumbKey = mod.thumbnail_storage_key ?? null;
   const thumbnailSignedUrl = await signThumbnail(thumbKey);
   const currentSec = lastVid ? map[lastVid] ?? row.video_progress_seconds ?? 0 : row.video_progress_seconds ?? 0;
-  const lastPlaylistRow = lastVid ? playlist.find((v) => v.id === lastVid) : null;
+  const lastPlaylistRow = lastVid ? playlist.find((v) => v.id === lastVid) : playlist[0] ?? null;
   const lastVideoDurationSeconds = lastPlaylistRow?.duration_seconds ?? 0;
   const lastVideoStorageKey = lastPlaylistRow?.storage_key ?? null;
+
+  // Video-Fortschritt in % für das zuletzt angesehene Video
+  let videoProgressPercent = 0;
+  if (lastPlaylistRow) {
+    const dur = lastPlaylistRow.duration_seconds ?? 0;
+    if (dur > 0) {
+      videoProgressPercent = Math.min(100, Math.round((currentSec / dur) * 100));
+    } else if (currentSec > 0) {
+      // Keine Dauer in DB: als "fertig" markieren wenn isPlaylistVideoDone greift (>= 30s)
+      videoProgressPercent = currentSec >= 30 ? 100 : Math.round((currentSec / 30) * 100);
+    }
+  }
 
   return {
     videoProgressSeconds: currentSec,
     lastVideoDurationSeconds,
+    videoProgressPercent,
     completed: Boolean(row.completed),
-    progressPercent: durationSecondsTotal > 0 ? pct : 0,
+    progressPercent: pct,
     watchedSecondsTotal: watched,
     durationSecondsTotal,
     lastVideoTitle,
@@ -233,24 +248,39 @@ async function lastWatchedDataFromProgressRow(
   };
 }
 
-/** Letztes sichtbares Modul mit Videofortschritt (Free/Paid-Filter). */
+/** Letztes sichtbares Modul mit Videofortschritt (Free/Paid-Filter).
+ *  Priorität: nicht-abgeschlossene Module zuerst (nach updated_at), dann abgeschlossene als Fallback.
+ */
 export async function getLastWatchedModule(userId: string): Promise<LastWatchedModuleData | null> {
   const supabase = await createClient();
   const { data: profile } = await supabase.from("profiles").select("is_paid").eq("id", userId).maybeSingle();
   const memberIsPaid = Boolean(profile?.is_paid);
 
-  const pickFirstVisible = async (orderBy: "updated_at" | "video_progress_seconds") => {
-    const base = supabase
+  const fetchRows = async (completedFilter: boolean) => {
+    const { data, error } = await supabase
       .from("user_progress")
       .select(progressModuleSelectExtended)
       .eq("user_id", userId)
-      .or("video_progress_seconds.gt.0,last_video_id.not.is.null")
+      .eq("completed", completedFilter)
+      .order("updated_at", { ascending: false, nullsFirst: false })
       .limit(25);
-    const { data } =
-      orderBy === "updated_at"
-        ? await base.order("updated_at", { ascending: false, nullsFirst: false })
-        : await base.order("video_progress_seconds", { ascending: false });
-    for (const r of (data ?? []) as ProgressRowExtended[]) {
+
+    if (error?.code === "PGRST204") {
+      // updated_at oder erweiterte Spalten fehlen noch → Fallback ohne Filter
+      const { data: base } = await supabase
+        .from("user_progress")
+        .select(progressModuleSelect)
+        .eq("user_id", userId)
+        .gt("video_progress_seconds", 0)
+        .order("video_progress_seconds", { ascending: false })
+        .limit(25);
+      return (base ?? []) as ProgressRowExtended[];
+    }
+    return (data ?? []) as ProgressRowExtended[];
+  };
+
+  const pickFrom = async (rows: ProgressRowExtended[]) => {
+    for (const r of rows) {
       const mod = normalizeJoinedModule(r);
       const course = mod?.courses;
       if (!mod || !userCanAccessAcademyModule(memberIsPaid, course?.is_free)) continue;
@@ -259,7 +289,17 @@ export async function getLastWatchedModule(userId: string): Promise<LastWatchedM
     return null;
   };
 
-  return (await pickFirstVisible("updated_at")) ?? (await pickFirstVisible("video_progress_seconds"));
+  // 1. Zuerst: nicht abgeschlossene Module mit Fortschritt
+  const inProgress = await fetchRows(false);
+  const inProgressWithActivity = inProgress.filter(
+    (r) => (r.video_progress_seconds ?? 0) > 0 || r.last_video_id != null,
+  );
+  const fromInProgress = await pickFrom(inProgressWithActivity);
+  if (fromInProgress) return fromInProgress;
+
+  // 2. Fallback: abgeschlossene Module (z. B. wenn alles fertig ist)
+  const completed = await fetchRows(true);
+  return pickFrom(completed);
 }
 
 type ServerSupabase = Awaited<ReturnType<typeof createClient>>;
@@ -342,12 +382,24 @@ export async function getAcademyModulesOverview(
     return (a.order_index ?? 0) - (b.order_index ?? 0);
   });
 
-  const { data: progresses } = await supabase
+  // Versuche mit erweiterten Spalten; falle auf Basis zurück wenn Schema-Cache veraltet (PGRST204)
+  let progressRows: { module_id: unknown; completed: boolean | null; video_progress_by_video?: unknown; last_video_id?: unknown }[] = [];
+  const { data: extProgresses, error: extProgErr } = await supabase
     .from("user_progress")
     .select("module_id,completed,video_progress_by_video,last_video_id")
     .eq("user_id", userId);
+  if (extProgErr?.code === "PGRST204") {
+    const { data: baseProgresses } = await supabase
+      .from("user_progress")
+      .select("module_id,completed")
+      .eq("user_id", userId);
+    progressRows = (baseProgresses ?? []) as typeof progressRows;
+  } else {
+    progressRows = (extProgresses ?? []) as typeof progressRows;
+  }
+
   const progByMod = new Map(
-    (progresses ?? []).map((p) => [
+    progressRows.map((p) => [
       p.module_id as string,
       p as { completed: boolean | null; video_progress_by_video: unknown },
     ]),
@@ -422,12 +474,22 @@ export async function getWelcomeDashboardMetricsFromOverview(
   }
 
   const playlistByModule = await getModulePublishedPlaylistsBulk(supabase, moduleIds);
-  const { data: progresses } = await supabase
+  let metricsProgressRows: { module_id: unknown; completed: boolean | null; video_progress_by_video?: unknown }[] = [];
+  const { data: extMetricsProgresses, error: extMetricsErr } = await supabase
     .from("user_progress")
     .select("module_id,completed,video_progress_by_video")
     .eq("user_id", userId);
+  if (extMetricsErr?.code === "PGRST204") {
+    const { data: baseMetricsProgresses } = await supabase
+      .from("user_progress")
+      .select("module_id,completed")
+      .eq("user_id", userId);
+    metricsProgressRows = (baseMetricsProgresses ?? []) as typeof metricsProgressRows;
+  } else {
+    metricsProgressRows = (extMetricsProgresses ?? []) as typeof metricsProgressRows;
+  }
   const progByMod = new Map(
-    (progresses ?? []).map((p) => [
+    metricsProgressRows.map((p) => [
       p.module_id as string,
       p as { completed: boolean | null; video_progress_by_video: unknown },
     ]),
@@ -452,11 +514,9 @@ export async function getWelcomeDashboardMetricsFromOverview(
     if (r.completed) completedModules++;
   }
 
-  let overallProgressPercent =
-    sumDur > 0 ? Math.min(100, Math.round((sumWatched / sumDur) * 100)) : 0;
-  if (sumDur === 0 && totalVideos > 0) {
-    overallProgressPercent = Math.round((completedVideos / totalVideos) * 100);
-  }
+  const modPct = rows.length > 0 ? Math.round((completedModules / rows.length) * 100) : 0;
+  const vidPct = totalVideos > 0 ? Math.round((completedVideos / totalVideos) * 100) : 0;
+  const overallProgressPercent = rows.length > 0 || totalVideos > 0 ? Math.round((modPct + vidPct) / 2) : 0;
 
   return {
     overallProgressPercent,
@@ -496,6 +556,17 @@ export async function getActiveHomework(): Promise<HomeworkRow | null> {
     .maybeSingle();
 
   return data as HomeworkRow | null;
+}
+
+export async function getPastHomework(): Promise<HomeworkRow[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("homework")
+    .select("*")
+    .eq("is_active", false)
+    .order("due_date", { ascending: false, nullsFirst: true });
+
+  return (data ?? []) as HomeworkRow[];
 }
 
 export type HomeworkCustomTaskRow = {
@@ -609,6 +680,10 @@ export type ArsenalCardRow = {
   feature_bullets: unknown;
   position: number;
   sort_order?: number;
+  /** Admin: highlight on member Arsenal pages */
+  is_featured?: boolean;
+  /** Logo strip background: transparent | white | dark */
+  logo_bg?: string;
   created_at: string;
 };
 
@@ -618,6 +693,7 @@ export async function getArsenalCards(category: "tools" | "fremdkapital"): Promi
     .from("arsenal_cards")
     .select("*")
     .eq("category", category)
+    .order("is_featured", { ascending: false })
     .order("sort_order", { ascending: true })
     .order("position", { ascending: true });
   return (data as ArsenalCardRow[] | null) ?? [];
@@ -928,13 +1004,19 @@ export type AnalysisPostRow = {
   image_storage_key: string | null;
   cover_image_storage_key: string | null;
   post_type: string;
+  /** Inhaltliches Datum der Analyse (z. B. "Weekly vom 31. März") */
+  analysis_date: string | null;
   published_at: string;
   created_at: string;
 };
 
 export async function getAnalysisPosts(filter: "weekly" | "daily" | "all"): Promise<AnalysisPostRow[]> {
   const supabase = await createClient();
-  let q = supabase.from("analysis_posts").select("*").order("published_at", { ascending: false });
+  let q = supabase
+    .from("analysis_posts")
+    .select("*")
+    .order("analysis_date", { ascending: false, nullsFirst: false })
+    .order("published_at", { ascending: false });
   if (filter !== "all") {
     q = q.eq("post_type", filter);
   }

@@ -19,7 +19,7 @@ import {
 } from "@chakra-ui/react";
 import { DraggableList } from "@/components/admin/DraggableList";
 import { createClient } from "@/lib/supabase/client";
-import { Trash2 } from "lucide-react";
+import { Star, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 
@@ -34,6 +34,8 @@ type ArsenalCard = {
   position: number;
   /** Manuelle Reihenfolge (Admin); fällt auf position zurück wenn nicht gesetzt */
   sort_order?: number;
+  is_featured?: boolean;
+  logo_bg?: string | null;
 };
 
 type ModuleWithCourse = {
@@ -114,6 +116,12 @@ async function uploadArsenalCardLogo(file: File): Promise<string> {
   return json.storageKey;
 }
 
+const LOGO_BG_OPTIONS = [
+  { value: "transparent", label: "Logo-Hintergrund: neutral" },
+  { value: "white", label: "Logo-Hintergrund: hell" },
+  { value: "dark", label: "Logo-Hintergrund: dunkel" },
+] as const;
+
 function CardsPanel({
   category,
   label,
@@ -129,10 +137,17 @@ function CardsPanel({
   const [description, setDescription] = useState("");
   const [externalUrl, setExternalUrl] = useState("");
   const [bulletsText, setBulletsText] = useState("");
+  const [newLogoBg, setNewLogoBg] = useState<string>("transparent");
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [pendingLogoPreviewUrl, setPendingLogoPreviewUrl] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editExternalUrl, setEditExternalUrl] = useState("");
+  const [editBulletsText, setEditBulletsText] = useState("");
+  const [editLogoBg, setEditLogoBg] = useState("transparent");
 
   useEffect(() => {
     if (!pendingLogoFile) {
@@ -150,6 +165,7 @@ function CardsPanel({
       .from("arsenal_cards")
       .select("*")
       .eq("category", category)
+      .order("is_featured", { ascending: false })
       .order("sort_order", { ascending: true })
       .order("position", { ascending: true });
     setItems((data as ArsenalCard[]) ?? []);
@@ -179,6 +195,8 @@ function CardsPanel({
         feature_bullets: bullets,
         position: items.length,
         sort_order: items.length,
+        is_featured: false,
+        logo_bg: newLogoBg,
       })
       .select("*")
       .single();
@@ -216,14 +234,97 @@ function CardsPanel({
     setExternalUrl("");
     setBulletsText("");
     setPendingLogoFile(null);
+    setNewLogoBg("transparent");
     setStatus("Gespeichert.");
+  };
+
+  const startEdit = (c: ArsenalCard) => {
+    setEditingId(c.id);
+    setEditTitle(c.title);
+    setEditDescription(c.description ?? "");
+    setEditExternalUrl(c.external_url ?? "");
+    const bullets = Array.isArray(c.feature_bullets) ? (c.feature_bullets as string[]).join("\n") : "";
+    setEditBulletsText(bullets);
+    setEditLogoBg(c.logo_bg === "white" || c.logo_bg === "dark" ? c.logo_bg : "transparent");
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+  };
+
+  const saveEdit = async () => {
+    if (!editingId || !editTitle.trim()) return;
+    setBusy(true);
+    setStatus(null);
+    const supabase = createClient();
+    const bullets = editBulletsText
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const { data, error } = await supabase
+      .from("arsenal_cards")
+      .update({
+        title: editTitle.trim(),
+        description: editDescription.trim() || null,
+        external_url: editExternalUrl.trim() || null,
+        feature_bullets: bullets,
+        logo_bg: editLogoBg,
+      })
+      .eq("id", editingId)
+      .select("*")
+      .single();
+    setBusy(false);
+    if (error) {
+      setStatus(error.message);
+      return;
+    }
+    if (data) {
+      setItems((prev) => prev.map((x) => (x.id === editingId ? (data as ArsenalCard) : x)));
+      setEditingId(null);
+      setStatus("Eintrag aktualisiert.");
+    }
+  };
+
+  const toggleFeatured = async (c: ArsenalCard) => {
+    setBusy(true);
+    setStatus(null);
+    const supabase = createClient();
+    const next = !c.is_featured;
+    const { data, error } = await supabase
+      .from("arsenal_cards")
+      .update({ is_featured: next })
+      .eq("id", c.id)
+      .select("*")
+      .single();
+    setBusy(false);
+    if (error) {
+      setStatus(error.message);
+      return;
+    }
+    if (data) {
+      setItems((prev) => {
+        const mapped = prev.map((x) => (x.id === c.id ? (data as ArsenalCard) : x));
+        return [...mapped].sort((a, b) => {
+          const fa = a.is_featured ? 1 : 0;
+          const fb = b.is_featured ? 1 : 0;
+          if (fb !== fa) return fb - fa;
+          const sa = a.sort_order ?? a.position;
+          const sb = b.sort_order ?? b.position;
+          return sa - sb;
+        });
+      });
+      setStatus(next ? "Als Empfohlen markiert." : "Hervorhebung entfernt.");
+    }
   };
 
   const remove = async (id: string) => {
     if (!confirm("Eintrag löschen?")) return;
     const supabase = createClient();
     const { error } = await supabase.from("arsenal_cards").delete().eq("id", id);
-    if (!error) setItems((prev) => prev.filter((x) => x.id !== id));
+    if (!error) {
+      if (editingId === id) setEditingId(null);
+      setItems((prev) => prev.filter((x) => x.id !== id));
+    }
   };
 
   const onReorder = async (orderedIds: string[]) => {
@@ -297,90 +398,155 @@ function CardsPanel({
     );
   }
 
+  const adminLogoBg = (key: string | null | undefined) => {
+    if (key === "white") return "rgba(255,255,255,0.98)";
+    if (key === "dark") return "rgba(10,10,12,0.96)";
+    return "transparent";
+  };
+
   const renderCardRow = (c: ArsenalCard, dragHandle?: ReactNode) => (
-    <HStack
-      key={c.id}
-      justify="space-between"
-      align="flex-start"
-      flexWrap="wrap"
-      gap={3}
-      p={3}
-      borderRadius="md"
-      borderWidth="1px"
-      borderColor="whiteAlpha.200"
-      bg="blackAlpha.300"
-    >
-      {dragHandle ? <Box flexShrink={0}>{dragHandle}</Box> : null}
-      <HStack align="flex-start" gap={3} minW={0} flex="1">
-        <Box
-          w="64px"
-          h="64px"
+    <Stack w="100%" spacing={0}>
+      <HStack
+        justify="space-between"
+        align="flex-start"
+        flexWrap="wrap"
+        gap={3}
+        p={3}
+        borderRadius="md"
+        borderWidth="1px"
+        borderColor={c.is_featured ? "rgba(212, 175, 55, 0.45)" : "whiteAlpha.200"}
+        bg="blackAlpha.300"
+      >
+        {dragHandle ? <Box flexShrink={0}>{dragHandle}</Box> : null}
+        <HStack align="flex-start" gap={3} minW={0} flex="1">
+          <Box
+            w="120px"
+            h="56px"
+            position="relative"
+            borderRadius="md"
+            borderWidth="1px"
+            borderColor="rgba(212, 175, 55, 0.42)"
+            bg={adminLogoBg(c.logo_bg)}
+            overflow="hidden"
+            flexShrink={0}
+          >
+            {c.logo_storage_key?.trim() ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={`/api/cover-url?key=${encodeURIComponent(c.logo_storage_key.trim())}`}
+                alt=""
+                style={{
+                  display: "block",
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  objectPosition: "center",
+                }}
+              />
+            ) : (
+              <Text fontSize="xs" color="gray.600" position="absolute" inset={0} display="flex" alignItems="center" justifyContent="center">
+                —
+              </Text>
+            )}
+          </Box>
+          <Box minW={0}>
+            <Text fontWeight="600" noOfLines={2}>
+              {c.title}
+            </Text>
+            {c.external_url ? (
+              <Text fontSize="xs" color="gray.400" noOfLines={1}>
+                {c.external_url}
+              </Text>
+            ) : null}
+          </Box>
+        </HStack>
+        <HStack flexWrap="wrap" gap={2}>
+          <IconButton
+            aria-label={c.is_featured ? "Hervorhebung entfernen" : "Als Empfohlen markieren"}
+            size="sm"
+            variant={c.is_featured ? "solid" : "outline"}
+            colorScheme="yellow"
+            icon={<Star size={16} fill={c.is_featured ? "currentColor" : "none"} />}
+            isDisabled={busy}
+            onClick={() => void toggleFeatured(c)}
+          />
+          <Button size="xs" variant="outline" isDisabled={busy} onClick={() => startEdit(c)}>
+            Bearbeiten
+          </Button>
+          <input
+            id={`arsenal-card-logo-${c.id}`}
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              if (f) void setCardLogo(c.id, f);
+            }}
+          />
+          <Button
+            size="xs"
+            variant="outline"
+            isDisabled={busy}
+            onClick={() => document.getElementById(`arsenal-card-logo-${c.id}`)?.click()}
+          >
+            Logo ändern
+          </Button>
+          {c.logo_storage_key?.trim() ? (
+            <Button size="xs" variant="ghost" isDisabled={busy} onClick={() => void clearCardLogo(c.id)}>
+              Logo entfernen
+            </Button>
+          ) : null}
+          <IconButton
+            aria-label="Löschen"
+            size="sm"
+            variant="outline"
+            colorScheme="red"
+            icon={<Trash2 size={16} />}
+            onClick={() => void remove(c.id)}
+          />
+        </HStack>
+      </HStack>
+      {editingId === c.id ? (
+        <Stack
+          p={4}
           borderRadius="md"
           borderWidth="1px"
-          borderColor="whiteAlpha.150"
+          borderColor="whiteAlpha.200"
           bg="blackAlpha.500"
-          overflow="hidden"
-          flexShrink={0}
+          spacing={3}
+          mt={2}
         >
-          {c.logo_storage_key?.trim() ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={`/api/cover-url?key=${encodeURIComponent(c.logo_storage_key.trim())}`}
-              alt=""
-              style={{ width: "100%", height: "100%", objectFit: "contain" }}
-            />
-          ) : (
-            <Text fontSize="xs" color="gray.600" p={1} textAlign="center">
-              —
-            </Text>
-          )}
-        </Box>
-        <Box minW={0}>
-          <Text fontWeight="600" noOfLines={2}>
-            {c.title}
-          </Text>
-          {c.external_url ? (
-            <Text fontSize="xs" color="gray.400" noOfLines={1}>
-              {c.external_url}
-            </Text>
-          ) : null}
-        </Box>
-      </HStack>
-      <HStack flexWrap="wrap" gap={2}>
-        <input
-          id={`arsenal-card-logo-${c.id}`}
-          type="file"
-          accept="image/*"
-          style={{ display: "none" }}
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            e.target.value = "";
-            if (f) void setCardLogo(c.id, f);
-          }}
-        />
-        <Button
-          size="xs"
-          variant="outline"
-          isDisabled={busy}
-          onClick={() => document.getElementById(`arsenal-card-logo-${c.id}`)?.click()}
-        >
-          Logo ändern
-        </Button>
-        {c.logo_storage_key?.trim() ? (
-          <Button size="xs" variant="ghost" isDisabled={busy} onClick={() => void clearCardLogo(c.id)}>
-            Logo entfernen
-          </Button>
-        ) : null}
-        <IconButton
-          aria-label="Löschen"
-          size="sm"
-          variant="outline"
-          colorScheme="red"
-          icon={<Trash2 size={16} />}
-          onClick={() => void remove(c.id)}
-        />
-      </HStack>
-    </HStack>
+          <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} bg="whiteAlpha.50" placeholder="Titel" />
+          <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} bg="whiteAlpha.50" placeholder="Beschreibung" />
+          <Input value={editExternalUrl} onChange={(e) => setEditExternalUrl(e.target.value)} bg="whiteAlpha.50" placeholder="Externe URL" />
+          <Box>
+            <FormLabel fontSize="sm">Logo-Hintergrund (Mitglieder-Ansicht)</FormLabel>
+            <Select value={editLogoBg} onChange={(e) => setEditLogoBg(e.target.value)} bg="whiteAlpha.50" maxW="280px">
+              {LOGO_BG_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </Select>
+          </Box>
+          <Box>
+            <FormLabel fontSize="sm">Feature-Zeilen (eine pro Zeile)</FormLabel>
+            <Textarea value={editBulletsText} onChange={(e) => setEditBulletsText(e.target.value)} bg="whiteAlpha.50" rows={4} />
+          </Box>
+          <HStack>
+            <Button colorScheme="blue" size="sm" onClick={() => void saveEdit()} isLoading={busy} isDisabled={!editTitle.trim()}>
+              Speichern
+            </Button>
+            <Button size="sm" variant="ghost" onClick={cancelEdit}>
+              Abbrechen
+            </Button>
+          </HStack>
+        </Stack>
+      ) : null}
+    </Stack>
   );
 
   return (
@@ -394,20 +560,44 @@ function CardsPanel({
           <FormLabel fontSize="sm">Logo / Bild (optional, Hetzner)</FormLabel>
           <HStack flexWrap="wrap" gap={3} align="flex-start">
             <Box
-              w="80px"
-              h="80px"
+              w="200px"
+              maxW="100%"
+              h="56px"
+              position="relative"
               borderRadius="md"
               borderWidth="1px"
-              borderColor="whiteAlpha.200"
-              bg="blackAlpha.400"
+              borderColor="rgba(212, 175, 55, 0.42)"
+              bg={newLogoBg === "white" ? "rgba(255,255,255,0.98)" : newLogoBg === "dark" ? "rgba(10,10,12,0.96)" : "transparent"}
               overflow="hidden"
               flexShrink={0}
             >
               {pendingLogoPreviewUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={pendingLogoPreviewUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                <img
+                  src={pendingLogoPreviewUrl}
+                  alt=""
+                  style={{
+                    display: "block",
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    objectPosition: "center",
+                  }}
+                />
               ) : (
-                <Text fontSize="xs" color="gray.500" p={2} textAlign="center" lineHeight="1.3">
+                <Text
+                  fontSize="xs"
+                  color="gray.500"
+                  position="absolute"
+                  inset={0}
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  textAlign="center"
+                  px={2}
+                >
                   Kein Bild
                 </Text>
               )}
@@ -457,6 +647,16 @@ function CardsPanel({
         <Box>
           <FormLabel fontSize="sm">Feature-Zeilen (eine pro Zeile)</FormLabel>
           <Textarea value={bulletsText} onChange={(e) => setBulletsText(e.target.value)} bg="whiteAlpha.50" rows={4} />
+        </Box>
+        <Box>
+          <FormLabel fontSize="sm">Logo-Hintergrund (Mitglieder-Ansicht)</FormLabel>
+          <Select value={newLogoBg} onChange={(e) => setNewLogoBg(e.target.value)} bg="whiteAlpha.50" maxW="320px">
+            {LOGO_BG_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </Select>
         </Box>
         <Button colorScheme="blue" onClick={() => void addCard()} isLoading={busy} isDisabled={!title.trim()}>
           Karte hinzufügen
@@ -880,7 +1080,7 @@ export function ArsenalManager() {
       </TabList>
       <TabPanels>
         <TabPanel>
-          <CardsPanel category="tools" label="Tools & Software" />
+          <CardsPanel category="tools" label="Tools & Software" enableReorder />
         </TabPanel>
         <TabPanel>
           <CardsPanel category="fremdkapital" label="Fremdkapital" enableReorder />

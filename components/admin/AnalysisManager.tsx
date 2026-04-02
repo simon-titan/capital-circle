@@ -28,6 +28,7 @@ type PostRow = {
   image_storage_key: string | null;
   cover_image_storage_key: string | null;
   post_type: string;
+  analysis_date: string | null;
   published_at: string;
 };
 
@@ -70,6 +71,7 @@ export function AnalysisManager() {
   const [excerpt, setExcerpt] = useState("");
   const [contentJson, setContentJson] = useState(emptyArticleDocJson);
   const [postType, setPostType] = useState<"weekly" | "daily">("weekly");
+  const [analysisDate, setAnalysisDate] = useState("");
   const [publishedAt, setPublishedAt] = useState("");
   const [coverKey, setCoverKey] = useState<string | null>(null);
   const [coverBusy, setCoverBusy] = useState(false);
@@ -92,6 +94,7 @@ export function AnalysisManager() {
     setExcerpt("");
     setContentJson(emptyArticleDocJson);
     setPostType("weekly");
+    setAnalysisDate("");
     setPublishedAt("");
     setCoverKey(null);
     setStatus(null);
@@ -103,6 +106,7 @@ export function AnalysisManager() {
     setExcerpt(p.excerpt ?? "");
     setContentJson(normalizeContentForEditor(p.content ?? ""));
     setPostType(p.post_type === "daily" ? "daily" : "weekly");
+    setAnalysisDate(p.analysis_date ?? "");
     setPublishedAt(p.published_at ? p.published_at.slice(0, 16) : "");
     setCoverKey(p.cover_image_storage_key);
   };
@@ -146,6 +150,7 @@ export function AnalysisManager() {
     }
     const pub = publishedAt ? new Date(publishedAt).toISOString() : new Date().toISOString();
     const excerptVal = excerpt.trim() || null;
+    const analysisDateVal = analysisDate.trim() || null;
 
     if (editingId) {
       const { error } = await supabase
@@ -155,6 +160,7 @@ export function AnalysisManager() {
           excerpt: excerptVal,
           content: contentJson,
           post_type: postType,
+          analysis_date: analysisDateVal,
           published_at: pub,
           cover_image_storage_key: coverKey,
           updated_at: new Date().toISOString(),
@@ -172,6 +178,7 @@ export function AnalysisManager() {
         excerpt: excerptVal,
         content: contentJson,
         post_type: postType,
+        analysis_date: analysisDateVal,
         published_at: pub,
         cover_image_storage_key: coverKey,
         image_storage_key: null,
@@ -229,6 +236,18 @@ export function AnalysisManager() {
                 <option value="weekly">Weekly</option>
                 <option value="daily">Daily</option>
               </Select>
+            </Box>
+            <Box minW="180px">
+              <Text fontSize="xs" mb={1} color="gray.400">
+                Analyse-Datum (Sortierung)
+              </Text>
+              <Input
+                type="date"
+                value={analysisDate}
+                onChange={(e) => setAnalysisDate(e.target.value)}
+                bg="whiteAlpha.50"
+                placeholder="JJJJ-MM-TT"
+              />
             </Box>
             <Box minW="200px">
               <Text fontSize="xs" mb={1} color="gray.400">
