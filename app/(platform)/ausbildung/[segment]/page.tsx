@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isModuleUnlocked } from "@/lib/progress";
 import { getModulePublishedPlaylist } from "@/lib/module-video";
 import { parseVideoProgressByVideo, userCanAccessAcademyModule } from "@/lib/server-data";
-import { isUuidParam } from "@/lib/module-route";
+import { isUuidParam, moduleHref } from "@/lib/module-route";
 import type { VideoAttachmentItem } from "@/components/platform/VideoAttachments";
 
 type PageProps = {
@@ -25,7 +25,7 @@ export default async function AcademyModulePage({ params }: PageProps) {
   const col = isUuidParam(idOrSlug) ? "id" : "slug";
   const { data: mod } = await supabase
     .from("modules")
-    .select("id,title,description,course_id,is_published")
+    .select("id,title,description,course_id,is_published,order_index")
     .eq(col, idOrSlug)
     .eq("is_published", true)
     .maybeSingle();
@@ -67,10 +67,21 @@ export default async function AcademyModulePage({ params }: PageProps) {
 
   const { data: progress } = await supabase
     .from("user_progress")
-    .select("last_video_id,video_progress_by_video,quiz_passed,quiz_last_score")
+    .select("last_video_id,video_progress_by_video,quiz_passed,quiz_last_score,completed")
     .eq("user_id", user.id)
     .eq("module_id", mod.id)
     .maybeSingle();
+
+  const orderIdx = typeof mod.order_index === "number" ? mod.order_index : 0;
+  const { data: nextMod } = await supabase
+    .from("modules")
+    .select("id,slug")
+    .eq("course_id", mod.course_id)
+    .eq("order_index", orderIdx + 1)
+    .eq("is_published", true)
+    .maybeSingle();
+
+  const nextModuleHref = nextMod?.id ? moduleHref({ id: nextMod.id as string, slug: (nextMod.slug as string | null) ?? null }) : null;
 
   const initialMap = parseVideoProgressByVideo(progress?.video_progress_by_video);
   const lastVideoId = (progress?.last_video_id as string | null) ?? null;
@@ -157,6 +168,8 @@ export default async function AcademyModulePage({ params }: PageProps) {
             initialQuizLastScore={
               typeof progress?.quiz_last_score === "number" ? progress.quiz_last_score : null
             }
+            initialModuleCompleted={Boolean(progress?.completed)}
+            nextModuleHref={nextModuleHref}
             initialNoteContent={initialNoteContent}
             attachmentsByVideoId={attachmentsByVideoId}
           />

@@ -102,7 +102,12 @@ function watchedTotalsFromMap(playlist: PlaylistVideoRow[], map: Record<string, 
     const w = Math.min(map[v.id] ?? 0, d > 0 ? d : Infinity);
     watched += Number.isFinite(w) ? w : 0;
   }
-  const pct = total > 0 ? Math.min(100, Math.round((watched / total) * 100)) : 0;
+  let pct = total > 0 ? Math.min(100, Math.round((watched / total) * 100)) : 0;
+  // Keine Dauer in der DB (z. B. nach Sync): sonst immer 0 % trotz angesehener Videos
+  if (total === 0 && playlist.length > 0) {
+    const done = playlist.filter((v) => isPlaylistVideoDone(v, map)).length;
+    pct = Math.round((done / playlist.length) * 100);
+  }
   return { watched, total, pct };
 }
 
@@ -447,7 +452,11 @@ export async function getWelcomeDashboardMetricsFromOverview(
     if (r.completed) completedModules++;
   }
 
-  const overallProgressPercent = sumDur > 0 ? Math.min(100, Math.round((sumWatched / sumDur) * 100)) : 0;
+  let overallProgressPercent =
+    sumDur > 0 ? Math.min(100, Math.round((sumWatched / sumDur) * 100)) : 0;
+  if (sumDur === 0 && totalVideos > 0) {
+    overallProgressPercent = Math.round((completedVideos / totalVideos) * 100);
+  }
 
   return {
     overallProgressPercent,

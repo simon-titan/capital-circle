@@ -5,6 +5,7 @@ import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } 
 import { CSS } from "@dnd-kit/utilities";
 import { Box, Button, Flex, Heading, Progress, Stack, Text } from "@chakra-ui/react";
 import { CheckCircle2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 type BaseQuestion = {
@@ -41,6 +42,8 @@ type QuizModalProps = {
   passThreshold?: number;
   /** Nach Auswertung (bestanden oder nicht) — Fortschritt / Score persistieren */
   onQuizResult: (result: { score: number; passed: boolean }) => Promise<void> | void;
+  /** Nach Bestehen: Navigation (Fallback Instituts-Übersicht) */
+  nextModuleHref?: string | null;
 };
 
 type QuestionAnswer = string | boolean | number[] | null;
@@ -221,7 +224,16 @@ function QuestionRenderer({
   );
 }
 
-export function QuizModal({ isOpen, onClose, questions, onQuizResult, quizMode = "multi_page", passThreshold = 100 }: QuizModalProps) {
+export function QuizModal({
+  isOpen,
+  onClose,
+  questions,
+  onQuizResult,
+  quizMode = "multi_page",
+  passThreshold = 100,
+  nextModuleHref = null,
+}: QuizModalProps) {
+  const router = useRouter();
   const normalizedQuestions = useMemo(() => questions.map(normalizeQuestion), [questions]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, QuestionAnswer>>({});
@@ -348,7 +360,11 @@ export function QuizModal({ isOpen, onClose, questions, onQuizResult, quizMode =
               </Button>
             ) : (
               <Button
-                onClick={onClose}
+                onClick={() => {
+                  onClose();
+                  const href = nextModuleHref?.trim() || "/ausbildung";
+                  router.push(href);
+                }}
                 className="quiz-success-cta"
                 color="var(--color-white)"
                 bg="linear-gradient(135deg, #22C55E 0%, #15803D 100%)"
