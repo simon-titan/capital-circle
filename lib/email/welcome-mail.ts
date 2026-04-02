@@ -22,8 +22,9 @@ function buildWelcomeEmailHtml(params: {
   password: string;
   fullName?: string;
   loginUrl: string;
+  logoUrl: string;
 }): string {
-  const { email, password, fullName, loginUrl } = params;
+  const { email, password, fullName, loginUrl, logoUrl } = params;
   const greeting = fullName?.trim()
     ? `Hallo ${escapeHtml(fullName.trim())},`
     : "Hallo,";
@@ -31,6 +32,7 @@ function buildWelcomeEmailHtml(params: {
   const safeEmail = escapeHtml(email);
   const safePassword = escapeHtml(password);
   const safeLoginUrl = escapeHtml(loginUrl);
+  const safeLogoUrl = escapeHtml(logoUrl);
 
   return `<!DOCTYPE html>
 <html lang="de">
@@ -48,10 +50,18 @@ function buildWelcomeEmailHtml(params: {
       <td align="center">
         <table role="presentation" width="100%" style="max-width:560px;margin:0 auto;">
           <tr>
+            <td style="padding-bottom:8px;text-align:center;">
+              <img
+                src="${safeLogoUrl}"
+                alt="Capital Circle"
+                width="200"
+                height="56"
+                style="display:block;margin:0 auto;max-width:200px;width:100%;height:auto;border:0;outline:none;text-decoration:none;"
+              />
+            </td>
+          </tr>
+          <tr>
             <td style="padding-bottom:24px;text-align:center;">
-              <h1 style="margin:0;font-family:'Radley',Georgia,serif;font-weight:400;font-size:28px;line-height:1.2;color:${GOLD};letter-spacing:0.02em;">
-                Capital Circle
-              </h1>
               <div style="height:1px;width:120px;background:linear-gradient(90deg,transparent,${GOLD},transparent);margin:16px auto 0;"></div>
             </td>
           </tr>
@@ -125,12 +135,15 @@ export async function sendWelcomeMail(
 
   const baseUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
   const loginUrl = `${baseUrl}/login`;
+  /** Gleiche Datei wie in `components/brand/Logo.tsx` (onDark) — muss öffentlich unter dieser URL erreichbar sein. */
+  const logoUrl = `${baseUrl}/logo/logo-white.png`;
 
   const html = buildWelcomeEmailHtml({
     email,
     password,
     fullName,
     loginUrl,
+    logoUrl,
   });
 
   const resend = new Resend(apiKey);
