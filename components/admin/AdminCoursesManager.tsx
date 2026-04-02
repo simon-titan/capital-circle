@@ -171,7 +171,8 @@ function ColorPicker({
 
 export function AdminCoursesManager({ initialCourses }: { initialCourses: CourseRow[] }) {
   const router = useRouter();
-  const [courses, setCourses] = useState(initialCourses);
+  // __unassigned__ ist ein interner Kurs und wird hier nie angezeigt
+  const [courses, setCourses] = useState(initialCourses.filter((c) => c.slug !== "__unassigned__"));
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");

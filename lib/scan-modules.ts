@@ -3,6 +3,9 @@ import { listObjectKeysUnderPrefix } from "@/lib/storage";
 
 type ServerClient = Awaited<ReturnType<typeof createClient>>;
 
+/** Feste ID des internen "Nicht zugeordnet"-Kurses (muss mit Migration 036 übereinstimmen). */
+export const UNASSIGNED_COURSE_ID = "00000000-0000-0000-0000-000000000001";
+
 const VIDEO_EXT = /\.(mp4|webm|mov)$/i;
 const THUMB_EXT = /^thumbnail\.(jpe?g|png|webp)$/i;
 
@@ -118,9 +121,20 @@ export async function scanModulesFromBucket(prefix = "modules"): Promise<string[
   return listed.map((o) => o.key);
 }
 
-export async function syncParsedModulesToCourse(
+/**
+ * Synchronisiert alle gescannten Modul-Ordner global in die DB.
+ *
+ * Regeln:
+ * - Modul bereits vorhanden (Treffer via storage_folder_key, kursübergreifend):
+ *   → Nur Metadaten (thumbnail) aktualisieren. course_id und title werden NICHT geändert.
+ *   → Umbenennung in der DB bleibt erhalten, kein Duplikat entsteht.
+ * - Modul noch nicht vorhanden:
+ *   → Wird in den "Nicht zugeordnet"-Kurs eingefügt (UNASSIGNED_COURSE_ID).
+ *   → Admin kann es danach manuell einem echten Kurs zuordnen.
+ * - Videos/Subkategorien: Nur neue Keys werden eingefügt, bestehende bleiben unberührt.
+ */
+export async function syncParsedModulesGlobal(
   supabase: ServerClient,
-  courseId: string,
   parsed: Map<string, ParsedModuleFolder>,
 ): Promise<ScanSyncResult> {
   const errors: string[] = [];
@@ -128,10 +142,11 @@ export async function syncParsedModulesToCourse(
   let videosCreated = 0;
   let subcategoriesCreated = 0;
 
+  // Nächste order_index für neue Module im Unassigned-Kurs
   const { data: maxRow } = await supabase
     .from("modules")
     .select("order_index")
-    .eq("course_id", courseId)
+    .eq("course_id", UNASSIGNED_COURSE_ID)
     .order("order_index", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -139,50 +154,40 @@ export async function syncParsedModulesToCourse(
 
   for (const [, folder] of parsed) {
     try {
+      // Globale Suche: storage_folder_key ist jetzt kursübergreifend unique (Index 036).
+      // Findet das Modul egal in welchem Kurs es liegt.
       const { data: byStorage } = await supabase
         .from("modules")
-        .select("id,title,slug")
-        .eq("course_id", courseId)
+        .select("id,title,slug,course_id")
         .eq("storage_folder_key", folder.storageFolderKey)
         .maybeSingle();
 
-      const { data: bySlug } = await supabase
-        .from("modules")
-        .select("id,title,slug")
-        .eq("course_id", courseId)
-        .eq("slug", folder.slugBase)
-        .maybeSingle();
-
-      const { data: byTitle } = await supabase
-        .from("modules")
-        .select("id,slug")
-        .eq("course_id", courseId)
-        .eq("title", folder.folderTitle)
-        .maybeSingle();
-
-      /** Reihenfolge: Storage-Ordnername (am zuverlässigsten), dann Slug, dann Titel */
-      const matchRow = byStorage?.id ? byStorage : bySlug?.id ? bySlug : byTitle?.id ? byTitle : null;
-
       let moduleId: string;
-      if (matchRow?.id) {
-        moduleId = matchRow.id;
-        const updates: Record<string, unknown> = { storage_folder_key: folder.storageFolderKey };
+
+      if (byStorage?.id) {
+        // Modul existiert bereits — nur Thumbnail aktualisieren.
+        // course_id, title, slug werden bewusst NICHT geändert (Umbenennung-Schutz).
+        moduleId = byStorage.id;
+        const updates: Record<string, unknown> = {};
         if (folder.thumbnailKey) updates.thumbnail_storage_key = folder.thumbnailKey;
-        if (!matchRow.slug) {
+        if (!byStorage.slug) {
           updates.slug = await nextUniqueModuleSlug(supabase, folder.slugBase);
         }
-        await supabase.from("modules").update(updates).eq("id", moduleId);
+        if (Object.keys(updates).length > 0) {
+          await supabase.from("modules").update(updates).eq("id", moduleId);
+        }
       } else {
+        // Neues Modul: landet im "Nicht zugeordnet"-Kurs.
         nextOrder += 1;
         const uniqueSlug = await nextUniqueModuleSlug(supabase, folder.slugBase);
         const { data: inserted, error: insErr } = await supabase
           .from("modules")
           .insert({
-            course_id: courseId,
+            course_id: UNASSIGNED_COURSE_ID,
             title: folder.folderTitle,
             description: null,
             order_index: nextOrder,
-            is_published: true,
+            is_published: false,
             slug: uniqueSlug,
             thumbnail_storage_key: folder.thumbnailKey,
             storage_folder_key: folder.storageFolderKey,
@@ -198,6 +203,7 @@ export async function syncParsedModulesToCourse(
 
       modulesTouched += 1;
 
+      // Videos und Subkategorien: nur neue Keys einfügen, keine bestehenden anfassen.
       const { data: directV } = await supabase.from("videos").select("storage_key").eq("module_id", moduleId);
       const { data: subRows } = await supabase.from("subcategories").select("id").eq("module_id", moduleId);
       const subIds = (subRows ?? []).map((s) => s.id).filter(Boolean);
@@ -294,9 +300,18 @@ export async function syncParsedModulesToCourse(
   return { modulesTouched, videosCreated, subcategoriesCreated, errors };
 }
 
-export async function runModuleScanForCourse(supabase: ServerClient, courseId: string, prefix = "modules") {
+/** Scannt den gesamten Bucket und synchronisiert alle Module global (ohne Kurs-Zuweisung). */
+export async function runModuleScan(supabase: ServerClient, prefix = "modules") {
   const keys = await scanModulesFromBucket(prefix);
   const parsed = parseModuleScanKeys(keys);
-  const result = await syncParsedModulesToCourse(supabase, courseId, parsed);
+  const result = await syncParsedModulesGlobal(supabase, parsed);
   return { ...result, keyCount: keys.length, moduleFolders: parsed.size };
+}
+
+/**
+ * @deprecated Verwende stattdessen `runModuleScan` (ohne courseId).
+ * Bleibt für Rückwärtskompatibilität erhalten.
+ */
+export async function runModuleScanForCourse(supabase: ServerClient, _courseId: string, prefix = "modules") {
+  return runModuleScan(supabase, prefix);
 }

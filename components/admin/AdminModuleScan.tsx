@@ -1,27 +1,25 @@
 "use client";
 
-import { Button, FormControl, FormLabel, Select, Stack, Text } from "@chakra-ui/react";
+import { Button, Stack, Text } from "@chakra-ui/react";
 import { useCallback, useState } from "react";
 
-type CourseOption = { id: string; title: string; isFree: boolean };
-
-export function AdminModuleScan({ courses }: { courses: CourseOption[] }) {
-  const [courseId, setCourseId] = useState(courses[0]?.id ?? "");
+/**
+ * Scannt den gesamten Hetzner-Bucket (Prefix `modules/`) und synchronisiert
+ * alle gefundenen Module global in die DB.
+ * Neue Module landen automatisch im "Nicht zugeordnet"-Kurs.
+ */
+export function AdminModuleScan() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   const onScan = useCallback(async () => {
-    if (!courseId) {
-      setMessage("Bitte einen Bereich (Free oder Paid) wählen.");
-      return;
-    }
     setLoading(true);
     setMessage(null);
     try {
       const res = await fetch("/api/admin/scan-modules", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courseId, prefix: "modules" }),
+        body: JSON.stringify({ prefix: "modules" }),
       });
       const json = (await res.json()) as {
         ok?: boolean;
@@ -40,15 +38,15 @@ export function AdminModuleScan({ courses }: { courses: CourseOption[] }) {
       }
       const errs = json.errors?.length ? ` Warnungen: ${json.errors.slice(0, 5).join(" | ")}` : "";
       setMessage(
-        `OK: ${json.moduleFolders ?? 0} Ordner, ${json.keyCount ?? 0} Keys. Module aktualisiert: ${json.modulesTouched ?? 0}, neue Videos: ${json.videosCreated ?? 0}, Subkategorien neu: ${json.subcategoriesCreated ?? 0}.${errs}`,
+        `OK: ${json.moduleFolders ?? 0} Ordner, ${json.keyCount ?? 0} Keys. ` +
+          `Module abgeglichen: ${json.modulesTouched ?? 0}, neue Videos: ${json.videosCreated ?? 0}, ` +
+          `Subkategorien neu: ${json.subcategoriesCreated ?? 0}.${errs}`,
       );
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Netzwerkfehler.");
     }
     setLoading(false);
-  }, [courseId]);
-
-  if (courses.length === 0) return null;
+  }, []);
 
   return (
     <Stack
@@ -60,14 +58,14 @@ export function AdminModuleScan({ courses }: { courses: CourseOption[] }) {
       bg="whiteAlpha.50"
     >
       <Text className="inter-semibold" fontSize="sm" color="gray.200">
-        Hetzner-Import in Bereich Free oder Paid (Prefix{" "}
+        Hetzner-Bucket synchronisieren (Prefix{" "}
         <Text as="span" className="jetbrains-mono" color="gray.400">
           modules/
         </Text>
         )
       </Text>
       <Text className="inter" fontSize="xs" color="gray.500">
-        Ordner = Modul, optional Unterordner = Subkategorie, Dateien{" "}
+        Scannt alle Ordner im Bucket. Ordner = Modul, optional Unterordner = Subkategorie, Dateien{" "}
         <Text as="span" className="jetbrains-mono">
           .mp4 / .webm / .mov
         </Text>
@@ -75,25 +73,9 @@ export function AdminModuleScan({ courses }: { courses: CourseOption[] }) {
         <Text as="span" className="jetbrains-mono">
           thumbnail.jpg|png
         </Text>
-        .
+        . Neue Module landen in „Nicht zugeordnet" und können dort einem Kurs zugewiesen werden.
+        Bereits zugeordnete Module werden nicht verschoben.
       </Text>
-      <FormControl maxW="420px">
-        <FormLabel className="inter" fontSize="xs" color="gray.500">
-          Ziel-Bereich
-        </FormLabel>
-        <Select
-          value={courseId}
-          onChange={(e) => setCourseId(e.target.value)}
-          borderColor="whiteAlpha.200"
-          className="inter"
-        >
-          {courses.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.title} ({c.isFree ? "Free" : "Paid"})
-            </option>
-          ))}
-        </Select>
-      </FormControl>
       <Button colorScheme="yellow" size="sm" w="fit-content" onClick={() => void onScan()} isLoading={loading}>
         Bucket scannen & synchronisieren
       </Button>

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Box, Button, HStack, Stack, Text } from "@chakra-ui/react";
 import { createClient } from "@/lib/supabase/server";
 import { CourseModulesDraggable } from "@/components/admin/CourseModulesDraggable";
+import { UNASSIGNED_COURSE_ID } from "@/lib/scan-modules";
+import { redirect } from "next/navigation";
 
 type PageProps = {
   params: Promise<{ courseId: string }>;
@@ -9,6 +11,12 @@ type PageProps = {
 
 export default async function CoursePage({ params }: PageProps) {
   const { courseId } = await params;
+
+  // Unassigned-Kurs wird auf der Kurs-Übersicht verwaltet, nicht hier
+  if (courseId === UNASSIGNED_COURSE_ID) {
+    redirect("/admin/kurse");
+  }
+
   const supabase = await createClient();
   const { data: course } = await supabase.from("courses").select("id,title,slug").eq("id", courseId).single();
   const { data: allCoursesRows } = await supabase.from("courses").select("id,title").order("created_at", { ascending: false });

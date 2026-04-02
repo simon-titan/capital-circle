@@ -22,6 +22,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { DraggableList } from "@/components/admin/DraggableList";
 import { ArrowRightLeft, Pencil } from "lucide-react";
+import { UNASSIGNED_COURSE_ID } from "@/lib/scan-modules";
 
 type Mod = { id: string; title: string; order_index: number };
 
@@ -45,8 +46,12 @@ export function CourseModulesDraggable({
   const [moveLoading, setMoveLoading] = useState(false);
   const [moveError, setMoveError] = useState<string | null>(null);
 
+  // Verschieben ist nur im "Nicht zugeordnet"-Kurs erlaubt.
+  // Einmal einem echten Kurs zugeordnet, bleibt ein Modul dort.
+  const canMove = courseId === UNASSIGNED_COURSE_ID;
+
   const otherCourses = useMemo(
-    () => allCourses.filter((c) => c.id !== courseId),
+    () => allCourses.filter((c) => c.id !== courseId && c.id !== UNASSIGNED_COURSE_ID),
     [allCourses, courseId],
   );
 
@@ -163,7 +168,7 @@ export function CourseModulesDraggable({
           >
             Bearbeiten
           </Button>
-          {otherCourses.length > 0 ? (
+          {canMove && otherCourses.length > 0 ? (
             <Button
               size="sm"
               variant="outline"
