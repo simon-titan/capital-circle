@@ -52,12 +52,17 @@ export async function POST(request: Request) {
   const { storageKey, contentType } = keyResult;
 
   try {
-    const arrayBuffer = await request.arrayBuffer();
-    if (arrayBuffer.byteLength === 0) {
+    if (!request.body) {
       return NextResponse.json({ ok: false, error: "empty_body" }, { status: 400 });
     }
-    const buffer = Buffer.from(arrayBuffer);
-    await putObjectBody(storageKey, buffer, contentType);
+    // Streaming-Upload: Body direkt an S3 weiterleiten ohne vollständiges Buffering im RAM.
+    // Readable.fromWeb konvertiert den Web-ReadableStream in einen Node.js-Readable-Stream,
+    // den das AWS SDK nativ als Body akzeptiert.
+    const { Readable } = await import("stream");
+    const nodeStream = Readable.fromWeb(
+      request.body as import("stream/web").ReadableStream<Uint8Array>,
+    );
+    await putObjectBody(storageKey, nodeStream, contentType);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "upload_failed";
     console.error("[upload-proxy] error:", msg);

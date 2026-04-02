@@ -19,23 +19,35 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: "missing_id" }, { status: 400 });
   }
 
-  const [{ data: profile }, { data: att, error: attErr }] = await Promise.all([
+  const [{ data: profile }, { data: videoAtt, error: videoAttErr }, { data: standaloneAtt }] = await Promise.all([
     supabase.from("profiles").select("is_admin").eq("id", authData.user.id).single(),
     supabase
       .from("video_attachments")
       .select("id, storage_key, video_id")
       .eq("id", attachmentId)
       .maybeSingle(),
+    supabase.from("standalone_attachments").select("id, storage_key").eq("id", attachmentId).maybeSingle(),
   ]);
 
-  if (attErr || !att) {
+  if (standaloneAtt?.storage_key) {
+    const signedUrl = await getPresignedGetUrl(standaloneAtt.storage_key);
+    const expiresInSeconds = 60 * 15;
+    return NextResponse.json({
+      ok: true,
+      url: signedUrl,
+      expiresInSeconds,
+      expiresAt: Date.now() + expiresInSeconds * 1000,
+    });
+  }
+
+  if (videoAttErr || !videoAtt) {
     return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
   }
 
   const { data: video } = await supabase
     .from("videos")
     .select("id, is_published")
-    .eq("id", att.video_id)
+    .eq("id", videoAtt.video_id)
     .maybeSingle();
 
   if (!video) {
@@ -46,7 +58,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
   }
 
-  const signedUrl = await getPresignedGetUrl(att.storage_key);
+  const signedUrl = await getPresignedGetUrl(videoAtt.storage_key);
   const expiresInSeconds = 60 * 15;
   return NextResponse.json({
     ok: true,

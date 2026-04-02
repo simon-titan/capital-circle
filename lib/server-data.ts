@@ -713,13 +713,48 @@ export type ArsenalAttachmentListItem = {
   category_name: string | null;
 };
 
+/** Filter- und Anzeige-IDs für PDFs/Templates aus `standalone_attachments` (ohne Video). */
+const ARSENAL_STANDALONE_MODULE_ID = "__arsenal_standalone_module__";
+const ARSENAL_STANDALONE_VIDEO_ID = "__arsenal_standalone_video__";
+
 export async function getArsenalAttachmentsByKind(kind: "template" | "pdf"): Promise<ArsenalAttachmentListItem[]> {
   const supabase = await createClient();
+
+  const { data: standaloneRows } = await supabase
+    .from("standalone_attachments")
+    .select("id, filename, category_id, position")
+    .eq("kind", kind)
+    .order("position", { ascending: true });
+
+  const standaloneCatIds = [...new Set((standaloneRows ?? []).map((r) => r.category_id).filter(Boolean) as string[])];
+  let standaloneCatNameById = new Map<string, string>();
+  if (standaloneCatIds.length > 0) {
+    const { data: cats } = await supabase.from("arsenal_attachment_categories").select("id, name").in("id", standaloneCatIds);
+    standaloneCatNameById = new Map((cats ?? []).map((c) => [c.id as string, c.name as string]));
+  }
+
+  const fromStandalone: ArsenalAttachmentListItem[] = (standaloneRows ?? []).map((r) => {
+    const aid = r.category_id ?? null;
+    return {
+      id: r.id,
+      filename: r.filename,
+      video_id: ARSENAL_STANDALONE_VIDEO_ID,
+      video_title: "Ohne Videozuordnung",
+      module_id: ARSENAL_STANDALONE_MODULE_ID,
+      module_title: "Eigenständig",
+      course_id: ARSENAL_STANDALONE_MODULE_ID,
+      course_title: "Arsenal",
+      course_slug: null,
+      arsenal_category_id: aid,
+      category_name: aid ? standaloneCatNameById.get(aid) ?? null : null,
+    };
+  });
+
   const { data: rows, error } = await supabase
     .from("video_attachments")
     .select("id, filename, video_id, arsenal_category_id")
     .eq("arsenal_kind", kind);
-  if (error || !rows?.length) return [];
+  if (error || !rows?.length) return fromStandalone;
 
   const catIds = [...new Set(rows.map((r) => (r as { arsenal_category_id?: string | null }).arsenal_category_id).filter(Boolean) as string[])];
   let catNameById = new Map<string, string>();
@@ -750,7 +785,7 @@ export async function getArsenalAttachmentsByKind(kind: "template" | "pdf"): Pro
   const { data: courses } = await supabase.from("courses").select("id, title, slug").in("id", courseIds);
   const courseMap = new Map((courses ?? []).map((c) => [c.id, c]));
 
-  const out: ArsenalAttachmentListItem[] = [];
+  const fromVideos: ArsenalAttachmentListItem[] = [];
   for (const r of rows) {
     const v = videoById.get(r.video_id);
     if (!v) continue;
@@ -759,7 +794,7 @@ export async function getArsenalAttachmentsByKind(kind: "template" | "pdf"): Pro
     const course = courseMap.get(mod.course_id);
     if (!course) continue;
     const aid = (r as { arsenal_category_id?: string | null }).arsenal_category_id ?? null;
-    out.push({
+    fromVideos.push({
       id: r.id,
       filename: r.filename,
       video_id: r.video_id,
@@ -773,7 +808,7 @@ export async function getArsenalAttachmentsByKind(kind: "template" | "pdf"): Pro
       category_name: aid ? catNameById.get(aid) ?? null : null,
     });
   }
-  return out;
+  return [...fromStandalone, ...fromVideos];
 }
 
 export type LiveSessionCategoryRow = {

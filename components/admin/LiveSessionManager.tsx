@@ -213,6 +213,8 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
   const [recapBusy, setRecapBusy] = useState(false);
   const [recapProgress, setRecapProgress] = useState(0);
   const [recapStatus, setRecapStatus] = useState<string | null>(null);
+  const [recapFileName, setRecapFileName] = useState<string | null>(null);
+  const [recapFileSize, setRecapFileSize] = useState<number | null>(null);
   const recapFileRef = useRef<HTMLInputElement>(null);
   /** Bearbeitung im Tab „Schnell-Recap“ */
   const [recapEditingId, setRecapEditingId] = useState<string | null>(null);
@@ -275,6 +277,9 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
     setRecapUrl("");
     setRecapSource("file");
     setRecapStatus(null);
+    setRecapProgress(0);
+    setRecapFileName(null);
+    setRecapFileSize(null);
     if (recapFileRef.current) recapFileRef.current.value = "";
   };
 
@@ -612,7 +617,9 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
 
     setRecapBusy(true);
     setRecapProgress(0);
-    setRecapStatus(null);
+    setRecapStatus("Session wird angelegt…");
+    setRecapFileName(null);
+    setRecapFileSize(null);
     const supabase = createClient();
     const recordedAt = recapRecordedAt ? new Date(recapRecordedAt).toISOString() : null;
     const videoId = crypto.randomUUID();
@@ -665,7 +672,11 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
           setRecapBusy(false);
           return;
         }
+        setRecapFileName(file.name);
+        setRecapFileSize(file.size);
+        setRecapStatus("Video wird hochgeladen…");
         const storageKey = await uploadLiveSessionVideoViaProxy(file, { sessionId, videoId }, setRecapProgress);
+        setRecapStatus("Dauer wird ermittelt…");
         const durationSeconds = await readVideoDuration(file);
         const { error: vErr } = await supabase.from("live_session_videos").insert({
           id: videoId,
@@ -870,10 +881,30 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                   />
                 ) : (
                   <Box>
-                    <input ref={recapFileRef} type="file" accept="video/*" hidden />
-                    <Button size="sm" variant="outline" onClick={() => recapFileRef.current?.click()}>
-                      Videodatei wählen
-                    </Button>
+                    <input
+                      ref={recapFileRef}
+                      type="file"
+                      accept="video/*"
+                      hidden
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) {
+                          setRecapFileName(f.name);
+                          setRecapFileSize(f.size);
+                        }
+                      }}
+                    />
+                    <HStack gap={3} flexWrap="wrap">
+                      <Button size="sm" variant="outline" onClick={() => recapFileRef.current?.click()}>
+                        Videodatei wählen
+                      </Button>
+                      {recapFileName ? (
+                        <Text fontSize="xs" color="gray.300" className="inter" noOfLines={1} maxW="280px">
+                          {recapFileName}
+                          {recapFileSize ? ` (${(recapFileSize / 1024 / 1024).toFixed(1)} MB)` : ""}
+                        </Text>
+                      ) : null}
+                    </HStack>
                   </Box>
                 )}
               </>
@@ -905,8 +936,44 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
               </Box>
             )}
 
-            {recapBusy || recapProgress > 0 ? (
-              <Progress value={recapProgress} size="sm" borderRadius="full" colorScheme="blue" maxW="400px" />
+            {recapBusy && recapSource === "file" ? (
+              <Box
+                p={4}
+                borderRadius="12px"
+                borderWidth="1px"
+                borderColor="rgba(59, 130, 246, 0.4)"
+                bg="rgba(30, 58, 138, 0.15)"
+              >
+                <HStack justify="space-between" mb={2} flexWrap="wrap" gap={1}>
+                  <Text fontSize="sm" className="inter-semibold" color="blue.200" noOfLines={1} maxW="70%">
+                    {recapFileName ?? "Video wird hochgeladen…"}
+                  </Text>
+                  <Text fontSize="sm" className="jetbrains-mono" color="blue.300" flexShrink={0}>
+                    {recapProgress}%
+                  </Text>
+                </HStack>
+                {recapFileSize ? (
+                  <Text fontSize="xs" color="gray.400" className="inter" mb={2}>
+                    {(recapFileSize / 1024 / 1024).toFixed(1)} MB
+                    {recapProgress > 0 && recapProgress < 100
+                      ? ` — ${((recapFileSize / 1024 / 1024) * (recapProgress / 100)).toFixed(1)} MB übertragen`
+                      : ""}
+                  </Text>
+                ) : null}
+                <Progress
+                  value={recapProgress}
+                  size="sm"
+                  borderRadius="full"
+                  colorScheme="blue"
+                  hasStripe={recapProgress < 100}
+                  isAnimated={recapProgress < 100}
+                />
+                {recapStatus ? (
+                  <Text fontSize="xs" color="blue.300" className="inter" mt={2}>
+                    {recapStatus}
+                  </Text>
+                ) : null}
+              </Box>
             ) : null}
 
             <HStack flexWrap="wrap" gap={3}>
@@ -925,8 +992,11 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
               ) : null}
             </HStack>
 
-            {recapStatus ? (
-              <Text fontSize="sm" color="green.300">
+            {!recapBusy && recapStatus ? (
+              <Text
+                fontSize="sm"
+                color={recapStatus.includes("fehlgeschlagen") || recapStatus.includes("Fehler") || recapStatus.includes("Bitte") ? "red.300" : "green.300"}
+              >
                 {recapStatus}
               </Text>
             ) : null}
