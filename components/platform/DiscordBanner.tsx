@@ -1,6 +1,6 @@
-import { Box, Button, Flex, HStack, Text, VStack } from "@chakra-ui/react";
-import Link from "next/link";
+import { Box, Flex, HStack, Text, VStack } from "@chakra-ui/react";
 import { CheckCircle2 } from "lucide-react";
+import { ChakraLinkButton } from "@/components/platform/ChakraLinkButton";
 import { GlassCard } from "@/components/ui/GlassCard";
 
 export function DiscordGlyph({ size = 22 }: { size?: number }) {
@@ -60,8 +60,7 @@ export function DiscordBanner({ discordUsername }: DiscordBannerProps) {
               </Text>
             </VStack>
           </HStack>
-          <Button
-            as={Link}
+          <ChakraLinkButton
             href="/api/discord/disconnect"
             variant="outline"
             size="sm"
@@ -71,7 +70,7 @@ export function DiscordBanner({ discordUsername }: DiscordBannerProps) {
             _hover={{ bg: "rgba(255,255,255,0.06)", borderColor: "rgba(212,175,55,0.4)" }}
           >
             Trennen
-          </Button>
+          </ChakraLinkButton>
         </Flex>
       </GlassCard>
     );
@@ -117,8 +116,7 @@ export function DiscordBanner({ discordUsername }: DiscordBannerProps) {
             </Text>
           </VStack>
         </HStack>
-        <Button
-          as={Link}
+        <ChakraLinkButton
           href="/api/discord/connect"
           size="md"
           borderRadius="10px"
@@ -132,7 +130,7 @@ export function DiscordBanner({ discordUsername }: DiscordBannerProps) {
           alignSelf={{ base: "stretch", md: "center" }}
         >
           Discord verbinden
-        </Button>
+        </ChakraLinkButton>
       </Flex>
     </GlassCard>
   );
