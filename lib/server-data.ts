@@ -72,6 +72,8 @@ export type AcademyModuleRow = {
   courseTitle: string | null;
   courseSlug: string | null;
   courseId: string;
+  courseIcon: string | null;
+  courseAccentColor: string | null;
   thumbnailSignedUrl: string | null;
   unlocked: boolean;
   completed: boolean;
@@ -348,7 +350,7 @@ export async function getAcademyModulesOverview(
     .from("modules")
     .select(
       `id,title,description,slug,order_index,course_id,thumbnail_storage_key,is_published,
-      courses ( id, title, slug, created_at, is_free )`,
+      courses ( id, title, slug, created_at, is_free, icon, accent_color )`,
     )
     .eq("is_published", true);
 
@@ -361,9 +363,9 @@ export async function getAcademyModulesOverview(
     course_id: string;
     thumbnail_storage_key: string | null;
     courses:
-      | { id: string; title: string; slug: string | null; created_at: string; is_free: boolean | null }
+      | { id: string; title: string; slug: string | null; created_at: string; is_free: boolean | null; icon: string | null; accent_color: string | null }
       | null
-      | { id: string; title: string; slug: string | null; created_at: string; is_free: boolean | null }[];
+      | { id: string; title: string; slug: string | null; created_at: string; is_free: boolean | null; icon: string | null; accent_color: string | null }[];
   };
   const raw = (modules ?? []) as unknown as ModRow[];
   const list = raw
@@ -444,6 +446,8 @@ export async function getAcademyModulesOverview(
       courseTitle: m.courses?.title ?? null,
       courseSlug: m.courses?.slug ?? null,
       courseId: m.course_id,
+      courseIcon: m.courses?.icon ?? null,
+      courseAccentColor: m.courses?.accent_color ?? null,
       thumbnailSignedUrl: thumbnailUrls[i] ?? null,
       unlocked,
       completed,

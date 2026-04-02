@@ -16,6 +16,8 @@ export async function POST(request: Request) {
     slug: string;
     description?: string;
     is_free?: boolean;
+    icon?: string | null;
+    accent_color?: string | null;
   };
   const { data, error: insertError } = await supabase
     .from("courses")
@@ -24,6 +26,8 @@ export async function POST(request: Request) {
       slug: body.slug,
       description: body.description ?? null,
       is_free: Boolean(body.is_free),
+      icon: body.icon ?? null,
+      accent_color: body.accent_color ?? null,
     })
     .select("*")
     .single();

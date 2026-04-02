@@ -14,7 +14,7 @@ export default async function AusbildungPage() {
   return (
     <Grid gap={{ base: 6, md: 8 }}>
       <GridItem>
-        <Heading as="h1" size="xl" className="radley-regular" fontWeight={400} mb={2}>
+        <Heading as="h1" size="xl" className="inter-bold" fontWeight={700} mb={2}>
           Institut
         </Heading>
         <Text className="inter" color="var(--color-text-muted)" fontSize="sm" maxW="640px">

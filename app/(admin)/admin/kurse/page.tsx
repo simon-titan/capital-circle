@@ -13,6 +13,8 @@ export default async function AdminKursePage() {
       slug: string;
       description: string | null;
       is_free: boolean | null;
+      icon: string | null;
+      accent_color: string | null;
     }>;
 
   return (
@@ -40,6 +42,8 @@ export default async function AdminKursePage() {
           slug: c.slug,
           description: c.description,
           is_free: Boolean(c.is_free),
+          icon: c.icon,
+          accent_color: c.accent_color,
         }))}
       />
     </Stack>

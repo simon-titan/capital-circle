@@ -14,9 +14,52 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import Link from "next/link";
-import { BookOpen, Lock } from "lucide-react";
+import {
+  BookOpen,
+  Lock,
+  TrendingUp,
+  BarChart2,
+  Layers,
+  Target,
+  Compass,
+  Lightbulb,
+  Shield,
+  Star,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type { AcademyModuleRow } from "@/lib/server-data";
 import { moduleHref } from "@/lib/module-route";
+
+// Fallback-Farben (rotierend wenn kein DB-Wert gesetzt)
+const FALLBACK_COLORS = [
+  "rgba(212,175,55,1)",
+  "rgba(99,179,237,1)",
+  "rgba(154,117,255,1)",
+  "rgba(74,222,128,1)",
+  "rgba(251,146,60,1)",
+];
+
+// Fallback-Icons (rotierend wenn kein DB-Wert gesetzt)
+const FALLBACK_ICONS = [TrendingUp, BarChart2, Layers, Target, Compass, Lightbulb, Shield, Star];
+
+// Lucide-Icon-Map für DB-gespeicherte Icon-Namen
+const LUCIDE_MAP: Record<string, LucideIcon> = {
+  TrendingUp, BarChart2, Layers, Target, Compass, Lightbulb, Shield, Star,
+  BookOpen, Lock,
+};
+
+function resolveAccent(color: string) {
+  return {
+    border: color.replace(",1)", ",0.35)"),
+    borderExpanded: color.replace(",1)", ",0.6)"),
+    bg: color.replace(",1)", ",0.06)"),
+  };
+}
+
+function resolveIcon(iconName: string | null | undefined, idx: number): LucideIcon {
+  if (iconName && LUCIDE_MAP[iconName]) return LUCIDE_MAP[iconName];
+  return FALLBACK_ICONS[idx % FALLBACK_ICONS.length];
+}
 
 function formatTotalDuration(totalSeconds: number) {
   if (totalSeconds <= 0) return "—";
@@ -36,11 +79,16 @@ function groupModulesByCourse(modules: AcademyModuleRow[]) {
     }
     map.get(m.courseId)!.push(m);
   }
-  return order.map((courseId) => ({
-    courseId,
-    courseTitle: map.get(courseId)![0]?.courseTitle ?? "Kurs",
-    modules: map.get(courseId)!,
-  }));
+  return order.map((courseId) => {
+    const first = map.get(courseId)![0];
+    return {
+      courseId,
+      courseTitle: first?.courseTitle ?? "Kurs",
+      courseIcon: first?.courseIcon ?? null,
+      courseAccentColor: first?.courseAccentColor ?? null,
+      modules: map.get(courseId)!,
+    };
+  });
 }
 
 function ModuleListRow({ m }: { m: AcademyModuleRow }) {
@@ -144,37 +192,69 @@ export function InstitutAccordion({ modules }: { modules: AcademyModuleRow[] }) 
 
   return (
     <Accordion allowToggle defaultIndex={[0]}>
-      {groups.map((g) => (
-        <AccordionItem key={g.courseId} border="none" mb={3}>
-          <AccordionButton
-            borderRadius="16px"
-            px={{ base: 4, md: 5 }}
-            py={4}
-            bg="rgba(255,255,255,0.04)"
-            borderWidth="1px"
-            borderColor="rgba(255,255,255,0.08)"
-            _expanded={{ bg: "rgba(212,175,55,0.08)", borderColor: "rgba(212,175,55,0.22)" }}
-            _hover={{ bg: "rgba(212,175,55,0.06)" }}
-          >
-            <Box flex="1" textAlign="left">
-              <Text className="radley-regular" fontSize="lg" color="var(--color-text-primary)">
-                {g.courseTitle}
-              </Text>
-              <Text className="inter" fontSize="xs" color="var(--color-text-muted)" mt={1}>
-                {g.modules.length} {g.modules.length === 1 ? "Modul" : "Module"}
-              </Text>
-            </Box>
-            <AccordionIcon color="var(--color-accent-gold-light)" />
-          </AccordionButton>
-          <AccordionPanel px={0} pt={3} pb={1}>
-            <VStack align="stretch" spacing={2}>
-              {g.modules.map((m) => (
-                <ModuleListRow key={m.id} m={m} />
-              ))}
-            </VStack>
-          </AccordionPanel>
-        </AccordionItem>
-      ))}
+      {groups.map((g, idx) => {
+        const rawColor = g.courseAccentColor ?? FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
+        const accent = resolveAccent(rawColor);
+        const CourseIcon = resolveIcon(g.courseIcon, idx);
+        return (
+          <AccordionItem key={g.courseId} border="none" mb={3}>
+            {({ isExpanded }: { isExpanded: boolean }) => (
+              <>
+                <AccordionButton
+                  borderRadius="16px"
+                  px={{ base: 4, md: 5 }}
+                  py={4}
+                  bg="rgba(255,255,255,0.04)"
+                  borderWidth="1px"
+                  borderColor={isExpanded ? accent.borderExpanded : accent.border}
+                  borderLeftWidth="3px"
+                  _expanded={{ bg: accent.bg }}
+                  _hover={{ bg: accent.bg }}
+                  transition="border-color 0.2s ease, background 0.2s ease"
+                >
+                  <HStack flex="1" textAlign="left" spacing={3}>
+                    <Box
+                      flexShrink={0}
+                      w="36px"
+                      h="36px"
+                      borderRadius="10px"
+                      bg={isExpanded ? accent.bg : "rgba(255,255,255,0.05)"}
+                      borderWidth="1px"
+                      borderColor={isExpanded ? accent.borderExpanded : accent.border}
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                      transition="all 0.2s ease"
+                    >
+                      <CourseIcon
+                        size={16}
+                        style={{ color: isExpanded ? accent.borderExpanded : "rgba(240,240,242,0.55)" }}
+                        aria-hidden
+                      />
+                    </Box>
+                    <Box>
+                      <Text className="inter-semibold" fontSize="md" color="var(--color-text-primary)">
+                        {g.courseTitle}
+                      </Text>
+                      <Text className="inter" fontSize="xs" color="var(--color-text-muted)" mt={0.5}>
+                        {g.modules.length} {g.modules.length === 1 ? "Modul" : "Module"}
+                      </Text>
+                    </Box>
+                  </HStack>
+                  <AccordionIcon color={isExpanded ? accent.borderExpanded : "rgba(240,240,242,0.45)"} />
+                </AccordionButton>
+                <AccordionPanel px={0} pt={3} pb={1}>
+                  <VStack align="stretch" spacing={2}>
+                    {g.modules.map((m) => (
+                      <ModuleListRow key={m.id} m={m} />
+                    ))}
+                  </VStack>
+                </AccordionPanel>
+              </>
+            )}
+          </AccordionItem>
+        );
+      })}
     </Accordion>
   );
 }
