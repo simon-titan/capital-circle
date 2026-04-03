@@ -1,6 +1,9 @@
-import { Box, Flex, HStack, Text, VStack } from "@chakra-ui/react";
+"use client";
+
+import { Box, Button, Flex, HStack, Text, VStack } from "@chakra-ui/react";
 import { CheckCircle2 } from "lucide-react";
-import { ChakraLinkButton } from "@/components/platform/ChakraLinkButton";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { GlassCard } from "@/components/ui/GlassCard";
 
 export function DiscordGlyph({ size = 22 }: { size?: number }) {
@@ -16,7 +19,41 @@ type DiscordBannerProps = {
 };
 
 export function DiscordBanner({ discordUsername }: DiscordBannerProps) {
+  const router = useRouter();
+  const [disconnecting, setDisconnecting] = useState(false);
   const connected = Boolean(discordUsername?.trim());
+
+  const disconnect = async () => {
+    setDisconnecting(true);
+    try {
+      const res = await fetch("/api/discord/disconnect", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { Accept: "application/json" },
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        redirect?: string;
+        error?: string;
+      };
+
+      if (res.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
+      if (!res.ok || !data.ok) {
+        window.location.href = `/dashboard?discord=error&reason=${encodeURIComponent(data.error ?? "disconnect_failed")}`;
+        return;
+      }
+      if (data.redirect) {
+        window.location.href = data.redirect;
+        return;
+      }
+      router.refresh();
+    } finally {
+      setDisconnecting(false);
+    }
+  };
 
   if (connected) {
     const handle = discordUsername!.trim().startsWith("@") ? discordUsername!.trim() : `@${discordUsername!.trim()}`;
@@ -60,17 +97,20 @@ export function DiscordBanner({ discordUsername }: DiscordBannerProps) {
               </Text>
             </VStack>
           </HStack>
-          <ChakraLinkButton
-            href="/api/discord/disconnect"
+          <Button
+            type="button"
             variant="outline"
             size="sm"
             borderRadius="10px"
             borderColor="rgba(255,255,255,0.2)"
             color="var(--color-text-secondary)"
             _hover={{ bg: "rgba(255,255,255,0.06)", borderColor: "rgba(212,175,55,0.4)" }}
+            onClick={() => void disconnect()}
+            isLoading={disconnecting}
+            isDisabled={disconnecting}
           >
             Trennen
-          </ChakraLinkButton>
+          </Button>
         </Flex>
       </GlassCard>
     );
@@ -116,7 +156,8 @@ export function DiscordBanner({ discordUsername }: DiscordBannerProps) {
             </Text>
           </VStack>
         </HStack>
-        <ChakraLinkButton
+        <Button
+          as="a"
           href="/api/discord/connect"
           size="md"
           borderRadius="10px"
@@ -130,7 +171,7 @@ export function DiscordBanner({ discordUsername }: DiscordBannerProps) {
           alignSelf={{ base: "stretch", md: "center" }}
         >
           Discord verbinden
-        </ChakraLinkButton>
+        </Button>
       </Flex>
     </GlassCard>
   );
