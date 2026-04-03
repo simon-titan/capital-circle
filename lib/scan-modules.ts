@@ -136,6 +136,20 @@ function mergeEmptyFoldersIntoParsed(
   }
 }
 
+/** Höchste Video-Position unter Modul (direkt) bzw. unter Subkategorie — Basis für neue Einträge ans Ende. */
+async function maxVideoPosition(
+  supabase: ServerClient,
+  moduleId: string,
+  subcategoryId: string | null,
+): Promise<number> {
+  const base = supabase.from("videos").select("position").order("position", { ascending: false }).limit(1);
+  const { data } = subcategoryId
+    ? await base.eq("subcategory_id", subcategoryId).maybeSingle()
+    : await base.eq("module_id", moduleId).is("subcategory_id", null).maybeSingle();
+  const p = data?.position;
+  return typeof p === "number" ? p : -1;
+}
+
 async function nextUniqueModuleSlug(supabase: ServerClient, base: string): Promise<string> {
   let candidate = base;
   let n = 0;
@@ -170,6 +184,9 @@ export async function scanModulesFromBucket(prefix = "modules"): Promise<string[
  *   → Wird in den "Nicht zugeordnet"-Kurs eingefügt (UNASSIGNED_COURSE_ID).
  *   → Admin kann es danach manuell einem echten Kurs zuordnen.
  * - Videos/Subkategorien: Nur neue Keys werden eingefügt, bestehende bleiben unberührt.
+ * - Subkategorien: Zuordnung über storage_folder_key (Bucket-Unterordnername); Legacy-Zeilen ohne Key
+ *   werden einmalig per title gematcht und erhalten storage_folder_key (Titel/Position unverändert).
+ * - Neue Videos erhalten Positionen ans Ende (max+1), keine Neu-Sortierung bestehender Einträge.
  */
 export async function syncParsedModulesGlobal(
   supabase: ServerClient,
@@ -254,17 +271,14 @@ export async function syncParsedModulesGlobal(
         ...(subV ?? []).map((v) => v.storage_key),
       ]);
 
-      let pos = 0;
+      let nextDirectPos = (await maxVideoPosition(supabase, moduleId, null)) + 1;
       for (const v of folder.directVideos.sort((a, b) => a.storageKey.localeCompare(b.storageKey))) {
-        if (existingKeys.has(v.storageKey)) {
-          pos += 1;
-          continue;
-        }
+        if (existingKeys.has(v.storageKey)) continue;
         const { error: vErr } = await supabase.from("videos").insert({
           module_id: moduleId,
           subcategory_id: null,
           title: v.title,
-          position: pos,
+          position: nextDirectPos,
           storage_key: v.storageKey,
           is_published: true,
         });
@@ -272,53 +286,67 @@ export async function syncParsedModulesGlobal(
         else {
           videosCreated += 1;
           existingKeys.add(v.storageKey);
+          nextDirectPos += 1;
         }
-        pos += 1;
       }
 
       const subEntries = [...folder.subfolders.entries()].sort(([a], [b]) => a.localeCompare(b));
       let subPos = 0;
-      for (const [, sub] of subEntries) {
-        const { data: subRow } = await supabase
+      for (const [subFolderKey, sub] of subEntries) {
+        const { data: byStorageKey } = await supabase
           .from("subcategories")
           .select("id")
           .eq("module_id", moduleId)
-          .eq("title", sub.title)
+          .eq("storage_folder_key", subFolderKey)
           .maybeSingle();
 
         let subId: string;
-        if (subRow?.id) {
-          subId = subRow.id;
+        if (byStorageKey?.id) {
+          subId = byStorageKey.id;
         } else {
-          const { data: insSub, error: sErr } = await supabase
+          const { data: legacyRow } = await supabase
             .from("subcategories")
-            .insert({
-              module_id: moduleId,
-              title: sub.title,
-              position: subPos,
-            })
             .select("id")
-            .single();
-          if (sErr || !insSub?.id) {
-            errors.push(`Sub ${sub.title}: ${sErr?.message ?? "fail"}`);
-            continue;
+            .eq("module_id", moduleId)
+            .eq("title", sub.title)
+            .is("storage_folder_key", null)
+            .maybeSingle();
+
+          if (legacyRow?.id) {
+            subId = legacyRow.id;
+            await supabase
+              .from("subcategories")
+              .update({ storage_folder_key: subFolderKey })
+              .eq("id", subId);
+          } else {
+            const { data: insSub, error: sErr } = await supabase
+              .from("subcategories")
+              .insert({
+                module_id: moduleId,
+                title: sub.title,
+                position: subPos,
+                storage_folder_key: subFolderKey,
+              })
+              .select("id")
+              .single();
+            if (sErr || !insSub?.id) {
+              errors.push(`Sub ${sub.title}: ${sErr?.message ?? "fail"}`);
+              continue;
+            }
+            subId = insSub.id;
+            subcategoriesCreated += 1;
           }
-          subId = insSub.id;
-          subcategoriesCreated += 1;
         }
         subPos += 1;
 
-        let vPos = 0;
+        let nextSubVideoPos = (await maxVideoPosition(supabase, moduleId, subId)) + 1;
         for (const v of sub.videos.sort((a, b) => a.storageKey.localeCompare(b.storageKey))) {
-          if (existingKeys.has(v.storageKey)) {
-            vPos += 1;
-            continue;
-          }
+          if (existingKeys.has(v.storageKey)) continue;
           const { error: vErr } = await supabase.from("videos").insert({
             module_id: null,
             subcategory_id: subId,
             title: v.title,
-            position: vPos,
+            position: nextSubVideoPos,
             storage_key: v.storageKey,
             is_published: true,
           });
@@ -326,8 +354,8 @@ export async function syncParsedModulesGlobal(
           else {
             videosCreated += 1;
             existingKeys.add(v.storageKey);
+            nextSubVideoPos += 1;
           }
-          vPos += 1;
         }
       }
     } catch (e) {

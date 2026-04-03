@@ -75,6 +75,7 @@ export type Database = {
           title: string;
           description: string | null;
           position: number;
+          storage_folder_key: string | null;
           created_at: string;
         };
         Insert: Record<string, unknown>;
