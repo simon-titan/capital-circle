@@ -73,6 +73,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // apple-touch-icon: Safari/WebKit holen /apple-touch-icon(.png) oft direkt — darf nicht zur Login-Redirect-HTML werden.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|logo/|bg/|svg/|apple-touch-icon).*)"],
+  // Statische Icons: Safari/WebKit u. a. holen apple-touch-icon / favicon ohne HTML — nicht zur Login-HTML umleiten.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|logo/|bg/|svg/|apple-touch-icon|new-apple).*)"],
 };

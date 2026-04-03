@@ -6,10 +6,10 @@ export const metadata: Metadata = {
   title: "Capital Circle Institut",
   description: "Exklusive Trading-Lernplattform",
   icons: {
-    icon: [{ url: "/logo/FAVICON.png", sizes: "512x512", type: "image/png" }],
-    shortcut: "/logo/FAVICON.png",
-    // Root-Datei: viele Clients (v. a. iOS) fordern /apple-touch-icon.png ohne HTML zu parsen
-    apple: [{ url: "/apple-touch-icon.png", sizes: "512x512", type: "image/png" }],
+    icon: [{ url: "/new-apple.png", sizes: "512x512", type: "image/png" }],
+    shortcut: "/new-apple.png",
+    // Zusätzlich public/apple-touch-icon.png (Kopie) — Safari holt die URL oft direkt
+    apple: [{ url: "/new-apple.png", sizes: "512x512", type: "image/png" }],
   },
 };
 
