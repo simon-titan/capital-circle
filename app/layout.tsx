@@ -8,7 +8,8 @@ export const metadata: Metadata = {
   icons: {
     icon: [{ url: "/logo/FAVICON.png", sizes: "512x512", type: "image/png" }],
     shortcut: "/logo/FAVICON.png",
-    apple: [{ url: "/logo/FAVICON.png", sizes: "512x512", type: "image/png" }],
+    // Root-Datei: viele Clients (v. a. iOS) fordern /apple-touch-icon.png ohne HTML zu parsen
+    apple: [{ url: "/apple-touch-icon.png", sizes: "512x512", type: "image/png" }],
   },
 };
 

@@ -73,5 +73,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|logo/|bg/|svg/).*)"],
+  // apple-touch-icon: Safari/WebKit holen /apple-touch-icon(.png) oft direkt — darf nicht zur Login-Redirect-HTML werden.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|logo/|bg/|svg/|apple-touch-icon).*)"],
 };
