@@ -6,9 +6,9 @@ export const metadata: Metadata = {
   title: "Capital Circle Institut",
   description: "Exklusive Trading-Lernplattform",
   icons: {
-    icon: "/logo/FAVICON.png",
+    icon: [{ url: "/logo/FAVICON.png", sizes: "512x512", type: "image/png" }],
     shortcut: "/logo/FAVICON.png",
-    apple: "/logo/FAVICON.png",
+    apple: [{ url: "/logo/FAVICON.png", sizes: "512x512", type: "image/png" }],
   },
 };
 
