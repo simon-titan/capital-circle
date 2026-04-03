@@ -40,26 +40,75 @@ type VideoPlaylistProps = {
   onSelect: (index: number) => void;
 };
 
-export function VideoPlaylist({ playlist, activeIndex, progressMap, onSelect }: VideoPlaylistProps) {
-  const groups = useMemo(() => {
-    const direct: { idx: number; v: PlaylistVideoRow }[] = [];
-    const subs = new Map<string, { title: string; items: { idx: number; v: PlaylistVideoRow }[] }>();
-    playlist.forEach((v, idx) => {
-      if (!v.subcategoryId) {
-        direct.push({ idx, v });
-        return;
+type PlaylistItemRef = { idx: number; v: PlaylistVideoRow };
+
+/** Behält die lineare Playlist-Reihenfolge (gemischte Admin-Position): direkte Videos und Subkategorie-Blöcke abwechselnd. */
+type PlaylistBlock =
+  | { kind: "videos"; items: PlaylistItemRef[] }
+  | { kind: "sub"; subcategoryId: string; title: string; items: PlaylistItemRef[] };
+
+function buildPlaylistBlocks(playlist: PlaylistVideoRow[]): PlaylistBlock[] {
+  const blocks: PlaylistBlock[] = [];
+  let currentVideos: PlaylistItemRef[] = [];
+  let currentSub: { subcategoryId: string; title: string; items: PlaylistItemRef[] } | null = null;
+
+  const flushVideos = () => {
+    if (currentVideos.length > 0) {
+      blocks.push({ kind: "videos", items: currentVideos });
+      currentVideos = [];
+    }
+  };
+
+  for (let idx = 0; idx < playlist.length; idx++) {
+    const v = playlist[idx]!;
+    const item: PlaylistItemRef = { idx, v };
+    if (!v.subcategoryId) {
+      if (currentSub) {
+        blocks.push({
+          kind: "sub",
+          subcategoryId: currentSub.subcategoryId,
+          title: currentSub.title,
+          items: currentSub.items,
+        });
+        currentSub = null;
       }
-      const key = v.subcategoryId;
-      const title = v.subcategoryTitle ?? "Abschnitt";
-      let g = subs.get(key);
-      if (!g) {
-        g = { title, items: [] };
-        subs.set(key, g);
-      }
-      g.items.push({ idx, v });
+      currentVideos.push(item);
+      continue;
+    }
+    const sid = v.subcategoryId;
+    const title = v.subcategoryTitle ?? "Abschnitt";
+    if (currentSub && currentSub.subcategoryId === sid) {
+      currentSub.items.push(item);
+      continue;
+    }
+    if (currentSub) {
+      blocks.push({
+        kind: "sub",
+        subcategoryId: currentSub.subcategoryId,
+        title: currentSub.title,
+        items: currentSub.items,
+      });
+    } else {
+      flushVideos();
+    }
+    currentSub = { subcategoryId: sid, title, items: [item] };
+  }
+
+  flushVideos();
+  if (currentSub) {
+    blocks.push({
+      kind: "sub",
+      subcategoryId: currentSub.subcategoryId,
+      title: currentSub.title,
+      items: currentSub.items,
     });
-    return { direct, subs: [...subs.values()] };
-  }, [playlist]);
+  }
+
+  return blocks;
+}
+
+export function VideoPlaylist({ playlist, activeIndex, progressMap, onSelect }: VideoPlaylistProps) {
+  const blocks = useMemo(() => buildPlaylistBlocks(playlist), [playlist]);
 
   const row = (idx: number, v: PlaylistVideoRow) => {
     const active = idx === activeIndex;
@@ -220,15 +269,21 @@ export function VideoPlaylist({ playlist, activeIndex, progressMap, onSelect }: 
       <Text className="inter" fontSize="xs" textTransform="uppercase" letterSpacing="0.08em" color="var(--color-text-muted)">
         Inhalt
       </Text>
-      {groups.direct.length > 0 ? (
-        <VStack align="stretch" spacing={2}>
-          {groups.direct.map(({ idx, v }) => row(idx, v))}
-        </VStack>
-      ) : null}
-      {groups.subs.length > 0 ? (
-        <Accordion allowMultiple defaultIndex={groups.subs.map((_, i) => i)}>
-          {groups.subs.map((g, i) => (
-            <AccordionItem key={i} border="none" mb={2}>
+      {blocks.map((block, bi) => {
+        if (block.kind === "videos") {
+          return (
+            <VStack key={`videos-${bi}`} align="stretch" spacing={2}>
+              {block.items.map(({ idx, v }) => row(idx, v))}
+            </VStack>
+          );
+        }
+        return (
+          <Accordion
+            key={`sub-${block.subcategoryId}-${bi}`}
+            allowToggle
+            defaultIndex={0}
+          >
+            <AccordionItem border="none" mb={2}>
               <AccordionButton
                 borderRadius="12px"
                 bg="rgba(255,255,255,0.04)"
@@ -239,20 +294,20 @@ export function VideoPlaylist({ playlist, activeIndex, progressMap, onSelect }: 
               >
                 <Box flex="1" textAlign="left">
                   <Text className="inter-semibold" fontSize="sm" color="var(--color-text-primary)">
-                    {g.title}
+                    {block.title}
                   </Text>
                 </Box>
                 <AccordionIcon color="var(--color-accent-gold)" />
               </AccordionButton>
               <AccordionPanel px={0} pt={2} pb={0}>
                 <VStack align="stretch" spacing={2}>
-                  {g.items.map(({ idx, v }) => row(idx, v))}
+                  {block.items.map(({ idx, v }) => row(idx, v))}
                 </VStack>
               </AccordionPanel>
             </AccordionItem>
-          ))}
-        </Accordion>
-      ) : null}
+          </Accordion>
+        );
+      })}
     </VStack>
   );
 }

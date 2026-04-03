@@ -220,7 +220,8 @@ export async function getModulePublishedPlaylist(supabase: ServerClient, moduleI
   const { data: subs } = await supabase
     .from("subcategories")
     .select("id,title,position")
-    .eq("module_id", moduleId);
+    .eq("module_id", moduleId)
+    .order("position", { ascending: true });
 
   const subIdsPlaylist = (subs ?? []).map((s) => s.id).filter(Boolean);
   const { data: subVideoRowsPlaylist } =

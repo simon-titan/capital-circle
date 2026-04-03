@@ -157,6 +157,48 @@ export function ModuleContentManager({
     [setAllVideos],
   );
 
+  const onUnifiedReorder = async (orderedDndIds: string[]) => {
+    const orderedItems = orderedDndIds
+      .map((dndId) => parseDndId(dndId))
+      .filter((x): x is NonNullable<typeof x> => x != null)
+      .map((x) => ({
+        type: x.type === "video" ? ("video" as const) : ("subcategory" as const),
+        id: x.id,
+      }));
+
+    setAllVideos((prev) => {
+      const posByVideoId = new Map<string, number>();
+      orderedDndIds.forEach((dndId, i) => {
+        const p = parseDndId(dndId);
+        if (p?.type === "video") posByVideoId.set(p.id, i);
+      });
+      return prev.map((v) => {
+        if (v.subcategory_id != null) return v;
+        const ni = posByVideoId.get(v.id);
+        return ni !== undefined ? { ...v, position: ni } : v;
+      });
+    });
+    setSubcategories((prev) => {
+      const posBySubId = new Map<string, number>();
+      orderedDndIds.forEach((dndId, i) => {
+        const p = parseDndId(dndId);
+        if (p?.type === "subcategory") posBySubId.set(p.id, i);
+      });
+      return prev.map((s) => {
+        const ni = posBySubId.get(s.id);
+        return ni !== undefined ? { ...s, position: ni } : s;
+      });
+    });
+
+    const res = await fetch("/api/admin/module-content", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ moduleId, orderedItems }),
+    });
+    const json = (await res.json()) as { ok?: boolean };
+    if (!json.ok) void onReload?.();
+  };
+
   const onMoveVideo = async (item: VideoRow, target: string) => {
     const updates =
       target === "__direct__"
@@ -169,7 +211,24 @@ export function ModuleContentManager({
     });
     const json = (await res.json()) as { ok?: boolean; item?: VideoRow };
     if (!json.ok || !json.item) return;
-    setAllVideos((prev) => prev.map((x) => (x.id === item.id ? json.item! : x)));
+    const updated = json.item;
+    setAllVideos((prev) => prev.map((x) => (x.id === item.id ? updated : x)));
+
+    const wasDirect = item.subcategory_id == null;
+    const nowDirect = updated.subcategory_id == null;
+
+    // Top-Level-Reihenfolge (direkte Videos + Subkategorien) nur bei Wechsel zwischen „direkt“ und Subkategorie:
+    // Positionen 0…n-1 neu setzen, damit der gemeinsame Positionsraum konsistent bleibt.
+    if (wasDirect && !nowDirect) {
+      const orderedDndIds = mergedRows.map((r) => r.dndId).filter((id) => id !== `v:${item.id}`);
+      await onUnifiedReorder(orderedDndIds);
+      return;
+    }
+    if (!wasDirect && nowDirect) {
+      const orderedDndIds = [...mergedRows.map((r) => r.dndId), `v:${item.id}`];
+      await onUnifiedReorder(orderedDndIds);
+      return;
+    }
   };
 
   const onUploadThumbnail = async (item: VideoRow) => {
@@ -225,48 +284,6 @@ export function ModuleContentManager({
     const res = await fetch(`/api/admin/videos?id=${encodeURIComponent(id)}`, { method: "DELETE" });
     const json = (await res.json()) as { ok?: boolean };
     if (json.ok) setAllVideos((prev) => prev.filter((v) => v.id !== id));
-  };
-
-  const onUnifiedReorder = async (orderedDndIds: string[]) => {
-    const orderedItems = orderedDndIds
-      .map((dndId) => parseDndId(dndId))
-      .filter((x): x is NonNullable<typeof x> => x != null)
-      .map((x) => ({
-        type: x.type === "video" ? ("video" as const) : ("subcategory" as const),
-        id: x.id,
-      }));
-
-    setAllVideos((prev) => {
-      const posByVideoId = new Map<string, number>();
-      orderedDndIds.forEach((dndId, i) => {
-        const p = parseDndId(dndId);
-        if (p?.type === "video") posByVideoId.set(p.id, i);
-      });
-      return prev.map((v) => {
-        if (v.subcategory_id != null) return v;
-        const ni = posByVideoId.get(v.id);
-        return ni !== undefined ? { ...v, position: ni } : v;
-      });
-    });
-    setSubcategories((prev) => {
-      const posBySubId = new Map<string, number>();
-      orderedDndIds.forEach((dndId, i) => {
-        const p = parseDndId(dndId);
-        if (p?.type === "subcategory") posBySubId.set(p.id, i);
-      });
-      return prev.map((s) => {
-        const ni = posBySubId.get(s.id);
-        return ni !== undefined ? { ...s, position: ni } : s;
-      });
-    });
-
-    const res = await fetch("/api/admin/module-content", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ moduleId, orderedItems }),
-    });
-    const json = (await res.json()) as { ok?: boolean };
-    if (!json.ok) void onReload?.();
   };
 
   const onDirectVideoUploaded = async (payload: VideoUploadedPayload) => {

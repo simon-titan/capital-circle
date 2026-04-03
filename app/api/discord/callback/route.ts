@@ -1,8 +1,31 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 function siteUrl() {
   return process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+}
+
+/** Bestehende Mitglieder: Discord ignoriert `roles` im Add-Member-Body bei 204 — Rolle separat setzen. */
+async function assignDiscordMemberRole(
+  guildId: string,
+  botToken: string,
+  discordUserId: string,
+  roleId: string,
+): Promise<void> {
+  const roleRes = await fetch(
+    `https://discord.com/api/v10/guilds/${guildId}/members/${discordUserId}/roles/${roleId}`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bot ${botToken}`,
+      },
+    },
+  );
+
+  if (!roleRes.ok && roleRes.status !== 204) {
+    const errBody = await roleRes.text();
+    console.error("[discord/callback] assign member role failed:", roleRes.status, errBody);
+  }
 }
 
 export async function GET(request: Request) {
@@ -33,6 +56,15 @@ export async function GET(request: Request) {
 
   if (!clientId || !clientSecret || !redirectUri) {
     return NextResponse.redirect(new URL("/dashboard?discord=error&reason=oauth_not_configured", siteUrl()));
+  }
+
+  let service;
+  try {
+    service = createServiceClient();
+  } catch {
+    return NextResponse.redirect(
+      new URL("/dashboard?discord=error&reason=service_role_not_configured", siteUrl()),
+    );
   }
 
   const supabase = await createClient();
@@ -108,22 +140,31 @@ export async function GET(request: Request) {
     if (!memberRes.ok && memberRes.status !== 204) {
       const errBody = await memberRes.text();
       console.error("[discord/callback] guild member PUT failed:", memberRes.status, errBody);
+    } else if (memberRes.status === 204) {
+      // Bereits im Server: `roles` im Body werden ignoriert — Rolle explizit zuweisen
+      await assignDiscordMemberRole(guildId, botToken, discordUser.id, roleId);
     }
   } else {
-    console.warn("[discord/callback] DISCORD_GUILD_ID / DISCORD_BOT_TOKEN / DISCORD_ROLE_ID nicht gesetzt — Server-Join übersprungen.");
+    console.warn(
+      "[discord/callback] DISCORD_GUILD_ID / DISCORD_BOT_TOKEN / DISCORD_ROLE_ID nicht gesetzt — Server-Join übersprungen.",
+    );
   }
 
-  const { error: upsertErr } = await supabase.from("discord_connections").upsert(
-    {
-      user_id: user.id,
-      discord_user_id: discordUser.id,
-      discord_username: displayName,
-      discord_access_token: tokenData.access_token,
-      discord_refresh_token: tokenData.refresh_token ?? null,
-      connected_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id" },
-  );
+  const { data: upserted, error: upsertErr } = await service
+    .from("discord_connections")
+    .upsert(
+      {
+        user_id: user.id,
+        discord_user_id: discordUser.id,
+        discord_username: displayName,
+        discord_access_token: tokenData.access_token,
+        discord_refresh_token: tokenData.refresh_token ?? null,
+        connected_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id" },
+    )
+    .select("user_id")
+    .maybeSingle();
 
   if (upsertErr) {
     return NextResponse.redirect(
@@ -131,7 +172,14 @@ export async function GET(request: Request) {
     );
   }
 
-  const { error: profileErr } = await supabase
+  if (!upserted?.user_id) {
+    console.error("[discord/callback] discord_connections upsert returned no row");
+    return NextResponse.redirect(
+      new URL("/dashboard?discord=error&reason=discord_connection_not_saved", siteUrl()),
+    );
+  }
+
+  const { data: profileRows, error: profileErr } = await service
     .from("profiles")
     .update({
       discord_id: discordUser.id,
@@ -139,10 +187,24 @@ export async function GET(request: Request) {
       discord_access_token: tokenData.access_token,
       discord_refresh_token: tokenData.refresh_token ?? null,
     })
-    .eq("id", user.id);
+    .eq("id", user.id)
+    .select("id");
 
   if (profileErr) {
     console.error("[discord/callback] profiles update:", profileErr);
+    return NextResponse.redirect(
+      new URL(
+        `/dashboard?discord=error&reason=${encodeURIComponent(profileErr.message)}`,
+        siteUrl(),
+      ),
+    );
+  }
+
+  if (!profileRows?.length) {
+    console.error("[discord/callback] profiles update affected 0 rows for user", user.id);
+    return NextResponse.redirect(
+      new URL("/dashboard?discord=error&reason=profile_not_updated", siteUrl()),
+    );
   }
 
   return NextResponse.redirect(new URL("/dashboard?discord=connected", siteUrl()));
