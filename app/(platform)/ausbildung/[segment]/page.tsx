@@ -4,7 +4,7 @@ import { ChakraLinkButton } from "@/components/platform/ChakraLinkButton";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { AusbildungModuleLearningClient } from "@/components/platform/AusbildungPageCards";
 import { createClient } from "@/lib/supabase/server";
-import { isModuleUnlocked } from "@/lib/progress";
+import { isCourseUnlocked, isModuleUnlocked } from "@/lib/progress";
 import { getModulePublishedPlaylist } from "@/lib/module-video";
 import { parseVideoProgressByVideo, userCanAccessAcademyModule } from "@/lib/server-data";
 import { isUuidParam, moduleHref } from "@/lib/module-route";
@@ -74,7 +74,43 @@ export default async function AcademyModulePage({ params }: PageProps) {
     );
   }
 
-  const unlocked = await isModuleUnlocked(user.id, mod.id);
+  const courseUnlocked = await isCourseUnlocked(user.id, mod.course_id as string);
+  if (!courseUnlocked) {
+    return (
+      <Stack gap={6} maxW="720px" mx="auto">
+        <GlassCard highlight>
+          <Heading as="h1" size="md" className="inter-semibold" fontWeight={600} mb={2}>
+            Kurs gesperrt
+          </Heading>
+          <Text className="inter" color="var(--color-text-muted)" fontSize="sm" mb={6}>
+            Schließe zuerst den vorherigen Kurs ab, um fortzufahren.
+          </Text>
+          <ChakraLinkButton href="/ausbildung" variant="outline" borderColor="rgba(212,175,55,0.45)" color="var(--color-accent-gold)">
+            Zur Instituts-Übersicht
+          </ChakraLinkButton>
+        </GlassCard>
+      </Stack>
+    );
+  }
+
+  const moduleUnlocked = await isModuleUnlocked(user.id, mod.id);
+  if (!moduleUnlocked) {
+    return (
+      <Stack gap={6} maxW="720px" mx="auto">
+        <GlassCard highlight>
+          <Heading as="h1" size="md" className="inter-semibold" fontWeight={600} mb={2}>
+            Modul gesperrt
+          </Heading>
+          <Text className="inter" color="var(--color-text-muted)" fontSize="sm" mb={6}>
+            Schließe zuerst das vorherige Modul ab, um fortzufahren.
+          </Text>
+          <ChakraLinkButton href="/ausbildung" variant="outline" borderColor="rgba(212,175,55,0.45)" color="var(--color-accent-gold)">
+            Zur Instituts-Übersicht
+          </ChakraLinkButton>
+        </GlassCard>
+      </Stack>
+    );
+  }
 
   const { data: quiz } = await supabase
     .from("quizzes")
@@ -131,24 +167,6 @@ export default async function AcademyModulePage({ params }: PageProps) {
     .maybeSingle();
 
   const initialNoteContent = typeof noteRow?.content === "string" ? noteRow.content : "";
-
-  if (!unlocked) {
-    return (
-      <Stack gap={6} maxW="720px" mx="auto">
-        <GlassCard highlight>
-          <Heading as="h1" size="md" className="inter-semibold" fontWeight={600} mb={2}>
-            Modul gesperrt
-          </Heading>
-          <Text className="inter" color="var(--color-text-muted)" fontSize="sm" mb={6}>
-            Schließe zuerst das vorherige Modul ab, um fortzufahren.
-          </Text>
-          <ChakraLinkButton href="/ausbildung" variant="outline" borderColor="rgba(212,175,55,0.45)" color="var(--color-accent-gold)">
-            Zur Instituts-Übersicht
-          </ChakraLinkButton>
-        </GlassCard>
-      </Stack>
-    );
-  }
 
   return (
     <Grid templateColumns="1fr" gap={6} alignItems="start">

@@ -37,6 +37,10 @@ export type CourseRow = {
   is_free?: boolean;
   icon?: string | null;
   accent_color?: string | null;
+  /** Reihenfolge für sequenzielle Kursfreischaltung (kleiner = zuerst). */
+  sort_order?: number;
+  /** Von der Ketten-Freischaltung ausnehmen (z. B. Trade Recaps). */
+  is_sequential_exempt?: boolean;
 };
 
 // Auswählbare Icons (Name = Lucide-Key)
@@ -179,6 +183,8 @@ export function AdminCoursesManager({ initialCourses }: { initialCourses: Course
   const [isFree, setIsFree] = useState(false);
   const [icon, setIcon] = useState<string | null>(null);
   const [accentColor, setAccentColor] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState(0);
+  const [sequentialExempt, setSequentialExempt] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -189,6 +195,8 @@ export function AdminCoursesManager({ initialCourses }: { initialCourses: Course
   const [editFree, setEditFree] = useState(false);
   const [editIcon, setEditIcon] = useState<string | null>(null);
   const [editAccentColor, setEditAccentColor] = useState<string | null>(null);
+  const [editSortOrder, setEditSortOrder] = useState(0);
+  const [editSequentialExempt, setEditSequentialExempt] = useState(false);
 
   const createCourse = async () => {
     setLoading(true);
@@ -196,7 +204,16 @@ export function AdminCoursesManager({ initialCourses }: { initialCourses: Course
     const res = await fetch("/api/admin/courses", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, slug, description, is_free: isFree, icon, accent_color: accentColor }),
+      body: JSON.stringify({
+        title,
+        slug,
+        description,
+        is_free: isFree,
+        icon,
+        accent_color: accentColor,
+        sort_order: sortOrder,
+        is_sequential_exempt: sequentialExempt,
+      }),
     });
     const json = (await res.json()) as { ok?: boolean; item?: CourseRow; error?: string };
     setLoading(false);
@@ -211,6 +228,8 @@ export function AdminCoursesManager({ initialCourses }: { initialCourses: Course
     setIsFree(false);
     setIcon(null);
     setAccentColor(null);
+    setSortOrder(0);
+    setSequentialExempt(false);
     setStatus("Kurs angelegt.");
     router.refresh();
   };
@@ -223,6 +242,8 @@ export function AdminCoursesManager({ initialCourses }: { initialCourses: Course
     setEditFree(Boolean(c.is_free));
     setEditIcon(c.icon ?? null);
     setEditAccentColor(c.accent_color ?? null);
+    setEditSortOrder(typeof c.sort_order === "number" ? c.sort_order : 0);
+    setEditSequentialExempt(Boolean(c.is_sequential_exempt));
     onOpen();
   };
 
@@ -241,6 +262,8 @@ export function AdminCoursesManager({ initialCourses }: { initialCourses: Course
           is_free: editFree,
           icon: editIcon,
           accent_color: editAccentColor,
+          sort_order: editSortOrder,
+          is_sequential_exempt: editSequentialExempt,
         },
       }),
     });
@@ -331,6 +354,32 @@ export function AdminCoursesManager({ initialCourses }: { initialCourses: Course
           </FormLabel>
           <Switch ml={3} isChecked={isFree} onChange={(e) => setIsFree(e.target.checked)} colorScheme="blue" />
         </FormControl>
+        <FormControl>
+          <FormLabel className="inter" fontSize="xs" textTransform="uppercase" letterSpacing="0.08em" color="gray.500">
+            Reihenfolge (sort_order)
+          </FormLabel>
+          <Input
+            type="number"
+            value={sortOrder}
+            onChange={(e) => setSortOrder(Number.parseInt(e.target.value, 10) || 0)}
+            borderColor="whiteAlpha.200"
+            maxW="120px"
+          />
+          <Text fontSize="xs" className="inter" color="gray.600" mt={1}>
+            Kleinere Zahl = früher in der Akademie-Kette. Bestimmt die sequenzielle Kursfreischaltung.
+          </Text>
+        </FormControl>
+        <FormControl display="flex" alignItems="center">
+          <FormLabel mb={0} className="inter" fontSize="sm" color="gray.300">
+            Von Kurs-Reihenfolge ausnehmen
+          </FormLabel>
+          <Switch
+            ml={3}
+            isChecked={sequentialExempt}
+            onChange={(e) => setSequentialExempt(e.target.checked)}
+            colorScheme="blue"
+          />
+        </FormControl>
         <Button
           alignSelf="flex-start"
           colorScheme="blue"
@@ -367,6 +416,9 @@ export function AdminCoursesManager({ initialCourses }: { initialCourses: Course
           >
             <Text flex={1} fontSize="11px" className="inter" fontWeight={500} letterSpacing="0.08em" textTransform="uppercase" color="gray.600">
               Titel
+            </Text>
+            <Text w="56px" fontSize="11px" className="inter" fontWeight={500} letterSpacing="0.08em" textTransform="uppercase" color="gray.600">
+              #
             </Text>
             <Text w="140px" fontSize="11px" className="inter" fontWeight={500} letterSpacing="0.08em" textTransform="uppercase" color="gray.600">
               Slug
@@ -417,6 +469,11 @@ export function AdminCoursesManager({ initialCourses }: { initialCourses: Course
                         Kostenlos
                       </Badge>
                     )}
+                    {course.is_sequential_exempt && (
+                      <Badge colorScheme="purple" variant="subtle" fontSize="10px" className="inter">
+                        Keine Ketten-Sperre
+                      </Badge>
+                    )}
                   </HStack>
                   {course.description ? (
                     <Text fontSize="xs" className="inter" color="gray.500" noOfLines={1}>
@@ -427,6 +484,9 @@ export function AdminCoursesManager({ initialCourses }: { initialCourses: Course
                     /{course.slug}
                   </Text>
                 </Stack>
+                <Text w="56px" fontSize="xs" className="jetbrains-mono" color="gray.500" flexShrink={0}>
+                  {typeof course.sort_order === "number" ? course.sort_order : 0}
+                </Text>
                 <HStack
                   w={{ base: "full", md: "auto" }}
                   justify={{ base: "flex-start", md: "flex-end" }}
@@ -518,6 +578,29 @@ export function AdminCoursesManager({ initialCourses }: { initialCourses: Course
                   Kostenlos
                 </FormLabel>
                 <Switch ml={3} isChecked={editFree} onChange={(e) => setEditFree(e.target.checked)} colorScheme="blue" />
+              </FormControl>
+              <FormControl>
+                <FormLabel fontSize="xs" className="inter" color="gray.500">
+                  Reihenfolge (sort_order)
+                </FormLabel>
+                <Input
+                  type="number"
+                  value={editSortOrder}
+                  onChange={(e) => setEditSortOrder(Number.parseInt(e.target.value, 10) || 0)}
+                  borderColor="whiteAlpha.200"
+                  maxW="120px"
+                />
+              </FormControl>
+              <FormControl display="flex" alignItems="center">
+                <FormLabel mb={0} className="inter" fontSize="sm">
+                  Von Kurs-Reihenfolge ausnehmen
+                </FormLabel>
+                <Switch
+                  ml={3}
+                  isChecked={editSequentialExempt}
+                  onChange={(e) => setEditSequentialExempt(e.target.checked)}
+                  colorScheme="blue"
+                />
               </FormControl>
             </Stack>
           </ModalBody>

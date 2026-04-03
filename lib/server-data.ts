@@ -8,7 +8,11 @@ import {
   totalPlaylistDurationSeconds,
   type PlaylistVideoRow,
 } from "@/lib/module-video";
-import { buildCourseOrderIndexMap, isModuleUnlockedFromMaps } from "@/lib/progress";
+import {
+  buildCourseOrderIndexMap,
+  isCourseUnlockedFromMaps,
+  isModuleUnlockedFromMaps,
+} from "@/lib/progress";
 import type { WelcomeDashboardMetrics } from "@/lib/welcome-metrics";
 export type { WelcomeDashboardMetrics } from "@/lib/welcome-metrics";
 
@@ -75,6 +79,8 @@ export type AcademyModuleRow = {
   courseIcon: string | null;
   courseAccentColor: string | null;
   thumbnailSignedUrl: string | null;
+  /** Sequenzielle Kurskette: vorheriger Kurs vollständig abgeschlossen */
+  courseUnlocked: boolean;
   unlocked: boolean;
   /** Admin-Sperre: Modul sichtbar, aber nicht öffnbar */
   isLocked: boolean;
@@ -313,7 +319,7 @@ export async function getRecommendedAcademyModuleFromOverview(
   supabase: ServerSupabase,
   rows: AcademyModuleRow[],
 ): Promise<RecommendedModuleData | null> {
-  const pick = rows.find((r) => r.unlocked && !r.completed && !r.isLocked);
+  const pick = rows.find((r) => r.courseUnlocked && r.unlocked && !r.completed && !r.isLocked);
   if (!pick) return null;
   const previewVideoStorageKey = await getPrimaryPublishedVideoStorageKey(supabase, pick.id);
   return {
@@ -352,7 +358,7 @@ export async function getAcademyModulesOverview(
     .from("modules")
     .select(
       `id,title,description,slug,order_index,course_id,thumbnail_storage_key,is_published,is_locked,
-      courses ( id, title, slug, created_at, is_free, icon, accent_color )`,
+      courses ( id, title, slug, created_at, is_free, icon, accent_color, sort_order, is_sequential_exempt )`,
     )
     .eq("is_published", true);
 
@@ -366,9 +372,29 @@ export async function getAcademyModulesOverview(
     thumbnail_storage_key: string | null;
     is_locked?: boolean | null;
     courses:
-      | { id: string; title: string; slug: string | null; created_at: string; is_free: boolean | null; icon: string | null; accent_color: string | null }
+      | {
+          id: string;
+          title: string;
+          slug: string | null;
+          created_at: string;
+          is_free: boolean | null;
+          icon: string | null;
+          accent_color: string | null;
+          sort_order?: number | null;
+          is_sequential_exempt?: boolean | null;
+        }
       | null
-      | { id: string; title: string; slug: string | null; created_at: string; is_free: boolean | null; icon: string | null; accent_color: string | null }[];
+      | {
+          id: string;
+          title: string;
+          slug: string | null;
+          created_at: string;
+          is_free: boolean | null;
+          icon: string | null;
+          accent_color: string | null;
+          sort_order?: number | null;
+          is_sequential_exempt?: boolean | null;
+        }[];
   };
   const raw = (modules ?? []) as unknown as ModRow[];
   const list = raw
@@ -380,6 +406,9 @@ export async function getAcademyModulesOverview(
     .filter((m) => userCanAccessAcademyModule(memberIsPaid, m.courses?.is_free));
 
   list.sort((a, b) => {
+    const sa = a.courses?.sort_order ?? 0;
+    const sb = b.courses?.sort_order ?? 0;
+    if (sa !== sb) return sa - sb;
     const ca = new Date(a.courses?.created_at ?? 0).getTime();
     const cb = new Date(b.courses?.created_at ?? 0).getTime();
     if (ca !== cb) return ca - cb;
@@ -419,6 +448,42 @@ export async function getAcademyModulesOverview(
   const { data: chainMods } = await supabase.from("modules").select("id,course_id,order_index").in("course_id", courseIds);
   const orderIndexToModuleId = buildCourseOrderIndexMap((chainMods ?? []) as { id: string; course_id: string; order_index: number }[]);
 
+  const { data: chainCoursesRows } = await supabase
+    .from("courses")
+    .select("id,sort_order,is_sequential_exempt,created_at,slug")
+    .neq("slug", "__unassigned__");
+
+  const sortedCourses = (chainCoursesRows ?? [])
+    .map((c) => ({
+      id: c.id as string,
+      sort_order: typeof c.sort_order === "number" ? c.sort_order : 0,
+      is_sequential_exempt: Boolean(c.is_sequential_exempt),
+      created_at: c.created_at as string | undefined,
+    }))
+    .sort((a, b) => {
+      if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+      return new Date(a.created_at ?? 0).getTime() - new Date(b.created_at ?? 0).getTime();
+    });
+
+  const allChainCourseIds = sortedCourses.map((c) => c.id);
+  const completionModuleIdsByCourseId = new Map<string, Set<string>>();
+  if (allChainCourseIds.length > 0) {
+    const { data: publishedModsForCompletion } = await supabase
+      .from("modules")
+      .select("id,course_id")
+      .eq("is_published", true)
+      .in("course_id", allChainCourseIds);
+    for (const row of publishedModsForCompletion ?? []) {
+      const cid = row.course_id as string;
+      const mid = row.id as string;
+      if (!completionModuleIdsByCourseId.has(cid)) completionModuleIdsByCourseId.set(cid, new Set());
+      completionModuleIdsByCourseId.get(cid)!.add(mid);
+    }
+    for (const cid of allChainCourseIds) {
+      if (!completionModuleIdsByCourseId.has(cid)) completionModuleIdsByCourseId.set(cid, new Set());
+    }
+  }
+
   const moduleIds = list.map((m) => m.id);
   const playlistByModule = await getModulePublishedPlaylistsBulk(supabase, moduleIds);
 
@@ -429,11 +494,25 @@ export async function getAcademyModulesOverview(
   const out: AcademyModuleRow[] = [];
   for (let i = 0; i < list.length; i++) {
     const m = list[i];
-    const unlocked = isModuleUnlockedFromMaps(
+    const courseMeta = m.courses;
+    const courseUnlocked = isCourseUnlockedFromMaps(
+      {
+        id: m.course_id,
+        sort_order: courseMeta?.sort_order ?? 0,
+        is_sequential_exempt: Boolean(courseMeta?.is_sequential_exempt),
+        created_at: courseMeta?.created_at,
+      },
+      sortedCourses,
+      orderIndexToModuleId,
+      completedByModuleId,
+      completionModuleIdsByCourseId,
+    );
+    const moduleUnlocked = isModuleUnlockedFromMaps(
       { course_id: m.course_id, order_index: m.order_index },
       orderIndexToModuleId,
       completedByModuleId,
     );
+    const unlocked = courseUnlocked && moduleUnlocked;
     const prog = progByMod.get(m.id);
     const completed = Boolean(prog?.completed);
     const playlist = playlistByModule.get(m.id) ?? [];
@@ -452,6 +531,7 @@ export async function getAcademyModulesOverview(
       courseIcon: m.courses?.icon ?? null,
       courseAccentColor: m.courses?.accent_color ?? null,
       thumbnailSignedUrl: thumbnailUrls[i] ?? null,
+      courseUnlocked,
       unlocked,
       isLocked: Boolean(m.is_locked),
       completed,

@@ -86,6 +86,7 @@ function groupModulesByCourse(modules: AcademyModuleRow[]) {
       courseTitle: first?.courseTitle ?? "Kurs",
       courseIcon: first?.courseIcon ?? null,
       courseAccentColor: first?.courseAccentColor ?? null,
+      courseUnlocked: first?.courseUnlocked ?? true,
       modules: map.get(courseId)!,
     };
   });
@@ -93,7 +94,7 @@ function groupModulesByCourse(modules: AcademyModuleRow[]) {
 
 function ModuleListRow({ m }: { m: AcademyModuleRow }) {
   const href = moduleHref({ id: m.id, slug: m.slug });
-  const locked = !m.unlocked || m.isLocked;
+  const locked = !m.courseUnlocked || !m.unlocked || m.isLocked;
   const statusLabel = locked ? "Gesperrt" : m.completed ? "Abgeschlossen" : m.progressPercent > 0 ? "In Arbeit" : "Neu";
   const statusColor = locked
     ? "rgba(240,240,242,0.45)"
@@ -196,6 +197,7 @@ export function InstitutAccordion({ modules }: { modules: AcademyModuleRow[] }) 
         const rawColor = g.courseAccentColor ?? FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
         const accent = resolveAccent(rawColor);
         const CourseIcon = resolveIcon(g.courseIcon, idx);
+        const courseLocked = !g.courseUnlocked;
         return (
           <AccordionItem key={g.courseId} border="none" mb={3}>
             {({ isExpanded }: { isExpanded: boolean }) => (
@@ -211,6 +213,8 @@ export function InstitutAccordion({ modules }: { modules: AcademyModuleRow[] }) 
                   _expanded={{ bg: accent.bg }}
                   _hover={{ bg: accent.bg }}
                   transition="border-color 0.2s ease, background 0.2s ease"
+                  opacity={courseLocked ? 0.78 : 1}
+                  cursor={courseLocked ? "not-allowed" : "pointer"}
                 >
                   <HStack flex="1" textAlign="left" spacing={3}>
                     <Box
@@ -232,23 +236,41 @@ export function InstitutAccordion({ modules }: { modules: AcademyModuleRow[] }) 
                         aria-hidden
                       />
                     </Box>
-                    <Box>
-                      <Text className="inter-semibold" fontSize="md" color="var(--color-text-primary)">
-                        {g.courseTitle}
-                      </Text>
+                    <Box flex={1} minW={0}>
+                      <HStack spacing={2} align="center" flexWrap="wrap">
+                        <Text className="inter-semibold" fontSize="md" color="var(--color-text-primary)">
+                          {g.courseTitle}
+                        </Text>
+                        {courseLocked ? (
+                          <HStack spacing={1} color="rgba(240,240,242,0.45)">
+                            <Lock size={14} aria-hidden />
+                            <Text className="inter-medium" fontSize="10px" textTransform="uppercase" letterSpacing="0.06em">
+                              Kurs gesperrt
+                            </Text>
+                          </HStack>
+                        ) : null}
+                      </HStack>
                       <Text className="inter" fontSize="xs" color="var(--color-text-muted)" mt={0.5}>
-                        {g.modules.length} {g.modules.length === 1 ? "Modul" : "Module"}
+                        {courseLocked
+                          ? "Schließe den vorherigen Kurs ab, um die Module zu öffnen."
+                          : `${g.modules.length} ${g.modules.length === 1 ? "Modul" : "Module"}`}
                       </Text>
                     </Box>
                   </HStack>
                   <AccordionIcon color={isExpanded ? accent.borderExpanded : "rgba(240,240,242,0.45)"} />
                 </AccordionButton>
                 <AccordionPanel px={0} pt={3} pb={1}>
-                  <VStack align="stretch" spacing={2}>
-                    {g.modules.map((m) => (
-                      <ModuleListRow key={m.id} m={m} />
-                    ))}
-                  </VStack>
+                  {courseLocked ? (
+                    <Text className="inter" fontSize="sm" color="var(--color-text-muted)" px={{ base: 1, md: 2 }} py={2}>
+                      Dieser Kurs wird freigeschaltet, sobald du den vorherigen Kurs vollständig abgeschlossen hast.
+                    </Text>
+                  ) : (
+                    <VStack align="stretch" spacing={2}>
+                      {g.modules.map((m) => (
+                        <ModuleListRow key={m.id} m={m} />
+                      ))}
+                    </VStack>
+                  )}
                 </AccordionPanel>
               </>
             )}

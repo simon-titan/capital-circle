@@ -46,6 +46,8 @@ export type Database = {
           is_free: boolean;
           cover_image_storage_key: string | null;
           created_at: string;
+          sort_order: number;
+          is_sequential_exempt: boolean;
         };
         Insert: Record<string, unknown>;
         Update: Record<string, unknown>;

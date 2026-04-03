@@ -10,7 +10,8 @@ export default async function AdminKursePage() {
   const { data: allCourses } = await supabase
     .from("courses")
     .select("*")
-    .order("created_at", { ascending: false });
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
 
   const courseItems =
     (allCourses ?? []) as Array<{
@@ -21,6 +22,8 @@ export default async function AdminKursePage() {
       is_free: boolean | null;
       icon: string | null;
       accent_color: string | null;
+      sort_order: number | null;
+      is_sequential_exempt: boolean | null;
     }>;
 
   // Echte Kurse (ohne __unassigned__)
@@ -61,6 +64,8 @@ export default async function AdminKursePage() {
           is_free: Boolean(c.is_free),
           icon: c.icon,
           accent_color: c.accent_color,
+          sort_order: typeof c.sort_order === "number" ? c.sort_order : 0,
+          is_sequential_exempt: Boolean(c.is_sequential_exempt),
         }))}
       />
     </Stack>
