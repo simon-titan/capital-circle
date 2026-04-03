@@ -6,6 +6,9 @@ import { getHetznerStorageMisconfiguration, putObjectBody } from "@/lib/storage"
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
+/** Kleine Dateien puffern (zuverlässig für Cover/Thumbnails); große per Stream mit ContentLength. */
+const BUFFER_THRESHOLD_BYTES = 50 * 1024 * 1024;
+
 /**
  * Serverseitiger Upload-Proxy — umgeht Browser-CORS zum Object Storage.
  *
@@ -55,14 +58,30 @@ export async function POST(request: Request) {
     if (!request.body) {
       return NextResponse.json({ ok: false, error: "empty_body" }, { status: 400 });
     }
-    // Streaming-Upload: Body direkt an S3 weiterleiten ohne vollständiges Buffering im RAM.
-    // Readable.fromWeb konvertiert den Web-ReadableStream in einen Node.js-Readable-Stream,
-    // den das AWS SDK nativ als Body akzeptiert.
-    const { Readable } = await import("stream");
-    const nodeStream = Readable.fromWeb(
-      request.body as import("stream/web").ReadableStream<Uint8Array>,
-    );
-    await putObjectBody(storageKey, nodeStream, contentType);
+
+    const rawSize =
+      request.headers.get("content-length") ?? request.headers.get("x-file-size");
+    let fileSize: number | undefined;
+    if (rawSize) {
+      const n = parseInt(rawSize, 10);
+      if (!Number.isFinite(n) || n < 0) {
+        return NextResponse.json({ ok: false, error: "invalid_content_length" }, { status: 400 });
+      }
+      fileSize = n;
+    }
+
+    if (fileSize !== undefined && fileSize < BUFFER_THRESHOLD_BYTES) {
+      const ab = await request.arrayBuffer();
+      const buffer = Buffer.from(ab);
+      await putObjectBody(storageKey, buffer, contentType, buffer.byteLength);
+    } else {
+      // Große Uploads: Stream; mit bekannter Länge (Header) setzt putObjectBody ContentLength für Hetzner S3.
+      const { Readable } = await import("stream");
+      const nodeStream = Readable.fromWeb(
+        request.body as import("stream/web").ReadableStream<Uint8Array>,
+      );
+      await putObjectBody(storageKey, nodeStream, contentType, fileSize);
+    }
   } catch (e) {
     const msg = e instanceof Error ? e.message : "upload_failed";
     console.error("[upload-proxy] error:", msg);

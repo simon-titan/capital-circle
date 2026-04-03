@@ -82,6 +82,8 @@ export async function putObjectBody(
   storageKey: string,
   body: PutObjectCommandInput["Body"],
   contentType: string,
+  /** Optional: für S3-kompatible Stores (z. B. Hetzner) zuverlässiger als reiner Stream ohne Länge. */
+  contentLength?: number,
 ) {
   const cfgErr = getHetznerStorageMisconfiguration();
   if (cfgErr) {
@@ -93,6 +95,7 @@ export async function putObjectBody(
       Key: storageKey,
       Body: body,
       ContentType: contentType,
+      ...(contentLength !== undefined ? { ContentLength: contentLength } : {}),
     }),
   );
 }

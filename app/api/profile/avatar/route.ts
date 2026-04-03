@@ -57,7 +57,7 @@ export async function POST(request: Request) {
 
   try {
     const buffer = Buffer.from(arrayBuffer);
-    await putObjectBody(storageKey, buffer, contentType);
+    await putObjectBody(storageKey, buffer, contentType, buffer.byteLength);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "upload_failed";
     console.error("[profile/avatar] upload error:", msg);

@@ -25,7 +25,10 @@ export async function uploadFileViaFetchWithProgress(
 
   const res = await fetch(url, {
     method: "POST",
-    headers,
+    headers: {
+      ...headers,
+      "X-File-Size": String(file.size),
+    },
     body: stream,
     duplex: "half",
   } as RequestInit & { duplex: "half" });

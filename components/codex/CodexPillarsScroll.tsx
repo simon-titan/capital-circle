@@ -67,11 +67,35 @@ export function CodexPillarsScroll({ children }: { children: ReactNode }) {
     };
   }, [updateScrollState]);
 
+  /** Nächste/vorherige Säule — exakt zentriert (entspricht scroll-snap-align: center). */
   const scrollByDir = (dir: -1 | 1) => {
     const el = scrollRef.current;
     if (!el) return;
-    const step = Math.max(el.clientWidth * 0.82, 120);
-    el.scrollBy({ left: dir * step, behavior: "smooth" });
+    const items = Array.from(el.children) as HTMLElement[];
+    if (items.length === 0) return;
+
+    const cRect = el.getBoundingClientRect();
+    const viewCenterX = cRect.left + cRect.width / 2;
+
+    let bestIdx = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i < items.length; i++) {
+      const r = items[i].getBoundingClientRect();
+      const mid = r.left + r.width / 2;
+      const d = Math.abs(mid - viewCenterX);
+      if (d < bestDist) {
+        bestDist = d;
+        bestIdx = i;
+      }
+    }
+
+    const nextIdx = Math.min(items.length - 1, Math.max(0, bestIdx + dir));
+    if (nextIdx === bestIdx) return;
+
+    const target = items[nextIdx];
+    const tRect = target.getBoundingClientRect();
+    const delta = tRect.left + tRect.width / 2 - viewCenterX;
+    el.scrollTo({ left: el.scrollLeft + delta, behavior: "smooth" });
   };
 
   return (
