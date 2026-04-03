@@ -1,5 +1,6 @@
 "use client";
 
+import { uploadFileViaFetchWithProgress } from "@/lib/admin-upload-via-fetch";
 import { Box, Button, HStack, Progress, Text } from "@chakra-ui/react";
 import { useCallback, useRef, useState } from "react";
 
@@ -21,50 +22,30 @@ function readVideoDuration(file: File): Promise<number | null> {
   });
 }
 
-/** Upload zur App-API (serverseitig → Bucket), Fortschritt am XMLHttpRequest.upload — kein CORS zum Hetzner-Endpoint. */
+/** Upload zur App-API (serverseitig → Bucket), Fortschritt per fetch + ReadableStream — kein CORS zum Hetzner-Endpoint. */
 function uploadVideoViaProxy(
   file: File,
   meta: { courseId: string; moduleId: string; videoId: string; subcategoryId?: string | null },
   onProgress: (pct: number) => void,
 ): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const params = new URLSearchParams({
-      folder: "videos",
-      courseId: meta.courseId,
-      moduleId: meta.moduleId,
-      videoId: meta.videoId,
-      kind: "original",
-    });
-    if (meta.subcategoryId) params.set("subcategoryId", meta.subcategoryId);
-
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", `/api/admin/upload-proxy?${params.toString()}`);
-    xhr.setRequestHeader("Content-Type", file.type || "video/mp4");
-    xhr.setRequestHeader("X-File-Name", encodeURIComponent(file.name));
-    xhr.upload.onprogress = (ev) => {
-      if (ev.lengthComputable) onProgress(Math.round((ev.loaded / ev.total) * 100));
-    };
-    xhr.onload = () => {
-      if (xhr.status < 200 || xhr.status >= 300) {
-        try {
-          const j = JSON.parse(xhr.responseText) as { error?: string };
-          reject(new Error(j.error || `Upload fehlgeschlagen (${xhr.status})`));
-        } catch {
-          reject(new Error(`Upload fehlgeschlagen (${xhr.status})`));
-        }
-        return;
-      }
-      try {
-        const j = JSON.parse(xhr.responseText) as { ok?: boolean; storageKey?: string; error?: string };
-        if (!j.ok || !j.storageKey) reject(new Error(j.error || "Upload fehlgeschlagen"));
-        else resolve(j.storageKey);
-      } catch {
-        reject(new Error("Ungültige Server-Antwort"));
-      }
-    };
-    xhr.onerror = () => reject(new Error("Netzwerkfehler beim Upload"));
-    xhr.send(file);
+  const params = new URLSearchParams({
+    folder: "videos",
+    courseId: meta.courseId,
+    moduleId: meta.moduleId,
+    videoId: meta.videoId,
+    kind: "original",
   });
+  if (meta.subcategoryId) params.set("subcategoryId", meta.subcategoryId);
+
+  return uploadFileViaFetchWithProgress(
+    file,
+    `/api/admin/upload-proxy?${params.toString()}`,
+    {
+      "Content-Type": file.type || "video/mp4",
+      "X-File-Name": encodeURIComponent(file.name),
+    },
+    onProgress,
+  );
 }
 
 export type VideoUploadedPayload = {

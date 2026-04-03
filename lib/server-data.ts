@@ -76,6 +76,8 @@ export type AcademyModuleRow = {
   courseAccentColor: string | null;
   thumbnailSignedUrl: string | null;
   unlocked: boolean;
+  /** Admin-Sperre: Modul sichtbar, aber nicht öffnbar */
+  isLocked: boolean;
   completed: boolean;
   progressPercent: number;
   videoCount: number;
@@ -311,7 +313,7 @@ export async function getRecommendedAcademyModuleFromOverview(
   supabase: ServerSupabase,
   rows: AcademyModuleRow[],
 ): Promise<RecommendedModuleData | null> {
-  const pick = rows.find((r) => r.unlocked && !r.completed);
+  const pick = rows.find((r) => r.unlocked && !r.completed && !r.isLocked);
   if (!pick) return null;
   const previewVideoStorageKey = await getPrimaryPublishedVideoStorageKey(supabase, pick.id);
   return {
@@ -349,7 +351,7 @@ export async function getAcademyModulesOverview(
   const { data: modules } = await supabase
     .from("modules")
     .select(
-      `id,title,description,slug,order_index,course_id,thumbnail_storage_key,is_published,
+      `id,title,description,slug,order_index,course_id,thumbnail_storage_key,is_published,is_locked,
       courses ( id, title, slug, created_at, is_free, icon, accent_color )`,
     )
     .eq("is_published", true);
@@ -362,6 +364,7 @@ export async function getAcademyModulesOverview(
     order_index: number;
     course_id: string;
     thumbnail_storage_key: string | null;
+    is_locked?: boolean | null;
     courses:
       | { id: string; title: string; slug: string | null; created_at: string; is_free: boolean | null; icon: string | null; accent_color: string | null }
       | null
@@ -450,6 +453,7 @@ export async function getAcademyModulesOverview(
       courseAccentColor: m.courses?.accent_color ?? null,
       thumbnailSignedUrl: thumbnailUrls[i] ?? null,
       unlocked,
+      isLocked: Boolean(m.is_locked),
       completed,
       progressPercent: completed ? 100 : pct,
       videoCount: playlist.length,

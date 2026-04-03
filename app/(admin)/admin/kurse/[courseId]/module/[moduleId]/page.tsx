@@ -11,7 +11,7 @@ export default async function EditModulePage({ params }: PageProps) {
   const supabase = await createClient();
   const { data: mod } = await supabase
     .from("modules")
-    .select("id,title,description,order_index,is_published,slug,thumbnail_storage_key")
+    .select("id,title,description,order_index,is_published,is_locked,slug,thumbnail_storage_key")
     .eq("id", moduleId)
     .single();
 
@@ -22,6 +22,7 @@ export default async function EditModulePage({ params }: PageProps) {
         description: string | null;
         order_index: number;
         is_published: boolean;
+        is_locked?: boolean;
         slug: string | null;
         thumbnail_storage_key: string | null;
       }

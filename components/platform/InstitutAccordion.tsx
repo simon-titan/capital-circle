@@ -93,7 +93,7 @@ function groupModulesByCourse(modules: AcademyModuleRow[]) {
 
 function ModuleListRow({ m }: { m: AcademyModuleRow }) {
   const href = moduleHref({ id: m.id, slug: m.slug });
-  const locked = !m.unlocked;
+  const locked = !m.unlocked || m.isLocked;
   const statusLabel = locked ? "Gesperrt" : m.completed ? "Abgeschlossen" : m.progressPercent > 0 ? "In Arbeit" : "Neu";
   const statusColor = locked
     ? "rgba(240,240,242,0.45)"

@@ -36,6 +36,7 @@ type ModuleFormProps = {
     description: string | null;
     order_index: number;
     is_published: boolean;
+    is_locked?: boolean;
     slug: string | null;
     thumbnail_storage_key: string | null;
   };
@@ -67,6 +68,7 @@ export function ModuleForm({ courseId, moduleId, initialModule }: ModuleFormProp
   );
   const [orderIndex, setOrderIndex] = useState(initialModule?.order_index ?? 1);
   const [isPublished, setIsPublished] = useState(initialModule?.is_published ?? false);
+  const [isLocked, setIsLocked] = useState(initialModule?.is_locked ?? false);
   const [status, setStatus] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [thumbUploading, setThumbUploading] = useState(false);
@@ -213,6 +215,7 @@ export function ModuleForm({ courseId, moduleId, initialModule }: ModuleFormProp
       description: description.trim() || null,
       order_index: orderIndex,
       is_published: isPublished,
+      is_locked: isLocked,
       slug: slug.trim() || null,
       thumbnail_storage_key: thumbnailStorageKey.trim() || null,
     };
@@ -403,6 +406,12 @@ export function ModuleForm({ courseId, moduleId, initialModule }: ModuleFormProp
           <FormControl display="flex" alignItems="center" w="auto" pt={5}>
             <FormLabel mb={0} className="inter" fontSize="sm" color="gray.200">Veröffentlicht</FormLabel>
             <Switch ml={3} size="lg" isChecked={isPublished} onChange={(e) => setIsPublished(e.target.checked)} colorScheme="blue" />
+          </FormControl>
+          <FormControl display="flex" alignItems="center" w="auto" pt={5}>
+            <FormLabel mb={0} className="inter" fontSize="sm" color="gray.200">
+              Modul sperren
+            </FormLabel>
+            <Switch ml={3} size="lg" isChecked={isLocked} onChange={(e) => setIsLocked(e.target.checked)} colorScheme="orange" />
           </FormControl>
           {moduleId && (
             <Badge alignSelf="flex-end" mb={1} px={3} py={1.5} borderRadius="md" colorScheme={isPublished ? "green" : "gray"} variant="subtle" fontSize="sm" className="inter">

@@ -1,5 +1,5 @@
 import type { createClient } from "@/lib/supabase/server";
-import { listObjectKeysUnderPrefix } from "@/lib/storage";
+import { listFolderPrefixes, listObjectKeysUnderPrefix } from "@/lib/storage";
 
 type ServerClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -96,6 +96,44 @@ export function parseModuleScanKeys(rawKeys: string[]): Map<string, ParsedModule
   }
 
   return byModule;
+}
+
+/**
+ * Ergänzt leere Modul- und Unterordner (nur S3 CommonPrefixes, keine Objekt-Keys).
+ * Ohne diese Erkennung erscheinen leere Ordner nicht in `parseModuleScanKeys`.
+ */
+function mergeEmptyFoldersIntoParsed(
+  parsed: Map<string, ParsedModuleFolder>,
+  modulePrefixes: string[],
+  subPrefixesByModule: Map<string, string[]>,
+): void {
+  for (const prefix of modulePrefixes) {
+    const parts = prefix.replace(/\/$/, "").split("/").filter(Boolean);
+    if (parts.length < 2 || parts[0].toLowerCase() !== "modules") continue;
+    const moduleFolder = parts[1];
+    if (!moduleFolder) continue;
+
+    if (!parsed.has(moduleFolder)) {
+      parsed.set(moduleFolder, {
+        storageFolderKey: moduleFolder,
+        folderTitle: humanizeFolder(moduleFolder),
+        slugBase: slugifySegment(moduleFolder),
+        thumbnailKey: null,
+        directVideos: [],
+        subfolders: new Map(),
+      });
+    }
+    const entry = parsed.get(moduleFolder)!;
+    const subs = subPrefixesByModule.get(moduleFolder) ?? [];
+    for (const sp of subs) {
+      const sparts = sp.replace(/\/$/, "").split("/").filter(Boolean);
+      const subName = sparts[2];
+      if (!subName) continue;
+      if (!entry.subfolders.has(subName)) {
+        entry.subfolders.set(subName, { title: humanizeFolder(subName), videos: [] });
+      }
+    }
+  }
 }
 
 async function nextUniqueModuleSlug(supabase: ServerClient, base: string): Promise<string> {
@@ -304,6 +342,18 @@ export async function syncParsedModulesGlobal(
 export async function runModuleScan(supabase: ServerClient, prefix = "modules") {
   const keys = await scanModulesFromBucket(prefix);
   const parsed = parseModuleScanKeys(keys);
+
+  const modulePrefixes = await listFolderPrefixes(prefix);
+  const subPrefixesByModule = new Map<string, string[]>();
+  for (const mp of modulePrefixes) {
+    const parts = mp.replace(/\/$/, "").split("/").filter(Boolean);
+    const moduleFolder = parts[1];
+    if (!moduleFolder) continue;
+    const subs = await listFolderPrefixes(mp);
+    subPrefixesByModule.set(moduleFolder, subs);
+  }
+  mergeEmptyFoldersIntoParsed(parsed, modulePrefixes, subPrefixesByModule);
+
   const result = await syncParsedModulesGlobal(supabase, parsed);
   return { ...result, keyCount: keys.length, moduleFolders: parsed.size };
 }

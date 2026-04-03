@@ -6,6 +6,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { glassPrimaryButtonProps } from "@/components/ui/glassButtonStyles";
+import { CodexPillarsScroll } from "@/components/codex/CodexPillarsScroll";
 import { coreLaws, executionLaws, mindsetLaws } from "@/components/onboarding/codexLaws";
 import { type HTMLChakraProps } from "@chakra-ui/react";
 
@@ -239,30 +240,11 @@ export function CodexStep({ onCompleted }: CodexStepProps) {
           </Flex>
         </MotionBox>
 
-        <Box
-          display={{ base: "flex", lg: "grid" }}
-          gridTemplateColumns={{ lg: "repeat(3, minmax(0, 1fr))" }}
-          overflowX={{ base: "auto", lg: "visible" }}
-          overflowY={{ base: "visible", lg: "visible" }}
-          scrollSnapType={{ base: "x mandatory", lg: "none" }}
-          gap={{ base: 6, lg: 6 }}
-          alignItems="flex-start"
-          pb={2}
-          mx={{ base: -2, lg: 0 }}
-          px={{ base: 2, lg: 0 }}
-          sx={{
-            "&::-webkit-scrollbar": { height: "8px" },
-            "&::-webkit-scrollbar-track": { background: "transparent" },
-            "&::-webkit-scrollbar-thumb": {
-              background: "rgba(255,255,255,0.18)",
-              borderRadius: "999px",
-            },
-          }}
-        >
+        <CodexPillarsScroll>
           <PillarColumn title="Core Law" rules={coreLaws} />
           <PillarColumn title="Execution Laws" rules={executionLaws} />
           <PillarColumn title="Mindset Laws" rules={mindsetLaws} />
-        </Box>
+        </CodexPillarsScroll>
 
         <Box
           borderRadius="20px"

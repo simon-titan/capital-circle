@@ -3,6 +3,7 @@
 import { Box, Flex, Stack, Text } from "@chakra-ui/react";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { CodexPillarsScroll } from "@/components/codex/CodexPillarsScroll";
 import { coreLaws, executionLaws, mindsetLaws } from "@/components/onboarding/codexLaws";
 const MotionBox = motion(Box);
 
@@ -157,30 +158,11 @@ export function CodexReferenceView() {
         </Flex>
       </MotionBox>
 
-      <Box
-        display={{ base: "flex", lg: "grid" }}
-        gridTemplateColumns={{ lg: "repeat(3, minmax(0, 1fr))" }}
-        overflowX={{ base: "auto", lg: "visible" }}
-        overflowY={{ base: "visible", lg: "visible" }}
-        scrollSnapType={{ base: "x mandatory", lg: "none" }}
-        gap={{ base: 6, lg: 6 }}
-        alignItems="flex-start"
-        pb={2}
-        mx={{ base: -2, lg: 0 }}
-        px={{ base: 2, lg: 0 }}
-        sx={{
-          "&::-webkit-scrollbar": { height: "8px" },
-          "&::-webkit-scrollbar-track": { background: "transparent" },
-          "&::-webkit-scrollbar-thumb": {
-            background: "rgba(255,255,255,0.18)",
-            borderRadius: "999px",
-          },
-        }}
-      >
+      <CodexPillarsScroll>
         <PillarColumn title="Core Law" rules={coreLaws} />
         <PillarColumn title="Execution Laws" rules={executionLaws} />
         <PillarColumn title="Mindset Laws" rules={mindsetLaws} />
-      </Box>
+      </CodexPillarsScroll>
 
       <Text fontSize="sm" className="inter" color="var(--color-text-muted)" textAlign="center" maxW="lg" mx="auto">
         Diese Regeln bilden das Rückgrat deiner Arbeit im Institut. Halte sie jederzeit im Blick.

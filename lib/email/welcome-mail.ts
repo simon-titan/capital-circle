@@ -133,7 +133,13 @@ export async function sendWelcomeMail(
     return;
   }
 
-  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  /** Öffentliche Basis für Mail-Links (Button, Logo). Standard: Produktionsdomain. Override z. B. für lokale Resend-Tests: `WELCOME_MAIL_PUBLIC_URL=http://localhost:3000`. */
+  const defaultPublicBase = "https://www.capitalcircletrading.com";
+  const baseUrl = (
+    process.env.WELCOME_MAIL_PUBLIC_URL?.trim() ||
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    defaultPublicBase
+  ).replace(/\/$/, "");
   const loginUrl = `${baseUrl}/login`;
   /** Gleiche Datei wie in `components/brand/Logo.tsx` (onDark) — muss öffentlich unter dieser URL erreichbar sein. */
   const logoUrl = `${baseUrl}/logo/logo-white.png`;

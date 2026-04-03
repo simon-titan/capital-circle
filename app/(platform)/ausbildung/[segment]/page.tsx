@@ -25,7 +25,7 @@ export default async function AcademyModulePage({ params }: PageProps) {
   const col = isUuidParam(idOrSlug) ? "id" : "slug";
   const { data: mod } = await supabase
     .from("modules")
-    .select("id,title,description,course_id,is_published,order_index")
+    .select("id,title,description,course_id,is_published,order_index,is_locked")
     .eq(col, idOrSlug)
     .eq("is_published", true)
     .maybeSingle();
@@ -47,6 +47,24 @@ export default async function AcademyModulePage({ params }: PageProps) {
           <Text className="inter" color="var(--color-text-muted)" fontSize="sm" mb={6}>
             Dieses Modul ist Teil des kostenpflichtigen Angebots. Mit deinem aktuellen Zugang ist es nicht
             verfügbar.
+          </Text>
+          <ChakraLinkButton href="/ausbildung" variant="outline" borderColor="rgba(212,175,55,0.45)" color="var(--color-accent-gold)">
+            Zur Instituts-Übersicht
+          </ChakraLinkButton>
+        </GlassCard>
+      </Stack>
+    );
+  }
+
+  if (mod.is_locked) {
+    return (
+      <Stack gap={6} maxW="720px" mx="auto">
+        <GlassCard highlight>
+          <Heading as="h1" size="md" className="inter-semibold" fontWeight={600} mb={2}>
+            Modul gesperrt
+          </Heading>
+          <Text className="inter" color="var(--color-text-muted)" fontSize="sm" mb={6}>
+            Dieses Modul ist derzeit nicht verfügbar.
           </Text>
           <ChakraLinkButton href="/ausbildung" variant="outline" borderColor="rgba(212,175,55,0.45)" color="var(--color-accent-gold)">
             Zur Instituts-Übersicht

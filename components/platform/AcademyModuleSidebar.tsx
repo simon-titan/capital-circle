@@ -23,7 +23,7 @@ export function AcademyModuleSidebar({ modules, currentModuleId }: AcademyModule
         {modules.map((m) => {
           const href = moduleHref({ id: m.id, slug: m.slug });
           const active = m.id === currentModuleId;
-          const locked = !m.unlocked;
+          const locked = !m.unlocked || m.isLocked;
           const shellProps = {
             px: 3,
             py: 2.5,

@@ -114,7 +114,7 @@ export function IntroVideoStep({ onCompleted }: IntroVideoStepProps) {
         </HStack>
 
         <Box position="relative" w="full" zIndex={2} mx={{ base: 0, md: 0 }}>
-          <GlassVideoPlayer src={introVideoUrl} onEnded={() => void onVideoEnded()} />
+          <GlassVideoPlayer src={introVideoUrl} onEnded={() => void onVideoEnded()} disableSeeking />
         </Box>
       </Stack>
     </Stack>

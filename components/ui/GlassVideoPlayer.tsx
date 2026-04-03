@@ -25,6 +25,8 @@ type GlassVideoPlayerProps = {
   presignApiPath?: string;
   /** Nach Laden an diese Position springen (z. B. gespeicherter Fortschritt) */
   startAtSeconds?: number;
+  /** Kein Vorspulen/Scrubben (z. B. Onboarding-Intro) */
+  disableSeeking?: boolean;
   onEnded?: () => void;
   onProgress?: (seconds: number) => void;
 };
@@ -41,6 +43,7 @@ export function GlassVideoPlayer({
   storageKey,
   presignApiPath = "/api/video-url",
   startAtSeconds = 0,
+  disableSeeking = false,
   onEnded,
   onProgress,
 }: GlassVideoPlayerProps) {
@@ -192,23 +195,61 @@ export function GlassVideoPlayer({
     };
   }, []);
 
+  /** iOS: nativer Vollbild-Player — Events auf dem Video-Element, nicht am Document */
+  useEffect(() => {
+    const vid = videoRef.current;
+    if (!vid) return;
+    const onBegin = () => setFullscreen(true);
+    const onEnd = () => setFullscreen(false);
+    vid.addEventListener("webkitbeginfullscreen", onBegin);
+    vid.addEventListener("webkitendfullscreen", onEnd);
+    return () => {
+      vid.removeEventListener("webkitbeginfullscreen", onBegin);
+      vid.removeEventListener("webkitendfullscreen", onEnd);
+    };
+  }, [effectiveSrc]);
+
   const toggleFullscreen = useCallback(() => {
     const shell = shellRef.current;
-    if (!shell) return;
+    const vid = videoRef.current;
+    if (!shell || !vid) return;
+
     const doc = document as Document & {
       webkitFullscreenElement?: Element | null;
       webkitExitFullscreen?: () => Promise<void>;
     };
-    const isFs = Boolean(document.fullscreenElement ?? doc.webkitFullscreenElement);
-    const elShell = shell as HTMLElement & { webkitRequestFullscreen?: () => void };
-    if (!isFs) {
-      if (shell.requestFullscreen) void shell.requestFullscreen();
-      else if (elShell.webkitRequestFullscreen) void elShell.webkitRequestFullscreen();
-    } else {
+    const isDocFs = Boolean(document.fullscreenElement ?? doc.webkitFullscreenElement);
+    const iosVid = vid as HTMLVideoElement & {
+      webkitEnterFullscreen?: () => void;
+      webkitSupportsFullscreen?: boolean;
+      webkitExitFullscreen?: () => void;
+    };
+
+    if (isDocFs) {
       if (document.exitFullscreen) void document.exitFullscreen();
       else if (doc.webkitExitFullscreen) void doc.webkitExitFullscreen();
+      return;
     }
-  }, []);
+
+    /** iOS nativer Player: kein Document-Fullscreen — nur Video-API */
+    if (fullscreen && typeof iosVid.webkitExitFullscreen === "function") {
+      iosVid.webkitExitFullscreen();
+      return;
+    }
+    if (fullscreen) {
+      /* z. B. iOS nativ ohne programmatisches Beenden — nichts tun */
+      return;
+    }
+
+    if (typeof iosVid.webkitEnterFullscreen === "function" && (iosVid.webkitSupportsFullscreen ?? true)) {
+      iosVid.webkitEnterFullscreen();
+      return;
+    }
+
+    const elShell = shell as HTMLElement & { webkitRequestFullscreen?: () => void };
+    if (shell.requestFullscreen) void shell.requestFullscreen();
+    else if (elShell.webkitRequestFullscreen) void elShell.webkitRequestFullscreen();
+  }, [fullscreen]);
 
   const toggleMute = useCallback(() => {
     setMuted((m) => !m);
@@ -272,6 +313,7 @@ export function GlassVideoPlayer({
   }, []);
 
   const onSeekSlider = (pct: number) => {
+    if (disableSeeking) return;
     const el = videoRef.current;
     if (!el || !Number.isFinite(el.duration) || el.duration <= 0) return;
     const target = (pct / 100) * el.duration;
@@ -507,7 +549,7 @@ export function GlassVideoPlayer({
             }}
           />
           <Slider
-            aria-label="Fortschritt"
+            aria-label={disableSeeking ? "Fortschritt (kein Vorspulen)" : "Fortschritt"}
             value={progressPct}
             min={0}
             max={100}
@@ -517,6 +559,8 @@ export function GlassVideoPlayer({
             focusThumbOnChange={false}
             onChange={onSeekSlider}
             colorScheme="brand"
+            pointerEvents={disableSeeking ? "none" : "auto"}
+            sx={disableSeeking ? { cursor: "default" } : undefined}
           >
             <SliderTrack bg="rgba(255,255,255,0.1)" h="6px" borderRadius="full">
               <SliderFilledTrack bg="#D4AF37" borderRadius="full" />
@@ -527,6 +571,8 @@ export function GlassVideoPlayer({
               borderColor="white"
               bg="#D4AF37"
               boxShadow="0 0 12px rgba(212,175,55,0.5)"
+              opacity={disableSeeking ? 0 : 1}
+              pointerEvents={disableSeeking ? "none" : "auto"}
             />
           </Slider>
           <Text

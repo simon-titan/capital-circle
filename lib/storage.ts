@@ -125,3 +125,33 @@ export async function listObjectKeysUnderPrefix(prefix: string): Promise<ListedO
 
   return keys;
 }
+
+/**
+ * Listet direkte Unterordner unter einem Prefix (S3 CommonPrefixes mit Delimiter "/").
+ * z. B. Prefix "modules/" liefert ["modules/ModA/", "modules/ModB/"].
+ */
+export async function listFolderPrefixes(prefix: string): Promise<string[]> {
+  const cfgErr = getHetznerStorageMisconfiguration();
+  if (cfgErr) {
+    throw new Error(cfgErr);
+  }
+  const normalized = prefix.endsWith("/") ? prefix : `${prefix}/`;
+  const out: string[] = [];
+  let continuationToken: string | undefined;
+
+  do {
+    const cmd = new ListObjectsV2Command({
+      Bucket: bucket,
+      Prefix: normalized,
+      Delimiter: "/",
+      ContinuationToken: continuationToken,
+    });
+    const res = await storageClient.send(cmd);
+    for (const cp of res.CommonPrefixes ?? []) {
+      if (cp.Prefix) out.push(cp.Prefix);
+    }
+    continuationToken = res.IsTruncated ? res.NextContinuationToken : undefined;
+  } while (continuationToken);
+
+  return out;
+}

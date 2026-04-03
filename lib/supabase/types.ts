@@ -59,6 +59,7 @@ export type Database = {
           order_index: number;
           attachments: Json | null;
           is_published: boolean;
+          is_locked: boolean;
           created_at: string;
           updated_at: string;
         };
