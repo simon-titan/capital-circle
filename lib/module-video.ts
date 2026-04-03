@@ -1,4 +1,4 @@
-﻿import type { createClient } from "@/lib/supabase/server";
+import type { createClient } from "@/lib/supabase/server";
 import { getPresignedGetUrl } from "@/lib/storage";
 
 type ServerClient = Awaited<ReturnType<typeof createClient>>;
@@ -55,6 +55,38 @@ type VideoRow = {
   subcategory_id?: string | null;
 };
 
+type SubVidRow = {
+  id: string;
+  duration_seconds: number | null;
+  position: number;
+  subcategory_id: string | null;
+};
+
+/** Direkte Modul-Videos und Subkategorien teilen sich einen gemeinsamen `position`-Index (Admin-Reihenfolge). */
+function interleaveModuleContent<T extends { position: number }>(
+  directItems: T[],
+  subs: { id: string; title: string; position: number }[],
+): Array<
+  | { kind: "direct"; item: T }
+  | { kind: "sub"; sub: { id: string; title: string } }
+> {
+  const union: Array<
+    | { pos: number; kind: "direct"; item: T }
+    | { pos: number; kind: "sub"; sub: { id: string; title: string } }
+  > = [
+    ...directItems.map((item) => ({ pos: item.position ?? 0, kind: "direct" as const, item })),
+    ...subs.map((s) => ({
+      pos: s.position ?? 0,
+      kind: "sub" as const,
+      sub: { id: s.id, title: s.title },
+    })),
+  ];
+  union.sort((a, b) => a.pos - b.pos);
+  return union.map((u) =>
+    u.kind === "direct" ? { kind: "direct", item: u.item } : { kind: "sub", sub: u.sub },
+  );
+}
+
 /**
  * Nur Video-IDs und Dauern in Playlist-Reihenfolge — keine Thumbnails, keine Presigns (z. B. POST /api/progress).
  */
@@ -67,22 +99,14 @@ export async function getModulePlaylistDurationsOnly(
     .select("id,duration_seconds,position")
     .eq("module_id", moduleId)
     .is("subcategory_id", null)
-    .eq("is_published", true)
-    .order("position", { ascending: true });
+    .eq("is_published", true);
 
   const { data: subs } = await supabase
     .from("subcategories")
-    .select("id,position")
-    .eq("module_id", moduleId)
-    .order("position", { ascending: true });
+    .select("id,title,position")
+    .eq("module_id", moduleId);
 
   const subIds = (subs ?? []).map((s) => s.id).filter(Boolean);
-  type SubVidRow = {
-    id: string;
-    duration_seconds: number | null;
-    position: number;
-    subcategory_id: string | null;
-  };
   const { data: subVideoRows } =
     subIds.length > 0
       ? await supabase
@@ -104,20 +128,26 @@ export async function getModulePlaylistDurationsOnly(
     arr.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   }
 
+  const slots = interleaveModuleContent(
+    (direct ?? []) as Array<{ id: string; duration_seconds: number | null; position: number }>,
+    subs ?? [],
+  );
+
   const out: DurationRow[] = [];
-  for (const v of direct ?? []) {
-    out.push({ id: v.id, duration_seconds: v.duration_seconds });
-  }
-  for (const sub of subs ?? []) {
-    for (const v of videosBySubId.get(sub.id) ?? []) {
-      out.push({ id: v.id, duration_seconds: v.duration_seconds });
+  for (const slot of slots) {
+    if (slot.kind === "direct") {
+      out.push({ id: slot.item.id, duration_seconds: slot.item.duration_seconds });
+    } else {
+      for (const v of videosBySubId.get(slot.sub.id) ?? []) {
+        out.push({ id: v.id, duration_seconds: v.duration_seconds });
+      }
     }
   }
   return out;
 }
 
 /**
- * Erstes veröffentlichtes Video: zuerst direkt am Modul, sonst erste Subkategorie (nach position).
+ * Erstes veröffentlichtes Video in der gemischten Modul-Reihenfolge (direkte Videos + Subkategorien nach `position`).
  */
 export async function getPrimaryPublishedVideoStorageKey(
   supabase: ServerClient,
@@ -125,30 +155,25 @@ export async function getPrimaryPublishedVideoStorageKey(
 ): Promise<string | null> {
   const { data: direct } = await supabase
     .from("videos")
-    .select("storage_key")
+    .select("id,storage_key,position")
     .eq("module_id", moduleId)
     .is("subcategory_id", null)
-    .eq("is_published", true)
-    .order("position", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (direct?.storage_key) return direct.storage_key;
+    .eq("is_published", true);
 
   const { data: subs } = await supabase
     .from("subcategories")
-    .select("id")
-    .eq("module_id", moduleId)
-    .order("position", { ascending: true });
+    .select("id,title,position")
+    .eq("module_id", moduleId);
 
   const subIds = (subs ?? []).map((s) => s.id).filter(Boolean);
-  if (subIds.length === 0) return null;
-
-  const { data: subVideos } = await supabase
-    .from("videos")
-    .select("storage_key,subcategory_id,position")
-    .in("subcategory_id", subIds)
-    .eq("is_published", true);
+  const { data: subVideos } =
+    subIds.length > 0
+      ? await supabase
+          .from("videos")
+          .select("storage_key,subcategory_id,position")
+          .in("subcategory_id", subIds)
+          .eq("is_published", true)
+      : { data: [] as { storage_key: string; subcategory_id: string | null; position: number }[] };
 
   const bySub = new Map<string, { storage_key: string; position: number }[]>();
   for (const v of subVideos ?? []) {
@@ -162,16 +187,25 @@ export async function getPrimaryPublishedVideoStorageKey(
     arr.sort((a, b) => a.position - b.position);
   }
 
-  for (const sub of subs ?? []) {
-    const first = bySub.get(sub.id)?.[0];
-    if (first?.storage_key) return first.storage_key;
+  const slots = interleaveModuleContent(
+    (direct ?? []) as Array<{ id: string; storage_key: string; position: number }>,
+    subs ?? [],
+  );
+
+  for (const slot of slots) {
+    if (slot.kind === "direct") {
+      if (slot.item.storage_key) return slot.item.storage_key;
+    } else {
+      const first = bySub.get(slot.sub.id)?.[0];
+      if (first?.storage_key) return first.storage_key;
+    }
   }
 
   return null;
 }
 
 /**
- * Geordnete Playlist: direkte Modul-Videos, dann je Subkategorie deren Videos.
+ * Geordnete Playlist: direkte Modul-Videos und Subkategorie-Blöcke gemischt nach gemeinsamer `position`, darin Videos nach `position`.
  */
 export async function getModulePublishedPlaylist(supabase: ServerClient, moduleId: string): Promise<PlaylistVideoRow[]> {
   const raw: Omit<PlaylistVideoRow, "thumbnailSignedUrl">[] = [];
@@ -181,28 +215,12 @@ export async function getModulePublishedPlaylist(supabase: ServerClient, moduleI
     .select("id,title,description,storage_key,thumbnail_key,duration_seconds,position")
     .eq("module_id", moduleId)
     .is("subcategory_id", null)
-    .eq("is_published", true)
-    .order("position", { ascending: true });
-
-  for (const v of direct ?? []) {
-    raw.push({
-      id: v.id,
-      title: v.title,
-      description: v.description ?? null,
-      storage_key: v.storage_key,
-      thumbnail_key: v.thumbnail_key,
-      duration_seconds: v.duration_seconds,
-      position: v.position,
-      subcategoryId: null,
-      subcategoryTitle: null,
-    });
-  }
+    .eq("is_published", true);
 
   const { data: subs } = await supabase
     .from("subcategories")
     .select("id,title,position")
-    .eq("module_id", moduleId)
-    .order("position", { ascending: true });
+    .eq("module_id", moduleId);
 
   const subIdsPlaylist = (subs ?? []).map((s) => s.id).filter(Boolean);
   const { data: subVideoRowsPlaylist } =
@@ -226,8 +244,11 @@ export async function getModulePublishedPlaylist(supabase: ServerClient, moduleI
     arr.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   }
 
-  for (const sub of subs ?? []) {
-    for (const v of videosBySubIdPlaylist.get(sub.id) ?? []) {
+  const slots = interleaveModuleContent((direct ?? []) as VideoRow[], subs ?? []);
+
+  for (const slot of slots) {
+    if (slot.kind === "direct") {
+      const v = slot.item;
       raw.push({
         id: v.id,
         title: v.title,
@@ -236,9 +257,24 @@ export async function getModulePublishedPlaylist(supabase: ServerClient, moduleI
         thumbnail_key: v.thumbnail_key,
         duration_seconds: v.duration_seconds,
         position: v.position,
-        subcategoryId: sub.id,
-        subcategoryTitle: sub.title,
+        subcategoryId: null,
+        subcategoryTitle: null,
       });
+    } else {
+      const sub = slot.sub;
+      for (const v of videosBySubIdPlaylist.get(sub.id) ?? []) {
+        raw.push({
+          id: v.id,
+          title: v.title,
+          description: v.description ?? null,
+          storage_key: v.storage_key,
+          thumbnail_key: v.thumbnail_key,
+          duration_seconds: v.duration_seconds,
+          position: v.position,
+          subcategoryId: sub.id,
+          subcategoryTitle: sub.title,
+        });
+      }
     }
   }
 
@@ -322,22 +358,12 @@ export async function getModulePublishedPlaylistsBulk(
   const allRaw: (Omit<PlaylistVideoRow, "thumbnailSignedUrl"> & { _moduleId: string })[] = [];
 
   for (const moduleId of moduleIds) {
-    for (const v of directByModule.get(moduleId) ?? []) {
-      allRaw.push({
-        _moduleId: moduleId,
-        id: v.id,
-        title: v.title,
-        description: v.description ?? null,
-        storage_key: v.storage_key,
-        thumbnail_key: v.thumbnail_key,
-        duration_seconds: v.duration_seconds,
-        position: v.position,
-        subcategoryId: null,
-        subcategoryTitle: null,
-      });
-    }
-    for (const sub of subsByModule.get(moduleId) ?? []) {
-      for (const v of videosBySubId.get(sub.id) ?? []) {
+    const direct = directByModule.get(moduleId) ?? [];
+    const subsList = subsByModule.get(moduleId) ?? [];
+    const slots = interleaveModuleContent(direct, subsList);
+    for (const slot of slots) {
+      if (slot.kind === "direct") {
+        const v = slot.item;
         allRaw.push({
           _moduleId: moduleId,
           id: v.id,
@@ -347,9 +373,25 @@ export async function getModulePublishedPlaylistsBulk(
           thumbnail_key: v.thumbnail_key,
           duration_seconds: v.duration_seconds,
           position: v.position,
-          subcategoryId: sub.id,
-          subcategoryTitle: sub.title,
+          subcategoryId: null,
+          subcategoryTitle: null,
         });
+      } else {
+        const sub = slot.sub;
+        for (const v of videosBySubId.get(sub.id) ?? []) {
+          allRaw.push({
+            _moduleId: moduleId,
+            id: v.id,
+            title: v.title,
+            description: v.description ?? null,
+            storage_key: v.storage_key,
+            thumbnail_key: v.thumbnail_key,
+            duration_seconds: v.duration_seconds,
+            position: v.position,
+            subcategoryId: sub.id,
+            subcategoryTitle: sub.title,
+          });
+        }
       }
     }
   }

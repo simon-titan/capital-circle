@@ -17,10 +17,11 @@ import {
 import { ImagePlus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { uploadSmallFilePresigned } from "@/lib/admin-upload-presigned";
-import { SubcategoryManager, type SubcategoryRow } from "@/components/admin/SubcategoryManager";
-import { VideoManager, type VideoRow } from "@/components/admin/VideoManager";
+import { ModuleContentManager } from "@/components/admin/ModuleContentManager";
+import type { SubcategoryRow } from "@/components/admin/SubcategoryManager";
+import type { VideoRow } from "@/components/admin/VideoManager";
 
 type ModuleFormProps = {
   courseId: string;
@@ -87,11 +88,6 @@ export function ModuleForm({ courseId, moduleId, initialModule }: ModuleFormProp
   }, [moduleId]);
 
   useEffect(() => { void loadContent(); }, [loadContent]);
-
-  const orderedSubs = useMemo(
-    () => [...subcategories].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
-    [subcategories],
-  );
 
   // ── Modul-Metadaten ──
   const onSave = async () => {
@@ -314,7 +310,7 @@ export function ModuleForm({ courseId, moduleId, initialModule }: ModuleFormProp
         )}
       </Stack>
 
-      {/* ── Videos direkt im Modul (Drag & Drop) ── */}
+      {/* ── Modul-Inhalt: Videos + Subkategorien (einheitliches Drag & Drop) ── */}
       {moduleId && contentLoaded && (
         <Stack
           spacing={5}
@@ -324,56 +320,17 @@ export function ModuleForm({ courseId, moduleId, initialModule }: ModuleFormProp
           borderColor="whiteAlpha.200"
           bg="rgba(255,255,255,0.04)"
         >
-          <VideoManager
+          <ModuleContentManager
             courseId={courseId}
             moduleId={moduleId}
-            subcategoryId={null}
-            allSubcategories={subcategories}
-            externalVideos={allVideos}
-            onExternalVideosChange={setAllVideos}
-          />
-        </Stack>
-      )}
-
-      {/* ── Subkategorien (CRUD) ── */}
-      {moduleId && contentLoaded && (
-        <Stack
-          spacing={4}
-          p={{ base: 4, md: 6 }}
-          borderRadius="20px"
-          borderWidth="1px"
-          borderColor="whiteAlpha.200"
-          bg="rgba(255,255,255,0.04)"
-        >
-          <SubcategoryManager
-            moduleId={moduleId}
+            allVideos={allVideos}
+            setAllVideos={setAllVideos}
             subcategories={subcategories}
-            onSubcategoriesChange={setSubcategories}
+            setSubcategories={setSubcategories}
+            onReload={loadContent}
           />
         </Stack>
       )}
-
-      {/* ── Videos pro Subkategorie (Drag & Drop) ── */}
-      {moduleId && contentLoaded && orderedSubs.map((sub) => (
-        <Stack
-          key={sub.id}
-          spacing={5}
-          p={{ base: 4, md: 6 }}
-          borderRadius="20px"
-          borderWidth="1px"
-          borderColor="whiteAlpha.200"
-          bg="rgba(255,255,255,0.04)"
-        >
-          <VideoManager
-            courseId={courseId}
-            moduleId={moduleId}
-            subcategoryId={sub.id}
-            allSubcategories={subcategories}
-            externalVideos={allVideos}
-            onExternalVideosChange={setAllVideos}
-          />
-        </Stack>
-      ))}
     </Stack>
   );
 }

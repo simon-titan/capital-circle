@@ -66,11 +66,14 @@ export function VideoManager({
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   // Im externen Modus: filtere nur die Videos dieser Subkategorie (oder direkte Modul-Videos)
-  const items: VideoRow[] = isExternal
-    ? (externalVideos ?? []).filter((v) =>
-        subcategoryId != null ? v.subcategory_id === subcategoryId : v.subcategory_id == null,
-      )
-    : internalItems;
+  const items: VideoRow[] = useMemo(() => {
+    const filtered = isExternal
+      ? (externalVideos ?? []).filter((v) =>
+          subcategoryId != null ? v.subcategory_id === subcategoryId : v.subcategory_id == null,
+        )
+      : internalItems;
+    return [...filtered].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+  }, [isExternal, externalVideos, subcategoryId, internalItems]);
 
   const setItems = isExternal
     ? (updater: (prev: VideoRow[]) => VideoRow[]) => onExternalVideosChange!(updater)
@@ -89,12 +92,10 @@ export function VideoManager({
     setLoading(false);
   }, [qs, isExternal]);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load(); }, [load]);
 
   useEffect(() => {
     if (allSubcategories) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAllSubsState(allSubcategories);
       return;
     }
@@ -231,7 +232,7 @@ export function VideoManager({
   };
 
   const onReorder = async (orderedIds: string[]) => {
-    // Im externen Modus: nur die sichtbaren (gefilterten) Items neu sortieren
+    // Im externen Modus: gefilterte Gruppe neu ordnen und ans Ende des globalen Arrays hängen (korrekte Array-Reihenfolge)
     if (isExternal) {
       const visibleIds = new Set(orderedIds);
       setItems((prev) => {
@@ -241,10 +242,8 @@ export function VideoManager({
             return row ? { ...row, position } : null;
           })
           .filter(Boolean) as VideoRow[];
-        return prev.map((x) => {
-          const updated = reordered.find((r) => r.id === x.id);
-          return updated ?? x;
-        }).filter((x) => !visibleIds.has(x.id) || reordered.some((r) => r.id === x.id));
+        const rest = prev.filter((x) => !visibleIds.has(x.id));
+        return [...rest, ...reordered];
       });
     } else {
       const next = orderedIds
