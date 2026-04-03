@@ -57,6 +57,14 @@ const labelStyles = {
   mb: 1,
 };
 
+/** Lowercase + NFD + strip combining marks for tolerant substring search (z. B. „Ubersicht“ vs. „Übersicht“). */
+function normalizeSearchText(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
 export function ArsenalAttachmentsBrowser({
   items,
   title,
@@ -127,7 +135,7 @@ export function ArsenalAttachmentsBrowser({
   }, [items]);
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = normalizeSearchText(search.trim());
     return items.filter((it) => {
       if (moduleId !== "all" && it.module_id !== moduleId) return false;
       if (videoId !== "all" && it.video_id !== videoId) return false;
@@ -137,10 +145,25 @@ export function ArsenalAttachmentsBrowser({
         if (it.arsenal_category_id !== categoryId) return false;
       }
       if (!q) return true;
-      const hay = [it.filename, it.module_title, it.video_title, it.category_name ?? "", it.course_title].join(" ").toLowerCase();
+      const hay = normalizeSearchText(
+        [it.filename, it.module_title, it.video_title, it.category_name ?? "", it.course_title].join(" "),
+      );
       return hay.includes(q);
     });
   }, [items, moduleId, videoId, categoryId, search]);
+
+  const hasActiveSearchOrFilters = useMemo(
+    () =>
+      search.trim() !== "" || moduleId !== "all" || videoId !== "all" || categoryId !== "all",
+    [search, moduleId, videoId, categoryId],
+  );
+
+  const resetSearchAndFilters = useCallback(() => {
+    setSearch("");
+    setModuleId("all");
+    setVideoId("all");
+    setCategoryId("all");
+  }, []);
 
   const onDownload = useCallback(async (attachmentId: string, filename: string) => {
     setLoadingId(attachmentId);
@@ -285,9 +308,24 @@ export function ArsenalAttachmentsBrowser({
 
       {filtered.length === 0 ? (
         <Box className="glass-card-dashboard" p={8} borderRadius="14px" textAlign="center" borderWidth="1px" borderColor={a.filterBoxBorder}>
-          <Text className="inter" color="var(--color-text-muted)">
-            Keine Treffer. Filter oder Suche anpassen — oder es sind noch keine Dateien vom Team hinterlegt.
-          </Text>
+          <Stack spacing={4} align="center">
+            <Text className="inter" color="var(--color-text-muted)">
+              Keine Treffer. Filter oder Suche anpassen — oder es sind noch keine Dateien vom Team hinterlegt.
+            </Text>
+            {hasActiveSearchOrFilters ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={resetSearchAndFilters}
+                borderColor={a.border}
+                color="var(--color-text-primary)"
+                _hover={{ bg: a.downloadBg, borderColor: a.borderHover }}
+                className="inter-medium"
+              >
+                Suche & Filter zurücksetzen
+              </Button>
+            ) : null}
+          </Stack>
         </Box>
       ) : (
         <Stack gap={3}>

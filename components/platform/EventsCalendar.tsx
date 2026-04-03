@@ -124,6 +124,8 @@ export function EventsCalendar({ events }: EventsCalendarProps) {
           height="auto"
           contentHeight="auto"
           allDaySlot={false}
+          /* Etwas höher als Default (15px), damit Titel in der Wochenansicht nicht aus dem sichtbaren Bereich rutschen */
+          eventMinHeight={20}
           slotMinTime="07:00:00"
           slotMaxTime="22:00:00"
           slotDuration="01:00:00"

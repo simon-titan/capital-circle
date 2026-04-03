@@ -14,7 +14,7 @@ import {
   useBreakpointValue,
 } from "@chakra-ui/react";
 import { Maximize, Minimize, Pause, Play, Volume2, VolumeX } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type GlassVideoPlayerProps = {
   /** Direkte öffentliche URL (z. B. externes Intro) */
@@ -50,6 +50,7 @@ export function GlassVideoPlayer({
   const videoRef = useRef<HTMLVideoElement>(null);
   const shellRef = useRef<HTMLDivElement>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTickAtRef = useRef(0);
 
   const [resolvedSrc, setResolvedSrc] = useState<string | null>(src ?? null);
   const [urlLoading, setUrlLoading] = useState(Boolean(storageKey && !src));
@@ -137,6 +138,9 @@ export function GlassVideoPlayer({
     const el = videoRef.current;
     if (!el) return;
     const t = el.currentTime;
+    const now = performance.now();
+    if (now - lastTickAtRef.current < 250) return;
+    lastTickAtRef.current = now;
     setCurrent(t);
     if (el.duration > 0) {
       setProgressPct((t / el.duration) * 100);
@@ -147,6 +151,7 @@ export function GlassVideoPlayer({
   useEffect(() => {
     const el = videoRef.current;
     if (!el || !effectiveSrc) return;
+    lastTickAtRef.current = 0;
     setLoadError(null);
     setReady(false);
     setPlaying(false);
@@ -323,11 +328,6 @@ export function GlassVideoPlayer({
     setProgressPct((clamped / el.duration) * 100);
   };
 
-  const durationLabel = useMemo(
-    () => `${formatTime(current)} / ${formatTime(duration)}`,
-    [current, duration],
-  );
-
   if (storageKey && urlLoading && !effectiveSrc) {
     return (
       <Box
@@ -373,9 +373,11 @@ export function GlassVideoPlayer({
       overflow="hidden"
       border="1px solid rgba(148, 163, 184, 0.28)"
       bg="linear-gradient(165deg, rgba(15, 23, 42, 0.55) 0%, rgba(8, 10, 14, 0.72) 100%)"
-      backdropFilter="blur(22px) saturate(1.2)"
+      transform="translateZ(0)"
+      willChange="transform"
+      backdropFilter="blur(12px) saturate(1.2)"
       sx={{
-        WebkitBackdropFilter: "blur(22px) saturate(1.2)",
+        WebkitBackdropFilter: "blur(12px) saturate(1.2)",
         "&:fullscreen, &:-webkit-full-screen": {
           display: "flex",
           flexDirection: "column",
@@ -528,10 +530,10 @@ export function GlassVideoPlayer({
           flexWrap="nowrap"
           borderTop="1px solid rgba(255, 255, 255, 0.06)"
           bg="rgba(255, 255, 255, 0.02)"
-          backdropFilter="blur(18px) saturate(1.5)"
+          backdropFilter="blur(10px) saturate(1.5)"
           boxShadow="inset 0 1px 0 rgba(255, 255, 255, 0.05)"
           sx={{
-            WebkitBackdropFilter: "blur(18px) saturate(1.5)",
+            WebkitBackdropFilter: "blur(10px) saturate(1.5)",
             columnGap: { base: "6px", md: "12px" },
           }}
         >
@@ -584,7 +586,7 @@ export function GlassVideoPlayer({
             minW={{ base: "54px", md: "88px" }}
             textAlign="right"
           >
-            {durationLabel}
+            {`${formatTime(current)} / ${formatTime(duration)}`}
           </Text>
 
           <HStack spacing={1} flexShrink={0} display={{ base: "none", md: "flex" }}>

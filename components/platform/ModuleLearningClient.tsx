@@ -71,17 +71,12 @@ export function ModuleLearningClient({
   const [quizLastScore, setQuizLastScore] = useState<number | null>(
     typeof initialQuizLastScore === "number" ? initialQuizLastScore : null,
   );
-  const [lastProgress, setLastProgress] = useState(0);
-  const lastProgressRef = useRef(lastProgress);
-  useEffect(() => {
-    lastProgressRef.current = lastProgress;
-  }, [lastProgress]);
+  /** Nur Ref — kein useState, damit nicht jede Sekunde das gesamte Modul-Layout neu rendert. */
+  const lastProgressRef = useRef(0);
 
   /** Ref sofort setzen (nicht nur nach Re-Render), damit onVideoEnded nach timeupdate/ended zuverlässig prüfen kann. */
   const onPlayerProgress = useCallback((seconds: number) => {
-    const s = Math.floor(seconds);
-    lastProgressRef.current = s;
-    setLastProgress(s);
+    lastProgressRef.current = Math.floor(seconds);
   }, []);
   const [progressMap, setProgressMap] = useState<Record<string, number>>(() => ({ ...initialProgressMap }));
   const progressMapRef = useRef(progressMap);
@@ -210,7 +205,7 @@ export function ModuleLearningClient({
         videoProgressMap: newMap,
       });
       setActiveIndex((i) => i + 1);
-      setLastProgress(0);
+      lastProgressRef.current = 0;
       return;
     }
 
@@ -241,7 +236,7 @@ export function ModuleLearningClient({
       if (!isPlaylistIndexUnlocked(playlist, progressMapRef.current, idx)) return;
       const next = playlist[idx]!;
       const cur = playlist[activeIndex];
-      const secs = lastProgress;
+      const secs = lastProgressRef.current;
       const base = { ...progressMapRef.current };
       if (cur) {
         base[cur.id] = Math.max(base[cur.id] ?? 0, Math.floor(secs));
@@ -255,9 +250,9 @@ export function ModuleLearningClient({
         videoProgressMap: base,
       });
       setActiveIndex(idx);
-      setLastProgress(0);
+      lastProgressRef.current = 0;
     },
-    [activeIndex, lastProgress, playlist, postProgress],
+    [activeIndex, playlist, postProgress],
   );
 
   const quizStatusLabel = !hasQuiz

@@ -127,6 +127,45 @@
   box-shadow: none;
 }
 
+/*
+ * Wochenansicht (timeGrid): Events sind oft nur wenige Pixel hoch oder schmal (Inset).
+ * Volles Padding + overflow/sticky kann Titel dann vertikal oder horizontal abschneiden —
+ * besonders bei kurzem Titel wirkt das wie „verschwunden“.
+ */
+.events-calendar-root .fc-timegrid-event.fc-v-event {
+  padding: 1px 5px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.events-calendar-root .fc-timegrid-event .fc-event-main {
+  padding: 0;
+}
+
+.events-calendar-root .fc-timegrid-event .fc-event-title-container {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.events-calendar-root .fc-timegrid-event .fc-event-title.fc-sticky {
+  position: relative;
+  top: auto;
+  bottom: auto;
+  max-height: none;
+}
+
+/* Nur „flache“ Events: eine Zeile, damit Zeit + Titel nebeneinander nicht umbrechen und wegfallen */
+.events-calendar-root .fc-timegrid-event-short .fc-event-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.events-calendar-root .fc-timegrid-event-short .fc-event-main-frame {
+  align-items: center;
+}
+
 .events-calendar-root .fc-event-title,
 .events-calendar-root .fc-event-time {
   font-family: var(--font-body, "Inter", sans-serif);

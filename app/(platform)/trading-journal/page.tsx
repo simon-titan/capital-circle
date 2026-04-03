@@ -39,11 +39,15 @@ export default async function TradingJournalPage() {
           boxShadow="0 0 16px rgba(212, 175, 55, 0.22)"
         />
         <Text className="inter" fontSize="sm" color="var(--color-text-muted)" maxW="42rem">
-          Hier entsteht dein persönliches Trading Journal — strukturierte Trades, Notizen und Auswertungen an einem Ort.
-          Ideal für Marketing und Enrollment: zeige Interessierten, was bald kommt.
+          Hier wird dein persönliches Trading Journal entstehen: ein Ort, an dem du Trades festhältst — mit Setup,
+          Einstieg und Ausstieg, Screenshots oder Links, kurzen Notizen und einer ehrlichen Reflexion, was gut lief
+          und was du beim nächsten Mal anders machst. So erkennst du Muster, vermeidest Wiederholungsfehler und
+          verbesserst deine Entscheidungen nachvollziehbar, statt nur auf Bauchgefühl zu setzen.
         </Text>
         <Text className="inter" fontSize="sm" color="var(--color-text-muted)" maxW="42rem">
-          Wir arbeiten an der Funktion und geben Bescheid, sobald sie live geht.
+          Geplant sind außerdem Übersichten und Auswertungen (z.&nbsp;B. nach Strategie oder Zeitraum), damit du aus
+          deinen Daten lernen kannst — alles gebündelt auf der Plattform, ohne Tabellenkalkulationen zu jonglieren.
+          Die Funktion befindet sich noch in Entwicklung; sobald sie bereitsteht, findest du sie hier.
         </Text>
       </Stack>
     </Stack>
