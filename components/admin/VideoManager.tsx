@@ -20,6 +20,7 @@ import {
 } from "@chakra-ui/react";
 import { ChevronDown, ChevronRight, Clock, ImagePlus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { uploadSmallFilePresigned } from "@/lib/admin-upload-presigned";
 import { AttachmentManager } from "@/components/admin/AttachmentManager";
 import { DraggableList } from "@/components/admin/DraggableList";
 import { VideoUploader, type VideoUploadedPayload } from "@/components/admin/VideoUploader";
@@ -160,25 +161,15 @@ export function VideoManager({
       const file = picker.files?.[0];
       if (!file) return;
       try {
-        const params = new URLSearchParams({
+        const storageKey = await uploadSmallFilePresigned(file, {
           folder: "videos",
           courseId,
           moduleId,
           videoId: item.id,
           kind: "thumbnail",
+          ...(item.subcategory_id ? { subcategoryId: item.subcategory_id } : {}),
         });
-        if (item.subcategory_id) params.set("subcategoryId", item.subcategory_id);
-        const res = await fetch(`/api/admin/upload-proxy?${params.toString()}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": file.type || "image/jpeg",
-            "X-File-Name": encodeURIComponent(file.name),
-          },
-          body: file,
-        });
-        const json = (await res.json()) as { ok?: boolean; storageKey?: string; error?: string };
-        if (!res.ok || !json.ok || !json.storageKey) return;
-        await patch(item.id, { thumbnail_key: json.storageKey });
+        await patch(item.id, { thumbnail_key: storageKey });
       } catch {
         // bleibt stabil
       }

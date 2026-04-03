@@ -17,6 +17,7 @@ import {
   Text,
   Textarea,
 } from "@chakra-ui/react";
+import { uploadSmallFilePresigned } from "@/lib/admin-upload-presigned";
 import { DraggableList } from "@/components/admin/DraggableList";
 import { createClient } from "@/lib/supabase/client";
 import { Star, Trash2 } from "lucide-react";
@@ -77,43 +78,17 @@ async function uploadAttachmentForVideo(
   file: File,
   meta: { courseId: string; moduleId: string; videoId: string; attachmentId: string },
 ): Promise<string> {
-  const params = new URLSearchParams({
+  return uploadSmallFilePresigned(file, {
     folder: "attachments",
     courseId: meta.courseId,
     moduleId: meta.moduleId,
     videoId: meta.videoId,
     attachmentId: meta.attachmentId,
   });
-  const res = await fetch(`/api/admin/upload-proxy?${params}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": file.type || "application/octet-stream",
-      "X-File-Name": encodeURIComponent(file.name),
-    },
-    body: file,
-  });
-  const json = (await res.json()) as { ok?: boolean; storageKey?: string; error?: string };
-  if (!res.ok || !json.ok || !json.storageKey) {
-    throw new Error(json.error || "Upload fehlgeschlagen.");
-  }
-  return json.storageKey;
 }
 
 async function uploadArsenalCardLogo(file: File): Promise<string> {
-  const params = new URLSearchParams({ folder: "covers" });
-  const res = await fetch(`/api/admin/upload-proxy?${params}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": file.type || "application/octet-stream",
-      "X-File-Name": encodeURIComponent(file.name),
-    },
-    body: file,
-  });
-  const json = (await res.json()) as { ok?: boolean; storageKey?: string; error?: string };
-  if (!res.ok || !json.ok || !json.storageKey) {
-    throw new Error(json.error || "Logo-Upload fehlgeschlagen.");
-  }
-  return json.storageKey;
+  return uploadSmallFilePresigned(file, { folder: "covers" });
 }
 
 const LOGO_BG_OPTIONS = [

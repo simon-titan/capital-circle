@@ -13,6 +13,7 @@ import {
   Text,
   Textarea,
 } from "@chakra-ui/react";
+import { uploadSmallFilePresigned } from "@/lib/admin-upload-presigned";
 import { ArticlePreview } from "@/components/admin/ArticlePreview";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { createClient } from "@/lib/supabase/client";
@@ -33,20 +34,7 @@ type PostRow = {
 };
 
 async function uploadCover(file: File): Promise<string> {
-  const params = new URLSearchParams({ folder: "covers" });
-  const res = await fetch(`/api/admin/upload-proxy?${params}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": file.type || "application/octet-stream",
-      "X-File-Name": encodeURIComponent(file.name),
-    },
-    body: file,
-  });
-  const json = (await res.json()) as { ok?: boolean; storageKey?: string; error?: string };
-  if (!res.ok || !json.ok || !json.storageKey) {
-    throw new Error(json.error || "Upload fehlgeschlagen.");
-  }
-  return json.storageKey;
+  return uploadSmallFilePresigned(file, { folder: "covers" });
 }
 
 function normalizeContentForEditor(raw: string): string {

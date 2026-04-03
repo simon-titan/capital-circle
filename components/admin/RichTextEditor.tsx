@@ -25,6 +25,7 @@ import {
   Undo2,
 } from "lucide-react";
 import { useCallback, type ReactElement } from "react";
+import { uploadSmallFilePresigned } from "@/lib/admin-upload-presigned";
 import { analysisArticleExtensions, emptyArticleDocJson } from "@/lib/analysis-tiptap-extensions";
 
 type RichTextEditorProps = {
@@ -33,20 +34,8 @@ type RichTextEditorProps = {
 };
 
 async function uploadCoverAndGetSrc(file: File): Promise<string> {
-  const params = new URLSearchParams({ folder: "covers" });
-  const res = await fetch(`/api/admin/upload-proxy?${params}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": file.type || "application/octet-stream",
-      "X-File-Name": encodeURIComponent(file.name),
-    },
-    body: file,
-  });
-  const json = (await res.json()) as { ok?: boolean; storageKey?: string; error?: string };
-  if (!res.ok || !json.ok || !json.storageKey) {
-    throw new Error(json.error || "Upload fehlgeschlagen.");
-  }
-  return `/api/cover-url?key=${encodeURIComponent(json.storageKey)}`;
+  const storageKey = await uploadSmallFilePresigned(file, { folder: "covers" });
+  return `/api/cover-url?key=${encodeURIComponent(storageKey)}`;
 }
 
 export function RichTextEditor({ value, onChange }: RichTextEditorProps) {

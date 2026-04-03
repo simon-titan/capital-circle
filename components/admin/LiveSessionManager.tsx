@@ -18,7 +18,7 @@ import {
   Text,
   Textarea,
 } from "@chakra-ui/react";
-import { uploadFileViaFetchWithProgress } from "@/lib/admin-upload-via-fetch";
+import { uploadSmallFilePresigned, uploadViaPresigned } from "@/lib/admin-upload-presigned";
 import { createClient } from "@/lib/supabase/client";
 import { Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -72,20 +72,7 @@ const adminSelectStyles = {
 };
 
 async function uploadCover(file: File): Promise<string> {
-  const params = new URLSearchParams({ folder: "covers" });
-  const res = await fetch(`/api/admin/upload-proxy?${params}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": file.type || "application/octet-stream",
-      "X-File-Name": encodeURIComponent(file.name),
-    },
-    body: file,
-  });
-  const json = (await res.json()) as { ok?: boolean; storageKey?: string; error?: string };
-  if (!res.ok || !json.ok || !json.storageKey) {
-    throw new Error(json.error || "Upload fehlgeschlagen.");
-  }
-  return json.storageKey;
+  return uploadSmallFilePresigned(file, { folder: "covers" });
 }
 
 function readVideoDuration(file: File): Promise<number | null> {
@@ -111,43 +98,25 @@ function uploadLiveSessionVideoViaProxy(
   meta: { sessionId: string; videoId: string },
   onProgress: (pct: number) => void,
 ): Promise<string> {
-  const params = new URLSearchParams({
-    folder: "live-sessions",
-    sessionId: meta.sessionId,
-    videoId: meta.videoId,
-    kind: "original",
-  });
-  return uploadFileViaFetchWithProgress(
+  return uploadViaPresigned(
     file,
-    `/api/admin/upload-proxy?${params.toString()}`,
     {
-      "Content-Type": file.type || "video/mp4",
-      "X-File-Name": encodeURIComponent(file.name),
+      folder: "live-sessions",
+      sessionId: meta.sessionId,
+      videoId: meta.videoId,
+      kind: "original",
     },
     onProgress,
   );
 }
 
 async function uploadLiveSessionThumb(file: File, sessionId: string, videoId: string): Promise<string> {
-  const params = new URLSearchParams({
+  return uploadSmallFilePresigned(file, {
     folder: "live-sessions",
     sessionId,
     videoId,
     kind: "thumbnail",
   });
-  const res = await fetch(`/api/admin/upload-proxy?${params}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": file.type || "application/octet-stream",
-      "X-File-Name": encodeURIComponent(file.name),
-    },
-    body: file,
-  });
-  const json = (await res.json()) as { ok?: boolean; storageKey?: string; error?: string };
-  if (!res.ok || !json.ok || !json.storageKey) {
-    throw new Error(json.error || "Thumbnail-Upload fehlgeschlagen.");
-  }
-  return json.storageKey;
 }
 
 export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[] }) {

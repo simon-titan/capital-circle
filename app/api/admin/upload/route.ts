@@ -4,8 +4,8 @@ import { requireAdmin } from "@/lib/supabase/admin-auth";
 import { getPresignedPutUrl } from "@/lib/storage";
 
 /**
- * Liefert eine Presigned-PUT-URL (z. B. für externe Tools). Browser-Uploads sollten
- * bevorzugt POST /api/admin/upload-proxy nutzen (kein CORS zum Bucket).
+ * Liefert eine Presigned-PUT-URL (z. B. für externe Tools). Browser-Uploads nutzen
+ * GET /api/admin/presign-upload + PUT zum Bucket (siehe docs/hetzner-presigned-upload-cors.md).
  */
 export async function POST(request: Request) {
   const { error } = await requireAdmin();

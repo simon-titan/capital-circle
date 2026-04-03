@@ -22,6 +22,7 @@ import { ChevronDown, ChevronRight, ImagePlus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { uploadSmallFilePresigned } from "@/lib/admin-upload-presigned";
 import { AttachmentManager } from "@/components/admin/AttachmentManager";
 import { SubcategoryManager, type SubcategoryRow } from "@/components/admin/SubcategoryManager";
 import { VideoUploader, type VideoUploadedPayload } from "@/components/admin/VideoUploader";
@@ -147,28 +148,15 @@ export function ModuleForm({ courseId, moduleId, initialModule }: ModuleFormProp
       if (!file || !moduleId) return;
       setVideoThumbStatus((prev) => ({ ...prev, [item.id]: "Wird hochgeladen…" }));
       try {
-        const params = new URLSearchParams({
+        const storageKey = await uploadSmallFilePresigned(file, {
           folder: "videos",
           courseId,
           moduleId,
           videoId: item.id,
           kind: "thumbnail",
+          ...(item.subcategory_id ? { subcategoryId: item.subcategory_id } : {}),
         });
-        if (item.subcategory_id) params.set("subcategoryId", item.subcategory_id);
-        const res = await fetch(`/api/admin/upload-proxy?${params.toString()}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": file.type || "image/jpeg",
-            "X-File-Name": encodeURIComponent(file.name),
-          },
-          body: file,
-        });
-        const json = (await res.json()) as { ok?: boolean; storageKey?: string; error?: string };
-        if (!res.ok || !json.ok || !json.storageKey) {
-          setVideoThumbStatus((prev) => ({ ...prev, [item.id]: json.error || "Upload fehlgeschlagen." }));
-          return;
-        }
-        await patchVideo(item.id, { thumbnail_key: json.storageKey });
+        await patchVideo(item.id, { thumbnail_key: storageKey });
         setVideoThumbStatus((prev) => ({ ...prev, [item.id]: "Gespeichert." }));
       } catch (e) {
         setVideoThumbStatus((prev) => ({ ...prev, [item.id]: e instanceof Error ? e.message : "Fehler." }));
@@ -271,28 +259,15 @@ export function ModuleForm({ courseId, moduleId, initialModule }: ModuleFormProp
       if (!file) return;
       setThumbUploading(true);
       try {
-        const params = new URLSearchParams({ folder: "covers", moduleId, courseId, fileName: file.name });
-        const res = await fetch(`/api/admin/upload-proxy?${params.toString()}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": file.type || "image/jpeg",
-            "X-File-Name": encodeURIComponent(file.name),
-          },
-          body: file,
-        });
-        const json = (await res.json()) as { ok?: boolean; storageKey?: string; error?: string };
-        if (!res.ok || !json.ok || !json.storageKey) {
-          setStatus(json.error || "Thumbnail-Upload fehlgeschlagen.");
-          return;
-        }
+        const storageKey = await uploadSmallFilePresigned(file, { folder: "covers", moduleId, courseId });
         const patch = await fetch("/api/admin/modules", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: moduleId, updates: { thumbnail_storage_key: json.storageKey } }),
+          body: JSON.stringify({ id: moduleId, updates: { thumbnail_storage_key: storageKey } }),
         });
         const pj = (await patch.json()) as { ok?: boolean };
         if (pj.ok) {
-          setThumbnailStorageKey(json.storageKey);
+          setThumbnailStorageKey(storageKey);
           setStatus("Thumbnail gespeichert.");
           router.refresh();
         }

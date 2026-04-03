@@ -1,0 +1,16 @@
+{
+  "CORSRules": [
+    {
+      "AllowedOrigins": [
+        "https://www.capitalcircletrading.com",
+        "https://capitalcircletrading.com",
+        "https://capital-circle-s5bg.vercel.app",
+        "http://localhost:3000"
+      ],
+      "AllowedHeaders": ["*"],
+      "AllowedMethods": ["PUT", "GET", "HEAD"],
+      "MaxAgeSeconds": 3600,
+      "ExposeHeaders": ["ETag"]
+    }
+  ]
+}

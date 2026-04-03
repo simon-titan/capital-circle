@@ -1,6 +1,6 @@
 "use client";
 
-import { uploadFileViaFetchWithProgress } from "@/lib/admin-upload-via-fetch";
+import { uploadViaPresigned } from "@/lib/admin-upload-presigned";
 import { Box, Button, HStack, Progress, Text } from "@chakra-ui/react";
 import { useCallback, useRef, useState } from "react";
 
@@ -22,27 +22,21 @@ function readVideoDuration(file: File): Promise<number | null> {
   });
 }
 
-/** Upload zur App-API (serverseitig → Bucket), Fortschritt per fetch + ReadableStream — kein CORS zum Hetzner-Endpoint. */
+/** Presigned PUT direkt zu Hetzner (umgeht Vercel Body-Limit). */
 function uploadVideoViaProxy(
   file: File,
   meta: { courseId: string; moduleId: string; videoId: string; subcategoryId?: string | null },
   onProgress: (pct: number) => void,
 ): Promise<string> {
-  const params = new URLSearchParams({
-    folder: "videos",
-    courseId: meta.courseId,
-    moduleId: meta.moduleId,
-    videoId: meta.videoId,
-    kind: "original",
-  });
-  if (meta.subcategoryId) params.set("subcategoryId", meta.subcategoryId);
-
-  return uploadFileViaFetchWithProgress(
+  return uploadViaPresigned(
     file,
-    `/api/admin/upload-proxy?${params.toString()}`,
     {
-      "Content-Type": file.type || "video/mp4",
-      "X-File-Name": encodeURIComponent(file.name),
+      folder: "videos",
+      courseId: meta.courseId,
+      moduleId: meta.moduleId,
+      videoId: meta.videoId,
+      kind: "original",
+      ...(meta.subcategoryId ? { subcategoryId: meta.subcategoryId } : {}),
     },
     onProgress,
   );

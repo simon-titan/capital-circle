@@ -1,5 +1,6 @@
 "use client";
 
+import { uploadViaPresigned } from "@/lib/admin-upload-presigned";
 import { Box, Button, FormLabel, HStack, IconButton, Input, Progress, Select, Stack, Text } from "@chakra-ui/react";
 import { FileDown, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -35,45 +36,17 @@ const adminSelectStyles = {
   sx: { "& option": { bg: "#0c0d10" } },
 };
 
-/** XHR-Upload mit Fortschritt — Metadaten als Query-Parameter, Datei als raw Body. */
+/** Presigned PUT direkt zu Hetzner mit Fortschritt. */
 function uploadStandaloneViaXhr(
   file: File,
   meta: { attachmentId: string },
   onProgress: (pct: number) => void,
 ): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const params = new URLSearchParams({
-      folder: "standalone-attachments",
-      attachmentId: meta.attachmentId,
-    });
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", `/api/admin/upload-proxy?${params.toString()}`);
-    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
-    xhr.setRequestHeader("X-File-Name", encodeURIComponent(file.name));
-    xhr.upload.onprogress = (ev) => {
-      if (ev.lengthComputable) onProgress(Math.round((ev.loaded / ev.total) * 100));
-    };
-    xhr.onload = () => {
-      if (xhr.status < 200 || xhr.status >= 300) {
-        try {
-          const j = JSON.parse(xhr.responseText) as { error?: string };
-          reject(new Error(j.error || `Upload fehlgeschlagen (${xhr.status})`));
-        } catch {
-          reject(new Error(`Upload fehlgeschlagen (${xhr.status})`));
-        }
-        return;
-      }
-      try {
-        const j = JSON.parse(xhr.responseText) as { ok?: boolean; storageKey?: string; error?: string };
-        if (!j.ok || !j.storageKey) reject(new Error(j.error || "Upload fehlgeschlagen"));
-        else resolve(j.storageKey);
-      } catch {
-        reject(new Error("Ungültige Server-Antwort"));
-      }
-    };
-    xhr.onerror = () => reject(new Error("Netzwerkfehler beim Upload"));
-    xhr.send(file);
-  });
+  return uploadViaPresigned(
+    file,
+    { folder: "standalone-attachments", attachmentId: meta.attachmentId },
+    onProgress,
+  );
 }
 
 export function StandaloneAttachmentManager() {
