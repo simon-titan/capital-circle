@@ -27,6 +27,7 @@ import { DiscordGlyph } from "@/components/platform/DiscordBanner";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { createClient } from "@/lib/supabase/client";
 import { getDiscordAuthUrl } from "@/lib/discord";
+import { resolveTotalLearningSeconds } from "@/lib/learning-daily";
 
 type ProfileData = {
   id: string;
@@ -38,6 +39,7 @@ type ProfileData = {
   streak_current: number;
   streak_longest: number;
   total_learning_minutes: number;
+  total_learning_seconds?: number | null;
   codex_accepted: boolean;
   codex_accepted_at: string | null;
   is_admin: boolean;
@@ -98,7 +100,7 @@ export default function SettingsPage() {
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select(
-          "id, username, full_name, avatar_url, discord_username, discord_id, streak_current, streak_longest, total_learning_minutes, codex_accepted, codex_accepted_at, is_admin, is_paid, created_at",
+          "id, username, full_name, avatar_url, discord_username, discord_id, streak_current, streak_longest, total_learning_minutes, total_learning_seconds, codex_accepted, codex_accepted_at, is_admin, is_paid, created_at",
         )
         .eq("id", authData.user.id)
         .single<ProfileData>();
@@ -136,7 +138,7 @@ export default function SettingsPage() {
       }
       setStreakCurrent(profile.streak_current ?? 0);
       setStreakLongest(profile.streak_longest ?? 0);
-      setLearningMinutes(profile.total_learning_minutes ?? 0);
+      setLearningMinutes(Math.floor(resolveTotalLearningSeconds(profile) / 60));
       setCodexAcceptedAt(profile.codex_accepted ? profile.codex_accepted_at : null);
       setMemberSince(profile.created_at ?? null);
       setIsAdmin(profile.is_admin ?? false);

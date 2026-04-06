@@ -28,7 +28,11 @@ export type Database = {
           streak_longest: number;
           streak_last_activity: string | null;
           total_learning_minutes: number;
+          /** Kumulierte Lernzeit in Sekunden (Quelle); total_learning_minutes = floor(seconds/60) */
+          total_learning_seconds?: number;
           learning_minutes_by_day?: Json | null;
+          /** YYYY-MM-DD → Sekunden (Europe/Berlin); bei fehlender Migration Fallback auf learning_minutes_by_day */
+          learning_seconds_by_day?: Json | null;
           streak_activity_by_day?: Json | null;
           is_admin: boolean;
           is_paid: boolean;

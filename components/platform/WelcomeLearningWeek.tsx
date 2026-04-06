@@ -1,11 +1,12 @@
 "use client";
 
 import { Box, Text, Tooltip } from "@chakra-ui/react";
-import type { LearningWeekDay } from "@/lib/learning-daily";
+import { formatLearningDurationDe, type LearningWeekDay } from "@/lib/learning-daily";
 
-function formatDayMinutes(m: number): string {
-  if (m <= 0) return "Keine Lernzeit an diesem Tag";
-  if (m < 60) return `${m} Min. gesamt`;
+function formatDaySecondsLine(totalSeconds: number): string {
+  if (totalSeconds <= 0) return "Keine Lernzeit an diesem Tag";
+  const m = Math.floor(totalSeconds / 60);
+  if (m < 60) return m > 0 ? `${m} Min. gesamt` : `${totalSeconds} Sek. gesamt`;
   const h = Math.floor(m / 60);
   const mm = m % 60;
   return mm ? `${h} h ${mm} Min. gesamt` : `${h} h gesamt`;
@@ -18,7 +19,7 @@ type WelcomeLearningWeekProps = {
 };
 
 export function WelcomeLearningWeek({ days, weekTotalLabel }: WelcomeLearningWeekProps) {
-  const maxM = Math.max(1, ...days.map((d) => d.minutes));
+  const maxS = Math.max(1, ...days.map((d) => d.seconds));
 
   return (
     <Box
@@ -42,7 +43,7 @@ export function WelcomeLearningWeek({ days, weekTotalLabel }: WelcomeLearningWee
       <Box display="flex" alignItems="flex-end" justifyContent="space-between" gap={{ base: 1, sm: 2 }} flex="1" pt={1} w="100%" minW={0}>
         {days.map((d) => {
           const trackPx = 80;
-          const barPx = d.minutes <= 0 ? 4 : Math.max(10, Math.round((trackPx * d.minutes) / maxM));
+          const barPx = d.seconds <= 0 ? 4 : Math.max(10, Math.round((trackPx * d.seconds) / maxS));
           const label = `${d.weekdayShort}. · ${d.labelDe}`;
           return (
             <Tooltip
@@ -50,7 +51,7 @@ export function WelcomeLearningWeek({ days, weekTotalLabel }: WelcomeLearningWee
               label={
                 <Box>
                   <Text fontWeight={600}>{label}</Text>
-                  <Text fontSize="sm">{formatDayMinutes(d.minutes)}</Text>
+                  <Text fontSize="sm">{formatDaySecondsLine(d.seconds)}</Text>
                 </Box>
               }
               placement="top"
@@ -71,7 +72,7 @@ export function WelcomeLearningWeek({ days, weekTotalLabel }: WelcomeLearningWee
                 justifyContent="flex-end"
                 minW={0}
                 cursor="default"
-                aria-label={`${label}: ${formatDayMinutes(d.minutes)}`}
+                aria-label={`${label}: ${formatLearningDurationDe(d.seconds)}`}
               >
                 <Box h={`${trackPx}px`} display="flex" alignItems="flex-end" justifyContent="center" w="100%">
                   <Box
@@ -81,9 +82,9 @@ export function WelcomeLearningWeek({ days, weekTotalLabel }: WelcomeLearningWee
                     borderRadius="8px 8px 4px 4px"
                     bg="linear-gradient(180deg, #f0dc82 0%, #d4af37 45%, #8a6f1c 100%)"
                     boxShadow={
-                      d.minutes > 0 ? "0 0 16px rgba(212, 175, 55, 0.35), inset 0 1px 0 rgba(255,255,255,0.2)" : undefined
+                      d.seconds > 0 ? "0 0 16px rgba(212, 175, 55, 0.35), inset 0 1px 0 rgba(255,255,255,0.2)" : undefined
                     }
-                    opacity={d.minutes > 0 ? 1 : 0.35}
+                    opacity={d.seconds > 0 ? 1 : 0.35}
                     transition="height 0.35s ease, opacity 0.2s"
                   />
                 </Box>

@@ -27,6 +27,8 @@ type GlassVideoPlayerProps = {
   startAtSeconds?: number;
   /** Kein Vorspulen/Scrubben (z. B. Onboarding-Intro) */
   disableSeeking?: boolean;
+  /** Nur für Onboarding-Intro: stummes Autoplay. Standard: aus (Plattform-Module etc.). */
+  autoPlay?: boolean;
   onEnded?: () => void;
   onProgress?: (seconds: number) => void;
 };
@@ -44,6 +46,7 @@ export function GlassVideoPlayer({
   presignApiPath = "/api/video-url",
   startAtSeconds = 0,
   disableSeeking = false,
+  autoPlay = false,
   onEnded,
   onProgress,
 }: GlassVideoPlayerProps) {
@@ -417,7 +420,7 @@ export function GlassVideoPlayer({
           src={effectiveSrc}
           playsInline
           preload="auto"
-          autoPlay
+          autoPlay={autoPlay}
           muted={muted}
           style={{
             position: "absolute",
@@ -443,6 +446,7 @@ export function GlassVideoPlayer({
           onCanPlay={() => {
             setReady(true);
             setBuffering(false);
+            if (!autoPlay) return;
             const v = videoRef.current;
             if (v && v.paused) {
               void v.play().catch(() => {

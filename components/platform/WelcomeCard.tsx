@@ -1,7 +1,7 @@
 import { Box, Grid, GridItem, Heading, HStack, Text, Tooltip, VStack } from "@chakra-ui/react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { CalendarDays, Check, Flame } from "lucide-react";
-import type { LearningWeekDay } from "@/lib/learning-daily";
+import { formatLearningDurationDe, type LearningWeekDay } from "@/lib/learning-daily";
 import type { WelcomeDashboardMetrics } from "@/lib/welcome-metrics";
 import { WelcomeLearningWeek } from "@/components/platform/WelcomeLearningWeek";
 import { WelcomeModuleRings } from "@/components/platform/WelcomeModuleRings";
@@ -182,10 +182,10 @@ export function WelcomeCard({
                   </Text>
                   <HStack spacing={{ base: 0.5, sm: 1 }} justify="center" align="flex-start" w="100%">
                     {learningWeekDays.map((d) => {
-                      const active = d.minutes > 0 || Boolean(streakActivityByDay[d.dayKey]);
+                      const active = d.seconds > 0 || Boolean(streakActivityByDay[d.dayKey]);
                       const detail =
-                        d.minutes > 0
-                          ? `${d.labelDe}: aktiv (${d.minutes} Min. Lernzeit)`
+                        d.seconds > 0
+                          ? `${d.labelDe}: aktiv (${formatLearningDurationDe(d.seconds)})`
                           : streakActivityByDay[d.dayKey]
                             ? `${d.labelDe}: Streak-Aktivität (Fortschritt gespeichert)`
                             : `${d.labelDe}: keine erfasste Aktivität`;

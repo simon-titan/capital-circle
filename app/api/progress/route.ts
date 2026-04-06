@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import {
-  addMinutesToDayMap,
+  addSecondsToDayMap,
   berlinCalendarDayKey,
   mergeStreakActivityDay,
-  parseLearningMinutesByDay,
   parseStreakActivityByDay,
+  resolveLearningSecondsByDay,
+  resolveTotalLearningSeconds,
 } from "@/lib/learning-daily";
 import { getModulePlaylistDurationsOnly } from "@/lib/module-video";
 import { calculateStreak, maxPlausibleStreakDays, sanitizeStreakValue } from "@/lib/streak";
@@ -166,23 +167,19 @@ export async function POST(request: Request) {
     supabase
       .from("profiles")
       .select(
-        "created_at,streak_current,streak_longest,streak_last_activity,total_learning_minutes,learning_minutes_by_day,streak_activity_by_day",
+        "created_at,streak_current,streak_longest,streak_last_activity,total_learning_minutes,total_learning_seconds,learning_minutes_by_day,learning_seconds_by_day,streak_activity_by_day",
       )
       .eq("id", userId)
       .single(),
   ]);
   const { data: profile } = profileRes;
 
-  // Delta nur berechnen wenn:
-  // 1. Erweiterte Spalten verfügbar sind (sonst kein video_progress_by_video lesbar/schreibbar)
-  // 2. Ein bestehender Eintrag existiert UND video_progress_by_video darin gesetzt war
-  //    (null = noch nie gesetzt → oldMap wäre {} → beforeWatched = 0 → Doppelzählung)
-  // Bei komplett neuem Eintrag (existing === null) ist beforeWatched = 0 korrekt.
-  const hasOldProgressMap = hasExtendedCols && (existing === null || existing?.video_progress_by_video != null);
+  // Delta nur wenn per-video-Map nutzbar; video_progress_by_video = null ist Legacy-Zeile —
+  // vorher wurde delta komplett unterdrückt → praktisch keine Lernzeit. Fortschritt kommt aus dem Client-Map.
+  const hasOldProgressMap = hasExtendedCols;
   const beforeWatched = hasOldProgressMap ? watchedSecondsCapped(playlist, oldMap) : 0;
   const afterWatched = hasOldProgressMap ? watchedSecondsCapped(playlist, mergedMap) : 0;
   const deltaSeconds = hasOldProgressMap ? Math.max(0, afterWatched - beforeWatched) : 0;
-  const deltaMinutes = Math.floor(deltaSeconds / 60);
 
   const createdAt = profile?.created_at as string | null | undefined;
   const maxPlausible = maxPlausibleStreakDays(createdAt);
@@ -196,15 +193,24 @@ export async function POST(request: Request) {
   const streak = Math.min(rawNext, maxPlausible);
   const streak_longest = Math.min(Math.max(streak, safeLongestStored, safeCurrent), maxPlausible);
 
-  const prevByDay = parseLearningMinutesByDay(profile?.learning_minutes_by_day);
+  const prevByDaySeconds = resolveLearningSecondsByDay(
+    profile as {
+      learning_seconds_by_day?: unknown;
+      learning_minutes_by_day?: unknown;
+    },
+  );
   const dayKey = berlinCalendarDayKey(new Date());
-  const learning_minutes_by_day =
-    deltaMinutes > 0 ? addMinutesToDayMap(prevByDay, dayKey, deltaMinutes) : prevByDay;
+  const learning_seconds_by_day =
+    deltaSeconds > 0 ? addSecondsToDayMap(prevByDaySeconds, dayKey, deltaSeconds) : prevByDaySeconds;
   const streak_activity_by_day = mergeStreakActivityDay(
     parseStreakActivityByDay(profile?.streak_activity_by_day),
     dayKey,
   );
-  const total_learning_minutes = Math.max(0, (profile?.total_learning_minutes ?? 0) + deltaMinutes);
+  const prevTotalSeconds = resolveTotalLearningSeconds(
+    profile as { total_learning_seconds?: number | null; total_learning_minutes?: number | null },
+  );
+  const total_learning_seconds = Math.max(0, prevTotalSeconds + deltaSeconds);
+  const total_learning_minutes = Math.floor(total_learning_seconds / 60);
 
   await supabase
     .from("profiles")
@@ -212,8 +218,9 @@ export async function POST(request: Request) {
       streak_current: streak,
       streak_longest,
       streak_last_activity: nowIso,
+      total_learning_seconds,
       total_learning_minutes,
-      learning_minutes_by_day,
+      learning_seconds_by_day,
       streak_activity_by_day,
     })
     .eq("id", userId);

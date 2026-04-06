@@ -19,7 +19,12 @@ import {
   getUpcomingEvents,
   getWelcomeDashboardMetricsFromOverview,
 } from "@/lib/server-data";
-import { buildLearningWeekLast7, parseLearningMinutesByDay, parseStreakActivityByDay } from "@/lib/learning-daily";
+import {
+  buildLearningWeekLast7,
+  parseStreakActivityByDay,
+  resolveLearningSecondsByDay,
+  resolveTotalLearningSeconds,
+} from "@/lib/learning-daily";
 import { createClient } from "@/lib/supabase/server";
 import { maxPlausibleStreakDays, sanitizeStreakValue } from "@/lib/streak";
 
@@ -75,12 +80,17 @@ export default async function DashboardPage() {
   const streakActivityByDay = parseStreakActivityByDay(
     (profile as { streak_activity_by_day?: unknown }).streak_activity_by_day,
   );
-  const { label: learningLabel } = formatLearningTime(profile.total_learning_minutes);
-  const learningWeekDays = buildLearningWeekLast7(
-    parseLearningMinutesByDay((profile as { learning_minutes_by_day?: unknown }).learning_minutes_by_day),
+  const totalLearnedSeconds = resolveTotalLearningSeconds(
+    profile as { total_learning_seconds?: number | null; total_learning_minutes?: number | null },
   );
-  const weekMinutesSum = learningWeekDays.reduce((s, d) => s + d.minutes, 0);
-  const { label: weekLearningLabel } = formatLearningTime(weekMinutesSum);
+  const { label: learningLabel } = formatLearningTime(Math.floor(totalLearnedSeconds / 60));
+  const learningWeekDays = buildLearningWeekLast7(
+    resolveLearningSecondsByDay(
+      profile as { learning_seconds_by_day?: unknown; learning_minutes_by_day?: unknown },
+    ),
+  );
+  const weekSecondsSum = learningWeekDays.reduce((s, d) => s + d.seconds, 0);
+  const { label: weekLearningLabel } = formatLearningTime(Math.floor(weekSecondsSum / 60));
 
   const homeworkState = await getHomeworkDashboardState(userId, homework);
 
