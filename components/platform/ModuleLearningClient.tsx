@@ -266,15 +266,15 @@ export function ModuleLearningClient({
   if (!playlist.length) {
     const introFallback = process.env.NEXT_PUBLIC_INTRO_VIDEO_URL ?? "";
     return (
-      <Box>
-        <Text className="inter" color="gray.500" fontSize="sm" mb={4}>
+      <Box pb={{ base: 4, md: 0 }}>
+        <Text className="inter" color="gray.500" fontSize="sm" mb={4} px={{ base: 4, md: 0 }}>
           Kein veröffentlichtes Video in diesem Modul. Platzhalter-Intro wird angezeigt, falls konfiguriert.
         </Text>
         {introFallback ? (
           <GlassVideoPlayer src={introFallback} onProgress={onPlayerProgress} />
         ) : null}
         {hasQuiz ? (
-          <Stack spacing={3} mt={4} mb={6} maxW="md">
+          <Stack spacing={3} mt={4} mb={6} maxW="md" px={{ base: 4, md: 0 }}>
             <Text
               className="inter"
               fontSize="xs"
@@ -338,6 +338,7 @@ export function ModuleLearningClient({
         {moduleCompleted ? (
           <Box
             mt={4}
+            mx={{ base: 4, md: 0 }}
             p={5}
             borderRadius="16px"
             borderWidth="1px"
@@ -365,61 +366,67 @@ export function ModuleLearningClient({
             </Stack>
           </Box>
         ) : null}
-        <ModuleNotes moduleId={moduleId} initialContent={initialNoteContent} />
+        <Box px={{ base: 4, md: 0 }}>
+          <ModuleNotes moduleId={moduleId} initialContent={initialNoteContent} />
+        </Box>
       </Box>
     );
   }
 
   return (
-    <Box>
+    <Box pb={{ base: 4, md: 0 }}>
       <Grid
         templateColumns={{ base: "1fr", lg: "minmax(0, 5fr) minmax(280px, 2fr)" }}
         gap={{ base: 6, lg: 8 }}
         alignItems="start"
       >
         <GridItem minW={0}>
-          <GlassVideoPlayer
-            key={current.id}
-            storageKey={current.storage_key}
-            startAtSeconds={startAtSeconds}
-            onProgress={onPlayerProgress}
-            onEnded={onVideoEnded}
-          />
-          {moduleCompleted ? (
-            <Box
-              mt={4}
-              p={5}
-              borderRadius="16px"
-              borderWidth="1px"
-              borderColor="rgba(212,175,55,0.35)"
-              bg="rgba(212,175,55,0.06)"
-            >
-              <Text className="radley-regular" fontSize="lg" mb={3} color="var(--color-text-primary)">
-                Modul abgeschlossen
-              </Text>
-              <Stack direction={{ base: "column", sm: "row" }} spacing={3}>
-                {nextModuleHref ? (
-                  <ChakraLinkButton href={nextModuleHref} colorScheme="yellow" size="md">
-                    Zum nächsten Modul
-                  </ChakraLinkButton>
-                ) : null}
-                <ChakraLinkButton
-                  href="/ausbildung"
-                  variant="outline"
-                  borderColor="rgba(212,175,55,0.45)"
-                  color="var(--color-accent-gold)"
-                  size="md"
+          <Stack spacing={6}>
+            <GlassVideoPlayer
+              key={current.id}
+              storageKey={current.storage_key}
+              startAtSeconds={startAtSeconds}
+              onProgress={onPlayerProgress}
+              onEnded={onVideoEnded}
+            />
+            <Box px={{ base: 4, md: 0 }}>
+              {moduleCompleted ? (
+                <Box
+                  mb={4}
+                  p={5}
+                  borderRadius="16px"
+                  borderWidth="1px"
+                  borderColor="rgba(212,175,55,0.35)"
+                  bg="rgba(212,175,55,0.06)"
                 >
-                  Zur Instituts-Übersicht
-                </ChakraLinkButton>
-              </Stack>
+                  <Text className="radley-regular" fontSize="lg" mb={3} color="var(--color-text-primary)">
+                    Modul abgeschlossen
+                  </Text>
+                  <Stack direction={{ base: "column", sm: "row" }} spacing={3}>
+                    {nextModuleHref ? (
+                      <ChakraLinkButton href={nextModuleHref} colorScheme="yellow" size="md">
+                        Zum nächsten Modul
+                      </ChakraLinkButton>
+                    ) : null}
+                    <ChakraLinkButton
+                      href="/ausbildung"
+                      variant="outline"
+                      borderColor="rgba(212,175,55,0.45)"
+                      color="var(--color-accent-gold)"
+                      size="md"
+                    >
+                      Zur Instituts-Übersicht
+                    </ChakraLinkButton>
+                  </Stack>
+                </Box>
+              ) : null}
+              <VideoDescription description={current.description} />
+              <VideoAttachments attachments={currentAttachments} />
+              <ModuleNotes moduleId={moduleId} initialContent={initialNoteContent} />
             </Box>
-          ) : null}
-          <VideoDescription description={current.description} />
-          <VideoAttachments attachments={currentAttachments} />
-          <ModuleNotes moduleId={moduleId} initialContent={initialNoteContent} />
+          </Stack>
         </GridItem>
-        <GridItem>
+        <GridItem px={{ base: 4, md: 0 }}>
           <Box
             position={{ base: "relative", lg: "sticky" }}
             top={{ lg: "80px" }}

@@ -181,8 +181,8 @@ export default async function AcademyModulePage({ params }: PageProps) {
         >
           ← Zur Instituts-Übersicht
         </ChakraLinkButton>
-        <GlassCard>
-          <Stack spacing={4} mb={6}>
+        <GlassCard p={{ base: 0, md: 6 }}>
+          <Stack spacing={4} mb={6} px={{ base: 4, md: 0 }} pt={{ base: 4, md: 0 }}>
             <Heading as="h1" size="lg" className="radley-regular" fontWeight={400} color="var(--color-text-primary)">
               {mod.title}
             </Heading>

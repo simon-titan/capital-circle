@@ -66,7 +66,8 @@ export function GlassVideoPlayer({
   const [ready, setReady] = useState(false);
   const [buffering, setBuffering] = useState(false);
   const [volumePct, setVolumePct] = useState(85);
-  const [muted, setMuted] = useState(true);
+  /** Stumm nur bei Autoplay (Browser-Richtlinie); Plattform-Module starten mit Ton. */
+  const [muted, setMuted] = useState(autoPlay);
   const [fullscreen, setFullscreen] = useState(false);
   const [mobileVolOpen, setMobileVolOpen] = useState(false);
   const mobileVolWrapRef = useRef<HTMLDivElement>(null);
@@ -162,9 +163,9 @@ export function GlassVideoPlayer({
     setCurrent(0);
     setProgressPct(0);
     setDuration(0);
-    setMuted(true);
+    setMuted(autoPlay);
     el.load();
-  }, [effectiveSrc]);
+  }, [effectiveSrc, autoPlay]);
 
   useEffect(() => {
     const v = videoRef.current;
