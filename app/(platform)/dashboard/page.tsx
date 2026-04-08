@@ -20,13 +20,15 @@ import {
   getWelcomeDashboardMetricsFromOverview,
 } from "@/lib/server-data";
 import {
+  berlinCalendarDayKey,
   buildLearningWeekLast7,
+  mergeStreakActivityDay,
   parseStreakActivityByDay,
   resolveLearningSecondsByDay,
   resolveTotalLearningSeconds,
 } from "@/lib/learning-daily";
 import { createClient } from "@/lib/supabase/server";
-import { maxPlausibleStreakDays, sanitizeStreakValue } from "@/lib/streak";
+import { calculateStreak, maxPlausibleStreakDays, sanitizeStreakValue } from "@/lib/streak";
 
 export default async function DashboardPage() {
   const { user, profile } = await getCurrentUserAndProfile();
@@ -56,30 +58,52 @@ export default async function DashboardPage() {
 
   const displayName = profile.full_name || profile.username || "Mitglied";
   const memberDays = getMemberDays(profile.created_at);
-  const streakDaysSanitized = sanitizeStreakValue(profile.streak_current ?? 0, profile.created_at);
+  const todayKey = berlinCalendarDayKey(new Date());
+  const nowIso = new Date().toISOString();
+
+  const storedStreakActivity = parseStreakActivityByDay(
+    (profile as { streak_activity_by_day?: unknown }).streak_activity_by_day,
+  );
+  const alreadyActiveToday = Boolean(storedStreakActivity[todayKey]);
+
+  // Streak beim Login/Dashboard-Besuch aktualisieren (falls heute noch nicht aktiv)
+  const safeCurrent = sanitizeStreakValue(profile.streak_current ?? 0, profile.created_at);
+  const maxPlausible = maxPlausibleStreakDays(profile.created_at);
+  const rawNext = calculateStreak(
+    profile.streak_last_activity ? new Date(profile.streak_last_activity as string) : null,
+    safeCurrent,
+  );
+  const streakDaysSanitized = Math.min(rawNext, maxPlausible);
   const streakLongestSanitized = Math.min(
     Math.max(
       streakDaysSanitized,
       sanitizeStreakValue(profile.streak_longest ?? 0, profile.created_at),
     ),
-    maxPlausibleStreakDays(profile.created_at),
+    maxPlausible,
   );
-  if (
+
+  // Streak-Aktivität für heute mergen (Login zählt als Aktivität)
+  const streakActivityByDay = alreadyActiveToday
+    ? storedStreakActivity
+    : mergeStreakActivityDay(storedStreakActivity, todayKey);
+
+  const streakChanged =
     streakDaysSanitized !== (profile.streak_current ?? 0) ||
-    streakLongestSanitized !== (profile.streak_longest ?? 0)
-  ) {
-    await supabase
-      .from("profiles")
-      .update({
-        streak_current: streakDaysSanitized,
-        streak_longest: streakLongestSanitized,
-      })
-      .eq("id", userId);
+    streakLongestSanitized !== (profile.streak_longest ?? 0);
+
+  if (!alreadyActiveToday || streakChanged) {
+    const updatePayload: Record<string, unknown> = {
+      streak_current: streakDaysSanitized,
+      streak_longest: streakLongestSanitized,
+      streak_activity_by_day: streakActivityByDay,
+    };
+    if (!alreadyActiveToday) {
+      updatePayload.streak_last_activity = nowIso;
+    }
+    await supabase.from("profiles").update(updatePayload).eq("id", userId);
   }
+
   const streakDays = streakDaysSanitized;
-  const streakActivityByDay = parseStreakActivityByDay(
-    (profile as { streak_activity_by_day?: unknown }).streak_activity_by_day,
-  );
   const totalLearnedSeconds = resolveTotalLearningSeconds(
     profile as { total_learning_seconds?: number | null; total_learning_minutes?: number | null },
   );
