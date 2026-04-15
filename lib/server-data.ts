@@ -95,6 +95,11 @@ export function userCanAccessAcademyModule(memberIsPaid: boolean, courseIsFree: 
   return courseIsFree === true || memberIsPaid;
 }
 
+/** Trading Journal & Positionsrechner: nur fuer Paid-Mitglieder. */
+export function userCanAccessTradingJournal(isPaid: boolean): boolean {
+  return isPaid;
+}
+
 export function parseVideoProgressByVideo(raw: unknown): Record<string, number> {
   if (!raw || typeof raw !== "object") return {};
   const out: Record<string, number> = {};

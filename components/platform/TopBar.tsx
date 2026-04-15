@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Badge,
   Box,
   Button,
   Drawer,
@@ -42,14 +41,17 @@ const navItems: Array<{
   href: string;
   label: string;
   icon: typeof LayoutDashboard;
-  badge?: string;
 }> = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/codex", label: "Codex", icon: BookOpen },
   { href: "/ausbildung", label: "Institut", icon: GraduationCap },
-  { href: "/trading-journal", label: "Trading Journal", icon: BookMarked, badge: "Demnächst" },
   { href: "/events", label: "Events", icon: Calendar },
 ];
+
+const tradingJournalSubLinks = [
+  { href: "/trading-journal", label: "Journal" },
+  { href: "/trading-journal/position-calculator", label: "Positionsrechner" },
+] as const;
 
 const arsenalSubLinks = [
   { href: "/analysis", label: "Analyse" },
@@ -73,6 +75,8 @@ export function TopBar() {
   const supabase = createClient();
   const { isOpen: drawerOpen, onOpen: onDrawerOpen, onClose: onDrawerClose } = useDisclosure();
 
+  const tradingJournalActive = !!pathname && pathname.startsWith("/trading-journal");
+
   const arsenalActive = !!pathname &&
     (pathname.startsWith("/arsenal") ||
       pathname.startsWith("/analysis") ||
@@ -94,7 +98,66 @@ export function TopBar() {
   }) => (
     <Stack gap={3} w="100%">
       <Stack gap={2}>
-        {navItems.map((item) => {
+            {navItems.slice(0, 3).map((item) => {
+              const active = isNavActive(pathname, item.href);
+              const Icon = item.icon;
+              return (
+                <Button
+                  key={item.href}
+                  as={Link}
+                  href={item.href}
+                  onClick={onNavigate}
+                  size="sm"
+                  variant={active ? "solid" : "ghost"}
+                  justifyContent="flex-start"
+                  leftIcon={<Icon size={18} strokeWidth={2} />}
+                  bg={active ? "rgba(212, 175, 55, 0.35)" : "transparent"}
+                  color="var(--color-text-primary)"
+                  borderWidth="1px"
+                  borderColor={active ? "rgba(212, 175, 55, 0.55)" : "transparent"}
+                  _hover={{
+                    bg: active ? "rgba(212, 175, 55, 0.45)" : "rgba(255, 255, 255, 0.06)",
+                  }}
+                  borderRadius="md"
+                  className="inter-medium"
+                >
+                  {item.label}
+                </Button>
+              );
+            })}
+        <Text fontSize="xs" color="var(--color-text-tertiary)" className="inter-semibold" pt={1}>
+          Trading Journal
+        </Text>
+        {tradingJournalSubLinks.map((sub) => {
+          const posActive = Boolean(pathname?.startsWith("/trading-journal/position-calculator"));
+          const journalOnlyActive = pathname === "/trading-journal";
+          const subActive =
+            sub.href === "/trading-journal/position-calculator" ? posActive : journalOnlyActive;
+          return (
+            <Button
+              key={sub.href}
+              as={Link}
+              href={sub.href}
+              onClick={onNavigate}
+              size="sm"
+              variant={subActive ? "solid" : "ghost"}
+              justifyContent="flex-start"
+              pl={6}
+              bg={subActive ? "rgba(212, 175, 55, 0.28)" : "transparent"}
+              color="var(--color-text-primary)"
+              borderWidth="1px"
+              borderColor={subActive ? "rgba(212, 175, 55, 0.45)" : "transparent"}
+              _hover={{
+                bg: subActive ? "rgba(212, 175, 55, 0.38)" : "rgba(255, 255, 255, 0.06)",
+              }}
+              borderRadius="md"
+              className="inter-medium"
+            >
+              {sub.label}
+            </Button>
+          );
+        })}
+        {navItems.slice(3).map((item) => {
           const active = isNavActive(pathname, item.href);
           const Icon = item.icon;
           return (
@@ -117,14 +180,7 @@ export function TopBar() {
               borderRadius="md"
               className="inter-medium"
             >
-              <HStack as="span" spacing={2}>
-                <span>{item.label}</span>
-                {item.badge ? (
-                  <Badge colorScheme="yellow" fontSize="0.65rem" px={1.5} py={0} borderRadius="md">
-                    {item.badge}
-                  </Badge>
-                ) : null}
-              </HStack>
+              {item.label}
             </Button>
           );
         })}
@@ -242,7 +298,7 @@ export function TopBar() {
             flexWrap="wrap"
             px={1}
           >
-            {navItems.map((item) => {
+            {navItems.slice(0, 3).map((item) => {
               const active = isNavActive(pathname, item.href);
               const Icon = item.icon;
               return (
@@ -259,14 +315,66 @@ export function TopBar() {
                   borderRadius="md"
                   className="inter-medium"
                 >
-                  <HStack as="span" spacing={2}>
-                    <span>{item.label}</span>
-                    {item.badge ? (
-                      <Badge colorScheme="yellow" fontSize="0.65rem" px={1.5} py={0} borderRadius="md">
-                        {item.badge}
-                      </Badge>
-                    ) : null}
-                  </HStack>
+                  {item.label}
+                </Button>
+              );
+            })}
+            <Menu placement="bottom" isLazy>
+              <MenuButton
+                as={Button}
+                size="sm"
+                variant={tradingJournalActive ? "solid" : "ghost"}
+                leftIcon={<BookMarked size={18} strokeWidth={2} />}
+                rightIcon={<ChevronDown size={14} />}
+                {...(tradingJournalActive ? navButtonSx : navGhostSx)}
+                color="var(--color-text-primary)"
+                borderWidth="1px"
+                borderRadius="md"
+                className="inter-medium"
+                px={3}
+              >
+                Trading Journal
+              </MenuButton>
+              <MenuList
+                bg="rgba(12, 13, 16, 0.98)"
+                borderColor="rgba(212, 175, 55, 0.35)"
+                boxShadow="0 8px 32px rgba(0,0,0,0.5)"
+                py={1}
+                minW="220px"
+              >
+                {tradingJournalSubLinks.map((sub) => (
+                  <MenuItem
+                    key={sub.href}
+                    as={Link}
+                    href={sub.href}
+                    bg="transparent"
+                    color="var(--color-text-primary)"
+                    _hover={{ bg: "rgba(212, 175, 55, 0.12)" }}
+                    className="inter-medium"
+                  >
+                    {sub.label}
+                  </MenuItem>
+                ))}
+              </MenuList>
+            </Menu>
+            {navItems.slice(3).map((item) => {
+              const active = isNavActive(pathname, item.href);
+              const Icon = item.icon;
+              return (
+                <Button
+                  key={item.href}
+                  as={Link}
+                  href={item.href}
+                  size="sm"
+                  variant={active ? "solid" : "ghost"}
+                  leftIcon={<Icon size={18} strokeWidth={2} />}
+                  {...(active ? navButtonSx : navGhostSx)}
+                  color="var(--color-text-primary)"
+                  borderWidth="1px"
+                  borderRadius="md"
+                  className="inter-medium"
+                >
+                  {item.label}
                 </Button>
               );
             })}

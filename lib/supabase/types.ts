@@ -130,6 +130,58 @@ export type Database = {
         Insert: Record<string, unknown>;
         Update: Record<string, unknown>;
       };
+      trading_journals: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          created_at: string;
+        };
+        Insert: Record<string, unknown>;
+        Update: Record<string, unknown>;
+      };
+      trading_journal_trades: {
+        Row: {
+          id: string;
+          journal_id: string;
+          user_id: string;
+          trade_date: string;
+          trade_time: string | null;
+          weekday: string | null;
+          strategy: string;
+          asset: string;
+          session: string | null;
+          direction: string;
+          contracts: number;
+          entry_price: number | null;
+          sl_ticks: number;
+          tp_ticks: number;
+          result_ticks: number;
+          result_dollar: number;
+          rr: string | null;
+          order_type: string | null;
+          open_position: string | null;
+          news_events: Json;
+          news_result: string | null;
+          news_timing: string | null;
+          emotion_before: string | null;
+          emotion_after: string | null;
+          notes: string | null;
+          screenshot_storage_key: string | null;
+          scalp_zones: Json;
+          scalp_pa: Json;
+          ocrr_bias: Json;
+          ocrr_conf: Json;
+          ocrr_vol: Json;
+          naked_zones: Json;
+          naked_bonus: Json;
+          naked_vp: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Record<string, unknown>;
+        Update: Record<string, unknown>;
+      };
     };
   };
 };

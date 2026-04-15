@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/middleware";
 
 const PUBLIC_PATHS = ["/einsteig", "/login", "/register"];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const { supabase, response } = createClient(request);
 

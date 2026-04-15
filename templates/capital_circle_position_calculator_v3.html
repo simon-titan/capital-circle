@@ -1,0 +1,210 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.w{padding:1.5rem 0;max-width:620px}
+.sec-label{font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-tertiary);margin-bottom:8px}
+.collapse-btn{width:100%;display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);cursor:pointer;font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:6px}
+.collapse-btn .arrow{font-size:10px;transition:transform .2s;color:var(--color-text-tertiary)}
+.collapse-btn.open .arrow{transform:rotate(180deg)}
+.asset-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px;overflow:hidden;max-height:0;transition:max-height .25s ease}
+.asset-grid.open{max-height:200px}
+.asset-btn{padding:10px 0;font-size:13px;font-weight:500;text-align:center;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-secondary);cursor:pointer}
+.asset-btn:hover{background:var(--color-background-secondary)}
+.asset-btn.active{border:1.5px solid var(--color-text-primary);color:var(--color-text-primary)}
+.asset-btn .sub{font-size:10px;font-weight:400;color:var(--color-text-tertiary);display:block;margin-top:2px}
+.asset-btn.active .sub{color:var(--color-text-secondary)}
+.divider{border:none;border-top:0.5px solid var(--color-border-tertiary);margin:1.25rem 0}
+.input-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.25rem}
+.input-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:1.25rem}
+.ig{display:flex;flex-direction:column;gap:6px}
+.ig label{font-size:13px;color:var(--color-text-secondary)}
+.ig input{width:100%;padding:10px 12px;font-size:15px;font-weight:500;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary)}
+.ig input:focus{outline:none;border-color:var(--color-border-primary)}
+.ig input::placeholder{color:var(--color-text-tertiary);font-weight:400;font-size:13px}
+.info-bar{display:flex;gap:16px;flex-wrap:wrap;padding:10px 14px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);margin-bottom:1.25rem;font-size:12px;color:var(--color-text-secondary)}
+.info-bar span{color:var(--color-text-primary);font-weight:500}
+.result-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px}
+.result-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:1.25rem}
+.rc{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:1rem}
+.rc .rl{font-size:12px;color:var(--color-text-tertiary);margin-bottom:6px}
+.rc .rv{font-size:20px;font-weight:500;color:var(--color-text-primary)}
+.rc .rv.loss{color:var(--color-text-danger)}
+.rc .rv.profit{color:var(--color-text-success)}
+.rc .rv.rr{color:var(--color-text-info)}
+.rc .rv.warn{color:var(--color-text-warning)}
+.mode-toggle{display:flex;gap:8px;margin-bottom:1.25rem}
+.mode-btn{flex:1;padding:8px;font-size:13px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-secondary);cursor:pointer}
+.mode-btn.active{border:1.5px solid var(--color-text-primary);color:var(--color-text-primary);font-weight:500}
+.hidden{display:none}
+</style>
+
+<div class="w">
+  <p class="sec-label">Instrument</p>
+
+  <button class="collapse-btn open" id="btn-mini" onclick="toggleGroup('mini')">
+    Minis <span class="arrow">▼</span>
+  </button>
+  <div class="asset-grid open" id="grid-mini">
+    <button class="asset-btn active" data-asset="NQ" onclick="selectAsset('NQ',this)">NQ<span class="sub">$5 / tick</span></button>
+    <button class="asset-btn" data-asset="ES" onclick="selectAsset('ES',this)">ES<span class="sub">$12.50 / tick</span></button>
+    <button class="asset-btn" data-asset="GC" onclick="selectAsset('GC',this)">GC<span class="sub">$10 / tick</span></button>
+    <button class="asset-btn" data-asset="CL" onclick="selectAsset('CL',this)">CL<span class="sub">$10 / tick</span></button>
+  </div>
+
+  <button class="collapse-btn" id="btn-micro" onclick="toggleGroup('micro')">
+    Mikros <span class="arrow">▼</span>
+  </button>
+  <div class="asset-grid" id="grid-micro">
+    <button class="asset-btn" data-asset="MNQ" onclick="selectAsset('MNQ',this)">MNQ<span class="sub">$0.50 / tick</span></button>
+    <button class="asset-btn" data-asset="MES" onclick="selectAsset('MES',this)">MES<span class="sub">$1.25 / tick</span></button>
+    <button class="asset-btn" data-asset="MGC" onclick="selectAsset('MGC',this)">MGC<span class="sub">$1 / tick</span></button>
+    <button class="asset-btn" data-asset="MCL" onclick="selectAsset('MCL',this)">MCL<span class="sub">$1 / tick</span></button>
+  </div>
+
+  <div class="divider"></div>
+
+  <p class="sec-label">Modus</p>
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="m1" onclick="setMode(1)">Ticks eingeben</button>
+    <button class="mode-btn" id="m2" onclick="setMode(2)">Account-basiert rechnen</button>
+  </div>
+
+  <div id="mode1-inputs">
+    <div class="input-row">
+      <div class="ig"><label>Kontrakte</label><input type="number" id="contracts1" value="1" min="1" step="1" oninput="calc()"></div>
+      <div class="ig"><label>Stop Loss (Ticks)</label><input type="number" id="sl1" value="10" min="1" step="1" oninput="calc()"></div>
+    </div>
+    <div class="input-row">
+      <div class="ig"><label>Take Profit (Ticks)</label><input type="number" id="tp1" value="20" min="1" step="1" oninput="calc()"></div>
+      <div class="ig"><label>RR eingeben → TP Ticks berechnen</label><input type="number" id="rr_in" placeholder="z.B. 2.5" min="0.1" step="0.1" oninput="calcFromRR()"></div>
+    </div>
+  </div>
+
+  <div id="mode2-inputs" class="hidden">
+    <div class="input-row-3">
+      <div class="ig"><label>Account Größe ($)</label><input type="number" id="acc" value="50000" min="1" step="100" oninput="calc2()"></div>
+      <div class="ig"><label>Risiko (%)</label><input type="number" id="risk_pct" value="0.5" min="0.01" step="0.01" oninput="calc2()"></div>
+      <div class="ig"><label>Kontrakte</label><input type="number" id="contracts2" value="1" min="1" step="1" oninput="calc2()"></div>
+    </div>
+    <div class="input-row">
+      <div class="ig"><label>Take Profit (Ticks)</label><input type="number" id="tp2" value="20" min="1" step="1" oninput="calc2()"></div>
+      <div class="ig"><label>RR eingeben → TP Ticks berechnen</label><input type="number" id="rr_in2" placeholder="z.B. 2.5" min="0.1" step="0.1" oninput="calcFromRR2()"></div>
+    </div>
+  </div>
+
+  <div class="info-bar">
+    <div>Asset: <span id="info-asset">NQ</span></div>
+    <div>Tick-Größe: <span id="info-tick-size">0.25</span></div>
+    <div>Tick-Wert: <span id="info-tick-val">$5.00</span></div>
+    <div>Wert je Kontrakt/Tick: <span id="info-per-tick">$5.00</span></div>
+  </div>
+
+  <div class="result-grid-3">
+    <div class="rc"><div class="rl">Risiko (SL)</div><div class="rv loss" id="res-loss">—</div></div>
+    <div class="rc"><div class="rl">Potenz. Gewinn (TP)</div><div class="rv profit" id="res-profit">—</div></div>
+    <div class="rc"><div class="rl">RR Ratio</div><div class="rv rr" id="res-rr">—</div></div>
+  </div>
+
+  <div class="result-grid-3">
+    <div class="rc"><div class="rl">SL in Ticks</div><div class="rv" id="res-sl-ticks">—</div></div>
+    <div class="rc"><div class="rl">TP in Ticks</div><div class="rv" id="res-tp-ticks">—</div></div>
+    <div class="rc"><div class="rl">Wert je Tick</div><div class="rv" id="res-per-tick-r">—</div></div>
+  </div>
+
+  <div class="result-grid-2" id="mode2-extra" style="display:none">
+    <div class="rc"><div class="rl">Max. Risiko in $</div><div class="rv loss" id="res-max-risk">—</div></div>
+    <div class="rc"><div class="rl">Empfohlener SL</div><div class="rv warn" id="res-sl-ticks-calc">—</div></div>
+  </div>
+</div>
+
+<script>
+const assets={NQ:{tickSize:.25,tickVal:5},MNQ:{tickSize:.25,tickVal:.5},ES:{tickSize:.25,tickVal:12.5},MES:{tickSize:.25,tickVal:1.25},GC:{tickSize:.1,tickVal:10},MGC:{tickSize:.1,tickVal:1},CL:{tickSize:.01,tickVal:10},MCL:{tickSize:.01,tickVal:1}};
+let cur='NQ',mode=1;
+
+function toggleGroup(g){
+  document.getElementById('btn-'+g).classList.toggle('open');
+  document.getElementById('grid-'+g).classList.toggle('open');
+}
+
+function selectAsset(key,el){
+  document.querySelectorAll('.asset-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  cur=key;
+  const a=assets[key];
+  document.getElementById('info-asset').textContent=key;
+  document.getElementById('info-tick-size').textContent=a.tickSize;
+  document.getElementById('info-tick-val').textContent='$'+a.tickVal.toFixed(2);
+  if(mode===1)calc();else calc2();
+}
+
+function setMode(m){
+  mode=m;
+  document.getElementById('m1').classList.toggle('active',m===1);
+  document.getElementById('m2').classList.toggle('active',m===2);
+  document.getElementById('mode1-inputs').classList.toggle('hidden',m!==1);
+  document.getElementById('mode2-inputs').classList.toggle('hidden',m!==2);
+  document.getElementById('mode2-extra').style.display=m===2?'grid':'none';
+  if(m===1)calc();else calc2();
+}
+
+function fmt(v){return'$'+v.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})}
+
+function updateShared(contracts,slTicks,tpTicks){
+  const a=assets[cur];
+  const perTick=a.tickVal*contracts;
+  document.getElementById('info-per-tick').textContent=fmt(perTick);
+  document.getElementById('res-per-tick-r').textContent=fmt(perTick);
+  document.getElementById('res-loss').textContent=fmt(slTicks*perTick);
+  document.getElementById('res-profit').textContent=fmt(tpTicks*perTick);
+  document.getElementById('res-rr').textContent=slTicks>0?'1 : '+(tpTicks/slTicks).toFixed(2):'—';
+  document.getElementById('res-sl-ticks').textContent=slTicks+' Ticks';
+  document.getElementById('res-tp-ticks').textContent=tpTicks+' Ticks';
+}
+
+function calc(){
+  const c=parseFloat(document.getElementById('contracts1').value)||0;
+  const sl=parseFloat(document.getElementById('sl1').value)||0;
+  const tp=parseFloat(document.getElementById('tp1').value)||0;
+  updateShared(c,sl,tp);
+}
+
+function calcFromRR(){
+  const rr=parseFloat(document.getElementById('rr_in').value);
+  const sl=parseFloat(document.getElementById('sl1').value);
+  if(!rr||!sl)return;
+  document.getElementById('tp1').value=Math.round(sl*rr);
+  document.getElementById('rr_in').value='';
+  calc();
+}
+
+function calc2(){
+  const a=assets[cur];
+  const acc=parseFloat(document.getElementById('acc').value)||0;
+  const pct=parseFloat(document.getElementById('risk_pct').value)||0;
+  const c=parseFloat(document.getElementById('contracts2').value)||1;
+  const tp=parseFloat(document.getElementById('tp2').value)||0;
+  const perTick=a.tickVal*c;
+  const maxRisk=acc*(pct/100);
+  const slTicks=perTick>0?Math.floor(maxRisk/perTick):0;
+  document.getElementById('res-max-risk').textContent=fmt(maxRisk);
+  document.getElementById('res-sl-ticks-calc').textContent=slTicks+' Ticks';
+  updateShared(c,slTicks,tp);
+}
+
+function calcFromRR2(){
+  const rr=parseFloat(document.getElementById('rr_in2').value);
+  const a=assets[cur];
+  const acc=parseFloat(document.getElementById('acc').value)||0;
+  const pct=parseFloat(document.getElementById('risk_pct').value)||0;
+  const c=parseFloat(document.getElementById('contracts2').value)||1;
+  const perTick=a.tickVal*c;
+  const maxRisk=acc*(pct/100);
+  const slTicks=perTick>0?Math.floor(maxRisk/perTick):0;
+  if(!rr||!slTicks)return;
+  document.getElementById('tp2').value=Math.round(slTicks*rr);
+  document.getElementById('rr_in2').value='';
+  calc2();
+}
+
+calc();
+</script>
