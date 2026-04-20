@@ -1,0 +1,25 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/cron/free-course-sequence",
+      "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/check-inactive-users",
+      "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/process-dunning",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/reactivation-offers",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/ht-upsell-60d",
+      "schedule": "0 7 * * *"
+    }
+  ]
+}
