@@ -7,6 +7,7 @@ import { Logo } from "@/components/brand/Logo";
 
 const links = [
   { href: "/admin", label: "Uebersicht" },
+  { href: "/admin/applications", label: "Bewerbungen" },
   { href: "/admin/kurse", label: "Kurse & Module" },
   { href: "/admin/quiz", label: "Quiz" },
   { href: "/admin/events", label: "Events" },
