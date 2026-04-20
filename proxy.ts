@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/middleware";
+import { updateLastLoginIfNeeded } from "@/lib/auth/middleware-last-login";
 
 // Marketing-Pfade (öffentlich, kein Auth nötig). /free + /pricing + /apply
 // werden in den Marketing-Paketen 3/4/7 aufgebaut.
@@ -12,7 +13,9 @@ const PUBLIC_PATHS = [
   "/apply",
 ];
 
-const PUBLIC_PREFIXES = ["/datenschutz", "/impressum"];
+// `/survey/*` ist Token-authentifiziert (Cancellation-Survey aus Paket 6) und
+// muss auch für nicht-eingeloggte User zugänglich sein.
+const PUBLIC_PREFIXES = ["/datenschutz", "/impressum", "/survey"];
 
 function isPublicPath(pathname: string): boolean {
   if (PUBLIC_PATHS.includes(pathname)) return true;
@@ -61,7 +64,7 @@ export async function proxy(request: NextRequest) {
   const { data: rawProfile } = await supabase
     .from("profiles")
     .select(
-      "codex_accepted,intro_video_watched,usage_agreement_accepted,is_admin,is_paid,application_status,membership_tier,access_until",
+      "codex_accepted,intro_video_watched,usage_agreement_accepted,is_admin,is_paid,application_status,membership_tier,access_until,last_login_at,churn_email_1_sent_at,churn_email_2_sent_at",
     )
     .eq("id", user.id)
     .single();
@@ -74,7 +77,20 @@ export async function proxy(request: NextRequest) {
     application_status?: "pending" | "approved" | "rejected" | null;
     membership_tier?: "free" | "monthly" | "lifetime" | "ht_1on1";
     access_until?: string | null;
+    last_login_at?: string | null;
+    churn_email_1_sent_at?: string | null;
+    churn_email_2_sent_at?: string | null;
   } | null;
+
+  // Fire-and-forget: Last-Login-Stempel + Churn-Reset. Wir blocken die
+  // Response NICHT auf den DB-Write — der Helper schluckt Fehler intern.
+  if (profile) {
+    void updateLastLoginIfNeeded(supabase, user.id, {
+      lastLoginAt: profile.last_login_at ?? null,
+      churnEmail1SentAt: profile.churn_email_1_sent_at ?? null,
+      churnEmail2SentAt: profile.churn_email_2_sent_at ?? null,
+    });
+  }
 
   if (pathname.startsWith("/admin") && !profile?.is_admin) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
