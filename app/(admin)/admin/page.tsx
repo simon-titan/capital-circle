@@ -5,6 +5,7 @@ export default function AdminPage() {
   return (
     <Stack gap={3}>
       <Text fontSize="2xl">Admin Uebersicht</Text>
+      <Link href="/admin/dashboard">Analytics-Dashboard</Link>
       <Link href="/admin/applications">Bewerbungen prüfen</Link>
       <Link href="/admin/ht-applications">High-Ticket Bewerbungen</Link>
       <Link href="/admin/kurse">Kurse & Module verwalten</Link>

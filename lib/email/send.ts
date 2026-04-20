@@ -2,6 +2,7 @@ import { render } from "@react-email/render";
 import * as React from "react";
 import { getResend, getFrom } from "./resend";
 import { logEmailSent, type SequenceLogEntry } from "./sequence-log";
+import { createServiceClient } from "@/lib/supabase/service";
 
 interface SendOptions {
   to: string;
@@ -32,10 +33,14 @@ export interface SendResult {
  *   4. (Optional) Resend-Message-ID nachträglich loggen — Skip falls schon
  *      eingetragen, denn der Insert in Schritt 1 hat bereits Idempotenz garantiert.
  *
- * Hinweis: Die `Resend-Message-ID` wird im Insert noch nicht mitgeschrieben,
- * weil sie erst nach `send()` bekannt ist. Für die meisten Use-Cases reicht
- * das Sequence-Log ohne Message-ID; Webhook-Korrelation (Paket 8) macht den
- * Reverse-Lookup über die Message-ID separat.
+ * Pipeline (mit Log):
+ *   1. `logEmailSent()` → schreibt eine Row mit `resend_message_id = NULL`
+ *      und garantiert per UNIQUE-Constraint Idempotenz.
+ *   2. JSX → HTML render.
+ *   3. `resend.emails.send()`.
+ *   4. Nach erfolgreichem Send: UPDATE der Log-Row, damit die Resend-Message-ID
+ *      gespeichert wird (für Webhook-Korrelation in Paket 8 → email.opened /
+ *      email.clicked).
  */
 export async function sendEmail(opts: SendOptions): Promise<SendResult> {
   if (opts.log) {
@@ -58,6 +63,24 @@ export async function sendEmail(opts: SendOptions): Promise<SendResult> {
 
   if (error) {
     throw new Error(error.message ?? "Resend: unbekannter Fehler");
+  }
+
+  // Resend-Message-ID nachträglich in den Log-Eintrag eintragen, damit der
+  // Resend-Webhook (Open/Click) den richtigen Eintrag finden kann. Best-effort:
+  // Fehler hier sollen den Send nicht rollbacken — die Mail ist bereits raus.
+  if (opts.log && data?.id) {
+    try {
+      const supabase = createServiceClient();
+      await supabase
+        .from("email_sequence_log")
+        .update({ resend_message_id: data.id })
+        .eq("recipient_email", opts.log.recipientEmail)
+        .eq("sequence", opts.log.sequence)
+        .eq("step", opts.log.step)
+        .is("resend_message_id", null);
+    } catch (err) {
+      console.error("[email/send] resend_message_id Update fehlgeschlagen:", err);
+    }
   }
 
   return { skipped: false, resendMessageId: data?.id };
