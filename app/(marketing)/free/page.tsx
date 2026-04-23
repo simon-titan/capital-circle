@@ -1,67 +1,63 @@
 import type { Metadata } from "next";
 import { Box, Stack, Text } from "@chakra-ui/react";
-import { FreeApplicationForm } from "@/components/marketing/FreeApplicationForm";
+import { FreeLandingExperience } from "@/components/marketing/FreeLandingExperience";
 import { Logo } from "@/components/brand/Logo";
 
 export const metadata: Metadata = {
-  title: "Bewerbung — Capital Circle",
+  title: "Kostenlos bewerben — Capital Circle",
   description:
-    "Bewirb dich für deinen Zugang zu Capital Circle. Wir nehmen pro Periode nur eine begrenzte Anzahl neuer Trader:innen auf.",
+    "Bewirb dich für den kostenlosen 5-Tage-Onboarding-Kurs von Capital Circle. Lerne professionelles Trading von Profi-Trader Emre. Bewerbung in 3 Schritten.",
 };
 
 export default function FreePage() {
   return (
-    <Box as="main" minH="100vh" w="full" py={{ base: 8, md: 14 }} px={{ base: 4, md: 8 }}>
-      <Stack spacing={{ base: 8, md: 10 }}>
-        <Box maxW="200px" mx="auto">
+    <Box
+      as="main"
+      minH="100vh"
+      w="full"
+      py={{ base: 8, md: 14 }}
+      px={{ base: 4, md: 8 }}
+    >
+      <Stack spacing={{ base: 10, md: 16 }} maxW="1000px" mx="auto">
+        {/* Logo */}
+        <Box maxW="180px" mx="auto">
           <Logo variant="onDark" priority />
         </Box>
 
-        <Stack spacing={3} maxW="640px" mx="auto" textAlign="center">
+        {/* Hero + Video + Stats + CTAs + Modal */}
+        <FreeLandingExperience />
+
+        {/* Footer-Disclaimer */}
+        <Stack spacing={2} textAlign="center" pb={4}>
           <Text
             fontSize="xs"
-            letterSpacing="0.22em"
-            textTransform="uppercase"
-            color="var(--color-accent-gold)"
-            className="inter-semibold"
+            color="rgba(255,255,255,0.22)"
+            className="inter"
+            maxW="560px"
+            mx="auto"
+            lineHeight="1.7"
           >
-            Capital Circle Institut
+            Mit dem Abschicken der Bewerbung stimmst du unserer{" "}
+            <Box
+              as="a"
+              href="/datenschutz"
+              color="rgba(212,175,55,0.6)"
+              textDecoration="underline"
+            >
+              Datenschutzerklärung
+            </Box>{" "}
+            zu.{" "}
+            Trading und Investitionen sind mit erheblichen Verlustrisiken verbunden.
+            Frühere Ergebnisse sind keine Garantie für zukünftige Gewinne.
           </Text>
           <Text
-            as="h1"
-            className="radley-regular"
-            fontWeight={400}
-            fontSize={{ base: "3xl", md: "5xl" }}
-            lineHeight="1.1"
-            color="var(--color-text-primary)"
-          >
-            Trete dem inneren Zirkel bei.
-          </Text>
-          <Text
-            fontSize={{ base: "md", md: "lg" }}
-            color="rgba(255,255,255,0.62)"
+            fontSize="xs"
+            color="rgba(255,255,255,0.15)"
             className="inter"
           >
-            Lerne unseren Ansatz in einem 5-Tage-Onboarding-Kurs kennen — kostenlos. Bewerbung in zwei kurzen Schritten.
+            © {new Date().getFullYear()} Capital Circle Institut
           </Text>
         </Stack>
-
-        <FreeApplicationForm />
-
-        <Text
-          fontSize="xs"
-          color="rgba(255,255,255,0.32)"
-          textAlign="center"
-          className="inter"
-          maxW="520px"
-          mx="auto"
-        >
-          Mit dem Abschicken stimmst du unserer{" "}
-          <Box as="a" href="/datenschutz" color="var(--color-accent-gold)" textDecoration="underline">
-            Datenschutzerklärung
-          </Box>{" "}
-          zu. Trading birgt Verlustrisiken — Ergebnisse aus der Vergangenheit sind keine Garantie.
-        </Text>
       </Stack>
     </Box>
   );
