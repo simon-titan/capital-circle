@@ -6,6 +6,7 @@
  *   - benannter Export `send<Name>` = ready-to-use Sender mit Sequence-Log
  */
 export { sendWelcomeFreeCourse } from "./welcome-free-course";
+export { sendApplicationReceived } from "./application-received";
 export { sendApplicationRejected } from "./application-rejected";
 export { sendFreeCourseDay1 } from "./free-course-day-1";
 export { sendFreeCourseDay2 } from "./free-course-day-2";
