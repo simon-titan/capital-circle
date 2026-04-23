@@ -7,13 +7,12 @@ import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { SkyArchBackground } from "@/components/layout/SkyArchBackground";
 import { CodexStep } from "@/components/onboarding/CodexStep";
-import { IntroVideoStep } from "@/components/onboarding/IntroVideoStep";
 import { LoginStep } from "@/components/onboarding/LoginStep";
 import { UsageAgreementStep } from "@/components/onboarding/UsageAgreementStep";
 
 const easePremium = [0.16, 1, 0.3, 1] as const;
 
-type Phase = "loading" | "login" | "codex" | "intro" | "agreement";
+type Phase = "loading" | "login" | "codex" | "agreement";
 
 export function OnboardingFlow() {
   const router = useRouter();
@@ -31,15 +30,11 @@ export function OnboardingFlow() {
     }
     const { data: profile } = await supabase
       .from("profiles")
-      .select("codex_accepted, intro_video_watched, usage_agreement_accepted")
+      .select("codex_accepted, usage_agreement_accepted")
       .eq("id", user.id)
       .single();
     if (!profile?.codex_accepted) {
       setPhase("codex");
-      return;
-    }
-    if (!profile?.intro_video_watched) {
-      setPhase("intro");
       return;
     }
     if (!profile?.usage_agreement_accepted) {
@@ -70,8 +65,7 @@ export function OnboardingFlow() {
             style={{ minHeight: "100vh" }}
           >
             {phase === "login" && <LoginStep onAuthenticated={resolvePhase} />}
-            {phase === "codex" && <CodexStep onCompleted={() => setPhase("intro")} />}
-            {phase === "intro" && <IntroVideoStep onCompleted={() => setPhase("agreement")} />}
+            {phase === "codex" && <CodexStep onCompleted={() => setPhase("agreement")} />}
             {phase === "agreement" && <UsageAgreementStep />}
           </motion.div>
         </AnimatePresence>

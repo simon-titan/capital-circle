@@ -43,12 +43,11 @@ export async function proxy(request: NextRequest) {
 
   const { data: rawProfile } = await supabase
     .from("profiles")
-    .select("codex_accepted,intro_video_watched,usage_agreement_accepted,is_admin")
+    .select("codex_accepted,usage_agreement_accepted,is_admin")
     .eq("id", user.id)
     .single();
   const profile = rawProfile as {
     codex_accepted?: boolean;
-    intro_video_watched?: boolean;
     usage_agreement_accepted?: boolean;
     is_admin?: boolean;
   } | null;
@@ -58,7 +57,7 @@ export async function proxy(request: NextRequest) {
   }
 
   const onboardingDone = Boolean(
-    profile?.codex_accepted && profile?.intro_video_watched && profile?.usage_agreement_accepted,
+    profile?.codex_accepted && profile?.usage_agreement_accepted,
   );
 
   if (onboardingDone && pathname === "/einsteig") {
