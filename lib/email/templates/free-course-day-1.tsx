@@ -6,7 +6,6 @@ import {
   EmailButton,
   EmailSubheading,
 } from "../layout/components";
-import { generateUnsubscribeToken } from "../unsubscribe-token";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 
@@ -16,14 +15,10 @@ interface Props {
   userId: string;
 }
 
-export default function FreeCourseDay1Email({ firstName, userId }: Props) {
+export default function FreeCourseDay1Email({ firstName }: Props) {
   const appUrl = getAppUrl();
-  const token = generateUnsubscribeToken(userId);
   return (
-    <BaseEmail
-      previewText="Tag 1 — Dein erster Schritt im Kurs"
-      unsubscribeToken={token}
-    >
+    <BaseEmail previewText="Tag 1 — Dein erster Schritt im Kurs">
       <EmailHeading>Tag 1 — Der erste Schritt, {firstName}</EmailHeading>
       <EmailText>
         Heute starten wir mit der wichtigsten Frage überhaupt: Warum verlieren
@@ -47,13 +42,7 @@ export async function sendFreeCourseDay1(props: Props): Promise<SendResult> {
   return sendEmail({
     to: props.email,
     subject: "[Tag 1] Dein erster Schritt — Capital Circle",
-    jsx: (
-      <FreeCourseDay1Email
-        firstName={props.firstName}
-        email={props.email}
-        userId={props.userId}
-      />
-    ),
+    jsx: <FreeCourseDay1Email firstName={props.firstName} />,
     log: {
       userId: props.userId,
       recipientEmail: props.email,

@@ -1,7 +1,6 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
 import { EmailHeading, EmailText } from "../layout/components";
-import { generateUnsubscribeToken } from "../unsubscribe-token";
 import { sendEmail, type SendResult } from "../send";
 
 interface Props {
@@ -10,16 +9,9 @@ interface Props {
   userId: string;
 }
 
-export default function ApplicationRejectedEmail({
-  firstName,
-  userId,
-}: Props) {
-  const token = generateUnsubscribeToken(userId);
+export default function ApplicationRejectedEmail({ firstName }: Props) {
   return (
-    <BaseEmail
-      previewText="Update zu deiner Bewerbung bei Capital Circle"
-      unsubscribeToken={token}
-    >
+    <BaseEmail previewText="Update zu deiner Bewerbung bei Capital Circle">
       <EmailHeading>Hallo {firstName},</EmailHeading>
       <EmailText>
         danke, dass du dir die Zeit genommen hast, dich bei Capital Circle zu
@@ -45,11 +37,7 @@ export async function sendApplicationRejected(
     to: props.email,
     subject: "Deine Bewerbung bei Capital Circle",
     jsx: (
-      <ApplicationRejectedEmail
-        firstName={props.firstName}
-        email={props.email}
-        userId={props.userId}
-      />
+      <ApplicationRejectedEmail firstName={props.firstName} />
     ),
     log: {
       userId: props.userId,

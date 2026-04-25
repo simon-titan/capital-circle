@@ -111,7 +111,8 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL("/pending-review", request.url));
     }
     if (appStatus !== "pending" && appStatus !== "rejected" && pathname === "/pending-review") {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      // Wenn die Bewerbung bereits approved ist, weiter zum Einsteig-Onboarding
+      return NextResponse.redirect(new URL("/einsteig", request.url));
     }
   }
 

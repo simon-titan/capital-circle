@@ -5,10 +5,7 @@ import {
   EmailText,
   EmailButton,
 } from "../layout/components";
-import {
-  generateUnsubscribeToken,
-  generateSurveyToken,
-} from "../unsubscribe-token";
+import { generateSurveyToken } from "../unsubscribe-token";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 
@@ -20,13 +17,9 @@ interface Props {
 
 export default function CancellationSurveyEmail({ firstName, userId }: Props) {
   const appUrl = getAppUrl();
-  const unsubToken = generateUnsubscribeToken(userId);
   const surveyToken = generateSurveyToken(userId);
   return (
-    <BaseEmail
-      previewText="Danke für deine Zeit — kurzes Feedback?"
-      unsubscribeToken={unsubToken}
-    >
+    <BaseEmail previewText="Danke für deine Zeit — kurzes Feedback?">
       <EmailHeading>Schade, dass du gehst, {firstName}</EmailHeading>
       <EmailText>
         deine Kündigung ist bei uns angekommen und ist verarbeitet. Bevor du

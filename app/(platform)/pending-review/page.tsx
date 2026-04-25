@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Box, Heading, Stack, Text } from "@chakra-ui/react";
 import { createClient } from "@/lib/supabase/server";
+import { PendingReviewStatusIcon } from "@/components/platform/PendingReviewStatusIcon";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,8 @@ export default async function PendingReviewPage() {
   const status = (profile as { application_status?: string | null } | null)?.application_status;
 
   if (status !== "pending" && status !== "rejected") {
-    redirect("/dashboard");
+    // Nach Freischaltung (approved) Nutzer zum Einsteig-Onboarding leiten
+    redirect("/einsteig");
   }
 
   const isRejected = status === "rejected";
@@ -68,10 +70,8 @@ export default async function PendingReviewPage() {
                 ? "1px solid rgba(248,113,113,0.5)"
                 : "1px solid rgba(212,175,55,0.5)"
             }
-            color={isRejected ? "#FCA5A5" : "var(--color-accent-gold)"}
-            fontSize="24px"
           >
-            {isRejected ? "·" : "⏳"}
+            <PendingReviewStatusIcon rejected={isRejected} />
           </Box>
 
           <Heading

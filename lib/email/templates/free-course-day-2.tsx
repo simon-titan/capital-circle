@@ -6,7 +6,6 @@ import {
   EmailButton,
   EmailSubheading,
 } from "../layout/components";
-import { generateUnsubscribeToken } from "../unsubscribe-token";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 
@@ -16,14 +15,10 @@ interface Props {
   userId: string;
 }
 
-export default function FreeCourseDay2Email({ firstName, userId }: Props) {
+export default function FreeCourseDay2Email({ firstName }: Props) {
   const appUrl = getAppUrl();
-  const token = generateUnsubscribeToken(userId);
   return (
-    <BaseEmail
-      previewText="Tag 2 — Das Fundament deines Tradings"
-      unsubscribeToken={token}
-    >
+    <BaseEmail previewText="Tag 2 — Das Fundament deines Tradings">
       <EmailHeading>Tag 2 — Das Fundament, {firstName}</EmailHeading>
       <EmailText>
         Die meisten Strategien scheitern nicht am Setup, sondern an der Basis
@@ -47,11 +42,7 @@ export async function sendFreeCourseDay2(props: Props): Promise<SendResult> {
     to: props.email,
     subject: "[Tag 2] Das Fundament deines Tradings",
     jsx: (
-      <FreeCourseDay2Email
-        firstName={props.firstName}
-        email={props.email}
-        userId={props.userId}
-      />
+      <FreeCourseDay2Email firstName={props.firstName} />
     ),
     log: {
       userId: props.userId,

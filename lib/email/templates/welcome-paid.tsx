@@ -7,7 +7,6 @@ import {
   EmailSubheading,
   EmailHighlight,
 } from "../layout/components";
-import { generateUnsubscribeToken } from "../unsubscribe-token";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 
@@ -19,9 +18,8 @@ interface Props {
   tier?: "monthly" | "lifetime" | "ht_1on1";
 }
 
-export default function WelcomePaidEmail({ firstName, userId, tier }: Props) {
+export default function WelcomePaidEmail({ firstName, tier }: Props) {
   const appUrl = getAppUrl();
-  const token = generateUnsubscribeToken(userId);
   const tierLabel =
     tier === "lifetime"
       ? "Lifetime-Zugang"
@@ -30,10 +28,7 @@ export default function WelcomePaidEmail({ firstName, userId, tier }: Props) {
         : "Mitgliedschaft";
 
   return (
-    <BaseEmail
-      previewText={`Dein Capital-Circle-${tierLabel} ist aktiv`}
-      unsubscribeToken={token}
-    >
+    <BaseEmail previewText={`Dein Capital-Circle-${tierLabel} ist aktiv`}>
       <EmailHeading>Willkommen im Inner Circle, {firstName}.</EmailHeading>
       <EmailText>
         deine Zahlung ist eingegangen — dein {tierLabel} ist ab sofort aktiv.
@@ -65,8 +60,6 @@ export async function sendWelcomePaid(props: Props): Promise<SendResult> {
     jsx: (
       <WelcomePaidEmail
         firstName={props.firstName}
-        email={props.email}
-        userId={props.userId}
         tier={props.tier}
       />
     ),
