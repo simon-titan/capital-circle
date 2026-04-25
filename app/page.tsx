@@ -1,15 +1,11 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { BewerbungsLandingCard } from "@/components/landing/BewerbungsLandingCard";
+import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
 
-export default async function Home() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (user) {
-    redirect("/dashboard");
-  }
-
-  redirect("/login");
+/**
+ * Root — zeigt Login / Onboarding mit einer Bewerbungs-Karte darunter.
+ * Auth-Redirect (eingeloggt → /dashboard) übernimmt proxy.ts, daher kein
+ * getUser()-Call hier nötig.
+ */
+export default function Home() {
+  return <OnboardingFlow loginFooter={<BewerbungsLandingCard />} />;
 }

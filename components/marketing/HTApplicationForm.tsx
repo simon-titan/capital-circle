@@ -47,24 +47,7 @@ const inputStyles = {
   },
 } as const;
 
-declare global {
-  interface Window {
-    turnstile?: {
-      render: (
-        el: string | HTMLElement,
-        opts: {
-          sitekey: string;
-          callback?: (token: string) => void;
-          "error-callback"?: () => void;
-          "expired-callback"?: () => void;
-          theme?: "light" | "dark" | "auto";
-        },
-      ) => string;
-      reset: (id?: string) => void;
-      remove: (id?: string) => void;
-    };
-  }
-}
+// Turnstile global types defined in types/turnstile.d.ts
 
 interface HTApplicationFormProps {
   /** Pfad zum Intro-Video (z. B. /videos/ht-intro.mp4). Optional. */
