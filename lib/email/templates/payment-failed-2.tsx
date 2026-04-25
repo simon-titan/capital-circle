@@ -6,7 +6,6 @@ import {
   EmailButton,
   EmailHighlight,
 } from "../layout/components";
-import { generateUnsubscribeToken } from "../unsubscribe-token";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 
@@ -16,14 +15,10 @@ interface Props {
   userId: string;
 }
 
-export default function PaymentFailed2Email({ firstName, userId }: Props) {
+export default function PaymentFailed2Email({ firstName }: Props) {
   const appUrl = getAppUrl();
-  const token = generateUnsubscribeToken(userId);
   return (
-    <BaseEmail
-      previewText="Du verlierst bald deinen Zugang"
-      unsubscribeToken={token}
-    >
+    <BaseEmail previewText="Du verlierst bald deinen Zugang">
       <EmailHeading>Letzter Reminder, {firstName}</EmailHeading>
       <EmailText>
         die Zahlung konnten wir auch beim zweiten Versuch nicht einziehen. Wenn
@@ -51,11 +46,7 @@ export async function sendPaymentFailed2(props: Props): Promise<SendResult> {
     to: props.email,
     subject: "Du verlierst bald deinen Zugang",
     jsx: (
-      <PaymentFailed2Email
-        firstName={props.firstName}
-        email={props.email}
-        userId={props.userId}
-      />
+      <PaymentFailed2Email firstName={props.firstName} />
     ),
     log: {
       userId: props.userId,

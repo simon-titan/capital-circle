@@ -6,7 +6,6 @@ import {
   EmailButton,
   EmailHighlight,
 } from "../layout/components";
-import { generateUnsubscribeToken } from "../unsubscribe-token";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 
@@ -16,14 +15,10 @@ interface Props {
   userId: string;
 }
 
-export default function ReactivationOfferEmail({ firstName, userId }: Props) {
+export default function ReactivationOfferEmail({ firstName }: Props) {
   const appUrl = getAppUrl();
-  const token = generateUnsubscribeToken(userId);
   return (
-    <BaseEmail
-      previewText="Wir würden dich gern zurückbegrüßen"
-      unsubscribeToken={token}
-    >
+    <BaseEmail previewText="Wir würden dich gern zurückbegrüßen">
       <EmailHeading>Wir würden dich gern zurück haben, {firstName}</EmailHeading>
       <EmailText>
         es sind zwei Wochen vergangen, seit du gegangen bist. In dieser Zeit
@@ -54,11 +49,7 @@ export async function sendReactivationOffer(
     to: props.email,
     subject: "Wir würden dich gern zurückbegrüßen",
     jsx: (
-      <ReactivationOfferEmail
-        firstName={props.firstName}
-        email={props.email}
-        userId={props.userId}
-      />
+      <ReactivationOfferEmail firstName={props.firstName} />
     ),
     log: {
       userId: props.userId,

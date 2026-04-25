@@ -5,7 +5,6 @@ import {
   EmailText,
   EmailButton,
 } from "../layout/components";
-import { generateUnsubscribeToken } from "../unsubscribe-token";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 
@@ -15,14 +14,10 @@ interface Props {
   userId: string;
 }
 
-export default function PaymentFailed3Email({ firstName, userId }: Props) {
+export default function PaymentFailed3Email({ firstName }: Props) {
   const appUrl = getAppUrl();
-  const token = generateUnsubscribeToken(userId);
   return (
-    <BaseEmail
-      previewText="Dein Zugang ist pausiert — jetzt reaktivieren"
-      unsubscribeToken={token}
-    >
+    <BaseEmail previewText="Dein Zugang ist pausiert — jetzt reaktivieren">
       <EmailHeading>Dein Zugang ist pausiert, {firstName}</EmailHeading>
       <EmailText>
         wir mussten deinen Zugang vorübergehend deaktivieren, weil wir keine
@@ -50,11 +45,7 @@ export async function sendPaymentFailed3(props: Props): Promise<SendResult> {
     to: props.email,
     subject: "Dein Zugang ist pausiert — jetzt reaktivieren",
     jsx: (
-      <PaymentFailed3Email
-        firstName={props.firstName}
-        email={props.email}
-        userId={props.userId}
-      />
+      <PaymentFailed3Email firstName={props.firstName} />
     ),
     log: {
       userId: props.userId,

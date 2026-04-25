@@ -5,8 +5,14 @@ import { getAppUrl } from "../resend";
 interface BaseEmailProps {
   children: React.ReactNode;
   previewText: string;
-  /** Wenn gesetzt, wird im Footer der DSGVO-Unsubscribe-Link gerendert. */
+  /**
+   * Nur wirksam wenn `hideFooter={false}`: DSGVO-Unsubscribe-Link im Footer.
+   */
   unsubscribeToken?: string;
+  /** Standard: Logo per URL. Bei `false` goldener Schriftzug „Capital Circle“. */
+  headerLogo?: boolean;
+  /** Standard: kein rechtlicher Footer. Bei `false` Impressum, Datenschutz, optional Abmelden. */
+  hideFooter?: boolean;
 }
 
 /**
@@ -18,17 +24,21 @@ interface BaseEmailProps {
  *   - Outer-Wrapper-Table für Outlook-Kompatibilität
  *   - max-width 600px (Mail-Standard)
  *   - PreviewText: hidden span, das in Inbox-Listen als Snippet erscheint
- *   - Footer mit Impressum + Datenschutz + (optional) Unsubscribe
+ *   - Standard: Logo (`/logo/logo-white.png`) im Kopf, kein rechtlicher Footer
+ *   - Optional: `headerLogo={false}` / `hideFooter={false}` / `unsubscribeToken` für klassisches Layout
  */
 export function BaseEmail({
   children,
   previewText,
   unsubscribeToken,
+  headerLogo = true,
+  hideFooter = true,
 }: BaseEmailProps) {
   const appUrl = getAppUrl();
   const unsubscribeUrl = unsubscribeToken
     ? `${appUrl}/api/unsubscribe?token=${unsubscribeToken}`
     : null;
+  const logoSrc = `${appUrl}/logo/logo-white.png`;
 
   return (
     <html lang="de">
@@ -88,17 +98,32 @@ export function BaseEmail({
                   <tbody>
                     <tr>
                       <td style={{ padding: "8px 0 0", textAlign: "center" }}>
-                        <span
-                          style={{
-                            fontFamily: T.fontHeading,
-                            fontSize: "24px",
-                            fontWeight: 400,
-                            color: T.gold,
-                            letterSpacing: "0.04em",
-                          }}
-                        >
-                          Capital Circle
-                        </span>
+                        {headerLogo ? (
+                          <img
+                            src={logoSrc}
+                            alt="Capital Circle"
+                            width={200}
+                            height={56}
+                            style={{
+                              display: "block",
+                              margin: "0 auto",
+                              maxWidth: "200px",
+                              height: "auto",
+                            }}
+                          />
+                        ) : (
+                          <span
+                            style={{
+                              fontFamily: T.fontHeading,
+                              fontSize: "24px",
+                              fontWeight: 400,
+                              color: T.gold,
+                              letterSpacing: "0.04em",
+                            }}
+                          >
+                            Capital Circle
+                          </span>
+                        )}
                       </td>
                     </tr>
                     <tr>
@@ -117,86 +142,88 @@ export function BaseEmail({
                       <td>{children}</td>
                     </tr>
 
-                    <tr>
-                      <td
-                        style={{
-                          paddingTop: "32px",
-                          borderTop: `1px solid ${T.border}`,
-                          marginTop: "24px",
-                          textAlign: "center",
-                        }}
-                      >
-                        <p
+                    {!hideFooter ? (
+                      <tr>
+                        <td
                           style={{
-                            margin: "16px 0 8px",
-                            fontFamily: T.fontBody,
-                            fontSize: "12px",
-                            color: T.textFooter,
-                            lineHeight: 1.6,
+                            paddingTop: "32px",
+                            borderTop: `1px solid ${T.border}`,
+                            marginTop: "24px",
+                            textAlign: "center",
                           }}
                         >
-                          Capital Circle Institut
-                        </p>
-                        <p
-                          style={{
-                            margin: "0 0 12px",
-                            fontFamily: T.fontBody,
-                            fontSize: "12px",
-                            color: T.textFooter,
-                            lineHeight: 1.6,
-                          }}
-                        >
-                          <a
-                            href={`${appUrl}/impressum`}
+                          <p
                             style={{
-                              color: T.gold,
-                              textDecoration: "none",
-                              margin: "0 8px",
+                              margin: "16px 0 8px",
+                              fontFamily: T.fontBody,
+                              fontSize: "12px",
+                              color: T.textFooter,
+                              lineHeight: 1.6,
                             }}
                           >
-                            Impressum
-                          </a>
-                          <span style={{ color: T.textFooter }}>·</span>
-                          <a
-                            href={`${appUrl}/datenschutz`}
+                            Capital Circle Institut
+                          </p>
+                          <p
                             style={{
-                              color: T.gold,
-                              textDecoration: "none",
-                              margin: "0 8px",
+                              margin: "0 0 12px",
+                              fontFamily: T.fontBody,
+                              fontSize: "12px",
+                              color: T.textFooter,
+                              lineHeight: 1.6,
                             }}
                           >
-                            Datenschutz
-                          </a>
-                          {unsubscribeUrl && (
-                            <>
-                              <span style={{ color: T.textFooter }}>·</span>
-                              <a
-                                href={unsubscribeUrl}
-                                style={{
-                                  color: T.gold,
-                                  textDecoration: "none",
-                                  margin: "0 8px",
-                                }}
-                              >
-                                Abmelden
-                              </a>
-                            </>
-                          )}
-                        </p>
-                        <p
-                          style={{
-                            margin: "16px 0 0",
-                            fontFamily: T.fontBody,
-                            fontSize: "11px",
-                            color: T.textFooter,
-                            opacity: 0.7,
-                          }}
-                        >
-                          © {new Date().getFullYear()} Capital Circle. Alle
-                          Rechte vorbehalten.
-                        </p>
-                      </td>
-                    </tr>
+                            <a
+                              href={`${appUrl}/impressum`}
+                              style={{
+                                color: T.gold,
+                                textDecoration: "none",
+                                margin: "0 8px",
+                              }}
+                            >
+                              Impressum
+                            </a>
+                            <span style={{ color: T.textFooter }}>·</span>
+                            <a
+                              href={`${appUrl}/datenschutz`}
+                              style={{
+                                color: T.gold,
+                                textDecoration: "none",
+                                margin: "0 8px",
+                              }}
+                            >
+                              Datenschutz
+                            </a>
+                            {unsubscribeUrl && (
+                              <>
+                                <span style={{ color: T.textFooter }}>·</span>
+                                <a
+                                  href={unsubscribeUrl}
+                                  style={{
+                                    color: T.gold,
+                                    textDecoration: "none",
+                                    margin: "0 8px",
+                                  }}
+                                >
+                                  Abmelden
+                                </a>
+                              </>
+                            )}
+                          </p>
+                          <p
+                            style={{
+                              margin: "16px 0 0",
+                              fontFamily: T.fontBody,
+                              fontSize: "11px",
+                              color: T.textFooter,
+                              opacity: 0.7,
+                            }}
+                          >
+                            © {new Date().getFullYear()} Capital Circle. Alle
+                            Rechte vorbehalten.
+                          </p>
+                        </td>
+                      </tr>
+                    ) : null}
                   </tbody>
                 </table>
               </td>

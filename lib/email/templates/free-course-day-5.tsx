@@ -8,7 +8,6 @@ import {
   EmailDivider,
   EmailHighlight,
 } from "../layout/components";
-import { generateUnsubscribeToken } from "../unsubscribe-token";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 
@@ -18,14 +17,10 @@ interface Props {
   userId: string;
 }
 
-export default function FreeCourseDay5Email({ firstName, userId }: Props) {
+export default function FreeCourseDay5Email({ firstName }: Props) {
   const appUrl = getAppUrl();
-  const token = generateUnsubscribeToken(userId);
   return (
-    <BaseEmail
-      previewText="Tag 5 — Bereit für den nächsten Level?"
-      unsubscribeToken={token}
-    >
+    <BaseEmail previewText="Tag 5 — Bereit für den nächsten Level?">
       <EmailHeading>Tag 5 — Was jetzt, {firstName}?</EmailHeading>
       <EmailText>
         Du hast die Grundlagen durch. Tag 1 bis 3 haben dir gezeigt, wie wir bei
@@ -64,11 +59,7 @@ export async function sendFreeCourseDay5(props: Props): Promise<SendResult> {
     to: props.email,
     subject: "[Tag 5] Bereit für den nächsten Level?",
     jsx: (
-      <FreeCourseDay5Email
-        firstName={props.firstName}
-        email={props.email}
-        userId={props.userId}
-      />
+      <FreeCourseDay5Email firstName={props.firstName} />
     ),
     log: {
       userId: props.userId,

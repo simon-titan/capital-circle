@@ -6,7 +6,6 @@ import {
   EmailButton,
   EmailHighlight,
 } from "../layout/components";
-import { generateUnsubscribeToken } from "../unsubscribe-token";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 
@@ -16,14 +15,10 @@ interface Props {
   userId: string;
 }
 
-export default function ChurnInactive14dEmail({ firstName, userId }: Props) {
+export default function ChurnInactive14dEmail({ firstName }: Props) {
   const appUrl = getAppUrl();
-  const token = generateUnsubscribeToken(userId);
   return (
-    <BaseEmail
-      previewText={`Hey ${firstName}, alles okay bei dir?`}
-      unsubscribeToken={token}
-    >
+    <BaseEmail previewText={`Hey ${firstName}, alles okay bei dir?`}>
       <EmailHeading>Hey {firstName}, alles okay bei dir?</EmailHeading>
       <EmailText>
         zwei Wochen ohne Login — wir wollten kurz nachfragen. Trading ist
@@ -55,11 +50,7 @@ export async function sendChurnInactive14d(props: Props): Promise<SendResult> {
     to: props.email,
     subject: `Hey ${props.firstName}, alles okay bei dir?`,
     jsx: (
-      <ChurnInactive14dEmail
-        firstName={props.firstName}
-        email={props.email}
-        userId={props.userId}
-      />
+      <ChurnInactive14dEmail firstName={props.firstName} />
     ),
     log: {
       userId: props.userId,

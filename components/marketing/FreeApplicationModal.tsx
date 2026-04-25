@@ -195,6 +195,14 @@ export function FreeApplicationModal({ isOpen, onClose }: Props) {
     return true;
   }, [step, experience, biggestProblem, goal6Months]);
 
+  const accountStepComplete = useMemo(() => {
+    if (fullName.trim().length < 2) return false;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return false;
+    if (password.length < 8) return false;
+    if (siteKey && !turnstileToken) return false;
+    return true;
+  }, [fullName, email, password, siteKey, turnstileToken]);
+
   function validateStep(): boolean {
     const errs: Record<string, string> = {};
     if (step === 1 && experience.trim().length < MIN_CHARS)
@@ -469,13 +477,17 @@ export function FreeApplicationModal({ isOpen, onClose }: Props) {
                   borderWidth="1px"
                   borderColor="rgba(34,197,94,0.65)"
                   boxShadow="inset 0 1px 0 rgba(255,255,255,0.12)"
-                  _hover={{
-                    bg: "rgba(34,197,94,0.70)",
-                    borderColor: "rgba(74,222,128,0.75)",
-                    boxShadow:
-                      "0 0 24px rgba(34,197,94,0.30), inset 0 1px 0 rgba(255,255,255,0.12)",
-                    transform: "translateY(-1px)",
-                  }}
+                  _hover={
+                    accountStepComplete
+                      ? {
+                          bg: "rgba(34,197,94,0.70)",
+                          borderColor: "rgba(74,222,128,0.75)",
+                          boxShadow:
+                            "0 0 24px rgba(34,197,94,0.30), inset 0 1px 0 rgba(255,255,255,0.12)",
+                          transform: "translateY(-1px)",
+                        }
+                      : {}
+                  }
                   _active={{ bg: "rgba(22,163,74,0.65)" }}
                   _disabled={{
                     opacity: 0.5,
@@ -486,6 +498,7 @@ export function FreeApplicationModal({ isOpen, onClose }: Props) {
                   transition="all 200ms ease"
                   onClick={handleNext}
                   isLoading={submitting}
+                  isDisabled={!accountStepComplete}
                   loadingText="Bewerbung wird abgeschickt…"
                   className="inter-semibold"
                 >
@@ -497,12 +510,14 @@ export function FreeApplicationModal({ isOpen, onClose }: Props) {
               ) : (
                 <Button
                   {...glassPrimaryButtonProps}
+                  color="white"
                   onClick={handleNext}
                   isDisabled={!currentStepMeetsMin}
                   _hover={
                     currentStepMeetsMin
                       ? {
                           ...glassPrimaryButtonProps._hover,
+                          color: "white",
                           boxShadow: "0 0 24px rgba(212,175,55,0.25)",
                           transform: "translateY(-1px)",
                         }

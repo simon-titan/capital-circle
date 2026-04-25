@@ -6,7 +6,6 @@ import {
   EmailButton,
   EmailHighlight,
 } from "../layout/components";
-import { generateUnsubscribeToken } from "../unsubscribe-token";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 
@@ -16,13 +15,11 @@ interface Props {
   userId: string;
 }
 
-export default function WelcomeFreeCourseEmail({ firstName, userId }: Props) {
+export default function WelcomeFreeCourseEmail({ firstName }: Props) {
   const appUrl = getAppUrl();
-  const token = generateUnsubscribeToken(userId);
   return (
     <BaseEmail
       previewText={`Willkommen bei Capital Circle, ${firstName} — dein Zugang ist aktiv`}
-      unsubscribeToken={token}
     >
       <EmailHeading>Willkommen, {firstName}.</EmailHeading>
       <EmailText>
@@ -54,13 +51,7 @@ export async function sendWelcomeFreeCourse(
   return sendEmail({
     to: props.email,
     subject: "Willkommen bei Capital Circle! Dein Zugang ist aktiv",
-    jsx: (
-      <WelcomeFreeCourseEmail
-        firstName={props.firstName}
-        email={props.email}
-        userId={props.userId}
-      />
-    ),
+    jsx: <WelcomeFreeCourseEmail firstName={props.firstName} />,
     log: {
       userId: props.userId,
       applicationId: props.applicationId,

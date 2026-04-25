@@ -5,21 +5,23 @@ import {
   EmailText,
   EmailHighlight,
 } from "../layout/components";
-import { generateUnsubscribeToken } from "../unsubscribe-token";
 import { sendEmail, type SendResult } from "../send";
 
-interface Props {
+interface ApplicationReceivedEmailProps {
   firstName: string;
+}
+
+interface SendApplicationReceivedProps extends ApplicationReceivedEmailProps {
   email: string;
   userId: string;
 }
 
-export default function ApplicationReceivedEmail({ firstName, userId }: Props) {
-  const token = generateUnsubscribeToken(userId);
+export default function ApplicationReceivedEmail({
+  firstName,
+}: ApplicationReceivedEmailProps) {
   return (
     <BaseEmail
       previewText={`Deine Bewerbung bei Capital Circle ist eingegangen, ${firstName}`}
-      unsubscribeToken={token}
     >
       <EmailHeading>Hallo {firstName},</EmailHeading>
       <EmailText>
@@ -44,18 +46,12 @@ export default function ApplicationReceivedEmail({ firstName, userId }: Props) {
 }
 
 export async function sendApplicationReceived(
-  props: Props & { applicationId?: string },
+  props: SendApplicationReceivedProps & { applicationId?: string },
 ): Promise<SendResult> {
   return sendEmail({
     to: props.email,
     subject: "Deine Bewerbung ist eingegangen — Capital Circle",
-    jsx: (
-      <ApplicationReceivedEmail
-        firstName={props.firstName}
-        email={props.email}
-        userId={props.userId}
-      />
-    ),
+    jsx: <ApplicationReceivedEmail firstName={props.firstName} />,
     log: {
       userId: props.userId,
       applicationId: props.applicationId,

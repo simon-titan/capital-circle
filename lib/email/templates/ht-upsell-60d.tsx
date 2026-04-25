@@ -7,7 +7,6 @@ import {
   EmailSubheading,
   EmailHighlight,
 } from "../layout/components";
-import { generateUnsubscribeToken } from "../unsubscribe-token";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 
@@ -17,17 +16,13 @@ interface Props {
   userId: string;
 }
 
-export default function HtUpsell60dEmail({ firstName, userId }: Props) {
+export default function HtUpsell60dEmail({ firstName }: Props) {
   const appUrl = getAppUrl();
-  const token = generateUnsubscribeToken(userId);
   const calendlyUrl =
     process.env.NEXT_PUBLIC_CALENDLY_URL?.trim() || `${appUrl}/apply`;
 
   return (
-    <BaseEmail
-      previewText={`Bereit für den nächsten Schritt, ${firstName}?`}
-      unsubscribeToken={token}
-    >
+    <BaseEmail previewText={`Bereit für den nächsten Schritt, ${firstName}?`}>
       <EmailHeading>
         Bereit für den nächsten Schritt, {firstName}?
       </EmailHeading>
@@ -64,11 +59,7 @@ export async function sendHtUpsell60d(props: Props): Promise<SendResult> {
     to: props.email,
     subject: `Bereit für den nächsten Schritt, ${props.firstName}?`,
     jsx: (
-      <HtUpsell60dEmail
-        firstName={props.firstName}
-        email={props.email}
-        userId={props.userId}
-      />
+      <HtUpsell60dEmail firstName={props.firstName} />
     ),
     log: {
       userId: props.userId,

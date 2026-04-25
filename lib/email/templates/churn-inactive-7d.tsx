@@ -5,7 +5,6 @@ import {
   EmailText,
   EmailButton,
 } from "../layout/components";
-import { generateUnsubscribeToken } from "../unsubscribe-token";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 
@@ -15,14 +14,10 @@ interface Props {
   userId: string;
 }
 
-export default function ChurnInactive7dEmail({ firstName, userId }: Props) {
+export default function ChurnInactive7dEmail({ firstName }: Props) {
   const appUrl = getAppUrl();
-  const token = generateUnsubscribeToken(userId);
   return (
-    <BaseEmail
-      previewText="Du verpasst gerade etwas..."
-      unsubscribeToken={token}
-    >
+    <BaseEmail previewText="Du verpasst gerade etwas...">
       <EmailHeading>Du warst lang nicht da, {firstName}</EmailHeading>
       <EmailText>
         wir haben dich seit über einer Woche nicht in der Plattform gesehen —
@@ -53,11 +48,7 @@ export async function sendChurnInactive7d(props: Props): Promise<SendResult> {
     to: props.email,
     subject: "Du verpasst gerade etwas...",
     jsx: (
-      <ChurnInactive7dEmail
-        firstName={props.firstName}
-        email={props.email}
-        userId={props.userId}
-      />
+      <ChurnInactive7dEmail firstName={props.firstName} />
     ),
     log: {
       userId: props.userId,
