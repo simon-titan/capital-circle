@@ -11,6 +11,7 @@ const PUBLIC_PATHS = [
   "/free",
   "/pricing",
   "/apply",
+  "/bewerbung",
 ];
 
 // `/survey/*` ist Token-authentifiziert (Cancellation-Survey aus Paket 6) und
@@ -37,8 +38,9 @@ export async function proxy(request: NextRequest) {
   const user = data.user;
 
   if (!user) {
+    // "/" zeigt die Landing Page — kein Login-Redirect für nicht-eingeloggte User
     if (pathname === "/") {
-      return NextResponse.redirect(new URL("/login", request.url));
+      return response;
     }
     if (!isPublicPath(pathname)) {
       return NextResponse.redirect(new URL("/login", request.url));
@@ -46,7 +48,8 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  if (pathname === "/") {
+  // Eingeloggte User landen direkt im Dashboard
+  if (pathname === "/" || pathname === "/bewerbung") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 

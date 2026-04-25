@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Button, HStack, Icon, Input, Link, Stack, Text } from "@chakra-ui/react";
-import { useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { SiInstagram, SiTiktok } from "react-icons/si";
 import { createClient } from "@/lib/supabase/client";
 import { Logo } from "@/components/brand/Logo";
@@ -14,9 +14,10 @@ const SOCIAL = {
 
 type LoginStepProps = {
   onAuthenticated: () => void | Promise<void>;
+  footer?: ReactNode;
 };
 
-export function LoginStep({ onAuthenticated }: LoginStepProps) {
+export function LoginStep({ onAuthenticated, footer }: LoginStepProps) {
   const supabase = useMemo(() => createClient(), []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -156,6 +157,8 @@ export function LoginStep({ onAuthenticated }: LoginStepProps) {
           <Icon as={SiInstagram} boxSize={8} />
         </Link>
       </HStack>
+
+      {footer}
     </Stack>
   );
 }

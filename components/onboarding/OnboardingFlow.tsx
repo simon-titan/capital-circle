@@ -3,7 +3,7 @@
 import { Center, Spinner } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { SkyArchBackground } from "@/components/layout/SkyArchBackground";
 import { CodexStep } from "@/components/onboarding/CodexStep";
@@ -14,7 +14,11 @@ const easePremium = [0.16, 1, 0.3, 1] as const;
 
 type Phase = "loading" | "login" | "codex" | "agreement";
 
-export function OnboardingFlow() {
+type OnboardingFlowProps = {
+  loginFooter?: ReactNode;
+};
+
+export function OnboardingFlow({ loginFooter }: OnboardingFlowProps = {}) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("loading");
 
@@ -64,7 +68,7 @@ export function OnboardingFlow() {
             transition={{ duration: 0.48, ease: easePremium }}
             style={{ minHeight: "100vh" }}
           >
-            {phase === "login" && <LoginStep onAuthenticated={resolvePhase} />}
+            {phase === "login" && <LoginStep onAuthenticated={resolvePhase} footer={loginFooter} />}
             {phase === "codex" && <CodexStep onCompleted={() => setPhase("agreement")} />}
             {phase === "agreement" && <UsageAgreementStep />}
           </motion.div>
