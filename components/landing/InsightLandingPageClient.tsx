@@ -584,7 +584,7 @@ export function InsightLandingPageClient() {
       `}</style>
 
       {/* Mobile CTA Footer */}
-      <MobileCTAFooter onApply={openModal} />
+      <MobileCTAFooter onApply={openModal} trustLine="" />
 
       <Box
         minH="100vh"

@@ -14,6 +14,12 @@ export function MobileCTAFooter({ onApply, ctaPrimary: ctaPrimaryOverride, trust
   const { cta } = landingConfig;
   const resolvedPrimary = ctaPrimaryOverride ?? cta.primary;
   const hideTrust = trustLine === null;
+  const trustLineFirst =
+    hideTrust
+      ? null
+      : trustLine === undefined
+        ? "Kostenlos · Keine Kreditkarte"
+        : (trustLine ?? "");
 
   return (
     <Box
@@ -75,10 +81,14 @@ export function MobileCTAFooter({ onApply, ctaPrimary: ctaPrimaryOverride, trust
         {/* Trust row */}
         {!hideTrust && (
           <HStack justify="center" spacing={4}>
-            <Text fontSize="10px" color="rgba(255,255,255,0.32)" className="inter" letterSpacing="0.03em">
-              {trustLine ?? "Kostenlos · Keine Kreditkarte"}
-            </Text>
-            <Box w="1px" h="10px" bg="rgba(255,255,255,0.12)" />
+            {trustLineFirst ? (
+              <>
+                <Text fontSize="10px" color="rgba(255,255,255,0.32)" className="inter" letterSpacing="0.03em">
+                  {trustLineFirst}
+                </Text>
+                <Box w="1px" h="10px" bg="rgba(255,255,255,0.12)" />
+              </>
+            ) : null}
             <Text fontSize="10px" color="rgba(255,255,255,0.32)" className="inter" letterSpacing="0.03em">
               Bewerbung &lt; 5 Min.
             </Text>
