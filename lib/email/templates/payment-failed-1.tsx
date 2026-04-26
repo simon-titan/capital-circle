@@ -15,7 +15,7 @@ interface Props {
   userId: string;
 }
 
-export default function PaymentFailed1Email({ firstName }: Props) {
+export default function PaymentFailed1Email({ firstName }: Pick<Props, "firstName">) {
   const appUrl = getAppUrl();
   return (
     <BaseEmail previewText="Zahlungsproblem — bitte jetzt beheben">

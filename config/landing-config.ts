@@ -46,6 +46,7 @@ export interface LandingReview {
   title: string;
   text: string;
   date: string;
+  avatar?: string;
 }
 
 export interface LandingApplicationQuestion {
@@ -88,7 +89,7 @@ export const landingConfig: LandingConfig = {
   },
 
   features: [
-    { icon: "VideoCamera", label: "Exklusive Insights", detail: "Über 20 Std. Lernmaterial" },
+    { icon: "VideoCamera", label: "Exklusive Lernmaterialien", detail: "Über 120 Std. von Video-Modulen bis Tests" },
     { icon: "ChartLineUp", label: "Bewährte Trading-Strategien", detail: "Aus 6 Jahren aktivem Trading" },
     { icon: "Users", label: "Exklusive Community", detail: "Traders auf Augenhöhe" },
     { icon: "BookOpen", label: "Strukturierter Lehrplan", detail: "Von Basics bis Profi-Setups" },
@@ -215,6 +216,7 @@ export const landingConfig: LandingConfig = {
       title: "Endlich ein strukturierter Ansatz",
       text: "Ich habe vorher unzählige YouTube-Videos und Kurse konsumiert — immer das gleiche oberflächliche Zeug. Der Free-Kurs von Capital Circle hat mir zum ersten Mal gezeigt, wie professionelles Trading wirklich funktioniert. Das Fundament stimmt.",
       date: "März 2026",
+      avatar: "/client-pb/1765279404415.jpg",
     },
     {
       name: "Laura K.",
@@ -222,6 +224,7 @@ export const landingConfig: LandingConfig = {
       title: "Mehr als erwartet",
       text: "Ich war skeptisch, ob ein kostenloser Kurs wirklich Mehrwert liefern kann. Aber Emre gibt alles — kein Fluff, kein Upsell-Druck. Einfach ehrliches Wissen, das mir direkt geholfen hat meine Drawdowns zu reduzieren.",
       date: "April 2026",
+      avatar: "/client-pb/393d1b15978eed96285cf196b2f51eda.avif",
     },
     {
       name: "Jonas T.",
@@ -229,6 +232,7 @@ export const landingConfig: LandingConfig = {
       title: "Community macht den Unterschied",
       text: "Das Onboarding war top, aber was mich wirklich überzeugt hat ist die Community. Trader, die tatsächlich wissen wovon sie reden. Kein Spam, keine Signale — nur echter Austausch auf hohem Niveau.",
       date: "Februar 2026",
+      avatar: "/client-pb/4208db19763848b131989eadba9899aa.avif",
     },
     {
       name: "Sarah W.",
@@ -236,6 +240,7 @@ export const landingConfig: LandingConfig = {
       title: "Solider Einstieg",
       text: "Der Kurs ist sehr gut aufgebaut und Emre erklärt komplexe Konzepte verständlich. Besonders das Kapitel über Risk-Management hat mir die Augen geöffnet. Klare Empfehlung für alle, die es ernst meinen.",
       date: "März 2026",
+      avatar: "/client-pb/user_6819319_6ec853ff-5777-4398-8fcc-06e2621cbcf8.avif",
     },
   ],
 

@@ -1,13 +1,7 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
-import {
-  EmailHeading,
-  EmailText,
-  EmailButton,
-  EmailSubheading,
-} from "../layout/components";
+import { EmailText } from "../layout/components";
 import { sendEmail, type SendResult } from "../send";
-import { getAppUrl } from "../resend";
 
 interface Props {
   firstName: string;
@@ -15,25 +9,33 @@ interface Props {
   userId: string;
 }
 
-export default function FreeCourseDay1Email({ firstName }: Props) {
-  const appUrl = getAppUrl();
+export default function FreeCourseDay1Email({ firstName }: Pick<Props, "firstName">) {
   return (
-    <BaseEmail previewText="Tag 1 — Dein erster Schritt im Kurs">
-      <EmailHeading>Tag 1 — Der erste Schritt, {firstName}</EmailHeading>
+    <BaseEmail previewText="Sie scheitern daran, dass sie jahrelang die falschen Dinge lernen.">
+      <EmailText>Hey {firstName},</EmailText>
       <EmailText>
-        Heute starten wir mit der wichtigsten Frage überhaupt: Warum verlieren
-        die meisten Trader Geld — und was unterscheidet die wenigen, die
-        konstant gewinnen?
+        die meisten Trader scheitern nicht daran, dass sie es nicht ernst meinen.
       </EmailText>
-      <EmailSubheading>Was dich heute erwartet</EmailSubheading>
       <EmailText>
-        Ein 8-minütiges Video, das dir die drei häufigsten Denkfehler im Trading
-        zeigt — und wie du sie ab heute vermeidest.
+        Sie scheitern daran, dass sie jahrelang die falschen Dinge lernen.
       </EmailText>
-      <EmailButton href={`${appUrl}/dashboard`}>Lektion ansehen</EmailButton>
-      <EmailText muted>
-        Morgen geht es weiter mit Tag 2: Das Fundament jedes profitablen Setups.
+      <EmailText>
+        Ein bisschen hier, ein bisschen da. Einzelne Konzepte, einzelne Begriffe,
+        einzelne Setups. Aber nie ein echtes Fundament.
       </EmailText>
+      <EmailText>
+        Genau deshalb drehen sich so viele im Kreis, obwohl sie Zeit investieren,
+        Mühe reinstecken und eigentlich vorankommen wollen.
+      </EmailText>
+      <EmailText>
+        Wenn du diesen Free Kurs richtig anschaust, solltest du anfangen zu
+        erkennen, dass Trading auf einem hohen Niveau nichts mit oberflächlichem
+        Content-Konsum zu tun hat.
+      </EmailText>
+      <EmailText>
+        Und genau das ist die eigentliche Chance, die du hier bekommen hast.
+      </EmailText>
+      <EmailText muted>Emre</EmailText>
     </BaseEmail>
   );
 }
@@ -41,7 +43,7 @@ export default function FreeCourseDay1Email({ firstName }: Props) {
 export async function sendFreeCourseDay1(props: Props): Promise<SendResult> {
   return sendEmail({
     to: props.email,
-    subject: "[Tag 1] Dein erster Schritt — Capital Circle",
+    subject: "Die meisten Trader scheitern nicht an Motivation",
     jsx: <FreeCourseDay1Email firstName={props.firstName} />,
     log: {
       userId: props.userId,

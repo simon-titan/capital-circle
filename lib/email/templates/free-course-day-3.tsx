@@ -1,11 +1,6 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
-import {
-  EmailHeading,
-  EmailText,
-  EmailButton,
-  EmailHighlight,
-} from "../layout/components";
+import { EmailText, EmailHighlight, EmailButton } from "../layout/components";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 
@@ -15,24 +10,38 @@ interface Props {
   userId: string;
 }
 
-export default function FreeCourseDay3Email({ firstName }: Props) {
+export default function FreeCourseDay3Email({ firstName }: Pick<Props, "firstName">) {
   const appUrl = getAppUrl();
   return (
-    <BaseEmail previewText="Tag 3 — Der entscheidende Unterschied">
-      <EmailHeading>Tag 3 — Der Unterschied, {firstName}</EmailHeading>
+    <BaseEmail previewText="Du bekommst Einblick in den Sonntags-Call — kostenlos.">
+      <EmailText>Hey {firstName},</EmailText>
       <EmailText>
-        Heute kommt der Inhalt, der für die meisten unserer Mitglieder der
-        Wendepunkt war: Der Unterschied zwischen reagieren und antizipieren.
+        als Teil dieses Zugangs bekommst du nicht nur die Inhalte des Free Kurses.
       </EmailText>
       <EmailHighlight>
-        Wer reagiert, ist immer zu spät. Wer antizipiert, hat den Trade schon,
-        bevor andere ihn überhaupt sehen.
+        Du bekommst auch kostenlos Einblick in meinen Sonntags-Call, in dem ich
+        die Märkte vor der Woche einordne und mein Framework offen zeige.
       </EmailHighlight>
       <EmailText>
-        In der heutigen Lektion zeigen wir dir die zwei Marktphasen, in denen
-        sich beide Welten klar trennen.
+        Auch das ist nicht selbstverständlich.
       </EmailText>
-      <EmailButton href={`${appUrl}/dashboard`}>Tag 3 öffnen</EmailButton>
+      <EmailText>
+        Die meisten sehen irgendwo online nur Einstiege, Schlagwörter oder
+        Ausschnitte. Aber sie sehen nie, wie ein Markt wirklich vorbereitet,
+        gelesen und strukturiert wird.
+      </EmailText>
+      <EmailText>
+        Genau deshalb ist so ein Zugang wertvoll.
+      </EmailText>
+      <EmailText>
+        Nutze diese Möglichkeit nicht wie irgendeinen kostenlosen Bonus, sondern
+        wie das, was sie ist: eine echte Chance, Dinge auf einem anderen Niveau
+        zu verstehen.
+      </EmailText>
+      <EmailButton href={`${appUrl}/stream`}>
+        Zum Live-Stream
+      </EmailButton>
+      <EmailText muted>Emre</EmailText>
     </BaseEmail>
   );
 }
@@ -40,7 +49,7 @@ export default function FreeCourseDay3Email({ firstName }: Props) {
 export async function sendFreeCourseDay3(props: Props): Promise<SendResult> {
   return sendEmail({
     to: props.email,
-    subject: "[Tag 3] Der entscheidende Unterschied",
+    subject: "Kostenloser Community Call bei Capital Circle!",
     jsx: (
       <FreeCourseDay3Email firstName={props.firstName} />
     ),

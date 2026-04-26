@@ -1,7 +1,6 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
 import {
-  EmailHeading,
   EmailText,
   EmailButton,
   EmailHighlight,
@@ -15,32 +14,40 @@ interface Props {
   userId: string;
 }
 
-export default function WelcomeFreeCourseEmail({ firstName }: Props) {
+export default function WelcomeFreeCourseEmail({ firstName }: Pick<Props, "firstName">) {
   const appUrl = getAppUrl();
   return (
     <BaseEmail
-      previewText={`Willkommen bei Capital Circle, ${firstName} — dein Zugang ist aktiv`}
+      previewText={`Deine Bewerbung wurde angenommen — lies das hier durch.`}
     >
-      <EmailHeading>Willkommen, {firstName}.</EmailHeading>
+      <EmailText>Hey {firstName},</EmailText>
       <EmailText>
-        deine Bewerbung wurde geprüft — und du bist dabei. Ab jetzt hast du
-        Zugang zu unserem 5-Tage-Onboarding-Kurs, in dem wir dir die wichtigsten
-        Grundlagen unseres Trading-Ansatzes zeigen.
+        deine Bewerbung wurde geprüft und du wurdest für den Free Kurs angenommen.
       </EmailText>
       <EmailHighlight>
-        Über die nächsten Tage bekommst du täglich eine kurze Lektion per Mail.
-        Plane jeweils ca. 15 Minuten ein — kompakt, ohne Fluff.
+        Wichtig ist, dass du verstehst: Dieser Zugang ist nicht dafür gedacht,
+        einfach nur ein paar kostenlose Inhalte mitzunehmen und dann wieder
+        weiterzuziehen.
       </EmailHighlight>
       <EmailText>
-        Klick unten auf den Button, um direkt einzusteigen. Tag 1 wartet schon
-        in deinem Dashboard.
+        Du hast hier gerade die Möglichkeit bekommen, Einblicke in eine Denkweise
+        und Herangehensweise zu bekommen, die die meisten Trader nie wirklich lernen.
+      </EmailText>
+      <EmailText>
+        Nimm das ernst.
+      </EmailText>
+      <EmailText>
+        Schau dir die Inhalte aufmerksam an, mach dir Notizen und versuch nicht
+        nur Informationen mitzunehmen, sondern die Denkweise dahinter zu verstehen.
+      </EmailText>
+      <EmailText>
+        Wer diese Chance richtig nutzt, merkt sehr schnell, wie groß der
+        Unterschied zwischen normalem Trading-Content und echtem Marktverständnis ist.
       </EmailText>
       <EmailButton href={`${appUrl}/dashboard`}>
         Zur Plattform
       </EmailButton>
-      <EmailText muted>
-        Bei Fragen antworte einfach auf diese Mail — wir lesen mit.
-      </EmailText>
+      <EmailText muted>Emre</EmailText>
     </BaseEmail>
   );
 }
@@ -50,7 +57,7 @@ export async function sendWelcomeFreeCourse(
 ): Promise<SendResult> {
   return sendEmail({
     to: props.email,
-    subject: "Willkommen bei Capital Circle! Dein Zugang ist aktiv",
+    subject: "Deine Bewerbung bei Capital Circle wurde angenommen!",
     jsx: <WelcomeFreeCourseEmail firstName={props.firstName} />,
     log: {
       userId: props.userId,

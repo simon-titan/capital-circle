@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import type { LastWatchedModuleData, RecommendedModuleData, HomeworkRow, EventRow } from "@/lib/server-data";
 import type { HomeworkCustomTaskRow } from "@/lib/server-data";
+import { CardLockOverlay } from "@/components/ui/CardLockOverlay";
 
 const LastVideoCard = dynamic(
   () => import("@/components/platform/LastVideoCard").then((m) => m.LastVideoCard),
@@ -33,21 +34,41 @@ export function DashboardHomeworkCard({
   homework,
   initialOfficialDone,
   initialCustomTasks,
+  isPaid = true,
 }: {
   homework: HomeworkRow | null;
   initialOfficialDone: boolean;
   initialCustomTasks: HomeworkCustomTaskRow[];
+  isPaid?: boolean;
 }) {
   return (
-    <HomeworkCard
-      homework={homework}
-      initialOfficialDone={initialOfficialDone}
-      initialCustomTasks={initialCustomTasks}
-      spotlight={false}
-    />
+    <CardLockOverlay
+      locked={!isPaid}
+      description="Hausaufgaben und persönliche Checklisten stehen vollwertigen Capital Circle Mitgliedern zur Verfügung."
+    >
+      <HomeworkCard
+        homework={homework}
+        initialOfficialDone={initialOfficialDone}
+        initialCustomTasks={initialCustomTasks}
+        spotlight={false}
+      />
+    </CardLockOverlay>
   );
 }
 
-export function DashboardEventsCard({ events }: { events: EventRow[] }) {
-  return <UpcomingEventsCard events={events} spotlight />;
+export function DashboardEventsCard({
+  events,
+  isPaid = true,
+}: {
+  events: EventRow[];
+  isPaid?: boolean;
+}) {
+  return (
+    <CardLockOverlay
+      locked={!isPaid}
+      description="Bevorstehende Events und Live-Termine sind exklusiv für vollwertige Capital Circle Mitglieder."
+    >
+      <UpcomingEventsCard events={events} spotlight />
+    </CardLockOverlay>
+  );
 }

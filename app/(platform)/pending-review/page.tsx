@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Box, Heading, Stack, Text } from "@chakra-ui/react";
 import { createClient } from "@/lib/supabase/server";
+import { ApplicationReceivedPendingBody } from "@/components/platform/ApplicationReceivedPendingBody";
 import { PendingReviewStatusIcon } from "@/components/platform/PendingReviewStatusIcon";
 
 export const dynamic = "force-dynamic";
@@ -44,7 +45,7 @@ export default async function PendingReviewPage() {
       px={{ base: 4, md: 8 }}
     >
       <Box
-        maxW="520px"
+        maxW="580px"
         w="full"
         p={{ base: 6, md: 8 }}
         sx={{
@@ -83,20 +84,25 @@ export default async function PendingReviewPage() {
           >
             {isRejected
               ? "Update zu deiner Bewerbung"
-              : "Deine Bewerbung wird geprüft"}
+              : "Bewerbung eingegangen."}
           </Heading>
 
-          <Text fontSize="md" color="rgba(255,255,255,0.72)" className="inter">
-            {isRejected
-              ? "Aktuell können wir dir leider keinen Platz anbieten. Wir nehmen pro Periode nur eine sehr begrenzte Zahl an Trader:innen auf — danke, dass du dir die Zeit genommen hast."
-              : "Wir melden uns innerhalb von 24–48 Stunden per E-Mail bei dir. Solange dein Status auf „in Prüfung“ steht, ist die Plattform noch geschlossen."}
-          </Text>
-
-          <Text fontSize="xs" color="rgba(255,255,255,0.4)" className="inter">
-            {isRejected
-              ? "Wir wünschen dir alles Gute auf deinem Weg an den Märkten."
-              : "Du kannst dieses Fenster jetzt schließen — wir benachrichtigen dich automatisch."}
-          </Text>
+          {isRejected ? (
+            <>
+              <Text fontSize="md" color="rgba(255,255,255,0.72)" className="inter">
+                Aktuell können wir dir leider keinen Platz anbieten. Wir nehmen pro Periode
+                nur eine sehr begrenzte Zahl an Trader:innen auf — danke, dass du dir die Zeit
+                genommen hast.
+              </Text>
+              <Text fontSize="xs" color="rgba(255,255,255,0.4)" className="inter">
+                Wir wünschen dir alles Gute auf deinem Weg an den Märkten.
+              </Text>
+            </>
+          ) : (
+            <Box w="full" alignSelf="stretch">
+              <ApplicationReceivedPendingBody />
+            </Box>
+          )}
         </Stack>
       </Box>
     </Box>

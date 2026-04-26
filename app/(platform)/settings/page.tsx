@@ -334,14 +334,14 @@ export default function SettingsPage() {
               <HStack spacing={2} pt={1}>
                 {isPaid ? <Badge colorScheme="yellow">Premium</Badge> : <Badge>Free</Badge>}
                 {isAdmin ? <Badge colorScheme="yellow">Admin</Badge> : null}
-                {discordUsername ? (
+                {isPaid && (discordUsername ? (
                   <Badge colorScheme="green" display="inline-flex" alignItems="center" gap={1}>
                     <Icon as={CheckCircle2} boxSize={3} />
                     Discord verbunden
                   </Badge>
                 ) : (
                   <Badge>Discord nicht verbunden</Badge>
-                )}
+                ))}
               </HStack>
             </VStack>
           </HStack>
@@ -470,101 +470,103 @@ export default function SettingsPage() {
           </GlassCard>
         </GridItem>
 
-        <GridItem>
-          <GlassCard highlight>
-            <Stack spacing={5}>
-              <Flex direction={{ base: "column", sm: "row" }} gap={4} align={{ base: "flex-start", sm: "flex-start" }}>
-                <Flex
-                  align="center"
-                  justify="center"
-                  w="52px"
-                  h="52px"
-                  borderRadius="14px"
-                  flexShrink={0}
-                  bg="rgba(88, 101, 242, 0.18)"
-                  border="1px solid rgba(88, 101, 242, 0.45)"
-                  color="#5865F2"
-                >
-                  <DiscordGlyph size={28} />
-                </Flex>
-                <VStack align="flex-start" spacing={1} flex={1}>
-                  <Text
-                    className="inter-medium"
-                    fontSize="xs"
-                    letterSpacing="0.1em"
-                    textTransform="uppercase"
-                    color="rgba(255,255,255,0.45)"
+        {isPaid && (
+          <GridItem>
+            <GlassCard highlight>
+              <Stack spacing={5}>
+                <Flex direction={{ base: "column", sm: "row" }} gap={4} align={{ base: "flex-start", sm: "flex-start" }}>
+                  <Flex
+                    align="center"
+                    justify="center"
+                    w="52px"
+                    h="52px"
+                    borderRadius="14px"
+                    flexShrink={0}
+                    bg="rgba(88, 101, 242, 0.18)"
+                    border="1px solid rgba(88, 101, 242, 0.45)"
+                    color="#5865F2"
                   >
-                    Community
-                  </Text>
-                  <Text className="inter-semibold" color="var(--color-text-primary)" fontSize="xl">
-                    Discord
-                  </Text>
-                  <Text className="inter" color="var(--color-text-secondary)" fontSize="sm" lineHeight="tall">
-                    {discordUsername
-                      ? "Dein Account ist mit Discord verknüpft. Du kannst die Verknüpfung jederzeit trennen und neu verbinden."
-                      : "Verbinde deinen Discord Account, um Zugang zum exklusiven Community-Server zu erhalten."}
-                  </Text>
-                </VStack>
-              </Flex>
-
-              {discordUsername ? (
-                <Box
-                  p={4}
-                  borderRadius="14px"
-                  border="1px solid rgba(34, 197, 94, 0.35)"
-                  bg="linear-gradient(165deg, rgba(34, 197, 94, 0.1) 0%, rgba(8, 8, 8, 0.45) 55%)"
-                >
-                  <Stack spacing={3}>
-                    <HStack spacing={2}>
-                      <Icon as={CheckCircle2} boxSize={5} color="rgb(34, 197, 94)" />
-                      <Text className="inter-semibold" color="var(--color-text-primary)" fontSize="md">
-                        Verbunden
-                      </Text>
-                    </HStack>
-                    <Text className="jetbrains-mono" fontSize="lg" color="rgba(34, 197, 94, 0.95)">
-                      {discordUsername.startsWith("@") ? discordUsername : `@${discordUsername}`}
-                    </Text>
-                    {discordUserId ? (
-                      <Text fontSize="xs" className="jetbrains-mono" color="var(--color-text-muted)">
-                        ID: {discordUserId}
-                      </Text>
-                    ) : null}
-                    {discordConnectedAt ? (
-                      <Text fontSize="sm" className="inter" color="var(--color-text-secondary)">
-                        Verbunden seit {formatDate(discordConnectedAt)}
-                      </Text>
-                    ) : null}
-                    <Button
-                      variant="outline"
-                      colorScheme="red"
-                      leftIcon={<Icon as={Link2Off} boxSize={4} />}
-                      onClick={disconnectDiscord}
-                      isLoading={disconnectingDiscord}
-                      alignSelf="flex-start"
-                      borderRadius="10px"
+                    <DiscordGlyph size={28} />
+                  </Flex>
+                  <VStack align="flex-start" spacing={1} flex={1}>
+                    <Text
+                      className="inter-medium"
+                      fontSize="xs"
+                      letterSpacing="0.1em"
+                      textTransform="uppercase"
+                      color="rgba(255,255,255,0.45)"
                     >
-                      Verknüpfung trennen
-                    </Button>
-                  </Stack>
-                </Box>
-              ) : (
-                <Button
-                  as="a"
-                  href={getDiscordAuthUrl()}
-                  leftIcon={<Icon as={Link2} boxSize={4} />}
-                  alignSelf="flex-start"
-                  borderRadius="10px"
-                  bg="linear-gradient(135deg, var(--color-accent-gold-dark) 0%, var(--color-accent-gold-light) 100%)"
-                  color="#0a0a0a"
-                  _hover={{ filter: "brightness(1.06)", boxShadow: "0 0 24px rgba(212, 175, 55, 0.35)" }}
-                >
-                  Discord verbinden
-                </Button>
-              )}
-            </Stack>
-          </GlassCard>
-        </GridItem>
+                      Community
+                    </Text>
+                    <Text className="inter-semibold" color="var(--color-text-primary)" fontSize="xl">
+                      Discord
+                    </Text>
+                    <Text className="inter" color="var(--color-text-secondary)" fontSize="sm" lineHeight="tall">
+                      {discordUsername
+                        ? "Dein Account ist mit Discord verknüpft. Du kannst die Verknüpfung jederzeit trennen und neu verbinden."
+                        : "Verbinde deinen Discord Account, um Zugang zum exklusiven Community-Server zu erhalten."}
+                    </Text>
+                  </VStack>
+                </Flex>
+
+                {discordUsername ? (
+                  <Box
+                    p={4}
+                    borderRadius="14px"
+                    border="1px solid rgba(34, 197, 94, 0.35)"
+                    bg="linear-gradient(165deg, rgba(34, 197, 94, 0.1) 0%, rgba(8, 8, 8, 0.45) 55%)"
+                  >
+                    <Stack spacing={3}>
+                      <HStack spacing={2}>
+                        <Icon as={CheckCircle2} boxSize={5} color="rgb(34, 197, 94)" />
+                        <Text className="inter-semibold" color="var(--color-text-primary)" fontSize="md">
+                          Verbunden
+                        </Text>
+                      </HStack>
+                      <Text className="jetbrains-mono" fontSize="lg" color="rgba(34, 197, 94, 0.95)">
+                        {discordUsername.startsWith("@") ? discordUsername : `@${discordUsername}`}
+                      </Text>
+                      {discordUserId ? (
+                        <Text fontSize="xs" className="jetbrains-mono" color="var(--color-text-muted)">
+                          ID: {discordUserId}
+                        </Text>
+                      ) : null}
+                      {discordConnectedAt ? (
+                        <Text fontSize="sm" className="inter" color="var(--color-text-secondary)">
+                          Verbunden seit {formatDate(discordConnectedAt)}
+                        </Text>
+                      ) : null}
+                      <Button
+                        variant="outline"
+                        colorScheme="red"
+                        leftIcon={<Icon as={Link2Off} boxSize={4} />}
+                        onClick={disconnectDiscord}
+                        isLoading={disconnectingDiscord}
+                        alignSelf="flex-start"
+                        borderRadius="10px"
+                      >
+                        Verknüpfung trennen
+                      </Button>
+                    </Stack>
+                  </Box>
+                ) : (
+                  <Button
+                    as="a"
+                    href={getDiscordAuthUrl()}
+                    leftIcon={<Icon as={Link2} boxSize={4} />}
+                    alignSelf="flex-start"
+                    borderRadius="10px"
+                    bg="linear-gradient(135deg, var(--color-accent-gold-dark) 0%, var(--color-accent-gold-light) 100%)"
+                    color="#0a0a0a"
+                    _hover={{ filter: "brightness(1.06)", boxShadow: "0 0 24px rgba(212, 175, 55, 0.35)" }}
+                  >
+                    Discord verbinden
+                  </Button>
+                )}
+              </Stack>
+            </GlassCard>
+          </GridItem>
+        )}
 
         <GridItem>
           <GlassCard>

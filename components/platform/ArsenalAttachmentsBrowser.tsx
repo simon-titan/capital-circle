@@ -2,7 +2,8 @@
 
 import { Box, Button, Flex, HStack, Input, InputGroup, InputLeftElement, Select, Stack, Text } from "@chakra-ui/react";
 import type { ArsenalAttachmentListItem } from "@/lib/server-data";
-import { FileDown, FileText, Layers, Search } from "lucide-react";
+import Link from "next/link";
+import { FileDown, FileText, Layers, Lock, Search } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
 export type ArsenalBrowserAccent = "purple" | "orange";
@@ -354,12 +355,18 @@ export function ArsenalAttachmentsBrowser({
                 borderRadius="sm"
               />
               <HStack minW={0} spacing={3} align="flex-start" pl={2}>
-                <Box color={a.fileIcon} pt={0.5} flexShrink={0}>
+                <Box color={a.fileIcon} pt={0.5} flexShrink={0} opacity={it.hasAccess ? 1 : 0.45}>
                   <FileDown size={20} />
                 </Box>
                 <Stack spacing={1} minW={0}>
                   <HStack flexWrap="wrap" gap={2} align="center">
-                    <Text className="inter-semibold" fontSize="sm" color="var(--color-text-primary)" noOfLines={2}>
+                    <Text
+                      className="inter-semibold"
+                      fontSize="sm"
+                      color="var(--color-text-primary)"
+                      noOfLines={2}
+                      opacity={it.hasAccess ? 1 : 0.7}
+                    >
                       {it.filename}
                     </Text>
                     {it.category_name ? (
@@ -380,26 +387,62 @@ export function ArsenalAttachmentsBrowser({
                         {it.category_name}
                       </Text>
                     ) : null}
+                    {!it.hasAccess ? (
+                      <Text
+                        as="span"
+                        fontSize="10px"
+                        textTransform="uppercase"
+                        letterSpacing="0.06em"
+                        px={2}
+                        py={0.5}
+                        borderRadius="md"
+                        borderWidth="1px"
+                        borderColor="rgba(212,175,55,0.5)"
+                        bg="rgba(212,175,55,0.12)"
+                        color="var(--color-accent-gold)"
+                        className="inter-semibold"
+                      >
+                        Nur für vollwertige Member
+                      </Text>
+                    ) : null}
                   </HStack>
                   <Text className="inter" fontSize="xs" color="var(--color-text-tertiary)">
                     {it.module_title} · {it.video_title}
                   </Text>
                 </Stack>
               </HStack>
-              <Button
-                size="sm"
-                onClick={() => void onDownload(it.id, it.filename)}
-                isLoading={loadingId === it.id}
-                bg={a.downloadBg}
-                borderWidth="1px"
-                borderColor={a.downloadBorder}
-                color="var(--color-text-primary)"
-                _hover={{ bg: a.downloadHover }}
-                className="inter-medium"
-                flexShrink={0}
-              >
-                Download
-              </Button>
+              {it.hasAccess ? (
+                <Button
+                  size="sm"
+                  onClick={() => void onDownload(it.id, it.filename)}
+                  isLoading={loadingId === it.id}
+                  bg={a.downloadBg}
+                  borderWidth="1px"
+                  borderColor={a.downloadBorder}
+                  color="var(--color-text-primary)"
+                  _hover={{ bg: a.downloadHover }}
+                  className="inter-medium"
+                  flexShrink={0}
+                >
+                  Download
+                </Button>
+              ) : (
+                <Button
+                  as={Link}
+                  href="/bewerbung"
+                  size="sm"
+                  leftIcon={<Lock size={14} />}
+                  bg="rgba(212,175,55,0.12)"
+                  borderWidth="1px"
+                  borderColor="rgba(212,175,55,0.45)"
+                  color="var(--color-accent-gold)"
+                  _hover={{ bg: "rgba(212,175,55,0.2)" }}
+                  className="inter-medium"
+                  flexShrink={0}
+                >
+                  Upgrade
+                </Button>
+              )}
             </HStack>
           ))}
         </Stack>

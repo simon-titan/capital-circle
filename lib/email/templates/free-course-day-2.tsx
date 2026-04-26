@@ -1,13 +1,7 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
-import {
-  EmailHeading,
-  EmailText,
-  EmailButton,
-  EmailSubheading,
-} from "../layout/components";
+import { EmailText, EmailHighlight } from "../layout/components";
 import { sendEmail, type SendResult } from "../send";
-import { getAppUrl } from "../resend";
 
 interface Props {
   firstName: string;
@@ -15,24 +9,35 @@ interface Props {
   userId: string;
 }
 
-export default function FreeCourseDay2Email({ firstName }: Props) {
-  const appUrl = getAppUrl();
+export default function FreeCourseDay2Email({ firstName }: Pick<Props, "firstName">) {
   return (
-    <BaseEmail previewText="Tag 2 — Das Fundament deines Tradings">
-      <EmailHeading>Tag 2 — Das Fundament, {firstName}</EmailHeading>
+    <BaseEmail previewText="Es fehlt nicht an Strategie — es fehlt am Fundament.">
+      <EmailText>Hey {firstName},</EmailText>
       <EmailText>
-        Die meisten Strategien scheitern nicht am Setup, sondern an der Basis
-        darunter: Risikomanagement und ein klarer Trade-Plan.
+        viele glauben, sie bräuchten einfach nur eine bessere Strategie.
       </EmailText>
-      <EmailSubheading>Heute lernst du</EmailSubheading>
       <EmailText>
-        Wie du in 5 Minuten pro Trade entscheidest, ob er dein Risiko überhaupt
-        wert ist — bevor du den Chart aufmachst.
+        In Wirklichkeit fehlt ihnen meistens etwas ganz anderes:
+        ein sauberes Verständnis dafür, wie Märkte wirklich funktionieren.
       </EmailText>
-      <EmailButton href={`${appUrl}/dashboard`}>Tag 2 starten</EmailButton>
-      <EmailText muted>
-        Morgen kommt der entscheidende Unterschied — verpass es nicht.
+      <EmailHighlight>
+        Kontext. Auktion. Volumen. Liquidität. Struktur. Teilnehmerverhalten.
+        Fundamentale Einordnung.
+      </EmailHighlight>
+      <EmailText>
+        Solange diese Dinge nicht sauber zusammenspielen, bleibt Trading für
+        die meisten Stückwerk.
       </EmailText>
+      <EmailText>
+        Genau deshalb ist der Unterschied zwischen oberflächlichem Wissen und
+        echtem Marktverständnis so groß.
+      </EmailText>
+      <EmailText>
+        Wenn du aufmerksam bist, solltest du inzwischen merken, dass du hier
+        nicht einfach nur kostenlosen Content bekommen hast, sondern Zugang zu
+        einer ganz anderen Denkweise.
+      </EmailText>
+      <EmailText muted>Emre</EmailText>
     </BaseEmail>
   );
 }
@@ -40,7 +45,7 @@ export default function FreeCourseDay2Email({ firstName }: Props) {
 export async function sendFreeCourseDay2(props: Props): Promise<SendResult> {
   return sendEmail({
     to: props.email,
-    subject: "[Tag 2] Das Fundament deines Tradings",
+    subject: "Warum die meisten nie wirklich lernen, den Markt zu lesen",
     jsx: (
       <FreeCourseDay2Email firstName={props.firstName} />
     ),

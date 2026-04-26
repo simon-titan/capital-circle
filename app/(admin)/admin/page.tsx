@@ -17,6 +17,8 @@ export default function AdminPage() {
       <Link href="/admin/arsenal">Arsenal</Link>
       <Link href="/admin/live-sessions">Live Sessions</Link>
       <Link href="/admin/analysis">Analyse</Link>
+      <Link href="/admin/news">News verwalten</Link>
+      <Link href="/admin/tracking">Insight Tracking Links</Link>
     </Stack>
   );
 }

@@ -1,8 +1,38 @@
 "use client";
 
 import { Box, HStack, Stack, Text } from "@chakra-ui/react";
-import { useState } from "react";
+import { ChevronDown } from "lucide-react";
+import { useEffect, useState } from "react";
 import { landingConfig } from "@/config/landing-config";
+
+const DEFAULT_VISIBLE = 3;
+
+interface DbReview {
+  id: string;
+  name: string;
+  rating: number;
+  title: string;
+  body: string;
+  date_label: string;
+  avatar_url: string | null;
+}
+
+type DisplayReview = {
+  name: string;
+  rating: number;
+  title: string;
+  text: string;
+  date: string;
+  avatar?: string | null;
+};
+
+function toDisplayReview(r: DbReview): DisplayReview {
+  return { name: r.name, rating: r.rating, title: r.title, text: r.body, date: r.date_label, avatar: r.avatar_url };
+}
+
+function configToDisplay(r: (typeof landingConfig.reviews)[number]): DisplayReview {
+  return { name: r.name, rating: r.rating, title: r.title, text: r.text, date: r.date, avatar: r.avatar };
+}
 
 function StarRow({ rating, max = 5 }: { rating: number; max?: number }) {
   return (
@@ -20,7 +50,7 @@ function StarRow({ rating, max = 5 }: { rating: number; max?: number }) {
   );
 }
 
-function ReviewCard({ review }: { review: (typeof landingConfig.reviews)[number] }) {
+function ReviewCard({ review }: { review: DisplayReview }) {
   const [expanded, setExpanded] = useState(false);
   const isLong = review.text.length > 150;
   const displayText = !expanded && isLong ? review.text.slice(0, 150) + "…" : review.text;
@@ -40,22 +70,37 @@ function ReviewCard({ review }: { review: (typeof landingConfig.reviews)[number]
     >
       <Stack spacing={3}>
         <HStack spacing={3} align="center">
-          <Box
-            w="38px"
-            h="38px"
-            borderRadius="full"
-            flexShrink={0}
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            bg="rgba(212,175,55,0.14)"
-            border="1px solid rgba(212,175,55,0.25)"
-            color="var(--color-accent-gold, #D4AF37)"
-            fontSize="12px"
-            className="inter-semibold"
-          >
-            {initials}
-          </Box>
+          {review.avatar ? (
+            <Box
+              as="img"
+              src={review.avatar}
+              alt={review.name}
+              w="38px"
+              h="38px"
+              borderRadius="full"
+              flexShrink={0}
+              objectFit="cover"
+              border="1px solid rgba(212,175,55,0.25)"
+              boxShadow="0 2px 8px rgba(0,0,0,0.45)"
+            />
+          ) : (
+            <Box
+              w="38px"
+              h="38px"
+              borderRadius="full"
+              flexShrink={0}
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              bg="rgba(212,175,55,0.14)"
+              border="1px solid rgba(212,175,55,0.25)"
+              color="var(--color-accent-gold, #D4AF37)"
+              fontSize="12px"
+              className="inter-semibold"
+            >
+              {initials}
+            </Box>
+          )}
           <Stack spacing={0} flex={1}>
             <HStack spacing={2} justify="space-between" flexWrap="wrap">
               <Text fontSize="sm" color="var(--color-text-primary, #F0F0F2)" className="inter-semibold">
@@ -98,15 +143,42 @@ function ReviewCard({ review }: { review: (typeof landingConfig.reviews)[number]
   );
 }
 
-export function ReviewSection() {
-  const { reviews } = landingConfig;
+interface ReviewSectionProps {
+  landingSlug?: string;
+}
 
-  const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+export function ReviewSection({ landingSlug }: ReviewSectionProps) {
+  const [dbReviews, setDbReviews] = useState<DisplayReview[] | null>(null);
+  const [showAll, setShowAll] = useState(false);
+
+  useEffect(() => {
+    if (!landingSlug) return;
+    let cancelled = false;
+    fetch(`/api/reviews?landing=${encodeURIComponent(landingSlug)}`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (cancelled) return;
+        if (json.ok && Array.isArray(json.items) && json.items.length > 0) {
+          setDbReviews((json.items as DbReview[]).map(toDisplayReview));
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [landingSlug]);
+
+  const reviews: DisplayReview[] = dbReviews ?? landingConfig.reviews.map(configToDisplay);
+
+  const visibleReviews = showAll ? reviews : reviews.slice(0, DEFAULT_VISIBLE);
+  const hasMore = reviews.length > DEFAULT_VISIBLE;
+
+  const avgRating = reviews.length > 0
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+    : 0;
   const ratingCounts = [5, 4, 3, 2, 1].map((star) => ({
     star,
     count: reviews.filter((r) => r.rating === star).length,
   }));
-  const maxCount = Math.max(...ratingCounts.map((r) => r.count));
+  const maxCount = Math.max(...ratingCounts.map((r) => r.count), 1);
 
   return (
     <Box
@@ -164,7 +236,6 @@ export function ReviewSection() {
                 </Stack>
               </HStack>
 
-              {/* Rating bars */}
               <Stack spacing={2}>
                 {ratingCounts.map(({ star, count }) => (
                   <HStack key={star} spacing={2} align="center">
@@ -207,10 +278,49 @@ export function ReviewSection() {
           {/* Right: review cards */}
           <Box flex={1}>
             <Stack spacing={0}>
-              {reviews.map((review, i) => (
-                <ReviewCard key={i} review={review} />
+              {visibleReviews.map((review, i) => (
+                <ReviewCard key={`${review.name}-${i}`} review={review} />
               ))}
             </Stack>
+
+            {hasMore && (
+              <Box
+                as="button"
+                onClick={() => setShowAll((v) => !v)}
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                gap={2}
+                w="full"
+                mt={4}
+                py={3}
+                borderRadius="12px"
+                bg="rgba(255,255,255,0.03)"
+                border="1px solid rgba(255,255,255,0.08)"
+                color="var(--color-accent-gold, #D4AF37)"
+                fontSize="sm"
+                fontWeight={500}
+                className="inter-medium"
+                cursor="pointer"
+                transition="all 200ms ease"
+                sx={{
+                  _hover: {
+                    bg: "rgba(212,175,55,0.08)",
+                    borderColor: "rgba(212,175,55,0.25)",
+                  },
+                }}
+              >
+                {showAll ? "Weniger anzeigen" : `Alle ${reviews.length} Bewertungen anzeigen`}
+                <Box
+                  as="span"
+                  display="inline-flex"
+                  transition="transform 200ms ease"
+                  sx={{ transform: showAll ? "rotate(180deg)" : "rotate(0deg)" }}
+                >
+                  <ChevronDown size={16} />
+                </Box>
+              </Box>
+            )}
           </Box>
         </Stack>
       </Box>

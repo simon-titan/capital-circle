@@ -15,7 +15,7 @@ interface Props {
   userId: string;
 }
 
-export default function CancellationSurveyEmail({ firstName, userId }: Props) {
+export default function CancellationSurveyEmail({ firstName, userId }: Pick<Props, "firstName" | "userId">) {
   const appUrl = getAppUrl();
   const surveyToken = generateSurveyToken(userId);
   return (
@@ -54,7 +54,6 @@ export async function sendCancellationSurvey(
     jsx: (
       <CancellationSurveyEmail
         firstName={props.firstName}
-        email={props.email}
         userId={props.userId}
       />
     ),

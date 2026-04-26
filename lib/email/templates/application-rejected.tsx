@@ -3,13 +3,18 @@ import { BaseEmail } from "../layout/BaseEmail";
 import { EmailHeading, EmailText } from "../layout/components";
 import { sendEmail, type SendResult } from "../send";
 
-interface Props {
+interface ApplicationRejectedEmailProps {
   firstName: string;
+}
+
+interface SendApplicationRejectedProps extends ApplicationRejectedEmailProps {
   email: string;
   userId: string;
 }
 
-export default function ApplicationRejectedEmail({ firstName }: Props) {
+export default function ApplicationRejectedEmail({
+  firstName,
+}: ApplicationRejectedEmailProps) {
   return (
     <BaseEmail previewText="Update zu deiner Bewerbung bei Capital Circle">
       <EmailHeading>Hallo {firstName},</EmailHeading>
@@ -31,7 +36,7 @@ export default function ApplicationRejectedEmail({ firstName }: Props) {
 }
 
 export async function sendApplicationRejected(
-  props: Props & { applicationId?: string },
+  props: SendApplicationRejectedProps & { applicationId?: string },
 ): Promise<SendResult> {
   return sendEmail({
     to: props.email,

@@ -18,7 +18,7 @@ interface Props {
   tier?: "monthly" | "lifetime" | "ht_1on1";
 }
 
-export default function WelcomePaidEmail({ firstName, tier }: Props) {
+export default function WelcomePaidEmail({ firstName, tier }: Pick<Props, "firstName" | "tier">) {
   const appUrl = getAppUrl();
   const tierLabel =
     tier === "lifetime"

@@ -24,11 +24,33 @@ import {
 import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ApplicationReceivedPendingBody } from "@/components/platform/ApplicationReceivedPendingBody";
 import { glassPrimaryButtonProps } from "@/components/ui/glassButtonStyles";
 
 const STEPS = 5;
 const MIN_CHARS = 150;
 const WARNING_SECONDS = 5;
+
+/** Gold-CTA wie auf Landing / Insight (nur sichtbar wenn Warn-Countdown abgelaufen). */
+const warningDismissGoldSx = {
+  background:
+    "linear-gradient(135deg, #E8C547 0%, #D4AF37 50%, #A67C00 100%)",
+  color: "#07080A",
+  border: "none",
+  boxShadow:
+    "0 0 28px rgba(212,175,55,0.30), 0 4px 16px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.22)",
+  _hover: {
+    background:
+      "linear-gradient(135deg, #F0DC82 0%, #E8C547 50%, #D4AF37 100%)",
+    boxShadow:
+      "0 0 44px rgba(212,175,55,0.50), 0 6px 22px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.28)",
+    transform: "translateY(-1px)",
+  },
+  _active: {
+    transform: "translateY(0px)",
+    boxShadow: "0 0 16px rgba(212,175,55,0.20)",
+  },
+} as const;
 
 const QUESTIONS = {
   experience: {
@@ -263,6 +285,20 @@ export function FreeApplicationModal({ isOpen, onClose }: Props) {
         );
         return;
       }
+      // Tracking: Application-Event für den Kanal feuern, über den der Nutzer gekommen ist
+      try {
+        const ref = sessionStorage.getItem("cc_tracking_ref");
+        if (ref) {
+          const sid = sessionStorage.getItem("cc_tracking_sid") ?? "unknown";
+          fetch("/api/tracking/event", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ slug: ref, type: "application", session_id: sid }),
+          }).catch(() => undefined);
+        }
+      } catch {
+        // Tracking-Fehler still ignorieren
+      }
       setStep(5);
     } finally {
       setSubmitting(false);
@@ -339,8 +375,19 @@ export function FreeApplicationModal({ isOpen, onClose }: Props) {
             />
           )}
 
-          <ModalHeader px={6} pt={6} pb={0} position="relative" zIndex={1}>
-            {step < 5 && !showWarning && (
+          <ModalHeader
+            px={6}
+            pt={6}
+            pb={0}
+            position="relative"
+            zIndex={1}
+            aria-hidden={showWarning}
+            sx={{
+              visibility: showWarning ? "hidden" : "visible",
+              pointerEvents: showWarning ? "none" : "auto",
+            }}
+          >
+            {step < 5 && (
               <Stack spacing={4}>
                 <HStack justify="space-between" align="center">
                   <Text
@@ -450,7 +497,7 @@ export function FreeApplicationModal({ isOpen, onClose }: Props) {
             </Box>
           </ModalBody>
 
-          {step < 5 && !showWarning && (
+          {step < 5 && (
             <ModalFooter
               px={6}
               pb={5}
@@ -459,6 +506,11 @@ export function FreeApplicationModal({ isOpen, onClose }: Props) {
               flexDirection="column"
               position="relative"
               zIndex={1}
+              aria-hidden={showWarning}
+              sx={{
+                visibility: showWarning ? "hidden" : "visible",
+                pointerEvents: showWarning ? "none" : "auto",
+              }}
             >
               {isSubmitStep ? (
                 <Button
@@ -597,14 +649,27 @@ function WarningOverlay({
       inset={0}
       zIndex={10}
       borderRadius="inherit"
+      w="100%"
+      h="100%"
       display="flex"
       flexDirection="column"
-      alignItems="center"
+      alignItems="stretch"
       justifyContent="center"
       textAlign="center"
-      px={{ base: 5, md: 10 }}
-      py={{ base: 6, md: 8 }}
+      px={6}
+      pt={{
+        base: "max(24px, env(safe-area-inset-top, 0px))",
+        md: 6,
+      }}
+      pb={{
+        base: "max(24px, env(safe-area-inset-bottom, 0px))",
+        md: 6,
+      }}
+      overflowY="auto"
+      overflowX="hidden"
       sx={{
+        WebkitOverflowScrolling: "touch",
+        overscrollBehavior: "contain",
         background: "rgba(10,10,12,0.88)",
         backdropFilter: "blur(16px)",
         WebkitBackdropFilter: "blur(16px)",
@@ -614,142 +679,141 @@ function WarningOverlay({
           : undefined,
       }}
     >
-      {/* Subtle warning accent line */}
-      <Box
-        w="48px"
-        h="3px"
-        borderRadius="full"
-        bg="linear-gradient(90deg, rgba(220,60,60,0.6), rgba(220,60,60,0.2))"
-        mb={5}
-      />
+      <Box w="100%" maxW="100%" flexShrink={0} mx="auto">
+        {/* Subtle warning accent line */}
+        <Box
+          w="48px"
+          h="3px"
+          borderRadius="full"
+          bg="linear-gradient(90deg, rgba(220,60,60,0.6), rgba(220,60,60,0.2))"
+          mb={{ base: 3, md: 5 }}
+          mx="auto"
+        />
 
-      <Box
-        w={{ base: "48px", md: "56px" }}
-        h={{ base: "48px", md: "56px" }}
-        borderRadius="full"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-        bg="rgba(220,60,60,0.10)"
-        border="1.5px solid rgba(220,60,60,0.30)"
-        mb={5}
-        sx={{
-          animation: "appWarningPulse 2.5s ease-in-out infinite",
-        }}
-      >
-        <Text
-          fontSize={{ base: "22px", md: "26px" }}
-          lineHeight="1"
-          userSelect="none"
-          color="rgba(248,113,113,0.85)"
+        <Box
+          w={{ base: "48px", md: "56px" }}
+          h={{ base: "48px", md: "56px" }}
+          borderRadius="full"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          bg="rgba(220,60,60,0.10)"
+          border="1.5px solid rgba(220,60,60,0.30)"
+          mb={{ base: 3, md: 5 }}
+          mx="auto"
+          sx={{
+            animation: "appWarningPulse 2.5s ease-in-out infinite",
+          }}
         >
-          !
-        </Text>
-      </Box>
+          <Text
+            fontSize={{ base: "22px", md: "26px" }}
+            lineHeight="1"
+            userSelect="none"
+            color="rgba(248,113,113,0.85)"
+          >
+            !
+          </Text>
+        </Box>
 
-      <Text
-        className="inter-bold"
-        fontSize="xs"
-        letterSpacing="0.22em"
-        textTransform="uppercase"
-        color="rgba(248,113,113,0.80)"
-        mb={4}
-      >
-        Wichtige Mitteilung
-      </Text>
+        <Text
+          className="inter-bold"
+          fontSize="xs"
+          letterSpacing="0.22em"
+          textTransform="uppercase"
+          color="rgba(248,113,113,0.80)"
+          mb={{ base: 3, md: 4 }}
+        >
+          Wichtige Mitteilung
+        </Text>
 
-      <Stack spacing={3} maxW="420px" mb={{ base: 5, md: 7 }}>
-        <Text
-          className="inter"
-          fontSize={{ base: "sm", md: "md" }}
-          lineHeight="1.7"
-          color="rgba(255,255,255,0.78)"
-        >
-          Das ist deine offizielle Bewerbung für Capital Circle.
-        </Text>
-        <Text
-          className="inter"
-          fontSize={{ base: "sm", md: "md" }}
-          lineHeight="1.7"
-          color="rgba(255,255,255,0.78)"
-        >
-          Wir wählen alle Teilnehmer nach einer ausführlichen Auswertung aus!
-        </Text>
-        <Text
-          className="inter"
-          fontSize={{ base: "sm", md: "md" }}
-          lineHeight="1.7"
-          color="rgba(255,255,255,0.78)"
-        >
-          Du hast eine{" "}
-          <Box as="span" className="inter-bold" color="rgba(248,113,113,0.90)">
-            einmalige Chance
-          </Box>{" "}
-          dich zu bewerben, sofern wir dich ablehnen ist diese Entscheidung{" "}
-          <Box as="span" className="inter-bold" color="rgba(248,113,113,0.90)">
-            final
-          </Box>
-          !
-        </Text>
-        <Text
+        <Stack spacing={3} mb={{ base: 5, md: 7 }}>
+          <Text
+            className="inter"
+            fontSize={{ base: "sm", md: "md" }}
+            lineHeight="1.7"
+            color="rgba(255,255,255,0.78)"
+          >
+            Das ist deine offizielle Bewerbung für Capital Circle.
+          </Text>
+          <Text
+            className="inter"
+            fontSize={{ base: "sm", md: "md" }}
+            lineHeight="1.7"
+            color="rgba(255,255,255,0.78)"
+          >
+            Wir wählen alle Teilnehmer nach einer ausführlichen Auswertung aus!
+          </Text>
+          <Text
+            className="inter"
+            fontSize={{ base: "sm", md: "md" }}
+            lineHeight="1.7"
+            color="rgba(255,255,255,0.78)"
+          >
+            Du hast eine{" "}
+            <Box as="span" className="inter-bold" color="rgba(248,113,113,0.90)">
+              einmalige Chance
+            </Box>{" "}
+            dich zu bewerben, sofern wir dich ablehnen ist diese Entscheidung{" "}
+            <Box as="span" className="inter-bold" color="rgba(248,113,113,0.90)">
+              final
+            </Box>
+            !
+          </Text>
+          <Text
+            className="inter-semibold"
+            fontSize={{ base: "sm", md: "md" }}
+            lineHeight="1.7"
+            color="rgba(255,255,255,0.88)"
+          >
+            Nimm dir also Zeit und beantworte alle Fragen ausführlich!
+          </Text>
+        </Stack>
+
+        <Button
+          variant="unstyled"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          w="full"
+          maxW="380px"
+          mx="auto"
+          minH={{ base: "44px", md: "48px" }}
+          px={5}
+          borderRadius="12px"
+          fontSize={{ base: "13px", md: "sm" }}
+          fontWeight="600"
           className="inter-semibold"
-          fontSize={{ base: "sm", md: "md" }}
-          lineHeight="1.7"
-          color="rgba(255,255,255,0.88)"
+          whiteSpace={{ base: "normal", md: "nowrap" }}
+          lineHeight="1.35"
+          textAlign="center"
+          isDisabled={!canDismiss}
+          onClick={onDismiss}
+          bg={canDismiss ? undefined : "rgba(255,255,255,0.04)"}
+          color={
+            canDismiss ? "#07080A" : "rgba(255,255,255,0.35)"
+          }
+          border="1px solid"
+          borderColor={
+            canDismiss ? "transparent" : "rgba(255,255,255,0.06)"
+          }
+          sx={
+            canDismiss
+              ? warningDismissGoldSx
+              : {
+                  _hover: {},
+                }
+          }
+          _disabled={{
+            opacity: 1,
+            cursor: "not-allowed",
+          }}
+          transition="all 200ms ease"
         >
-          Nimm dir also Zeit und beantworte alle Fragen ausführlich!
-        </Text>
-      </Stack>
-
-      <Button
-        variant="unstyled"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-        w="full"
-        maxW="380px"
-        minH={{ base: "44px", md: "48px" }}
-        px={5}
-        borderRadius="12px"
-        fontSize={{ base: "13px", md: "sm" }}
-        fontWeight="600"
-        className="inter-semibold"
-        isDisabled={!canDismiss}
-        onClick={onDismiss}
-        bg={
-          canDismiss
-            ? "rgba(255,255,255,0.10)"
-            : "rgba(255,255,255,0.04)"
-        }
-        color={
-          canDismiss ? "rgba(255,255,255,0.90)" : "rgba(255,255,255,0.35)"
-        }
-        border="1px solid"
-        borderColor={
-          canDismiss
-            ? "rgba(255,255,255,0.20)"
-            : "rgba(255,255,255,0.06)"
-        }
-        _hover={
-          canDismiss
-            ? {
-                bg: "rgba(255,255,255,0.16)",
-                borderColor: "rgba(255,255,255,0.30)",
-                transform: "translateY(-1px)",
-                boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
-              }
-            : {}
-        }
-        _disabled={{
-          opacity: 1,
-          cursor: "not-allowed",
-        }}
-        transition="all 200ms ease"
-      >
-        {canDismiss
-          ? "Ich habe verstanden — Bewerbung starten →"
-          : `Bitte lies die Mitteilung sorgfältig… (${countdown}s)`}
-      </Button>
+          {canDismiss
+            ? "Ich habe verstanden — Bewerbung starten →"
+            : `Bitte lies die Mitteilung sorgfältig… (${countdown}s)`}
+        </Button>
+      </Box>
     </Box>
   );
 }
@@ -1075,7 +1139,7 @@ function AccountStep({
 
 function ThanksStep() {
   return (
-    <Stack spacing={6} align="center" textAlign="center" py={6}>
+    <Stack spacing={6} align="center" textAlign="center" py={6} w="full">
       <Box position="relative" w="80px" h="80px">
         <Box
           position="absolute"
@@ -1118,66 +1182,15 @@ function ThanksStep() {
         lineHeight="1.2"
         letterSpacing="-0.02em"
         color="var(--color-text-primary)"
+        textAlign="center"
+        w="full"
       >
-        Deine Bewerbung ist eingegangen
+        Bewerbung eingegangen.
       </Text>
 
-      <Stack spacing={3} maxW="400px">
-        <HStack spacing={3} align="flex-start">
-          <Box
-            w="6px"
-            h="6px"
-            borderRadius="full"
-            bg="var(--color-accent-gold)"
-            mt="8px"
-            flexShrink={0}
-          />
-          <Text
-            fontSize="sm"
-            color="rgba(255,255,255,0.65)"
-            className="inter"
-            textAlign="left"
-          >
-            Bestätigungs-Email ist unterwegs
-          </Text>
-        </HStack>
-        <HStack spacing={3} align="flex-start">
-          <Box
-            w="6px"
-            h="6px"
-            borderRadius="full"
-            bg="var(--color-accent-gold)"
-            mt="8px"
-            flexShrink={0}
-          />
-          <Text
-            fontSize="sm"
-            color="rgba(255,255,255,0.65)"
-            className="inter"
-            textAlign="left"
-          >
-            Prüfung innerhalb von 24–48 Stunden
-          </Text>
-        </HStack>
-        <HStack spacing={3} align="flex-start">
-          <Box
-            w="6px"
-            h="6px"
-            borderRadius="full"
-            bg="var(--color-accent-gold)"
-            mt="8px"
-            flexShrink={0}
-          />
-          <Text
-            fontSize="sm"
-            color="rgba(255,255,255,0.65)"
-            className="inter"
-            textAlign="left"
-          >
-            Antwort per E-Mail
-          </Text>
-        </HStack>
-      </Stack>
+      <Box w="full" maxW="480px" alignSelf="stretch">
+        <ApplicationReceivedPendingBody />
+      </Box>
 
       <Stack spacing={2} w="full" maxW="300px" pt={2}>
         <Box
@@ -1224,7 +1237,7 @@ function CharCounterPill({ value, min }: { value: string; min: number }) {
   return (
     <HStack
       position="absolute"
-      top="8px"
+      bottom="10px"
       right="10px"
       spacing={1.5}
       bg="rgba(0,0,0,0.55)"

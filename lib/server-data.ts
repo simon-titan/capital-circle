@@ -78,6 +78,10 @@ export type AcademyModuleRow = {
   courseId: string;
   courseIcon: string | null;
   courseAccentColor: string | null;
+  /** Zugehoeriger Kurs ist als is_free markiert. */
+  courseIsFree: boolean;
+  /** Zugriff auf die Modul-Inhalte (is_free ODER is_paid). Fuer Free-Nutzer ist dies false bei Paid-Kursen. */
+  hasAccess: boolean;
   thumbnailSignedUrl: string | null;
   /** Sequenzielle Kurskette: vorheriger Kurs vollständig abgeschlossen */
   courseUnlocked: boolean;
@@ -324,7 +328,9 @@ export async function getRecommendedAcademyModuleFromOverview(
   supabase: ServerSupabase,
   rows: AcademyModuleRow[],
 ): Promise<RecommendedModuleData | null> {
-  const pick = rows.find((r) => r.courseUnlocked && r.unlocked && !r.completed && !r.isLocked);
+  const pick = rows.find(
+    (r) => r.hasAccess && r.courseUnlocked && r.unlocked && !r.completed && !r.isLocked,
+  );
   if (!pick) return null;
   const previewVideoStorageKey = await getPrimaryPublishedVideoStorageKey(supabase, pick.id);
   return {
@@ -408,7 +414,8 @@ export async function getAcademyModulesOverview(
       const course = Array.isArray(c) ? c[0] ?? null : c;
       return { ...m, courses: course };
     })
-    .filter((m) => userCanAccessAcademyModule(memberIsPaid, m.courses?.is_free));
+    // Interne "Nicht zugeordnet"-Kurse nie zeigen (ohne course_id fehlt courses ganz).
+    .filter((m) => m.courses && m.courses.slug !== "__unassigned__");
 
   list.sort((a, b) => {
     const sa = a.courses?.sort_order ?? 0;
@@ -525,6 +532,9 @@ export async function getAcademyModulesOverview(
     const { pct } = watchedTotalsFromMap(playlist, map);
     const totalDur = totalPlaylistDurationSeconds(playlist);
 
+    const courseIsFree = m.courses?.is_free === true;
+    const hasAccess = userCanAccessAcademyModule(memberIsPaid, m.courses?.is_free);
+
     out.push({
       id: m.id,
       title: m.title,
@@ -535,6 +545,8 @@ export async function getAcademyModulesOverview(
       courseId: m.course_id,
       courseIcon: m.courses?.icon ?? null,
       courseAccentColor: m.courses?.accent_color ?? null,
+      courseIsFree,
+      hasAccess,
       thumbnailSignedUrl: thumbnailUrls[i] ?? null,
       courseUnlocked,
       unlocked,
@@ -555,7 +567,10 @@ export async function getWelcomeDashboardMetricsFromOverview(
   rows: AcademyModuleRow[],
   supabase: ServerSupabase,
 ): Promise<WelcomeDashboardMetrics> {
-  const moduleIds = rows.map((r) => r.id);
+  // Fortschritts-Metriken nur ueber Module berechnen, auf die der Nutzer auch Zugriff hat
+  // (sonst erscheint ein Free-User mit 0 % auf allen Paid-Modulen).
+  const accessibleRows = rows.filter((r) => r.hasAccess);
+  const moduleIds = accessibleRows.map((r) => r.id);
   if (moduleIds.length === 0) {
     return {
       overallProgressPercent: 0,
@@ -594,7 +609,7 @@ export async function getWelcomeDashboardMetricsFromOverview(
   let completedVideos = 0;
   let completedModules = 0;
 
-  for (const r of rows) {
+  for (const r of accessibleRows) {
     const playlist = playlistByModule.get(r.id) ?? [];
     const map = parseVideoProgressByVideo(progByMod.get(r.id)?.video_progress_by_video);
     const { watched, total } = watchedTotalsFromMap(playlist, map);
@@ -607,14 +622,14 @@ export async function getWelcomeDashboardMetricsFromOverview(
     if (r.completed) completedModules++;
   }
 
-  const modPct = rows.length > 0 ? Math.round((completedModules / rows.length) * 100) : 0;
+  const modPct = accessibleRows.length > 0 ? Math.round((completedModules / accessibleRows.length) * 100) : 0;
   const vidPct = totalVideos > 0 ? Math.round((completedVideos / totalVideos) * 100) : 0;
-  const overallProgressPercent = rows.length > 0 || totalVideos > 0 ? Math.round((modPct + vidPct) / 2) : 0;
+  const overallProgressPercent = accessibleRows.length > 0 || totalVideos > 0 ? Math.round((modPct + vidPct) / 2) : 0;
 
   return {
     overallProgressPercent,
     completedModules,
-    totalModules: rows.length,
+    totalModules: accessibleRows.length,
     completedVideos,
     totalVideos,
   };
@@ -804,6 +819,10 @@ export type ArsenalAttachmentListItem = {
   course_slug: string | null;
   arsenal_category_id: string | null;
   category_name: string | null;
+  /** Attachment ist fuer Free-Nutzer freigeschaltet (is_free = true). */
+  isFree: boolean;
+  /** Aktueller Nutzer darf das Attachment downloaden. */
+  hasAccess: boolean;
 };
 
 /** Filter- und Anzeige-IDs für PDFs/Templates aus `standalone_attachments` (ohne Video). */
@@ -813,9 +832,21 @@ const ARSENAL_STANDALONE_VIDEO_ID = "__arsenal_standalone_video__";
 export async function getArsenalAttachmentsByKind(kind: "template" | "pdf"): Promise<ArsenalAttachmentListItem[]> {
   const supabase = await createClient();
 
+  // Paid-Status des aktuellen Nutzers ermitteln (Admin zaehlt hier wie Paid).
+  const { data: authData } = await supabase.auth.getUser();
+  let userIsPaid = false;
+  if (authData.user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_paid,is_admin")
+      .eq("id", authData.user.id)
+      .maybeSingle();
+    userIsPaid = Boolean(profile?.is_paid) || Boolean(profile?.is_admin);
+  }
+
   const { data: standaloneRows } = await supabase
     .from("standalone_attachments")
-    .select("id, filename, category_id, position")
+    .select("id, filename, category_id, position, is_free")
     .eq("kind", kind)
     .order("position", { ascending: true });
 
@@ -828,6 +859,7 @@ export async function getArsenalAttachmentsByKind(kind: "template" | "pdf"): Pro
 
   const fromStandalone: ArsenalAttachmentListItem[] = (standaloneRows ?? []).map((r) => {
     const aid = r.category_id ?? null;
+    const isFree = Boolean((r as { is_free?: boolean | null }).is_free);
     return {
       id: r.id,
       filename: r.filename,
@@ -840,12 +872,14 @@ export async function getArsenalAttachmentsByKind(kind: "template" | "pdf"): Pro
       course_slug: null,
       arsenal_category_id: aid,
       category_name: aid ? standaloneCatNameById.get(aid) ?? null : null,
+      isFree,
+      hasAccess: userIsPaid || isFree,
     };
   });
 
   const { data: rows, error } = await supabase
     .from("video_attachments")
-    .select("id, filename, video_id, arsenal_category_id")
+    .select("id, filename, video_id, arsenal_category_id, is_free")
     .eq("arsenal_kind", kind);
   if (error || !rows?.length) return fromStandalone;
 
@@ -875,7 +909,7 @@ export async function getArsenalAttachmentsByKind(kind: "template" | "pdf"): Pro
   const modMap = new Map(modPublished.map((m) => [m.id, m]));
   const courseIds = [...new Set(modPublished.map((m) => m.course_id).filter(Boolean) as string[])];
 
-  const { data: courses } = await supabase.from("courses").select("id, title, slug").in("id", courseIds);
+  const { data: courses } = await supabase.from("courses").select("id, title, slug, is_free").in("id", courseIds);
   const courseMap = new Map((courses ?? []).map((c) => [c.id, c]));
 
   const fromVideos: ArsenalAttachmentListItem[] = [];
@@ -887,6 +921,11 @@ export async function getArsenalAttachmentsByKind(kind: "template" | "pdf"): Pro
     const course = courseMap.get(mod.course_id);
     if (!course) continue;
     const aid = (r as { arsenal_category_id?: string | null }).arsenal_category_id ?? null;
+    const attachmentIsFree = Boolean((r as { is_free?: boolean | null }).is_free);
+    // Ein Video-Attachment ist fuer Free-Nutzer nur zugaenglich, wenn es explizit is_free ist
+    // UND das Parent-Modul zu einem is_free-Kurs gehoert (sonst waere der Kontext Paid).
+    const courseIsFree = Boolean((course as { is_free?: boolean | null }).is_free);
+    const freeAccessible = attachmentIsFree && courseIsFree;
     fromVideos.push({
       id: r.id,
       filename: r.filename,
@@ -899,6 +938,8 @@ export async function getArsenalAttachmentsByKind(kind: "template" | "pdf"): Pro
       course_slug: course.slug,
       arsenal_category_id: aid,
       category_name: aid ? catNameById.get(aid) ?? null : null,
+      isFree: freeAccessible,
+      hasAccess: userIsPaid || freeAccessible,
     });
   }
   return [...fromStandalone, ...fromVideos];
@@ -1157,3 +1198,177 @@ export async function getAnalysisPostById(id: string): Promise<AnalysisPostRow |
   const { data } = await supabase.from("analysis_posts").select("*").eq("id", id).maybeSingle();
   return (data as AnalysisPostRow | null) ?? null;
 }
+
+// ============================================================
+// Capital Circle News
+// ============================================================
+
+export type NewsPostRow = {
+  id: string;
+  title: string;
+  content: string;
+  excerpt: string | null;
+  cover_image_storage_key: string | null;
+  published_at: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type NewsPostWithCounts = NewsPostRow & {
+  like_count: number;
+  comment_count: number;
+  liked_by_me: boolean;
+  saved_by_me: boolean;
+  commented_by_me: boolean;
+};
+
+export type NewsCommentRow = {
+  id: string;
+  post_id: string;
+  user_id: string;
+  body: string;
+  created_at: string;
+  updated_at: string;
+  author_name: string | null;
+  author_avatar_url: string | null;
+};
+
+export async function getNewsPosts(): Promise<NewsPostRow[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("news_posts")
+    .select("*")
+    .order("published_at", { ascending: false });
+  return (data as NewsPostRow[] | null) ?? [];
+}
+
+export async function getNewsPostById(id: string): Promise<NewsPostRow | null> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("news_posts").select("*").eq("id", id).maybeSingle();
+  return (data as NewsPostRow | null) ?? null;
+}
+
+/**
+ * Haengt je Post like_count, comment_count, liked_by_me, saved_by_me, commented_by_me an.
+ * Liest die drei Interaktionstabellen parallel und aggregiert clientseitig im Server.
+ */
+export async function getNewsPostsWithCounts(userId: string | null): Promise<NewsPostWithCounts[]> {
+  const supabase = await createClient();
+  const [{ data: postsData }, likesRes, commentsRes, savesRes] = await Promise.all([
+    supabase.from("news_posts").select("*").order("published_at", { ascending: false }),
+    supabase.from("news_likes").select("post_id, user_id"),
+    supabase.from("news_comments").select("post_id, user_id"),
+    userId
+      ? supabase.from("news_saves").select("post_id").eq("user_id", userId)
+      : Promise.resolve({ data: [] as { post_id: string }[] }),
+  ]);
+
+  const posts = (postsData as NewsPostRow[] | null) ?? [];
+  const likes = ((likesRes.data as { post_id: string; user_id: string }[] | null) ?? []);
+  const comments = ((commentsRes.data as { post_id: string; user_id: string }[] | null) ?? []);
+  const saves = ((savesRes.data as { post_id: string }[] | null) ?? []);
+
+  const likeCountByPost = new Map<string, number>();
+  const likedByMe = new Set<string>();
+  for (const l of likes) {
+    likeCountByPost.set(l.post_id, (likeCountByPost.get(l.post_id) ?? 0) + 1);
+    if (userId && l.user_id === userId) likedByMe.add(l.post_id);
+  }
+  const commentCountByPost = new Map<string, number>();
+  const commentedByMe = new Set<string>();
+  for (const c of comments) {
+    commentCountByPost.set(c.post_id, (commentCountByPost.get(c.post_id) ?? 0) + 1);
+    if (userId && c.user_id === userId) commentedByMe.add(c.post_id);
+  }
+  const savedByMe = new Set(saves.map((s) => s.post_id));
+
+  return posts.map<NewsPostWithCounts>((p) => ({
+    ...p,
+    like_count: likeCountByPost.get(p.id) ?? 0,
+    comment_count: commentCountByPost.get(p.id) ?? 0,
+    liked_by_me: likedByMe.has(p.id),
+    saved_by_me: savedByMe.has(p.id),
+    commented_by_me: commentedByMe.has(p.id),
+  }));
+}
+
+export async function getNewsPostInteractions(postId: string, userId: string | null): Promise<{
+  like_count: number;
+  liked_by_me: boolean;
+  saved_by_me: boolean;
+  comments: NewsCommentRow[];
+  my_comment: NewsCommentRow | null;
+}> {
+  const supabase = await createClient();
+  const [likesRes, savesRes, commentsRes] = await Promise.all([
+    supabase.from("news_likes").select("user_id").eq("post_id", postId),
+    userId
+      ? supabase.from("news_saves").select("post_id").eq("post_id", postId).eq("user_id", userId).maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabase
+      .from("news_comments")
+      .select("id, post_id, user_id, body, created_at, updated_at, profiles:profiles!news_comments_user_id_fkey(full_name, username, avatar_url)")
+      .eq("post_id", postId)
+      .order("created_at", { ascending: false }),
+  ]);
+
+  const likes = ((likesRes.data as { user_id: string }[] | null) ?? []);
+  const like_count = likes.length;
+  const liked_by_me = userId ? likes.some((l) => l.user_id === userId) : false;
+  const saved_by_me = Boolean((savesRes as { data: unknown }).data);
+
+  type CommentRowRaw = {
+    id: string;
+    post_id: string;
+    user_id: string;
+    body: string;
+    created_at: string;
+    updated_at: string;
+    profiles:
+      | { full_name: string | null; username: string | null; avatar_url: string | null }
+      | { full_name: string | null; username: string | null; avatar_url: string | null }[]
+      | null;
+  };
+
+  const rawComments = (commentsRes.data as CommentRowRaw[] | null) ?? [];
+  const comments: NewsCommentRow[] = rawComments.map((c) => {
+    const profileRaw = c.profiles;
+    const profile = Array.isArray(profileRaw) ? profileRaw[0] ?? null : profileRaw;
+    const name = profile?.full_name?.trim() || profile?.username?.trim() || null;
+    return {
+      id: c.id,
+      post_id: c.post_id,
+      user_id: c.user_id,
+      body: c.body,
+      created_at: c.created_at,
+      updated_at: c.updated_at,
+      author_name: name,
+      author_avatar_url: profile?.avatar_url ?? null,
+    };
+  });
+
+  const my_comment = userId ? comments.find((c) => c.user_id === userId) ?? null : null;
+
+  return { like_count, liked_by_me, saved_by_me, comments, my_comment };
+}
+
+/** Anzahl der Posts, die seit dem last_seen_at des Users veroeffentlicht wurden. */
+export async function getUnreadNewsCount(userId: string): Promise<number> {
+  const supabase = await createClient();
+  const { data: status } = await supabase
+    .from("news_read_status")
+    .select("last_seen_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  const lastSeen = (status as { last_seen_at: string } | null)?.last_seen_at ?? null;
+
+  let q = supabase.from("news_posts").select("id", { count: "exact", head: true });
+  if (lastSeen) {
+    q = q.gt("published_at", lastSeen);
+  }
+  const { count } = await q;
+  return count ?? 0;
+}
+

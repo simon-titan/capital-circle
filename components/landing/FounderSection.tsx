@@ -80,7 +80,7 @@ export function FounderSection() {
       as="section"
       w="100%"
       position="relative"
-      // No overflow="hidden" — would block the mobile scroll slider
+      // No overflow="hidden" — can clip nested shadows / sticky content
       py={{ base: 14, md: 20 }}
       sx={{
         backgroundImage: "url('/bg/landscape.png')",
@@ -470,37 +470,12 @@ export function FounderSection() {
                 Nachgewiesene Ergebnisse
               </Text>
 
-              {/*
-                Mobile slider: breaks out of the px={4} padding of the inner container
-                via negative margin, so cards run edge-to-edge to the screen border.
-                First card gets pl=4 to still start with breathing room.
-              */}
               <Box
-                display={{ base: "flex", md: "none" }}
-                mx={-4}
-                gap={3}
-                pb={2}
+                display="grid"
                 sx={{
-                  overflowX: "auto",
-                  overflowY: "visible",
-                  scrollSnapType: "x mandatory",
-                  WebkitOverflowScrolling: "touch",
-                  "&::-webkit-scrollbar": { display: "none" },
-                  scrollbarWidth: "none",
-                  msOverflowStyle: "none",
-                  paddingLeft: "20px",
-                  paddingRight: "20px",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: { base: "8px", md: "10px" },
                 }}
-              >
-                {ACHIEVEMENT_CARDS.map((card) => (
-                  <AchievementCard key={card.label} card={card} mobile />
-                ))}
-              </Box>
-
-              {/* Desktop: 2x2 grid */}
-              <Box
-                display={{ base: "none", md: "grid" }}
-                sx={{ gridTemplateColumns: "1fr 1fr", gap: "10px" }}
               >
                 {ACHIEVEMENT_CARDS.map((card) => (
                   <AchievementCard key={card.label} card={card} />
@@ -552,20 +527,12 @@ export function FounderSection() {
 }
 
 /* ── Achievement Card Sub-Component ── */
-function AchievementCard({
-  card,
-  mobile = false,
-}: {
-  card: (typeof ACHIEVEMENT_CARDS)[number];
-  mobile?: boolean;
-}) {
+function AchievementCard({ card }: { card: (typeof ACHIEVEMENT_CARDS)[number] }) {
   const Icon = card.icon;
   return (
     <Box
-      flexShrink={0}
-      w={mobile ? "68vw" : "auto"}
-      maxW={mobile ? "240px" : undefined}
-      p={4}
+      minW={0}
+      p={{ base: 3, md: 4 }}
       borderRadius="14px"
       sx={{
         background: card.bg,
@@ -573,7 +540,6 @@ function AchievementCard({
         backdropFilter: "blur(16px)",
         WebkitBackdropFilter: "blur(16px)",
         boxShadow: `0 4px 20px ${card.glow}, 0 0 0 1px rgba(255,255,255,0.03) inset`,
-        scrollSnapAlign: "start",
         transition: "transform 220ms ease, box-shadow 220ms ease",
         _hover: {
           transform: "translateY(-3px)",

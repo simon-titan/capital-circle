@@ -41,6 +41,8 @@ export type Database = {
           application_status?: "pending" | "approved" | "rejected" | null;
           last_login_at?: string | null;
           unsubscribed_at?: string | null;
+          // 047_step2_applications
+          step2_application_status?: "pending" | "approved" | "rejected" | null;
           // 043_phase2_stripe
           stripe_customer_id?: string | null;
           membership_tier?: "free" | "monthly" | "lifetime" | "ht_1on1";
@@ -284,6 +286,21 @@ export type Database = {
           call_scheduled_at: string | null;
           outcome: "closed_won" | "closed_lost" | "no_show" | "pending" | null;
           internal_notes: string | null;
+          created_at: string;
+        };
+        Insert: Record<string, unknown>;
+        Update: Record<string, unknown>;
+      };
+      // 047_step2_applications
+      step2_applications: {
+        Row: {
+          id: string;
+          user_id: string;
+          answers: Json;
+          status: "pending" | "approved" | "rejected";
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          rejection_reason: string | null;
           created_at: string;
         };
         Insert: Record<string, unknown>;
