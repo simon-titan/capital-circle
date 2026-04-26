@@ -27,7 +27,7 @@ export async function POST(request: Request) {
 
   const { data: profile } = await service
     .from("profiles")
-    .select("application_status, membership_tier, is_paid, step2_application_status, full_name, email")
+    .select("application_status, membership_tier, is_paid, step2_application_status, full_name")
     .eq("id", user.id)
     .single();
 
@@ -41,7 +41,6 @@ export async function POST(request: Request) {
     is_paid?: boolean;
     step2_application_status?: string | null;
     full_name?: string | null;
-    email?: string | null;
   };
 
   if (p.application_status !== "approved") {
@@ -117,7 +116,7 @@ export async function POST(request: Request) {
     console.error("[step2/create] profile sync failed:", profileErr);
   }
 
-  const recipientEmail = (p.email ?? user.email ?? "").trim();
+  const recipientEmail = (user.email ?? "").trim();
   const fullName = (p.full_name ?? "").trim();
   const firstName = fullName.split(/\s+/)[0] ?? "";
 

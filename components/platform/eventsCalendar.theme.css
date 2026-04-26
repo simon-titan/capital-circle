@@ -127,6 +127,23 @@
   box-shadow: none;
 }
 
+/* Locked (premium-only) events for Free Members: de-emphasize */
+.events-calendar-root .fc-event.fc-event--premium-locked {
+  filter: grayscale(80%);
+  opacity: 0.5;
+  pointer-events: auto; /* keep hover state for tooltip, but block click in JS */
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Free Call (Sunday) highlight */
+.events-calendar-root .fc-event.fc-event--free-call {
+  background: #D4AF37 !important;
+  border-color: #D4AF37 !important;
+  color: #0a0a0a !important;
+}
+
 /*
  * Wochenansicht (timeGrid): Events sind oft nur wenige Pixel hoch oder schmal (Inset).
  * Volles Padding + overflow/sticky kann Titel dann vertikal oder horizontal abschneiden —

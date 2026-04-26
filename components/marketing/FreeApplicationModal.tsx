@@ -24,10 +24,9 @@ import {
 import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ApplicationReceivedPendingBody } from "@/components/platform/ApplicationReceivedPendingBody";
 import { glassPrimaryButtonProps } from "@/components/ui/glassButtonStyles";
 
-const STEPS = 5;
+const STEPS = 4;
 const MIN_CHARS = 150;
 const WARNING_SECONDS = 5;
 
@@ -174,15 +173,6 @@ export function FreeApplicationModal({ isOpen, onClose }: Props) {
     return undefined;
   }, [step, siteKey]);
 
-  // Auto-redirect after thanks
-  useEffect(() => {
-    if (step !== 5) return;
-    const timer = setTimeout(() => {
-      router.push("/pending-review");
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, [step, router]);
-
   const resetModal = useCallback(() => {
     setShowWarning(true);
     setWarningCountdown(WARNING_SECONDS);
@@ -205,10 +195,10 @@ export function FreeApplicationModal({ isOpen, onClose }: Props) {
   }, []);
 
   const handleClose = useCallback(() => {
-    if (step === 5 || showWarning) return;
+    if (showWarning) return;
     resetModal();
     onClose();
-  }, [step, showWarning, resetModal, onClose]);
+  }, [showWarning, resetModal, onClose]);
 
   const currentStepMeetsMin = useMemo(() => {
     if (step === 1) return experience.trim().length >= MIN_CHARS;
@@ -299,7 +289,10 @@ export function FreeApplicationModal({ isOpen, onClose }: Props) {
       } catch {
         // Tracking-Fehler still ignorieren
       }
-      setStep(5);
+      onClose();
+      router.push(json.redirectTo ?? "/pending-review");
+      router.refresh();
+      resetModal();
     } finally {
       setSubmitting(false);
     }
@@ -330,8 +323,8 @@ export function FreeApplicationModal({ isOpen, onClose }: Props) {
         onClose={handleClose}
         size="xl"
         scrollBehavior="inside"
-        closeOnOverlayClick={!showWarning && step < 5}
-        closeOnEsc={!showWarning && step < 5}
+        closeOnOverlayClick={!showWarning}
+        closeOnEsc={!showWarning}
         isCentered
       >
         <ModalOverlay
@@ -493,8 +486,7 @@ export function FreeApplicationModal({ isOpen, onClose }: Props) {
                   turnstileContainerRef={turnstileContainerRef}
                 />
               )}
-              {step === 5 && <ThanksStep />}
-            </Box>
+              </Box>
           </ModalBody>
 
           {step < 5 && (
@@ -608,17 +600,7 @@ export function FreeApplicationModal({ isOpen, onClose }: Props) {
                 className="inter"
                 textAlign="center"
               >
-                Mit dem Absenden stimmst du unserer{" "}
-                <Box
-                  as="a"
-                  href="/datenschutz"
-                  target="_blank"
-                  color="rgba(255,255,255,0.28)"
-                  textDecoration="underline"
-                >
-                  Datenschutzerklärung
-                </Box>{" "}
-                zu.
+                Mit dem Absenden stimmst du unserer Datenschutzerklärung zu.
               </Text>
             </ModalFooter>
           )}
@@ -1129,94 +1111,6 @@ function AccountStep({
           Einloggen
         </Box>
       </Text>
-    </Stack>
-  );
-}
-
-/* ================================================================
-   Thanks Step
-   ================================================================ */
-
-function ThanksStep() {
-  return (
-    <Stack spacing={6} align="center" textAlign="center" py={6} w="full">
-      <Box position="relative" w="80px" h="80px">
-        <Box
-          position="absolute"
-          inset={0}
-          borderRadius="full"
-          border="1.5px solid rgba(212,175,55,0.3)"
-          sx={{ animation: "appRipple 2.5s ease-out infinite" }}
-        />
-        <Box
-          position="absolute"
-          inset={0}
-          borderRadius="full"
-          border="1.5px solid rgba(212,175,55,0.2)"
-          sx={{ animation: "appRipple 2.5s ease-out 0.8s infinite" }}
-        />
-        <Box
-          w="80px"
-          h="80px"
-          borderRadius="full"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          bg="linear-gradient(135deg, rgba(212,175,55,0.22), rgba(212,175,55,0.12))"
-          border="1.5px solid rgba(212,175,55,0.55)"
-          color="var(--color-accent-gold)"
-          fontSize="32px"
-          position="relative"
-          zIndex={1}
-          boxShadow="0 0 30px rgba(212,175,55,0.2)"
-        >
-          ✓
-        </Box>
-      </Box>
-
-      <Text
-        as="h2"
-        className="inter"
-        fontWeight={400}
-        fontSize={{ base: "2xl", md: "3xl" }}
-        lineHeight="1.2"
-        letterSpacing="-0.02em"
-        color="var(--color-text-primary)"
-        textAlign="center"
-        w="full"
-      >
-        Bewerbung eingegangen.
-      </Text>
-
-      <Box w="full" maxW="480px" alignSelf="stretch">
-        <ApplicationReceivedPendingBody />
-      </Box>
-
-      <Stack spacing={2} w="full" maxW="300px" pt={2}>
-        <Box
-          h="2px"
-          w="full"
-          bg="rgba(255,255,255,0.06)"
-          borderRadius="full"
-          overflow="hidden"
-        >
-          <Box
-            h="full"
-            bg="linear-gradient(90deg, rgba(212,175,55,0.5), rgba(212,175,55,0.9))"
-            borderRadius="full"
-            sx={{
-              animation: "appRedirectFill 3s linear forwards",
-            }}
-          />
-        </Box>
-        <Text
-          fontSize="xs"
-          color="rgba(255,255,255,0.30)"
-          className="inter"
-        >
-          Du wirst in wenigen Sekunden weitergeleitet…
-        </Text>
-      </Stack>
     </Stack>
   );
 }

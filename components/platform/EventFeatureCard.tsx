@@ -22,6 +22,8 @@ type EventFeatureCardProps = {
   embedded?: boolean;
   /** Nächstes anstehendes Event: Gold-Ring + Badge (Dashboard / Events-Übersicht) */
   nextEventSpotlight?: boolean;
+  /** If false: the current user is a Free member (not paid). Default: true */
+  isPaid?: boolean;
 };
 
 /** Einzelnes Event als hervorgehobene Glass-Card (DESIGN.json: Radley, Inter, Mono, Accent Blue). */
@@ -30,6 +32,7 @@ export function EventFeatureCard({
   variant = "standard",
   embedded = false,
   nextEventSpotlight = false,
+  isPaid = true,
 }: EventFeatureCardProps) {
   const start = new Date(event.start_time);
   const end = event.end_time ? new Date(event.end_time) : null;
@@ -53,6 +56,10 @@ export function EventFeatureCard({
         ? "0 0 36px rgba(212, 175, 55, 0.35), 0 0 0 1px rgba(232, 197, 71, 0.5)"
         : "0 0 40px rgba(212, 175, 55, 0.3), 0 0 0 1px rgba(232, 197, 71, 0.48)"
       : undefined;
+
+  const berlinWeekday = new Intl.DateTimeFormat("de-DE", { weekday: "long", timeZone: "Europe/Berlin" }).format(start);
+  const isSunday = berlinWeekday === "Sonntag";
+  const lockedForFree = !isPaid && !isSunday;
 
   const exportIcs = () => {
     const ics = buildIcs(event);
@@ -94,6 +101,16 @@ export function EventFeatureCard({
                 boxShadow: "0 12px 36px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(212, 175, 55, 0.24)",
               }
       }
+      // If the user is a free member and this is not the Sunday Free Call, visually de-emphasize and disable interactions.
+      sx={
+        lockedForFree
+          ? {
+              filter: "grayscale(70%)",
+              opacity: 0.55,
+              pointerEvents: "none",
+            }
+          : undefined
+      }
     >
       <Box
         position="absolute"
@@ -127,6 +144,58 @@ export function EventFeatureCard({
           Nächstes Event
         </Badge>
       ) : null}
+      {/* If this is the Free Call (Sunday) show a distinguishing badge. If locked for free members, show a Premium badge. */}
+      {(() => {
+        if (!isPaid && !isSunday) {
+          return (
+            <Badge
+              position="absolute"
+              top={embedded ? 2 : 3}
+              left={embedded ? 2 : 3}
+              zIndex={3}
+              px={2}
+              py={1}
+              borderRadius="full"
+              bg="rgba(255,255,255,0.04)"
+              color="rgba(255,255,255,0.6)"
+              borderWidth="1px"
+              borderColor="rgba(255,255,255,0.06)"
+              className="inter-medium"
+              fontSize="10px"
+              textTransform="uppercase"
+              letterSpacing="0.12em"
+              pointerEvents="none"
+            >
+              Nur Premium
+            </Badge>
+          );
+        }
+        if (!isPaid && isSunday) {
+          return (
+            <Badge
+              position="absolute"
+              top={embedded ? 2 : 3}
+              left={embedded ? 2 : 3}
+              zIndex={3}
+              px={2}
+              py={1}
+              borderRadius="full"
+              bg="rgba(212, 175, 55, 0.24)"
+              color="var(--color-accent-gold-light)"
+              borderWidth="1px"
+              borderColor="rgba(232, 197, 71, 0.45)"
+              className="inter-medium"
+              fontSize="10px"
+              textTransform="uppercase"
+              letterSpacing="0.12em"
+              pointerEvents="none"
+            >
+              Free Call
+            </Badge>
+          );
+        }
+        return null;
+      })()}
 
       <Box display="flex" gap={embedded ? 1.5 : 2.5} flex="1" flexDir="column" alignItems="center" textAlign="center">
         <HStack
@@ -225,33 +294,35 @@ export function EventFeatureCard({
         )}
 
         <VStack spacing={embedded ? 1.5 : 2} pt={embedded ? 0 : 1} align="center" w="100%">
-          <HStack spacing={embedded ? 2 : 3} justify="center" flexWrap="wrap">
-            <Button
-              as="a"
-              href={googleUrl}
-              target="_blank"
-              rel="noreferrer"
-              size="xs"
-              variant="ghost"
-              leftIcon={<GoogleCalendarBrandIcon boxSize="16px" />}
-              border="1px solid rgba(212, 175, 55, 0.28)"
-              color="var(--color-accent-gold-light)"
-              _hover={{ bg: "rgba(212, 175, 55, 0.12)" }}
-            >
-              Google Kalender
-            </Button>
-            <Button
-              onClick={exportIcs}
-              size="xs"
-              variant="ghost"
-              leftIcon={<AppleBrandIcon boxSize="16px" />}
-              border="1px solid rgba(255, 255, 255, 0.2)"
-              color="var(--color-text-primary)"
-              _hover={{ bg: "rgba(255,255,255,0.08)" }}
-            >
-              Apple Kalender
-            </Button>
-          </HStack>
+            <HStack spacing={embedded ? 2 : 3} justify="center" flexWrap="wrap">
+              <Button
+                as="a"
+                href={isPaid ? googleUrl : "#"}
+                target={isPaid ? "_blank" : undefined}
+                rel={isPaid ? "noreferrer" : undefined}
+                size="xs"
+                variant="ghost"
+                leftIcon={<GoogleCalendarBrandIcon boxSize="16px" />}
+                border="1px solid rgba(212, 175, 55, 0.28)"
+                color="var(--color-accent-gold-light)"
+                _hover={isPaid ? { bg: "rgba(212, 175, 55, 0.12)" } : undefined}
+                aria-disabled={!isPaid}
+              >
+                Google Kalender
+              </Button>
+              <Button
+                onClick={isPaid ? exportIcs : undefined}
+                size="xs"
+                variant="ghost"
+                leftIcon={<AppleBrandIcon boxSize="16px" />}
+                border="1px solid rgba(255, 255, 255, 0.2)"
+                color="var(--color-text-primary)"
+                _hover={isPaid ? { bg: "rgba(255,255,255,0.08)" } : undefined}
+                aria-disabled={!isPaid}
+              >
+                Apple Kalender
+              </Button>
+            </HStack>
         </VStack>
       </Box>
     </GlassCard>

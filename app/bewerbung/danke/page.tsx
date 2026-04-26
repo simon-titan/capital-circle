@@ -8,11 +8,11 @@ export const metadata: Metadata = {
   description: "Deine erweiterte Bewerbung ist eingegangen. Buche jetzt dein persönliches Gespräch.",
 };
 
-function buildCalendlyUrl(userId: string, email: string, firstName: string): string | null {
-  const base = process.env.NEXT_PUBLIC_CALENDLY_URL?.trim();
-  if (!base) return null;
+const CALENDLY_BASE =
+  "https://calendly.com/contact-capitalcircletrading/30min?background_color=222222&text_color=ffffff&primary_color=d4af37&hide_gdpr_banner=1";
 
-  const url = new URL(base);
+function buildCalendlyUrl(userId: string, email: string, firstName: string): string {
+  const url = new URL(CALENDLY_BASE);
   if (firstName) url.searchParams.set("first_name", firstName);
   if (email) url.searchParams.set("email", email);
   url.searchParams.set("utm_source", "capital-circle");
@@ -32,13 +32,13 @@ export default async function DankePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name,email")
+    .select("full_name")
     .eq("id", authData.user.id)
     .single();
 
   const fullName = (profile?.full_name as string | null) ?? "";
   const firstName = fullName.trim().split(/\s+/)[0] ?? "";
-  const email = (profile?.email as string | null) ?? authData.user.email ?? "";
+  const email = authData.user.email ?? "";
 
   const calendlyUrl = buildCalendlyUrl(authData.user.id, email, firstName);
 

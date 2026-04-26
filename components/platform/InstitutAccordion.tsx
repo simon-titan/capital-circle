@@ -9,10 +9,13 @@ import {
   AccordionPanel,
   Badge,
   Box,
+  Divider,
+  Grid,
   HStack,
   Text,
   VStack,
 } from "@chakra-ui/react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   BookOpen,
@@ -97,6 +100,90 @@ function groupModulesByCourse(modules: AcademyModuleRow[]) {
       modules: mods,
     };
   });
+}
+
+function FreeModuleCard({ m }: { m: AcademyModuleRow }) {
+  const href = moduleHref({ id: m.id, slug: m.slug });
+  const pct = m.completed ? 100 : m.progressPercent;
+  const hasProgress = pct > 0;
+
+  return (
+    <Link href={href} style={{ textDecoration: "none" }}>
+      <Box
+        borderRadius="16px"
+        overflow="hidden"
+        bg="rgba(255,255,255,0.06)"
+        borderWidth="1px"
+        borderColor="rgba(255,255,255,0.08)"
+        transition="border-color 0.2s ease, box-shadow 0.2s ease"
+        _hover={{
+          borderColor: "rgba(212,175,55,0.35)",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.25)",
+        }}
+        cursor="pointer"
+      >
+        <Box
+          position="relative"
+          w="100%"
+          aspectRatio="16 / 9"
+          bg="#0a0a0a"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          overflow="hidden"
+        >
+          <Image
+            src="/logo/logo-white.png"
+            alt="Capital Circle"
+            width={200}
+            height={56}
+            style={{
+              objectFit: "contain",
+              width: "60%",
+              maxWidth: 180,
+              height: "auto",
+              mixBlendMode: "lighten",
+            }}
+          />
+        </Box>
+        <Box px={4} pt={3} pb={4}>
+          <Text
+            className="inter-semibold"
+            fontSize="sm"
+            color="var(--color-text-primary)"
+            noOfLines={1}
+            mb={3}
+          >
+            {m.title}
+          </Text>
+          <Box position="relative">
+            <Box
+              h="6px"
+              borderRadius="full"
+              bg="rgba(255,255,255,0.08)"
+              overflow="hidden"
+            >
+              <Box
+                h="full"
+                w={`${pct}%`}
+                borderRadius="full"
+                bg={hasProgress ? "#22c55e" : "rgba(255,255,255,0.12)"}
+                transition="width 0.3s ease"
+              />
+            </Box>
+            <Text
+              className="jetbrains-mono"
+              fontSize="10px"
+              color={hasProgress ? "#22c55e" : "var(--color-text-muted)"}
+              mt={1.5}
+            >
+              {pct}%
+            </Text>
+          </Box>
+        </Box>
+      </Box>
+    </Link>
+  );
 }
 
 function ModuleListRow({ m }: { m: AcademyModuleRow }) {
@@ -213,11 +300,82 @@ function ModuleListRow({ m }: { m: AcademyModuleRow }) {
   );
 }
 
-export function InstitutAccordion({ modules }: { modules: AcademyModuleRow[] }) {
-  const groups = useMemo(() => groupModulesByCourse(modules), [modules]);
+function LockedCourseHeader({
+  g,
+  idx,
+}: {
+  g: ReturnType<typeof groupModulesByCourse>[number];
+  idx: number;
+}) {
+  const rawColor = g.courseAccentColor ?? FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
+  const accent = resolveAccent(rawColor);
+  const CourseIcon = resolveIcon(g.courseIcon, idx);
+  const moduleCount = g.modules.length;
 
-  // Falls die Seite mit einem Hash-Link (#kostenloser-einblick, #aufzeichnungen, …) aufgerufen wird,
-  // expandieren wir das passende AccordionItem als Startzustand.
+  return (
+    <Box
+      borderRadius={{ base: "18px", md: "20px" }}
+      px={{ base: 5, md: 6 }}
+      py={{ base: 5, md: 6 }}
+      minH={{ base: "76px", md: "88px" }}
+      bg="rgba(255,255,255,0.04)"
+      borderWidth="1px"
+      borderColor={accent.border}
+      borderLeftWidth="4px"
+      mb={4}
+      opacity={0.85}
+    >
+      <HStack textAlign="left" spacing={{ base: 4, md: 5 }}>
+        <Box
+          flexShrink={0}
+          w={{ base: "48px", md: "56px" }}
+          h={{ base: "48px", md: "56px" }}
+          borderRadius="14px"
+          bg="rgba(255,255,255,0.05)"
+          borderWidth="1px"
+          borderColor={accent.border}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <CourseIcon
+            size={28}
+            strokeWidth={1.75}
+            style={{ color: "rgba(240,240,242,0.55)" }}
+            aria-hidden
+          />
+        </Box>
+        <Box flex={1} minW={0}>
+          <HStack spacing={2} align="center" flexWrap="wrap">
+            <Text
+              className="inter-semibold"
+              fontSize={{ base: "lg", md: "xl" }}
+              lineHeight="1.25"
+              color="var(--color-text-primary)"
+            >
+              {g.courseTitle}
+            </Text>
+            <HStack spacing={1.5} color="var(--color-accent-gold)">
+              <Lock size={16} aria-hidden />
+              <Text className="inter-medium" fontSize="11px" textTransform="uppercase" letterSpacing="0.06em">
+                Nur für vollwertige Member
+              </Text>
+            </HStack>
+          </HStack>
+          <Text className="inter" fontSize={{ base: "sm", md: "md" }} color="var(--color-text-muted)" mt={1}>
+            {moduleCount} {moduleCount === 1 ? "Modul" : "Module"}
+          </Text>
+        </Box>
+      </HStack>
+    </Box>
+  );
+}
+
+function CourseAccordionGroup({
+  groups,
+}: {
+  groups: ReturnType<typeof groupModulesByCourse>;
+}) {
   const defaultIndex = useMemo(() => {
     if (typeof window === "undefined") return [0];
     const hash = window.location.hash.replace(/^#/, "").trim();
@@ -302,9 +460,7 @@ export function InstitutAccordion({ modules }: { modules: AcademyModuleRow[] }) 
                         ) : null}
                       </HStack>
                       <Text className="inter" fontSize={{ base: "sm", md: "md" }} color="var(--color-text-muted)" mt={1}>
-                        {courseLocked
-                          ? "Schließe den vorherigen Kurs ab, um die Module zu öffnen."
-                          : `${g.modules.length} ${g.modules.length === 1 ? "Modul" : "Module"}`}
+                        {`${g.modules.length} ${g.modules.length === 1 ? "Modul" : "Module"}`}
                       </Text>
                     </Box>
                   </HStack>
@@ -332,5 +488,62 @@ export function InstitutAccordion({ modules }: { modules: AcademyModuleRow[] }) 
         );
       })}
     </Accordion>
+  );
+}
+
+export function InstitutAccordion({
+  modules,
+  isPaid = true,
+}: {
+  modules: AcademyModuleRow[];
+  isPaid?: boolean;
+}) {
+  const groups = useMemo(() => groupModulesByCourse(modules), [modules]);
+
+  if (groups.length === 0) return null;
+
+  if (isPaid) {
+    return <CourseAccordionGroup groups={groups} />;
+  }
+
+  const freeModules = modules.filter((m) => m.courseIsFree);
+  const paidGroups = groups.filter((g) => !g.modules[0]?.courseIsFree);
+
+  return (
+    <Box>
+      {freeModules.length > 0 && (
+        <Grid
+          templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }}
+          gap={{ base: 4, md: 5 }}
+        >
+          {freeModules.map((m) => (
+            <FreeModuleCard key={m.id} m={m} />
+          ))}
+        </Grid>
+      )}
+
+      {paidGroups.length > 0 && (
+        <>
+          <HStack my={8} align="center" spacing={4}>
+            <Divider borderColor="rgba(212,175,55,0.3)" />
+            <Text
+              whiteSpace="nowrap"
+              px={4}
+              className="inter-semibold"
+              color="var(--color-accent-gold)"
+              fontSize="sm"
+            >
+              Capital Circle Member
+            </Text>
+            <Divider borderColor="rgba(212,175,55,0.3)" />
+          </HStack>
+          <VStack align="stretch" spacing={0}>
+            {paidGroups.map((g, idx) => (
+              <LockedCourseHeader key={g.courseId} g={g} idx={idx} />
+            ))}
+          </VStack>
+        </>
+      )}
+    </Box>
   );
 }

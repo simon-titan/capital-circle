@@ -21,9 +21,9 @@ export default function BewerbungPage() {
       funnelVideoSrc={step2FunnelVideo}
       landingSlug="bewerbung"
       ctaOverrides={{
-        primary: "Ergreife deine Chance!",
+        primary: "ZUGANG BEANTRAGEN",
         secondary: "Bist du dir sicher dass du dir diese Möglichkeit verdient hast?",
-        videoEndedLabel: "Ergreife deine Chance!",
+        videoEndedLabel: "ZUGANG BEANTRAGEN",
         trustLine: null,
         subheadline:
           "Bewirb dich für einen der {exklusiven} Plätze bei {Capital Circle} nur ausgewählte {Trader} werden aufgenommen.",

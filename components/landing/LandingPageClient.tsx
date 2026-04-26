@@ -14,6 +14,10 @@ const ReviewSection = dynamic(
   () => import("./ReviewSection").then((m) => ({ default: m.ReviewSection })),
   { loading: () => <Box h="400px" bg="var(--color-bg-primary, #07080A)" /> },
 );
+const CasesSection = dynamic(
+  () => import("./CasesSection").then((m) => ({ default: m.CasesSection })),
+  { loading: () => <Box h="400px" bg="var(--color-bg-primary, #07080A)" /> },
+);
 const FounderSection = dynamic(
   () => import("./FounderSection").then((m) => ({ default: m.FounderSection })),
   { loading: () => <Box h="500px" bg="var(--color-bg-secondary, #0C0D10)" /> },
@@ -156,10 +160,15 @@ export function LandingPageClient({
         }}
       >
         <Box position="relative" zIndex={1}>
-          <HeroSection onApply={openModal} ctaOverrides={ctaOverrides} funnelVideoSrc={funnelVideoSrc} />
+          <HeroSection
+            onApply={openModal}
+            ctaOverrides={ctaOverrides}
+            funnelVideoSrc={funnelVideoSrc}
+            landingSlug={landingSlug}
+          />
 
           <GoldGlowDivider />
-          <ReviewSection landingSlug={landingSlug} />
+          {landingSlug === "bewerbung" ? <CasesSection /> : <ReviewSection landingSlug={landingSlug} />}
           <GoldGlowDivider />
           <FounderSection />
           <GoldGlowDivider />
@@ -192,11 +201,8 @@ export function LandingPageClient({
                 mx="auto"
                 lineHeight="1.7"
               >
-                Mit dem Abschicken der Bewerbung stimmst du unserer{" "}
-                <Box as="a" href="/datenschutz" color="rgba(212,175,55,0.55)" textDecoration="underline">
-                  Datenschutzerklärung
-                </Box>{" "}
-                zu. Trading und Investitionen sind mit erheblichen Verlustrisiken verbunden.
+                Mit dem Abschicken der Bewerbung stimmst du unserer Datenschutzerklärung zu. Trading
+                und Investitionen sind mit erheblichen Verlustrisiken verbunden.
                 Frühere Ergebnisse sind keine Garantie für zukünftige Gewinne.
               </Text>
               <Text fontSize="xs" color="rgba(255,255,255,0.15)" className="inter">

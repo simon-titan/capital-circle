@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/middleware";
 import { updateLastLoginIfNeeded } from "@/lib/auth/middleware-last-login";
+import { isFreeMember } from "@/lib/membership";
 
 // Marketing-Pfade (öffentlich, kein Auth nötig). /free + /pricing + /apply
 // werden in den Marketing-Paketen 3/4/7 aufgebaut.
@@ -25,6 +26,14 @@ function isPublicPath(pathname: string): boolean {
 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+
+  // Statische Assets aus `public/tg-slides/`, `public/founder/`, … — nicht durch
+  // Pending-/Onboarding-Gates schicken, sonst liefert der Browser für
+  // <img src="/…"> eine Redirect-HTML statt JPEG.
+  if (pathname.startsWith("/tg-slides/") || pathname.startsWith("/founder/")) {
+    return NextResponse.next();
+  }
+
   const { supabase, response } = createClient(request);
 
   // API-Routen: getUser() ist nötig damit @supabase/ssr expirierte Tokens refresht und
@@ -116,7 +125,7 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  const onboardingDone = Boolean(
+  const onboardingDone = isFreeMember(profile) || Boolean(
     profile?.codex_accepted && profile?.usage_agreement_accepted,
   );
 
@@ -159,5 +168,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   // Statische Icons: Safari/WebKit u. a. holen apple-touch-icon / favicon ohne HTML — nicht zur Login-HTML umleiten.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|logo/|bg/|svg/|apple-touch-icon|new-apple).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|logo/|bg/|svg/|tg-slides/|founder/|apple-touch-icon|new-apple).*)",
+  ],
 };

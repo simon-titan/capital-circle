@@ -192,6 +192,7 @@ export async function POST(request: NextRequest) {
     await sendApplicationReceived({
       firstName,
       email,
+      password,
       userId,
       applicationId: inserted.id as string,
     });

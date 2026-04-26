@@ -1,19 +1,8 @@
 "use client";
 
 import { Box, HStack, Stack, Text } from "@chakra-ui/react";
-import {
-  TrendingUp,
-  Users,
-  DollarSign,
-  Award,
-  BookOpen,
-  Brain,
-  BarChart2,
-  Layers,
-  Target,
-  ClipboardList,
-  Zap,
-} from "lucide-react";
+import Image from "next/image";
+import { TrendingUp, Users, DollarSign, Award } from "lucide-react";
 import { landingConfig } from "@/config/landing-config";
 
 // Colors aligned with HeroSection CARD_THEMES (warm gold family only)
@@ -51,25 +40,13 @@ const ACHIEVEMENT_CARDS = [
   {
     icon: TrendingUp,
     label: "Aktives Trading",
-    value: "6 Jahre",
+    value: "5 Jahre",
     sub: "An den Kapitalmärkten",
     accent: "#B4C8E8",
     glow: "rgba(180,200,232,0.14)",
     bg: "linear-gradient(135deg, rgba(180,200,230,0.10) 0%, rgba(212,175,55,0.05) 50%, rgba(8,8,8,0.62) 100%)",
     border: "rgba(190,210,240,0.30)",
   },
-];
-
-// Expertise mini-cards with fitting icons
-const EXPERTISE_ITEMS = [
-  { icon: BarChart2,     label: "Futures und Forex Trading" },
-  { icon: Target,        label: "Risikomanagement und Positionsgrößen" },
-  { icon: Brain,         label: "Mentale Stärke und Trading Psychologie" },
-  { icon: Layers,        label: "Institutional Order Flow Analyse" },
-  { icon: Zap,           label: "Funded Account Strategien und Skalierung" },
-  { icon: TrendingUp,    label: "Liquiditätszonen und Smart Money Konzepte" },
-  { icon: ClipboardList, label: "Journaling und Performance Tracking" },
-  { icon: BookOpen,      label: "Marktstruktur und Multi Timeframe Analyse" },
 ];
 
 export function FounderSection() {
@@ -213,37 +190,15 @@ export function FounderSection() {
                   background="linear-gradient(90deg, transparent, rgba(212,175,55,0.75), transparent)"
                   zIndex={1}
                 />
-                <Box
-                  w="full"
-                  h="full"
-                  display="flex"
-                  flexDirection="column"
-                  alignItems="center"
-                  justifyContent="center"
-                  gap={3}
-                >
-                  <Box
-                    w="64px"
-                    h="64px"
-                    borderRadius="full"
-                    bg="rgba(212,175,55,0.10)"
-                    border="1px solid rgba(212,175,55,0.32)"
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    color="var(--color-accent-gold, #D4AF37)"
-                    fontSize="26px"
-                    className="radley-regular"
-                  >
-                    {founder.name[0]}
-                  </Box>
-                  <Text
-                    fontSize="xs"
-                    color="rgba(255,255,255,0.22)"
-                    className="inter"
-                  >
-                    Foto folgt
-                  </Text>
+                <Box position="relative" w="full" h="full" minH={0}>
+                  <Image
+                    src={founder.image}
+                    alt={founder.name}
+                    fill
+                    sizes="(max-width: 48em) 220px, (max-width: 64em) 280px, 320px"
+                    style={{ objectFit: "cover" }}
+                    priority
+                  />
                 </Box>
               </Box>
             </Box>
@@ -317,6 +272,46 @@ export function FounderSection() {
                   <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.77a8.16 8.16 0 0 0 4.77 1.52V6.82a4.85 4.85 0 0 1-1-.13z" />
                 </svg>
               </Box>
+              <Box
+                as="a"
+                href={founder.socialLinks.telegram}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Telegram-Gruppe"
+                w="40px"
+                h="40px"
+                borderRadius="full"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                sx={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  color: "rgba(255,255,255,0.45)",
+                  transition: "all 220ms ease",
+                  _hover: {
+                    background: "rgba(212,175,55,0.12)",
+                    borderColor: "rgba(212,175,55,0.40)",
+                    color: "var(--color-accent-gold, #D4AF37)",
+                    transform: "translateY(-2px)",
+                  },
+                }}
+              >
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M22 2L11 13" />
+                  <path d="M22 2l-7 20-4-9-9-4 20-7z" />
+                </svg>
+              </Box>
             </HStack>
           </Box>
 
@@ -368,7 +363,7 @@ export function FounderSection() {
                   className="inter-semibold"
                   sx={{ textShadow: "0 0 12px rgba(212,175,55,0.35)" }}
                 >
-                  6 Jahren
+                  5 Jahren
                 </Box>
                 . Nicht als Hobby. Nicht nebenbei.{" "}
                 <Box
@@ -449,12 +444,16 @@ export function FounderSection() {
                 lineHeight="1.82"
                 fontStyle="italic"
               >
-                Kein Fluff. Kein Upsell.{" "}
-                <Box as="span" color="var(--color-accent-gold, #D4AF37)" className="inter-semibold" fontStyle="normal">
-                  Kein System das heute funktioniert und morgen nicht.
-                </Box>{" "}
-                Nur eine echte Methodik, ein echter Mentor und ein Umfeld das
-                dich besser macht.
+                Kein Fluff. Kein Copy-Paste System.{" "}
+                <Box
+                  as="span"
+                  color="var(--color-accent-gold, #D4AF37)"
+                  className="inter-semibold"
+                  fontStyle="normal"
+                >
+                  Nur eine Methodik die funktioniert – und ein Umfeld das dich zwingt besser zu
+                  werden.
+                </Box>
               </Text>
             </Stack>
 
@@ -479,43 +478,6 @@ export function FounderSection() {
               >
                 {ACHIEVEMENT_CARDS.map((card) => (
                   <AchievementCard key={card.label} card={card} />
-                ))}
-              </Box>
-            </Stack>
-
-            {/* ── Expertise Mini-Cards ── */}
-            <Stack gap={4}>
-              <Stack gap={0.5}>
-                <Text
-                  fontSize="xs"
-                  letterSpacing="0.18em"
-                  textTransform="uppercase"
-                  color="rgba(255,255,255,0.35)"
-                  className="inter-semibold"
-                >
-                  Expertise
-                </Text>
-                <Text
-                  fontSize="xs"
-                  color="rgba(255,255,255,0.28)"
-                  className="inter"
-                >
-                  Was ich dir beibringen kann
-                </Text>
-              </Stack>
-
-              <Box
-                display="grid"
-                sx={{
-                  gridTemplateColumns: {
-                    base: "1fr",
-                    sm: "1fr 1fr",
-                  },
-                  gap: "8px",
-                }}
-              >
-                {EXPERTISE_ITEMS.map((item) => (
-                  <ExpertiseCard key={item.label} item={item} />
                 ))}
               </Box>
             </Stack>
@@ -591,51 +553,5 @@ function AchievementCard({ card }: { card: (typeof ACHIEVEMENT_CARDS)[number] })
         </Stack>
       </Stack>
     </Box>
-  );
-}
-
-/* ── Expertise Mini-Card Sub-Component ── */
-function ExpertiseCard({ item }: { item: (typeof EXPERTISE_ITEMS)[number] }) {
-  const Icon = item.icon;
-  return (
-    <HStack
-      gap={3}
-      px={3}
-      py={2.5}
-      borderRadius="10px"
-      sx={{
-        background: "rgba(212,175,55,0.04)",
-        border: "1px solid rgba(212,175,55,0.14)",
-        transition: "all 200ms ease",
-        _hover: {
-          background: "rgba(212,175,55,0.08)",
-          borderColor: "rgba(212,175,55,0.28)",
-        },
-      }}
-    >
-      <Box
-        flexShrink={0}
-        w="28px"
-        h="28px"
-        borderRadius="7px"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-        sx={{
-          background: "rgba(212,175,55,0.12)",
-          border: "1px solid rgba(212,175,55,0.22)",
-        }}
-      >
-        <Icon size={13} strokeWidth={1.75} color="#D4AF37" />
-      </Box>
-      <Text
-        fontSize="sm"
-        color="rgba(255,255,255,0.72)"
-        className="inter"
-        lineHeight="1.4"
-      >
-        {item.label}
-      </Text>
-    </HStack>
   );
 }

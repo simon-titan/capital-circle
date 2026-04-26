@@ -229,7 +229,7 @@ export function DashboardAppointmentCard({ data }: { data: Step2AppointmentData 
                 <Flex align="center" gap={2.5} px={1}>
                   <Box w="28px" h="1px" bg="rgba(255,255,255,0.10)" />
                   <Text className="inter" fontSize="xs" color="rgba(255,255,255,0.35)" textAlign="center">
-                    kostenlos & unverbindlich
+                    kostenlos & verbindlich
                   </Text>
                   <Box w="28px" h="1px" bg="rgba(255,255,255,0.10)" />
                 </Flex>

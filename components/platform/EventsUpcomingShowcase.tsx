@@ -5,10 +5,12 @@ import { CalendarCheck2 } from "lucide-react";
 
 type EventsUpcomingShowcaseProps = {
   events: EventFeatureItem[];
+  /** Wenn false: aktueller Nutzer ist Free (nicht bezahlt) */
+  isPaid?: boolean;
 };
 
 /** Obere Sektion: die drei nächsten anstehenden Events als Karten-Showcase. */
-export function EventsUpcomingShowcase({ events }: EventsUpcomingShowcaseProps) {
+export function EventsUpcomingShowcase({ events, isPaid = true }: EventsUpcomingShowcaseProps) {
   return (
     <GlassCard p={{ base: 4, md: 5 }}>
       <Box display="flex" alignItems="center" gap={3} mb={6}>
@@ -56,6 +58,7 @@ export function EventsUpcomingShowcase({ events }: EventsUpcomingShowcaseProps) 
               event={ev}
               variant={index === 0 ? "featured" : index === 2 ? "compact" : "standard"}
               nextEventSpotlight={index === 0}
+              isPaid={isPaid}
             />
           ))}
         </Grid>

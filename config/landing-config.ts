@@ -11,7 +11,7 @@ export interface LandingFounder {
   bio: string[];
   achievements: string[];
   checklist: string[];
-  socialLinks: { instagram: string; tiktok: string };
+  socialLinks: { instagram: string; tiktok: string; telegram: string };
 }
 
 export interface LandingStat {
@@ -90,7 +90,7 @@ export const landingConfig: LandingConfig = {
 
   features: [
     { icon: "VideoCamera", label: "Exklusive Lernmaterialien", detail: "Über 120 Std. von Video-Modulen bis Tests" },
-    { icon: "ChartLineUp", label: "Bewährte Trading-Strategien", detail: "Aus 6 Jahren aktivem Trading" },
+    { icon: "ChartLineUp", label: "Bewährte Trading-Strategien", detail: "Aus 5 Jahren aktivem Trading" },
     { icon: "Users", label: "Exklusive Community", detail: "Traders auf Augenhöhe" },
     { icon: "BookOpen", label: "Strukturierter Lehrplan", detail: "Von Basics bis Profi-Setups" },
     { icon: "Target", label: "Persönliches Mentoring", detail: "Direktes Feedback auf dein Trading" },
@@ -100,19 +100,19 @@ export const landingConfig: LandingConfig = {
   communityCard: { icon: "Trophy", label: "Handverlesene Community", detail: "Jede Bewerbung wird persönlich geprüft" },
 
   founder: {
-    image: "/placeholder-founder.jpg",
+    image: "/founder/founder.jpeg",
     name: "Emre Kopal",
     subtitle: "GRÜNDER & HEAD TRADER",
     bio: [
-      "Ich trade seit über 6 Jahren. Nicht als Hobby. Nicht nebenbei. Vollzeit, an echten Märkten, mit echtem Geld. Ich habe den siebenstelligen Funded Status erreicht und über 300.000 € in verifizierten Payouts ausgezahlt bekommen.",
+      "Ich trade seit über 5 Jahren. Nicht als Hobby. Nicht nebenbei. Vollzeit, an echten Märkten, mit echtem Geld. Ich habe den siebenstelligen Funded Status erreicht und über 300.000 € in verifizierten Payouts ausgezahlt bekommen.",
       "Irgendwann war mir klar: Was ich aufgebaut habe, ist zu wertvoll um es für mich zu behalten. Aber ich wollte keinen Massenkurs bauen, der jeden reinlässt. Deshalb habe ich Capital Circle gegründet. Eine Community, in der nur Trader landen, die es wirklich ernst meinen.",
-      "Kein Fluff. Kein Upsell. Kein System das heute funktioniert und morgen nicht. Nur eine echte Methodik, ein echter Mentor und ein Umfeld das dich besser macht.",
+      "Kein Fluff. Kein Copy-Paste System. Nur eine Methodik die funktioniert – und ein Umfeld das dich zwingt besser zu werden.",
     ],
     achievements: [
       "Siebenstelliger Funded Status",
       "300.000 € verifizierte Payouts",
       "1.000+ ausgebildete Trader",
-      "6 Jahre aktives Trading",
+      "5 Jahre aktives Trading",
     ],
     checklist: [
       "Futures und Forex Trading",
@@ -124,11 +124,15 @@ export const landingConfig: LandingConfig = {
       "Journaling und Performance Tracking",
       "Marktstruktur und Multi Timeframe Analyse",
     ],
-    socialLinks: { instagram: "#", tiktok: "#" },
+    socialLinks: {
+      instagram: "#",
+      tiktok: "#",
+      telegram: "https://t.me/capitalcircletrading",
+    },
   },
 
   stats: [
-    { value: "6", suffix: " Jahre", label: "Aktives Trading" },
+    { value: "5", suffix: " Jahre", label: "Aktives Trading" },
     { value: "300", suffix: ".000 €+", label: "In Payouts" },
     { value: "1.000", suffix: "+", label: "Ausgebildete Trader" },
     { value: "7", suffix: "-stellig", label: "Funded Status" },

@@ -598,7 +598,7 @@ function WarningOverlay({
 
         <Stack spacing={3} maxW="420px" mb={{ base: 5, md: 7 }} mx="auto">
           <Text className="inter" fontSize={{ base: "sm", md: "md" }} lineHeight="1.7" color="rgba(255,255,255,0.78)">
-            Das ist deine erweiterte Bewerbung für Capital Circle.
+            Emre liest diese Bewerbung persönlich. Überzeuge ihn.
           </Text>
           <Text className="inter" fontSize={{ base: "sm", md: "md" }} lineHeight="1.7" color="rgba(255,255,255,0.78)">
             Wir wählen alle Teilnehmer nach einer ausführlichen Auswertung aus!
@@ -774,14 +774,16 @@ function TextareaStep({
         <Box position="relative">
           <Textarea
             {...inputStyles}
-            minH="150px"
+            minH={{ base: "200px", md: "180px" }}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={question.placeholder}
             resize="vertical"
             borderRadius="14px"
             className="inter"
-            fontSize="sm"
+            fontSize={{ base: "md", md: "sm" }}
+            py={{ base: 4, md: 3 }}
+            px={{ base: 4, md: 3 }}
           />
           {question.minLength && (
             <CharCounterPill value={value} min={question.minLength} />
@@ -838,6 +840,9 @@ function TextInputStep({
           borderRadius="12px"
           className="inter"
           autoFocus
+          h={{ base: "52px", md: "44px" }}
+          fontSize={{ base: "md", md: "sm" }}
+          px={{ base: 4, md: 3 }}
         />
         {question.helper && (
           <FormHelperText color="rgba(255,255,255,0.4)" fontSize="xs">

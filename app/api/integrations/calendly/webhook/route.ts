@@ -57,13 +57,13 @@ async function handleInviteeCreated(payload: CalendlyPayload) {
 
   let targetUserId = userId;
 
+  // Fallback: User-ID ueber auth.users E-Mail aufloesen (profiles hat keine email-Spalte)
   if (!targetUserId && inviteeEmail) {
-    const { data: profile } = await service
-      .from("profiles")
-      .select("id")
-      .eq("email", inviteeEmail)
-      .maybeSingle();
-    targetUserId = (profile?.id as string) ?? null;
+    const { data: authData } = await service.auth.admin.listUsers({ perPage: 1 });
+    const matchedUser = authData?.users?.find(
+      (u) => u.email?.toLowerCase() === inviteeEmail,
+    );
+    targetUserId = matchedUser?.id ?? null;
   }
 
   if (!targetUserId) {
@@ -74,17 +74,30 @@ async function handleInviteeCreated(payload: CalendlyPayload) {
     return;
   }
 
+  const now = new Date().toISOString();
+
   const { error } = await service
     .from("step2_applications")
     .update({
       calendly_event_uri: eventUri,
       calendly_invitee_uri: inviteeUri,
-      calendly_booked_at: scheduledAt ?? new Date().toISOString(),
+      calendly_booked_at: scheduledAt ?? now,
+      status: "approved",
+      reviewed_at: now,
     })
     .eq("user_id", targetUserId);
 
   if (error) {
     console.error("[calendly/webhook] update failed:", error);
+  }
+
+  const { error: profileErr } = await service
+    .from("profiles")
+    .update({ step2_application_status: "approved" })
+    .eq("id", targetUserId);
+
+  if (profileErr) {
+    console.error("[calendly/webhook] profile approve failed:", profileErr);
   }
 }
 

@@ -19,6 +19,6 @@ type EventItem = {
   live_session_id?: string | null;
 };
 
-export function EventsPageCalendar({ events }: { events: EventItem[] }) {
-  return <EventsCalendar events={events} />;
+export function EventsPageCalendar({ events, isPaid = true }: { events: EventItem[]; isPaid?: boolean }) {
+  return <EventsCalendar events={events} isPaid={isPaid} />;
 }

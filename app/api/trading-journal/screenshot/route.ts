@@ -10,7 +10,7 @@ function extFromFileName(fileName: string): string {
 }
 
 /**
- * Presigned PUT fuer Trade-Screenshots (Paid-Nutzer, eigenes Journal).
+ * Presigned PUT fuer Trade-Screenshots (eingeloggte Nutzer, eigenes Journal).
  * GET /api/trading-journal/screenshot?tradeId=&journalId=&fileName=&contentType=
  */
 export async function GET(request: Request) {
@@ -35,11 +35,6 @@ export async function GET(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase.from("profiles").select("is_paid").eq("id", user.id).maybeSingle();
-  if (!profile?.is_paid) {
-    return NextResponse.json({ ok: false, error: "paid_only" }, { status: 403 });
   }
 
   const { data: journal } = await supabase

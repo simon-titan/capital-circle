@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { EventsPageCalendar } from "@/components/platform/EventsPageCards";
 import { EventsUpcomingShowcase } from "@/components/platform/EventsUpcomingShowcase";
-import { PaywallOverlay } from "@/components/ui/PaywallOverlay";
 import { getCurrentUserAndProfile } from "@/lib/server-data";
 
 export default async function EventsPage() {
@@ -47,14 +46,12 @@ export default async function EventsPage() {
 
   const content = (
     <Stack spacing={{ base: 8, md: 10 }}>
-      <EventsUpcomingShowcase events={upcoming ?? []} />
-      <EventsPageCalendar events={allEvents} />
+      <EventsUpcomingShowcase events={upcoming ?? []} isPaid={isPaid} />
+      <EventsPageCalendar events={allEvents} isPaid={isPaid} />
     </Stack>
   );
 
-  if (!isPaid) {
-    return <PaywallOverlay active>{content}</PaywallOverlay>;
-  }
-
+  // Always render the events content. For Free Members we handle highlighting and
+  // the greyed/locked states inside the event components instead of showing a full-page paywall.
   return content;
 }

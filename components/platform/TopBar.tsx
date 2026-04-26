@@ -33,6 +33,7 @@ import {
   ChevronDown,
   GraduationCap,
   LayoutDashboard,
+  Lock,
   LogOut,
   Menu as MenuIcon,
   MessageCircle,
@@ -69,6 +70,31 @@ const arsenalSubLinks = [
   { href: "/arsenal/pdfs", label: "PDFs" },
 ] as const;
 
+const freeMobileNavItems: Array<{
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+}> = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/news", label: "Capital Circle News", icon: MessageCircle },
+  { href: "/ausbildung", label: "Institut", icon: GraduationCap },
+  { href: "/trading-journal", label: "Journal", icon: BookMarked },
+  { href: "/events", label: "Live Events", icon: Calendar },
+  { href: "/live-session", label: "Live Session", icon: Radio },
+];
+
+const freeMobilePremiumItems: Array<{
+  label: string;
+  icon: typeof LayoutDashboard;
+}> = [
+  { label: "Codex", icon: BookOpen },
+  { label: "Hausaufgabe & Checkliste", icon: BookMarked },
+  { label: "Tools & Software", icon: Package },
+  { label: "Fremdkapital", icon: Package },
+  { label: "Templates", icon: Package },
+  { label: "PDFs", icon: BookMarked },
+];
+
 function isNavActive(pathname: string | null, href: string): boolean {
   if (!pathname) return false;
   if (href === "/dashboard") return pathname === "/dashboard";
@@ -104,7 +130,9 @@ function useUnreadNews(pathname: string | null): number {
   // Wenn der Nutzer die News-Seite oeffnet, wird serverseitig last_seen_at gesetzt.
   // Hier lokal ausblenden, damit die UI sofort reagiert.
   useEffect(() => {
-    if (pathname?.startsWith("/news")) setCount(0);
+    if (!pathname?.startsWith("/news")) return;
+    const timeout = window.setTimeout(() => setCount(0), 0);
+    return () => window.clearTimeout(timeout);
   }, [pathname]);
 
   return count;
@@ -116,6 +144,7 @@ function useFreeBanner(supabase: ReturnType<typeof createClient>) {
   const [show, setShow] = useState(false);
   // Default true: Stream-Nav ausgeblendet bis Profil geladen ist (verhindert Flackern bei Paid-Usern).
   const [isPaid, setIsPaid] = useState(true);
+  const [isPending, setIsPending] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -124,17 +153,20 @@ function useFreeBanner(supabase: ReturnType<typeof createClient>) {
         if (!user) return;
         const { data: profile } = await supabase
           .from("profiles")
-          .select("is_paid, step2_application_status")
+          .select("is_paid, step2_application_status, application_status")
           .eq("id", user.id)
           .maybeSingle();
         if (!profile) return;
-        const paidFlag = Boolean((profile as Record<string, unknown>).is_paid);
+        const p = profile as Record<string, unknown>;
+        const paidFlag = Boolean(p.is_paid);
         setIsPaid(paidFlag);
-        // FreeBanner nur fuer Nicht-Paid-Nutzer ohne Step-2-Bewerbung
+        setIsPending(p.application_status === "pending");
         const isFree = !paidFlag;
-        const noStep2 = (profile as Record<string, unknown>).step2_application_status == null;
+        const noStep2 = p.step2_application_status == null;
+        const applicationApproved = p.application_status === "approved";
         if (typeof window !== "undefined" && localStorage.getItem(FREE_BANNER_KEY) !== "1") {
-          if (isFree && noStep2) setShow(true);
+          // Banner nur nach Freischaltung der Bewerbung (pending/null/rejected: kein Banner)
+          if (isFree && noStep2 && applicationApproved) setShow(true);
         }
       } catch {
         // silent — Banner optional
@@ -149,7 +181,7 @@ function useFreeBanner(supabase: ReturnType<typeof createClient>) {
     setShow(false);
   };
 
-  return { show, dismiss, isPaid };
+  return { show, dismiss, isPaid, isPending };
 }
 
 export function TopBar() {
@@ -159,7 +191,9 @@ export function TopBar() {
   const { isOpen: drawerOpen, onOpen: onDrawerOpen, onClose: onDrawerClose } = useDisclosure();
   const unreadNews = useUnreadNews(pathname);
   const newsActive = !!pathname && pathname.startsWith("/news");
-  const { show: showFreeBanner, dismiss: dismissFreeBanner, isPaid } = useFreeBanner(supabase);
+  const { show: showFreeBanner, dismiss: dismissFreeBanner, isPaid, isPending } = useFreeBanner(supabase);
+
+  const lockIcon = isPending ? <Lock size={14} strokeWidth={2} color="rgba(255,255,255,0.35)" /> : undefined;
 
   // Stream-Nav (/stream) nur fuer Free-User (nicht is_paid) sichtbar.
   const visibleNavItems = isPaid
@@ -180,13 +214,154 @@ export function TopBar() {
     router.refresh();
   };
 
-  const NavRow = ({
+  const renderNavRows = ({
     onNavigate,
     showActions,
   }: {
     onNavigate?: () => void;
     showActions?: boolean;
-  }) => (
+  }) => {
+    if (!isPaid) {
+      return (
+        <Stack gap={3} w="100%">
+          <Stack gap={2}>
+            {freeMobileNavItems.map((item) => {
+              const active = item.href === "/news" ? newsActive : isNavActive(pathname, item.href);
+              const Icon = item.icon;
+              const newsBadge = item.href === "/news" && unreadNews > 0 ? (
+                <Box
+                  minW="20px"
+                  h="20px"
+                  px={1.5}
+                  borderRadius="full"
+                  bg="#D4AF37"
+                  color="#0C0D10"
+                  fontSize="10px"
+                  className="inter-semibold"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  {unreadNews > 99 ? "99+" : unreadNews}
+                </Box>
+              ) : undefined;
+
+              return (
+                <Button
+                  key={item.href}
+                  as={Link}
+                  href={item.href}
+                  onClick={onNavigate}
+                  size="sm"
+                  variant={active ? "solid" : "ghost"}
+                  justifyContent="flex-start"
+                  leftIcon={<Icon size={18} strokeWidth={2} />}
+                  rightIcon={isPending ? lockIcon : newsBadge}
+                  bg={active ? "rgba(212, 175, 55, 0.35)" : "transparent"}
+                  color="var(--color-text-primary)"
+                  borderWidth="1px"
+                  borderColor={active ? "rgba(212, 175, 55, 0.55)" : "transparent"}
+                  _hover={{
+                    bg: active ? "rgba(212, 175, 55, 0.45)" : "rgba(255, 255, 255, 0.06)",
+                  }}
+                  borderRadius="md"
+                  className="inter-medium"
+                >
+                  {item.label}
+                </Button>
+              );
+            })}
+
+            <HStack pt={2} justify="space-between" align="center">
+              <Text fontSize="xs" color="var(--color-text-tertiary)" className="inter-semibold">
+                Premium
+              </Text>
+              <Text
+                as="span"
+                px={2}
+                py="2px"
+                borderRadius="full"
+                borderWidth="1px"
+                borderColor="rgba(255, 255, 255, 0.12)"
+                bg="rgba(255, 255, 255, 0.05)"
+                color="rgba(255, 255, 255, 0.48)"
+                fontSize="9px"
+                letterSpacing="0.08em"
+                textTransform="uppercase"
+                className="inter-semibold"
+              >
+                Capital Circle Member
+              </Text>
+            </HStack>
+
+            {freeMobilePremiumItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Button
+                  key={item.label}
+                  size="sm"
+                  variant="ghost"
+                  justifyContent="flex-start"
+                  leftIcon={<Icon size={18} strokeWidth={2} />}
+                  rightIcon={<Lock size={14} strokeWidth={2} color="rgba(255,255,255,0.34)" />}
+                  isDisabled
+                  aria-disabled="true"
+                  bg="rgba(255, 255, 255, 0.03)"
+                  color="rgba(255, 255, 255, 0.38)"
+                  borderWidth="1px"
+                  borderColor="rgba(255, 255, 255, 0.08)"
+                  borderRadius="md"
+                  className="inter-medium"
+                  _disabled={{
+                    opacity: 1,
+                    cursor: "not-allowed",
+                  }}
+                  _hover={{
+                    bg: "rgba(255, 255, 255, 0.03)",
+                  }}
+                >
+                  {item.label}
+                </Button>
+              );
+            })}
+          </Stack>
+
+          {showActions ? (
+            <Stack gap={2} pt={2} borderTopWidth="1px" borderColor="var(--color-border)">
+              <Button
+                as={Link}
+                href="/settings"
+                onClick={onNavigate}
+                size="sm"
+                variant="ghost"
+                justifyContent="flex-start"
+                leftIcon={<UserRound size={18} />}
+                rightIcon={lockIcon}
+                className="inter-medium"
+              >
+                Einstellungen
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                justifyContent="flex-start"
+                leftIcon={<LogOut size={18} />}
+                onClick={() => {
+                  onNavigate?.();
+                  void onLogout();
+                }}
+                className="inter-medium"
+                color="#F87171"
+              >
+                Abmelden
+              </Button>
+            </Stack>
+          ) : null}
+        </Stack>
+      );
+    }
+
+    return (
     <Stack gap={3} w="100%">
       <Stack gap={2}>
             {visibleNavItems.slice(0, 3).map((item) => {
@@ -202,6 +377,7 @@ export function TopBar() {
                   variant={active ? "solid" : "ghost"}
                   justifyContent="flex-start"
                   leftIcon={<Icon size={18} strokeWidth={2} />}
+                  rightIcon={lockIcon}
                   bg={active ? "rgba(212, 175, 55, 0.35)" : "transparent"}
                   color="var(--color-text-primary)"
                   borderWidth="1px"
@@ -234,6 +410,7 @@ export function TopBar() {
               variant={subActive ? "solid" : "ghost"}
               justifyContent="flex-start"
               pl={6}
+              rightIcon={lockIcon}
               bg={subActive ? "rgba(212, 175, 55, 0.28)" : "transparent"}
               color="var(--color-text-primary)"
               borderWidth="1px"
@@ -261,6 +438,7 @@ export function TopBar() {
               variant={active ? "solid" : "ghost"}
               justifyContent="flex-start"
               leftIcon={<Icon size={18} strokeWidth={2} />}
+              rightIcon={lockIcon}
               bg={active ? "rgba(212, 175, 55, 0.35)" : "transparent"}
               color="var(--color-text-primary)"
               borderWidth="1px"
@@ -290,6 +468,7 @@ export function TopBar() {
               variant={active ? "solid" : "ghost"}
               justifyContent="flex-start"
               pl={6}
+              rightIcon={lockIcon}
               bg={active ? "rgba(212, 175, 55, 0.28)" : "transparent"}
               color="var(--color-text-primary)"
               borderWidth="1px"
@@ -316,23 +495,25 @@ export function TopBar() {
             justifyContent="flex-start"
             leftIcon={<MessageCircle size={18} />}
             rightIcon={
-              unreadNews > 0 ? (
-                <Box
-                  minW="20px"
-                  h="20px"
-                  px={1.5}
-                  borderRadius="full"
-                  bg="#D4AF37"
-                  color="#0C0D10"
-                  fontSize="10px"
-                  className="inter-semibold"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                >
-                  {unreadNews > 99 ? "99+" : unreadNews}
-                </Box>
-              ) : undefined
+              isPending ? lockIcon : (
+                unreadNews > 0 ? (
+                  <Box
+                    minW="20px"
+                    h="20px"
+                    px={1.5}
+                    borderRadius="full"
+                    bg="#D4AF37"
+                    color="#0C0D10"
+                    fontSize="10px"
+                    className="inter-semibold"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                  >
+                    {unreadNews > 99 ? "99+" : unreadNews}
+                  </Box>
+                ) : undefined
+              )
             }
             bg={newsActive ? "rgba(212, 175, 55, 0.22)" : "transparent"}
             borderWidth="1px"
@@ -350,6 +531,7 @@ export function TopBar() {
             variant="ghost"
             justifyContent="flex-start"
             leftIcon={<UserRound size={18} />}
+            rightIcon={lockIcon}
             className="inter-medium"
           >
             Einstellungen
@@ -371,7 +553,8 @@ export function TopBar() {
         </Stack>
       ) : null}
     </Stack>
-  );
+    );
+  };
 
   const navButtonSx = {
     bg: "rgba(212, 175, 55, 0.4)",
@@ -384,6 +567,26 @@ export function TopBar() {
     borderColor: "transparent",
     _hover: { bg: "rgba(255, 255, 255, 0.07)" },
   };
+
+  const renderMemberBadge = () => (
+    <Text
+      as="span"
+      px={1.5}
+      py="1px"
+      borderRadius="full"
+      borderWidth="1px"
+      borderColor="rgba(212, 175, 55, 0.24)"
+      bg="rgba(212, 175, 55, 0.08)"
+      color="rgba(245, 236, 210, 0.64)"
+      fontSize="8px"
+      lineHeight="1.2"
+      letterSpacing="0.04em"
+      textTransform="uppercase"
+      className="inter-semibold"
+    >
+      Capital Circle Member
+    </Text>
+  );
 
   return (
     <>
@@ -520,13 +723,21 @@ export function TopBar() {
                   size="sm"
                   variant={active ? "solid" : "ghost"}
                   leftIcon={<Icon size={18} strokeWidth={2} />}
+                  rightIcon={lockIcon}
                   {...(active ? navButtonSx : navGhostSx)}
                   color="var(--color-text-primary)"
                   borderWidth="1px"
                   borderRadius="md"
                   className="inter-medium"
                 >
-                  {item.label}
+                  {item.href === "/codex" && !isPaid ? (
+                    <HStack as="span" spacing={1.5}>
+                      <Text as="span">{item.label}</Text>
+                      {renderMemberBadge()}
+                    </HStack>
+                  ) : (
+                    item.label
+                  )}
                 </Button>
               );
             })}
@@ -536,7 +747,7 @@ export function TopBar() {
                 size="sm"
                 variant={tradingJournalActive ? "solid" : "ghost"}
                 leftIcon={<BookMarked size={18} strokeWidth={2} />}
-                rightIcon={<ChevronDown size={14} />}
+                rightIcon={isPending ? <HStack spacing={1}><Lock size={14} strokeWidth={2} color="rgba(255,255,255,0.35)" /><ChevronDown size={14} /></HStack> : <ChevronDown size={14} />}
                 {...(tradingJournalActive ? navButtonSx : navGhostSx)}
                 color="var(--color-text-primary)"
                 borderWidth="1px"
@@ -579,6 +790,7 @@ export function TopBar() {
                   size="sm"
                   variant={active ? "solid" : "ghost"}
                   leftIcon={<Icon size={18} strokeWidth={2} />}
+                  rightIcon={lockIcon}
                   {...(active ? navButtonSx : navGhostSx)}
                   color="var(--color-text-primary)"
                   borderWidth="1px"
@@ -595,7 +807,7 @@ export function TopBar() {
                 size="sm"
                 variant={arsenalActive ? "solid" : "ghost"}
                 leftIcon={<Package size={18} strokeWidth={2} />}
-                rightIcon={<ChevronDown size={14} />}
+                rightIcon={isPending ? <HStack spacing={1}><Lock size={14} strokeWidth={2} color="rgba(255,255,255,0.35)" /><ChevronDown size={14} /></HStack> : <ChevronDown size={14} />}
                 {...(arsenalActive ? navButtonSx : navGhostSx)}
                 color="var(--color-text-primary)"
                 borderWidth="1px"
@@ -603,7 +815,14 @@ export function TopBar() {
                 className="inter-medium"
                 px={3}
               >
-                Arsenal
+                {!isPaid ? (
+                  <HStack as="span" spacing={1.5}>
+                    <Text as="span">Arsenal</Text>
+                    {renderMemberBadge()}
+                  </HStack>
+                ) : (
+                  "Arsenal"
+                )}
               </MenuButton>
               <MenuList
                 bg="rgba(12, 13, 16, 0.98)"
@@ -707,7 +926,7 @@ export function TopBar() {
             Navigation
           </DrawerHeader>
           <DrawerBody>
-            <NavRow onNavigate={onDrawerClose} showActions />
+            {renderNavRows({ onNavigate: onDrawerClose, showActions: true })}
             <Text fontSize="xs" opacity={0.5} className="inter" mt={6}>
               Capital Circle Institut
             </Text>

@@ -9,7 +9,11 @@ export default async function AusbildungPage() {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/einsteig");
 
-  const modules = await getAcademyModulesOverview(auth.user.id);
+  const [modules, { data: profile }] = await Promise.all([
+    getAcademyModulesOverview(auth.user.id),
+    supabase.from("profiles").select("is_paid").eq("id", auth.user.id).maybeSingle(),
+  ]);
+  const isPaid = Boolean(profile?.is_paid);
 
   return (
     <Grid gap={{ base: 6, md: 8 }}>
@@ -28,7 +32,7 @@ export default async function AusbildungPage() {
             Noch keine veröffentlichten Module.
           </Text>
         ) : (
-          <InstitutAccordion modules={modules} />
+          <InstitutAccordion modules={modules} isPaid={isPaid} />
         )}
       </GridItem>
     </Grid>

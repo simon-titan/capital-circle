@@ -41,24 +41,53 @@ type EventItem = {
 
 type EventsCalendarProps = {
   events: EventItem[];
+  /** Wenn false: aktueller Nutzer ist Free (nicht bezahlt) */
+  isPaid?: boolean;
 };
 
-export function EventsCalendar({ events }: EventsCalendarProps) {
+export function EventsCalendar({ events, isPaid = true }: EventsCalendarProps) {
   const [selected, setSelected] = useState<EventItem | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const calendarEvents = useMemo(
     () =>
-      events.map((event) => ({
-        id: event.id,
-        title: event.title,
-        start: event.start_time,
-        end: event.end_time ?? undefined,
-        backgroundColor: resolveEventColor(event.color),
-        borderColor: resolveEventColor(event.color),
-        textColor: isLightColor(resolveEventColor(event.color)) ? "#0a0a0a" : "#f0f0f2",
-      })),
-    [events],
+      events.map((event) => {
+        const startDate = new Date(event.start_time);
+        const berlinWeekday = new Intl.DateTimeFormat("de-DE", { weekday: "long", timeZone: "Europe/Berlin" }).format(
+          startDate,
+        );
+        const isSunday = berlinWeekday === "Sonntag";
+        // Default colors from event
+        let bg = resolveEventColor(event.color);
+        let border = resolveEventColor(event.color);
+        let text = isLightColor(resolveEventColor(event.color)) ? "#0a0a0a" : "#f0f0f2";
+
+        if (!isPaid) {
+          if (isSunday) {
+            // Emphasize Sunday for free members
+            bg = "#D4AF37";
+            border = "#D4AF37";
+            text = "#0a0a0a";
+          } else {
+            // Greyed appearance for locked events
+            bg = "rgba(255,255,255,0.04)";
+            border = "rgba(255,255,255,0.06)";
+            text = "rgba(255,255,255,0.52)";
+          }
+        }
+
+        return {
+          id: event.id,
+          title: event.title,
+          start: event.start_time,
+          end: event.end_time ?? undefined,
+          backgroundColor: bg,
+          borderColor: border,
+          textColor: text,
+          className: !isPaid && !isSunday ? "fc-event--premium-locked" : isPaid || !isSunday ? undefined : "fc-event--free-call",
+        };
+      }),
+    [events, isPaid],
   );
 
   const exportIcs = () => {
@@ -140,6 +169,13 @@ export function EventsCalendar({ events }: EventsCalendarProps) {
           eventClick={(info) => {
             const event = events.find((item) => item.id === info.event.id);
             if (!event) return;
+            const startDate = new Date(event.start_time);
+            const berlinWeekday = new Intl.DateTimeFormat("de-DE", { weekday: "long", timeZone: "Europe/Berlin" }).format(
+              startDate,
+            );
+            const isSunday = berlinWeekday === "Sonntag";
+            // For free members, only allow opening the Sunday Free Call
+            if (!isPaid && !isSunday) return;
             setSelected(event);
             onOpen();
           }}

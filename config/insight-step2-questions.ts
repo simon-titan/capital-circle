@@ -44,7 +44,7 @@ export const STEP2_QUESTIONS: Step2Question[] = [
     placeholder: "z. B. Ich trade seit 2 Jahren hauptsächlich Forex…",
     type: "textarea",
     required: true,
-    minLength: 50,
+    minLength: 150,
   },
   {
     id: "markets_approach",
@@ -52,7 +52,7 @@ export const STEP2_QUESTIONS: Step2Question[] = [
     placeholder: "z. B. Forex, Futures, Price Action…",
     type: "textarea",
     required: true,
-    minLength: 50,
+    minLength: 150,
   },
   {
     id: "biggest_problem",
@@ -60,7 +60,7 @@ export const STEP2_QUESTIONS: Step2Question[] = [
     placeholder: "z. B. Ich verliere Disziplin bei großen Bewegungen…",
     type: "textarea",
     required: true,
-    minLength: 50,
+    minLength: 150,
   },
   {
     id: "goals_12_months",
@@ -68,7 +68,7 @@ export const STEP2_QUESTIONS: Step2Question[] = [
     placeholder: "z. B. Konsistent 5–10 % monatlich erzielen…",
     type: "textarea",
     required: true,
-    minLength: 50,
+    minLength: 150,
   },
   {
     id: "job_situation",
@@ -76,7 +76,7 @@ export const STEP2_QUESTIONS: Step2Question[] = [
     placeholder: "z. B. Vollzeit angestellt, nebenbei Trading…",
     type: "textarea",
     required: true,
-    minLength: 30,
+    minLength: 150,
   },
   {
     id: "why_now",
@@ -84,7 +84,7 @@ export const STEP2_QUESTIONS: Step2Question[] = [
     placeholder: "z. B. Ich verfolge dich seit 6 Monaten auf Instagram…",
     type: "textarea",
     required: true,
-    minLength: 50,
+    minLength: 150,
   },
   {
     id: "commitment",
@@ -92,7 +92,7 @@ export const STEP2_QUESTIONS: Step2Question[] = [
     placeholder: "z. B. Ich bin bereit, meine Routine komplett umzustellen…",
     type: "textarea",
     required: true,
-    minLength: 50,
+    minLength: 150,
   },
   {
     id: "investment_budget",

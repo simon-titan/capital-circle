@@ -19,6 +19,7 @@ interface CtaOverrides {
 interface HeroSectionProps {
   onApply: () => void;
   ctaOverrides?: CtaOverrides;
+  landingSlug?: string;
   /**
    * Funnel-Video für diese Seite (z. B. /bewerbung aus NEXT_PUBLIC_STEP2_BEWERBUNG_VIDEO_URL).
    * Wenn leer/fehlend: NEXT_PUBLIC_FREE_FUNNEL_VIDEO_URL (erste Bewerbungsseite / Landing).
@@ -74,6 +75,50 @@ const CARD_STYLES: CardStyle[] = [
     topLine: "linear-gradient(90deg, transparent 8%, rgba(212,175,55,0.65) 45%, rgba(212,175,55,0.65) 55%, transparent 92%)",
     shadow: "0 0 24px rgba(212,175,55,0.14), 0 3px 14px rgba(0,0,0,0.48)",
   },
+];
+
+const BEWERBUNG_STATEMENT: LandingFeature = {
+  icon: "Trophy",
+  label: "",
+  detail: null,
+};
+
+const BEWERBUNG_STATEMENT_TITLE: ReactNode = (
+  <Text
+    as="div"
+    fontSize="sm"
+    color="#07080A"
+    className="inter"
+    fontWeight={500}
+    lineHeight="1.4"
+  >
+    <Box as="span" fontWeight={700} className="inter-bold">
+      Capital Circle
+    </Box>
+    {" ist kein "}
+    <Box as="span" fontWeight={700} className="inter-bold">
+      Kurs
+    </Box>
+    {". Es ist das "}
+    <Box as="span" fontWeight={700} className="inter-bold">
+      Umfeld
+    </Box>
+    {" das aus "}
+    <Box as="span" fontWeight={700} className="inter-bold">
+      inkonsistenten Tradern
+    </Box>{" "}
+    <Box as="span" fontWeight={700} className="inter-bold">
+      profitable
+    </Box>{" "}
+    macht.
+  </Text>
+);
+
+const BEWERBUNG_FEATURES: LandingFeature[] = [
+  { icon: "BookOpen", label: "Von 0 zum ersten Setup – strukturiert", detail: null },
+  { icon: "Users", label: "Trader die dich pushen, nicht bremsen", detail: null },
+  { icon: "ChartLineUp", label: "Bewährte Trading-Strategien", detail: null },
+  { icon: "VideoCamera", label: "Wöchentliche Zoom Calls direkt mit Emre", detail: null },
 ];
 
 function FeatureCard({ feature, index, mobile }: { feature: LandingFeature; index: number; mobile?: boolean }) {
@@ -143,7 +188,7 @@ function FeatureCard({ feature, index, mobile }: { feature: LandingFeature; inde
   );
 }
 
-function CommunityCard({ feature }: { feature: LandingFeature }) {
+function CommunityCard({ feature, titleContent }: { feature: LandingFeature; titleContent?: ReactNode }) {
   const Icon = ICON_MAP[feature.icon] ?? Trophy;
 
   return (
@@ -183,9 +228,11 @@ function CommunityCard({ feature }: { feature: LandingFeature }) {
           <Icon size={16} strokeWidth={2.2} />
         </Box>
         <Box textAlign="left">
-          <Text fontSize="sm" fontWeight="700" color="#07080A" className="inter-bold" lineHeight="1.2">
-            {feature.label}
-          </Text>
+          {titleContent ?? (
+            <Text fontSize="sm" fontWeight="700" color="#07080A" className="inter-bold" lineHeight="1.2">
+              {feature.label}
+            </Text>
+          )}
           {feature.detail && (
             <Text fontSize="xs" fontWeight="500" color="rgba(7,8,10,0.68)" className="inter-medium" lineHeight="1.4" mt="2px">
               {feature.detail}
@@ -218,7 +265,7 @@ function parseSubheadline(text: string): ReactNode[] {
   });
 }
 
-export function HeroSection({ onApply, ctaOverrides, funnelVideoSrc }: HeroSectionProps) {
+export function HeroSection({ onApply, ctaOverrides, funnelVideoSrc, landingSlug }: HeroSectionProps) {
   const { product, features, communityCard, cta } = landingConfig;
   const ctaPrimary = ctaOverrides?.primary ?? cta.primary;
   const ctaSecondary = ctaOverrides?.secondary ?? cta.secondary;
@@ -228,6 +275,7 @@ export function HeroSection({ onApply, ctaOverrides, funnelVideoSrc }: HeroSecti
   const override = funnelVideoSrc?.trim();
   const videoSrc = override && override.length > 0 ? override : defaultFunnelVideo;
   const [videoEnded, setVideoEnded] = useState(false);
+  const isBewerbungLanding = landingSlug === "bewerbung";
 
   return (
     <Box
@@ -465,29 +513,7 @@ export function HeroSection({ onApply, ctaOverrides, funnelVideoSrc }: HeroSecti
             </HStack>
           </Box>
 
-          {/* ── 4. Stars ──────────────────────────────────────────── */}
-          <Box w="full" maxW="700px" display="flex" justifyContent="center">
-            <HStack spacing={3} align="center" justify="center">
-              <HStack spacing="3px">
-                {[1, 2, 3, 4, 5].map((s) => (
-                  <Box key={s} color="var(--color-accent-gold, #D4AF37)" fontSize="22px" lineHeight={1}>
-                    ★
-                  </Box>
-                ))}
-              </HStack>
-              <Text
-                fontFamily="var(--font-mono, 'JetBrains Mono'), monospace"
-                fontSize="xl"
-                fontWeight={600}
-                color="var(--color-accent-gold, #D4AF37)"
-                lineHeight={1}
-              >
-                4.8
-              </Text>
-            </HStack>
-          </Box>
-
-          {/* ── 5. CTA — Desktop only ─────────────────────────────── */}
+          {/* ── 4. CTA — Desktop only ─────────────────────────────── */}
           <Stack spacing={2} align="center" w="full" maxW="700px" display={{ base: "none", md: "flex" }}>
             <Box
               as="button"
@@ -538,7 +564,7 @@ export function HeroSection({ onApply, ctaOverrides, funnelVideoSrc }: HeroSecti
             </Text>
           </Stack>
 
-          {/* ── 6. Short subtext ──────────────────────────────────── */}
+          {/* ── 5. Short subtext ──────────────────────────────────── */}
           <Box w="full" maxW="600px">
             <Text
               fontSize={{ base: "md", md: "lg" }}
@@ -552,37 +578,55 @@ export function HeroSection({ onApply, ctaOverrides, funnelVideoSrc }: HeroSecti
             </Text>
           </Box>
 
-          {/* ── 7. Feature Cards ──────────────────────────────────── */}
+          {isBewerbungLanding ? (
+            <>
+              {/* ── 6. Bewerbung Statement ───────────────────────────── */}
+              <Box w="full" maxW="700px">
+                <CommunityCard feature={BEWERBUNG_STATEMENT} titleContent={BEWERBUNG_STATEMENT_TITLE} />
+              </Box>
 
-          {/* Mobile: 2x3 grid */}
-          <SimpleGrid
-            display={{ base: "grid", md: "none" }}
-            columns={2}
-            spacing={3}
-            w="full"
-            px={{ base: 0 }}
-          >
-            {features.slice(0, 6).map((feature, i) => (
-              <FeatureCard key={feature.label} feature={feature} index={i} mobile />
-            ))}
-          </SimpleGrid>
+              {/* ── 7. Bewerbung Feature Cards ───────────────────────── */}
+              <SimpleGrid columns={{ base: 2, md: 4 }} spacing={3} w="full" px={{ base: 0 }}>
+                {BEWERBUNG_FEATURES.map((feature, i) => (
+                  <FeatureCard key={feature.label} feature={feature} index={i} />
+                ))}
+              </SimpleGrid>
+            </>
+          ) : (
+            <>
+              {/* ── 6. Feature Cards ──────────────────────────────────── */}
 
-          {/* Desktop: 6-column grid */}
-          <SimpleGrid
-            display={{ base: "none", md: "grid" }}
-            columns={6}
-            spacing={3}
-            w="full"
-          >
-            {features.map((feature, i) => (
-              <FeatureCard key={feature.label} feature={feature} index={i} />
-            ))}
-          </SimpleGrid>
+              {/* Mobile: 2x3 grid */}
+              <SimpleGrid
+                display={{ base: "grid", md: "none" }}
+                columns={2}
+                spacing={3}
+                w="full"
+                px={{ base: 0 }}
+              >
+                {features.slice(0, 6).map((feature, i) => (
+                  <FeatureCard key={feature.label} feature={feature} index={i} mobile />
+                ))}
+              </SimpleGrid>
 
-          {/* ── 8. Handverlesene Community — full-width card below ── */}
-          <Box w="full" maxW="700px">
-            <CommunityCard feature={communityCard} />
-          </Box>
+              {/* Desktop: 6-column grid */}
+              <SimpleGrid
+                display={{ base: "none", md: "grid" }}
+                columns={6}
+                spacing={3}
+                w="full"
+              >
+                {features.map((feature, i) => (
+                  <FeatureCard key={feature.label} feature={feature} index={i} />
+                ))}
+              </SimpleGrid>
+
+              {/* ── 7. Handverlesene Community — full-width card below ── */}
+              <Box w="full" maxW="700px">
+                <CommunityCard feature={communityCard} />
+              </Box>
+            </>
+          )}
 
         </Stack>
       </Box>

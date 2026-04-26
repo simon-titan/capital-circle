@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { isFreeMember } from "@/lib/membership";
 import { SkyArchBackground } from "@/components/layout/SkyArchBackground";
 import { CodexStep } from "@/components/onboarding/CodexStep";
 import { LoginStep } from "@/components/onboarding/LoginStep";
@@ -34,9 +35,13 @@ export function OnboardingFlow({ loginFooter }: OnboardingFlowProps = {}) {
     }
     const { data: profile } = await supabase
       .from("profiles")
-      .select("codex_accepted, usage_agreement_accepted")
+      .select("codex_accepted, usage_agreement_accepted, is_paid, membership_tier")
       .eq("id", user.id)
       .single();
+    if (isFreeMember(profile)) {
+      router.replace("/dashboard");
+      return;
+    }
     if (!profile?.codex_accepted) {
       setPhase("codex");
       return;

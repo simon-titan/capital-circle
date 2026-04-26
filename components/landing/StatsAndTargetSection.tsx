@@ -394,52 +394,93 @@ export function StatsAndTargetSection({ onApply }: { onApply: () => void }) {
               </Text>
             </Box>
 
-            {/* Headline */}
-            <Text
-              as="h3"
-              className="inter-bold"
-              fontSize={{ base: "xl", md: "2xl", lg: "3xl" }}
-              color="var(--color-text-primary, #F0F0F2)"
-              mb={5}
-              lineHeight="1.25"
-            >
-              Denkst du, du hast dir den{" "}
-              <Box as="span" color="#7EB6FF">
-                Platz verdient?
-              </Box>
-            </Text>
-
-            {/* Body text */}
-            <Text
-              fontSize={{ base: "sm", md: "md" }}
-              color="rgba(255,255,255,0.58)"
-              className="inter"
+            <Stack
+              spacing={4}
               maxW="600px"
               mx="auto"
-              mb={4}
-              lineHeight="1.80"
-            >
-              Jeder hat eine{" "}
-              <Box as="span" color="rgba(126,182,255,0.90)" className="inter-semibold">
-                Chance.
-              </Box>{" "}
-              Es kommt darauf an, wer du bist, was du erreichen willst und welches{" "}
-              <Box as="span" color="var(--color-accent-gold, #D4AF37)" className="inter-semibold">
-                Potenzial
-              </Box>{" "}
-              wir in dir sehen.
-            </Text>
-            <Text
-              fontSize={{ base: "sm", md: "md" }}
-              color="rgba(255,255,255,0.58)"
-              className="inter"
-              maxW="560px"
-              mx="auto"
               mb={{ base: 0, md: 8 }}
-              lineHeight="1.80"
+              textAlign="center"
             >
-              Deine Erfahrung ist uns vollkommen egal. Wer du wirklich bist, zählt!
-            </Text>
+              <Text
+                fontSize={{ base: "sm", md: "md" }}
+                color="rgba(255,255,255,0.58)"
+                className="inter"
+                lineHeight="1.80"
+              >
+                Du hast die Seite gelesen. Du weißt was{" "}
+                <Box
+                  as="span"
+                  color="var(--color-accent-gold, #D4AF37)"
+                  className="inter-semibold"
+                >
+                  Capital Circle
+                </Box>{" "}
+                ist und{" "}
+                <Box
+                  as="span"
+                  color="rgba(126,182,255,0.90)"
+                  className="inter-semibold"
+                >
+                  was es nicht ist
+                </Box>
+                .
+              </Text>
+              <Text
+                fontSize={{ base: "sm", md: "md" }}
+                color="rgba(255,255,255,0.58)"
+                className="inter"
+                lineHeight="1.80"
+              >
+                Wenn du erkennst dass du{" "}
+                <Box
+                  as="span"
+                  color="rgba(126,182,255,0.90)"
+                  className="inter-semibold"
+                >
+                  einer der drei Trader
+                </Box>{" "}
+                bist –{" "}
+                <Box
+                  as="span"
+                  color="var(--color-accent-gold, #D4AF37)"
+                  className="inter-semibold"
+                >
+                  dann bewirb dich jetzt
+                </Box>
+                .
+              </Text>
+              <Text
+                fontSize={{ base: "sm", md: "md" }}
+                color="rgba(255,255,255,0.58)"
+                className="inter"
+                lineHeight="1.80"
+              >
+                <Box
+                  as="span"
+                  color="var(--color-accent-gold, #D4AF37)"
+                  className="inter-semibold"
+                >
+                  Emre
+                </Box>{" "}
+                liest jede Bewerbung{" "}
+                <Box
+                  as="span"
+                  color="rgba(126,182,255,0.90)"
+                  className="inter-semibold"
+                >
+                  persönlich
+                </Box>
+                .{" "}
+                <Box
+                  as="span"
+                  color="var(--color-accent-gold, #D4AF37)"
+                  className="inter-semibold"
+                >
+                  Nicht jeder wird angenommen
+                </Box>
+                .
+              </Text>
+            </Stack>
 
             {/* Button — Desktop only */}
             <Box

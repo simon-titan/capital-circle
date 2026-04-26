@@ -1,5 +1,6 @@
 import { Grid, GridItem } from "@chakra-ui/react";
 import { redirect } from "next/navigation";
+import { BookingSuccessToast } from "@/components/platform/BookingSuccessToast";
 import { DiscordBanner } from "@/components/platform/DiscordBanner";
 import { DashboardAppointmentCard, type Step2AppointmentData } from "@/components/platform/DashboardAppointmentCard";
 import { InsightBanner } from "@/components/platform/InsightBanner";
@@ -35,7 +36,13 @@ import { calculateStreak, maxPlausibleStreakDays, sanitizeStreakValue } from "@/
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const showBookingSuccess = params.booking_success === "1";
   const { user, profile } = await getCurrentUserAndProfile();
   if (!user || !profile) {
     redirect("/einsteig");
@@ -157,6 +164,8 @@ export default async function DashboardPage() {
 
   return (
     <Grid gap={{ base: 6, md: 8 }} templateColumns={{ base: "1fr", lg: "1fr 1fr" }}>
+      {showBookingSuccess && <BookingSuccessToast />}
+
       <GridItem colSpan={{ base: 1, lg: 2 }}>
         <WelcomeCard
           displayName={displayName}
