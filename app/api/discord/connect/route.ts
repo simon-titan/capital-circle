@@ -14,6 +14,16 @@ export async function GET() {
     return NextResponse.redirect(new URL("/login?discord=login_required", siteUrl()));
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_paid")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile?.is_paid) {
+    return NextResponse.redirect(new URL("/dashboard?discord=error&reason=paid_only", siteUrl()));
+  }
+
   const clientId = process.env.DISCORD_CLIENT_ID;
   const redirectUri = process.env.DISCORD_REDIRECT_URI;
   if (!clientId || !redirectUri) {

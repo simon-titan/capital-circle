@@ -1,7 +1,8 @@
-import { Grid, GridItem, Heading, Stack, Text } from "@chakra-ui/react";
+import { Box, Grid, GridItem, Heading, Stack, Text } from "@chakra-ui/react";
 import { notFound, redirect } from "next/navigation";
 import { ChakraLinkButton } from "@/components/platform/ChakraLinkButton";
 import { GlassCard } from "@/components/ui/GlassCard";
+import { PaywallOverlay } from "@/components/ui/PaywallOverlay";
 import { AusbildungModuleLearningClient } from "@/components/platform/AusbildungPageCards";
 import { createClient } from "@/lib/supabase/server";
 import { isCourseUnlocked, isModuleUnlocked } from "@/lib/progress";
@@ -37,87 +38,78 @@ export default async function AcademyModulePage({ params }: PageProps) {
     supabase.from("profiles").select("is_paid").eq("id", user.id).maybeSingle(),
   ]);
 
-  if (!userCanAccessAcademyModule(Boolean(profileRow?.is_paid), courseRow?.is_free)) {
-    return (
-      <Stack gap={6} maxW="720px" mx="auto">
-        <GlassCard highlight>
-          <Heading as="h1" size="md" className="inter-semibold" fontWeight={600} mb={2}>
-            Paid-Bereich
-          </Heading>
-          <Text className="inter" color="var(--color-text-muted)" fontSize="sm" mb={6}>
-            Dieses Modul ist Teil des kostenpflichtigen Angebots. Mit deinem aktuellen Zugang ist es nicht
-            verfügbar.
-          </Text>
-          <ChakraLinkButton href="/ausbildung" variant="outline" borderColor="rgba(212,175,55,0.45)" color="var(--color-accent-gold)">
-            Zur Instituts-Übersicht
-          </ChakraLinkButton>
-        </GlassCard>
-      </Stack>
-    );
+  const hasAccess = userCanAccessAcademyModule(Boolean(profileRow?.is_paid), courseRow?.is_free);
+
+  // For locked / progression-gated modules, always keep the existing hard-stop UI
+  // (no overlay — there is no premium content to "preview" for these cases).
+  if (hasAccess) {
+    if (mod.is_locked) {
+      return (
+        <Stack gap={6} maxW="720px" mx="auto">
+          <GlassCard highlight>
+            <Heading as="h1" size="md" className="inter-semibold" fontWeight={600} mb={2}>
+              Modul gesperrt
+            </Heading>
+            <Text className="inter" color="var(--color-text-muted)" fontSize="sm" mb={6}>
+              Dieses Modul ist derzeit nicht verfügbar.
+            </Text>
+            <ChakraLinkButton href="/ausbildung" variant="outline" borderColor="rgba(212,175,55,0.45)" color="var(--color-accent-gold)">
+              Zur Instituts-Übersicht
+            </ChakraLinkButton>
+          </GlassCard>
+        </Stack>
+      );
+    }
+
+    const courseUnlocked = await isCourseUnlocked(user.id, mod.course_id as string);
+    if (!courseUnlocked) {
+      return (
+        <Stack gap={6} maxW="720px" mx="auto">
+          <GlassCard highlight>
+            <Heading as="h1" size="md" className="inter-semibold" fontWeight={600} mb={2}>
+              Kurs gesperrt
+            </Heading>
+            <Text className="inter" color="var(--color-text-muted)" fontSize="sm" mb={6}>
+              Schließe zuerst den vorherigen Kurs ab, um fortzufahren.
+            </Text>
+            <ChakraLinkButton href="/ausbildung" variant="outline" borderColor="rgba(212,175,55,0.45)" color="var(--color-accent-gold)">
+              Zur Instituts-Übersicht
+            </ChakraLinkButton>
+          </GlassCard>
+        </Stack>
+      );
+    }
+
+    const moduleUnlocked = await isModuleUnlocked(user.id, mod.id);
+    if (!moduleUnlocked) {
+      return (
+        <Stack gap={6} maxW="720px" mx="auto">
+          <GlassCard highlight>
+            <Heading as="h1" size="md" className="inter-semibold" fontWeight={600} mb={2}>
+              Modul gesperrt
+            </Heading>
+            <Text className="inter" color="var(--color-text-muted)" fontSize="sm" mb={6}>
+              Schließe zuerst das vorherige Modul ab, um fortzufahren.
+            </Text>
+            <ChakraLinkButton href="/ausbildung" variant="outline" borderColor="rgba(212,175,55,0.45)" color="var(--color-accent-gold)">
+              Zur Instituts-Übersicht
+            </ChakraLinkButton>
+          </GlassCard>
+        </Stack>
+      );
+    }
   }
 
-  if (mod.is_locked) {
-    return (
-      <Stack gap={6} maxW="720px" mx="auto">
-        <GlassCard highlight>
-          <Heading as="h1" size="md" className="inter-semibold" fontWeight={600} mb={2}>
-            Modul gesperrt
-          </Heading>
-          <Text className="inter" color="var(--color-text-muted)" fontSize="sm" mb={6}>
-            Dieses Modul ist derzeit nicht verfügbar.
-          </Text>
-          <ChakraLinkButton href="/ausbildung" variant="outline" borderColor="rgba(212,175,55,0.45)" color="var(--color-accent-gold)">
-            Zur Instituts-Übersicht
-          </ChakraLinkButton>
-        </GlassCard>
-      </Stack>
-    );
-  }
-
-  const courseUnlocked = await isCourseUnlocked(user.id, mod.course_id as string);
-  if (!courseUnlocked) {
-    return (
-      <Stack gap={6} maxW="720px" mx="auto">
-        <GlassCard highlight>
-          <Heading as="h1" size="md" className="inter-semibold" fontWeight={600} mb={2}>
-            Kurs gesperrt
-          </Heading>
-          <Text className="inter" color="var(--color-text-muted)" fontSize="sm" mb={6}>
-            Schließe zuerst den vorherigen Kurs ab, um fortzufahren.
-          </Text>
-          <ChakraLinkButton href="/ausbildung" variant="outline" borderColor="rgba(212,175,55,0.45)" color="var(--color-accent-gold)">
-            Zur Instituts-Übersicht
-          </ChakraLinkButton>
-        </GlassCard>
-      </Stack>
-    );
-  }
-
-  const moduleUnlocked = await isModuleUnlocked(user.id, mod.id);
-  if (!moduleUnlocked) {
-    return (
-      <Stack gap={6} maxW="720px" mx="auto">
-        <GlassCard highlight>
-          <Heading as="h1" size="md" className="inter-semibold" fontWeight={600} mb={2}>
-            Modul gesperrt
-          </Heading>
-          <Text className="inter" color="var(--color-text-muted)" fontSize="sm" mb={6}>
-            Schließe zuerst das vorherige Modul ab, um fortzufahren.
-          </Text>
-          <ChakraLinkButton href="/ausbildung" variant="outline" borderColor="rgba(212,175,55,0.45)" color="var(--color-accent-gold)">
-            Zur Instituts-Übersicht
-          </ChakraLinkButton>
-        </GlassCard>
-      </Stack>
-    );
-  }
-
-  const { data: quiz } = await supabase
-    .from("quizzes")
-    .select("questions,pass_threshold,quiz_mode")
-    .eq("module_id", mod.id)
-    .maybeSingle();
-  const playlist = await getModulePublishedPlaylist(supabase, mod.id);
+  // Load all content data regardless of access — free users will see the full
+  // layout (blurred / blocked) behind the PaywallOverlay.
+  const [{ data: quiz }, playlist] = await Promise.all([
+    supabase
+      .from("quizzes")
+      .select("questions,pass_threshold,quiz_mode")
+      .eq("module_id", mod.id)
+      .maybeSingle(),
+    getModulePublishedPlaylist(supabase, mod.id),
+  ]);
 
   const { data: progress } = await supabase
     .from("user_progress")
@@ -168,7 +160,7 @@ export default async function AcademyModulePage({ params }: PageProps) {
 
   const initialNoteContent = typeof noteRow?.content === "string" ? noteRow.content : "";
 
-  return (
+  const pageContent = (
     <Grid templateColumns="1fr" gap={6} alignItems="start">
       <GridItem>
         <ChakraLinkButton
@@ -213,4 +205,10 @@ export default async function AcademyModulePage({ params }: PageProps) {
       </GridItem>
     </Grid>
   );
+
+  if (!hasAccess) {
+    return <PaywallOverlay active>{pageContent}</PaywallOverlay>;
+  }
+
+  return pageContent;
 }

@@ -8,6 +8,12 @@ export default async function CodexPage() {
   if (!user || !profile) {
     redirect("/einsteig");
   }
+  // Schutz: Nutzer mit ausstehender Bewerbung dürfen die Codex-Referenz nicht sehen
+  const appStatus = (profile as { application_status?: string | null } | null)
+    ?.application_status;
+  if (appStatus === "pending" || appStatus === "rejected") {
+    redirect("/pending-review");
+  }
 
   return (
     <Stack gap={{ base: 6, md: 8 }} w="full">

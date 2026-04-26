@@ -37,6 +37,24 @@ export type Database = {
           is_admin: boolean;
           is_paid: boolean;
           created_at: string;
+          // 042_phase1_funnel_review
+          application_status?: "pending" | "approved" | "rejected" | null;
+          last_login_at?: string | null;
+          unsubscribed_at?: string | null;
+          // 047_step2_applications
+          step2_application_status?: "pending" | "approved" | "rejected" | null;
+          // 043_phase2_stripe
+          stripe_customer_id?: string | null;
+          membership_tier?: "free" | "monthly" | "lifetime" | "ht_1on1";
+          access_until?: string | null;
+          lifetime_purchased_at?: string | null;
+          // 044_phase3_churn (Tracking-Timestamps für Churn- und Dunning-Mails)
+          churn_email_1_sent_at?: string | null;
+          churn_email_2_sent_at?: string | null;
+          payment_failed_email_1_sent_at?: string | null;
+          payment_failed_email_2_sent_at?: string | null;
+          payment_failed_email_3_sent_at?: string | null;
+          ht_upsell_email_sent_at?: string | null;
         };
         Insert: Record<string, unknown>;
         Update: Record<string, unknown>;
@@ -135,6 +153,170 @@ export type Database = {
           id: string;
           user_id: string;
           name: string;
+          created_at: string;
+        };
+        Insert: Record<string, unknown>;
+        Update: Record<string, unknown>;
+      };
+      // 042_phase1_funnel_review
+      applications: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          email: string;
+          name: string | null;
+          experience: string;
+          biggest_problem: string;
+          goal_6_months: string;
+          status: "pending" | "approved" | "rejected";
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          rejection_reason: string | null;
+          welcome_sequence_started_at: string | null;
+          ip_address: string | null;
+          user_agent: string | null;
+          created_at: string;
+        };
+        Insert: Record<string, unknown>;
+        Update: Record<string, unknown>;
+      };
+      email_sequence_log: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          application_id: string | null;
+          recipient_email: string;
+          sequence: string;
+          step: number;
+          sent_at: string;
+          resend_message_id: string | null;
+          opened_at: string | null;
+          clicked_at: string | null;
+        };
+        Insert: Record<string, unknown>;
+        Update: Record<string, unknown>;
+      };
+      // 043_phase2_stripe
+      subscriptions: {
+        Row: {
+          id: string;
+          user_id: string;
+          stripe_subscription_id: string;
+          stripe_customer_id: string;
+          stripe_price_id: string;
+          status:
+            | "active"
+            | "trialing"
+            | "past_due"
+            | "canceled"
+            | "incomplete"
+            | "incomplete_expired"
+            | "unpaid"
+            | "paused";
+          current_period_start: string;
+          current_period_end: string;
+          cancel_at_period_end: boolean;
+          canceled_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Record<string, unknown>;
+        Update: Record<string, unknown>;
+      };
+      payments: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          stripe_payment_intent_id: string | null;
+          stripe_invoice_id: string | null;
+          stripe_charge_id: string | null;
+          amount_cents: number;
+          currency: string;
+          status: string;
+          failure_reason: string | null;
+          attempt_count: number | null;
+          paid_at: string | null;
+          created_at: string;
+        };
+        Insert: Record<string, unknown>;
+        Update: Record<string, unknown>;
+      };
+      stripe_webhook_events: {
+        Row: {
+          id: string;
+          type: string;
+          payload: Json;
+          processed_at: string | null;
+          error: string | null;
+          received_at: string;
+        };
+        Insert: Record<string, unknown>;
+        Update: Record<string, unknown>;
+      };
+      // 044_phase3_churn
+      cancellations: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          subscription_id: string | null;
+          reason: string | null;
+          structured_reason:
+            | "too_expensive"
+            | "not_enough_value"
+            | "tech_issues"
+            | "other"
+            | null;
+          feedback: string | null;
+          canceled_at: string;
+        };
+        Insert: Record<string, unknown>;
+        Update: Record<string, unknown>;
+      };
+      // 045_phase4_ht
+      high_ticket_applications: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          email: string;
+          name: string | null;
+          whatsapp_number: string | null;
+          answers: Json;
+          budget_tier: "under_2000" | "over_2000";
+          contacted_at: string | null;
+          call_scheduled_at: string | null;
+          outcome: "closed_won" | "closed_lost" | "no_show" | "pending" | null;
+          internal_notes: string | null;
+          created_at: string;
+        };
+        Insert: Record<string, unknown>;
+        Update: Record<string, unknown>;
+      };
+      // 047_step2_applications
+      step2_applications: {
+        Row: {
+          id: string;
+          user_id: string;
+          answers: Json;
+          status: "pending" | "approved" | "rejected";
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          rejection_reason: string | null;
+          created_at: string;
+        };
+        Insert: Record<string, unknown>;
+        Update: Record<string, unknown>;
+      };
+      // 046_phase5_audit
+      user_audit_log: {
+        Row: {
+          id: string;
+          target_user_id: string | null;
+          admin_user_id: string | null;
+          action: string;
+          field: string | null;
+          old_value: string | null;
+          new_value: string | null;
+          metadata: Json | null;
           created_at: string;
         };
         Insert: Record<string, unknown>;

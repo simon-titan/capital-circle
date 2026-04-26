@@ -1,7 +1,7 @@
 "use client";
 
 import { uploadViaPresigned } from "@/lib/admin-upload-presigned";
-import { Box, Button, FormLabel, HStack, IconButton, Progress, Stack, Text } from "@chakra-ui/react";
+import { Box, Button, FormLabel, HStack, IconButton, Progress, Stack, Switch, Text } from "@chakra-ui/react";
 import { FileDown, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -13,6 +13,7 @@ export type AttachmentRow = {
   content_type: string | null;
   size_bytes: number | null;
   position: number;
+  is_free: boolean | null;
   created_at: string;
 };
 
@@ -118,6 +119,22 @@ export function AttachmentManager({ courseId, moduleId, videoId }: AttachmentMan
     const res = await fetch(`/api/admin/attachments?id=${encodeURIComponent(id)}`, { method: "DELETE" });
     const json = (await res.json()) as { ok?: boolean };
     if (json.ok) setItems((prev) => prev.filter((x) => x.id !== id));
+  };
+
+  const toggleIsFree = async (id: string, nextValue: boolean) => {
+    setItems((prev) => prev.map((x) => (x.id === id ? { ...x, is_free: nextValue } : x)));
+    const res = await fetch("/api/admin/attachments", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, is_free: nextValue }),
+    });
+    const json = (await res.json()) as { ok?: boolean; item?: AttachmentRow; error?: string };
+    if (!json.ok || !json.item) {
+      setItems((prev) => prev.map((x) => (x.id === id ? { ...x, is_free: !nextValue } : x)));
+      setStatus(json.error || "Konnte Free-Flag nicht speichern.");
+      return;
+    }
+    setItems((prev) => prev.map((x) => (x.id === id ? json.item! : x)));
   };
 
   const isError = !busy && !!status && (status.includes("fehlgeschlagen") || status.includes("Fehler") || status.includes("Bitte"));
@@ -248,17 +265,37 @@ export function AttachmentManager({ courseId, moduleId, videoId }: AttachmentMan
                   ) : null}
                 </Box>
               </HStack>
-              <IconButton
-                aria-label="Anhang löschen"
-                size="sm"
-                variant="outline"
-                colorScheme="red"
-                borderColor="red.400"
-                color="red.200"
-                _hover={{ bg: "red.900", borderColor: "red.300" }}
-                icon={<Trash2 size={16} />}
-                onClick={() => void remove(a.id)}
-              />
+              <HStack spacing={3} flexShrink={0}>
+                <HStack spacing={2}>
+                  <Switch
+                    size="sm"
+                    colorScheme="yellow"
+                    isChecked={Boolean(a.is_free)}
+                    onChange={(e) => void toggleIsFree(a.id, e.target.checked)}
+                    aria-label="Free-Kurs Zugriff freischalten"
+                  />
+                  <Text
+                    fontSize="xs"
+                    className="inter-semibold"
+                    color={a.is_free ? "var(--color-accent-gold)" : "gray.500"}
+                    textTransform="uppercase"
+                    letterSpacing="0.06em"
+                  >
+                    {a.is_free ? "Free" : "Paid"}
+                  </Text>
+                </HStack>
+                <IconButton
+                  aria-label="Anhang löschen"
+                  size="sm"
+                  variant="outline"
+                  colorScheme="red"
+                  borderColor="red.400"
+                  color="red.200"
+                  _hover={{ bg: "red.900", borderColor: "red.300" }}
+                  icon={<Trash2 size={16} />}
+                  onClick={() => void remove(a.id)}
+                />
+              </HStack>
             </HStack>
           ))}
         </Stack>

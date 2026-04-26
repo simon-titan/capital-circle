@@ -80,29 +80,50 @@ function groupModulesByCourse(modules: AcademyModuleRow[]) {
     map.get(m.courseId)!.push(m);
   }
   return order.map((courseId) => {
-    const first = map.get(courseId)![0];
+    const mods = map.get(courseId)!;
+    const first = mods[0];
+    // Kurs-Ebene: Paid-Kurs, zu dem der Nutzer (noch) keinen Zugriff hat.
+    // Wird ueber das courseIsFree-Flag am ersten Modul abgeleitet
+    // (alle Module eines Kurses teilen denselben is_free-Wert).
+    const coursePremiumLocked = !first?.courseIsFree && mods.every((m) => !m.hasAccess);
     return {
       courseId,
+      courseSlug: first?.courseSlug ?? null,
       courseTitle: first?.courseTitle ?? "Kurs",
       courseIcon: first?.courseIcon ?? null,
       courseAccentColor: first?.courseAccentColor ?? null,
       courseUnlocked: first?.courseUnlocked ?? true,
-      modules: map.get(courseId)!,
+      coursePremiumLocked,
+      modules: mods,
     };
   });
 }
 
 function ModuleListRow({ m }: { m: AcademyModuleRow }) {
   const href = moduleHref({ id: m.id, slug: m.slug });
-  const locked = !m.courseUnlocked || !m.unlocked || m.isLocked;
-  const statusLabel = locked ? "Gesperrt" : m.completed ? "Abgeschlossen" : m.progressPercent > 0 ? "In Arbeit" : "Neu";
-  const statusColor = locked
+  // Progression-/Admin-Sperre: kein Klick moeglich.
+  const progressionLocked = !m.courseUnlocked || !m.unlocked || m.isLocked;
+  // Premium-Sperre: Klick fuehrt zur Modul-Seite mit PaywallOverlay (kein harter Block hier).
+  const premiumLocked = !progressionLocked && !m.hasAccess;
+  const locked = progressionLocked || premiumLocked;
+  const statusLabel = progressionLocked
+    ? "Gesperrt"
+    : premiumLocked
+      ? "Nur für vollwertige Member"
+      : m.completed
+        ? "Abgeschlossen"
+        : m.progressPercent > 0
+          ? "In Arbeit"
+          : "Neu";
+  const statusColor = progressionLocked
     ? "rgba(240,240,242,0.45)"
-    : m.completed
-      ? "rgba(74, 222, 128, 0.9)"
-      : m.progressPercent > 0
-        ? "var(--color-accent-gold)"
-        : "rgba(240,240,242,0.65)";
+    : premiumLocked
+      ? "var(--color-accent-gold)"
+      : m.completed
+        ? "rgba(74, 222, 128, 0.9)"
+        : m.progressPercent > 0
+          ? "var(--color-accent-gold)"
+          : "rgba(240,240,242,0.65)";
 
   const inner = (
     <HStack
@@ -112,12 +133,16 @@ function ModuleListRow({ m }: { m: AcademyModuleRow }) {
       px={{ base: 3, md: 4 }}
       borderRadius="12px"
       borderWidth="1px"
-      borderColor="rgba(255,255,255,0.08)"
-      bg="rgba(255,255,255,0.03)"
-      opacity={locked ? 0.72 : 1}
+      borderColor={premiumLocked ? "rgba(212,175,55,0.22)" : "rgba(255,255,255,0.08)"}
+      bg={premiumLocked ? "rgba(212,175,55,0.04)" : "rgba(255,255,255,0.03)"}
+      opacity={progressionLocked ? 0.72 : premiumLocked ? 0.9 : 1}
       transition="background 0.2s ease"
-      _hover={locked ? undefined : { bg: "rgba(212,175,55,0.06)", borderColor: "rgba(212,175,55,0.25)" }}
-      cursor={locked ? "not-allowed" : "pointer"}
+      _hover={
+        progressionLocked
+          ? undefined
+          : { bg: "rgba(212,175,55,0.06)", borderColor: "rgba(212,175,55,0.25)" }
+      }
+      cursor={progressionLocked ? "not-allowed" : "pointer"}
     >
       <Box flex={1} minW={0}>
         <Text className="inter-semibold" fontSize="sm" color="var(--color-text-primary)" noOfLines={2}>
@@ -175,10 +200,12 @@ function ModuleListRow({ m }: { m: AcademyModuleRow }) {
     </HStack>
   );
 
-  if (locked) {
+  // Progression-Sperre: komplett nicht klickbar.
+  if (progressionLocked) {
     return <Box pointerEvents="none">{inner}</Box>;
   }
 
+  // Premium-Sperre: klickbar, landet auf Modul-Seite mit PaywallOverlay.
   return (
     <Link href={href} style={{ textDecoration: "none" }}>
       {inner}
@@ -189,17 +216,27 @@ function ModuleListRow({ m }: { m: AcademyModuleRow }) {
 export function InstitutAccordion({ modules }: { modules: AcademyModuleRow[] }) {
   const groups = useMemo(() => groupModulesByCourse(modules), [modules]);
 
+  // Falls die Seite mit einem Hash-Link (#kostenloser-einblick, #aufzeichnungen, …) aufgerufen wird,
+  // expandieren wir das passende AccordionItem als Startzustand.
+  const defaultIndex = useMemo(() => {
+    if (typeof window === "undefined") return [0];
+    const hash = window.location.hash.replace(/^#/, "").trim();
+    if (!hash) return [0];
+    const idx = groups.findIndex((g) => g.courseSlug === hash);
+    return idx >= 0 ? [idx] : [0];
+  }, [groups]);
+
   if (groups.length === 0) return null;
 
   return (
-    <Accordion allowToggle defaultIndex={[0]}>
+    <Accordion allowToggle defaultIndex={defaultIndex}>
       {groups.map((g, idx) => {
         const rawColor = g.courseAccentColor ?? FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
         const accent = resolveAccent(rawColor);
         const CourseIcon = resolveIcon(g.courseIcon, idx);
         const courseLocked = !g.courseUnlocked;
         return (
-          <AccordionItem key={g.courseId} border="none" mb={4}>
+          <AccordionItem key={g.courseId} id={g.courseSlug ?? undefined} border="none" mb={4} scrollMarginTop="96px">
             {({ isExpanded }: { isExpanded: boolean }) => (
               <>
                 <AccordionButton
@@ -253,6 +290,13 @@ export function InstitutAccordion({ modules }: { modules: AcademyModuleRow[] }) 
                             <Lock size={16} aria-hidden />
                             <Text className="inter-medium" fontSize="11px" textTransform="uppercase" letterSpacing="0.06em">
                               Kurs gesperrt
+                            </Text>
+                          </HStack>
+                        ) : g.coursePremiumLocked ? (
+                          <HStack spacing={1.5} color="var(--color-accent-gold)">
+                            <Lock size={16} aria-hidden />
+                            <Text className="inter-medium" fontSize="11px" textTransform="uppercase" letterSpacing="0.06em">
+                              Nur für vollwertige Member
                             </Text>
                           </HStack>
                         ) : null}

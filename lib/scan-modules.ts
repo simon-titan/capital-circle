@@ -6,6 +6,18 @@ type ServerClient = Awaited<ReturnType<typeof createClient>>;
 /** Feste ID des internen "Nicht zugeordnet"-Kurses (muss mit Migration 036 übereinstimmen). */
 export const UNASSIGNED_COURSE_ID = "00000000-0000-0000-0000-000000000001";
 
+/** Feste ID des Free-Kurses "Kostenloser Einblick" (Migration 052). */
+export const FREE_KURS_COURSE_ID = "00000000-0000-0000-0000-000000000010";
+/** Feste ID des Free-Kurses "Aufzeichnungen" (Migration 052). */
+export const AUFZEICHNUNGEN_COURSE_ID = "00000000-0000-0000-0000-000000000011";
+
+/** Bucket-Root-Prefix fuer Free-Kurs-Videos (Hetzner: FREE-KURS/FREE-VALUE/...). */
+export const FREE_KURS_ROOT_PREFIX = "FREE-KURS/FREE-VALUE";
+/** Bucket-Root-Prefix fuer Aufzeichnungen (Hetzner: AUFZEICHNUNGEN/...). */
+export const AUFZEICHNUNGEN_ROOT_PREFIX = "AUFZEICHNUNGEN";
+/** Bucket-Root-Prefix fuer klassische Paid-Module. */
+export const MODULES_ROOT_PREFIX = "modules";
+
 const VIDEO_EXT = /\.(mp4|webm|mov)$/i;
 const THUMB_EXT = /^thumbnail\.(jpe?g|png|webp)$/i;
 
@@ -45,14 +57,56 @@ function humanizeFolder(name: string): string {
   return name.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim() || "Modul";
 }
 
-/** Parst S3-Keys unter Prefix `modules/` (modules/ModulName/...). */
-export function parseModuleScanKeys(rawKeys: string[]): Map<string, ParsedModuleFolder> {
+/**
+ * Parst S3-Keys unter einem beliebig tiefen Root-Prefix.
+ *
+ * Beispiele:
+ * - `modules/ModulA/video.mp4` mit rootPrefix `modules` → Modul "ModulA", direktes Video.
+ * - `modules/ModulA/sub/video.mp4` → Modul "ModulA", Subkategorie "sub".
+ * - `FREE-KURS/FREE-VALUE/video.mp4` mit rootPrefix `FREE-KURS/FREE-VALUE`
+ *   → Default-Modul "FREE-VALUE" (= letztes Root-Segment), direktes Video.
+ * - `FREE-KURS/FREE-VALUE/Modul1/video.mp4` → Modul "Modul1", direktes Video.
+ * - `FREE-KURS/FREE-VALUE/Modul1/sub/video.mp4` → Modul "Modul1", Subkategorie "sub".
+ */
+export function parseModuleScanKeys(
+  rawKeys: string[],
+  rootPrefix: string = MODULES_ROOT_PREFIX,
+): Map<string, ParsedModuleFolder> {
   const byModule = new Map<string, ParsedModuleFolder>();
+  const rootSegments = rootPrefix
+    .replace(/^\/+|\/+$/g, "")
+    .split("/")
+    .filter(Boolean);
+  const rootSegmentsLower = rootSegments.map((s) => s.toLowerCase());
+  const rootDepth = rootSegments.length;
+  if (rootDepth === 0) return byModule;
+  const defaultModuleFolder = rootSegments[rootDepth - 1];
 
   for (const full of rawKeys) {
     const parts = full.split("/").filter(Boolean);
-    if (parts.length < 2 || parts[0].toLowerCase() !== "modules") continue;
-    const moduleFolder = parts[1];
+    if (parts.length < rootDepth + 1) continue;
+    let matches = true;
+    for (let i = 0; i < rootDepth; i++) {
+      if (parts[i].toLowerCase() !== rootSegmentsLower[i]) {
+        matches = false;
+        break;
+      }
+    }
+    if (!matches) continue;
+
+    // Pfad-Teile relativ zum Root (ohne die Root-Segmente).
+    const rel = parts.slice(rootDepth);
+
+    // moduleFolder: explizit bei >= 2 Teilen, sonst impliziter Default (= letztes Root-Segment).
+    let moduleFolder: string;
+    let leafRel: string[];
+    if (rel.length === 1) {
+      moduleFolder = defaultModuleFolder;
+      leafRel = rel;
+    } else {
+      moduleFolder = rel[0];
+      leafRel = rel.slice(1);
+    }
     if (!moduleFolder) continue;
 
     let entry = byModule.get(moduleFolder);
@@ -68,8 +122,8 @@ export function parseModuleScanKeys(rawKeys: string[]): Map<string, ParsedModule
       byModule.set(moduleFolder, entry);
     }
 
-    if (parts.length === 3) {
-      const leaf = parts[2];
+    if (leafRel.length === 1) {
+      const leaf = leafRel[0];
       if (THUMB_EXT.test(leaf)) {
         entry.thumbnailKey = full;
         continue;
@@ -80,9 +134,9 @@ export function parseModuleScanKeys(rawKeys: string[]): Map<string, ParsedModule
       continue;
     }
 
-    if (parts.length >= 4) {
-      const subName = parts[2];
-      const leaf = parts[parts.length - 1];
+    if (leafRel.length >= 2) {
+      const subName = leafRel[0];
+      const leaf = leafRel[leafRel.length - 1];
       if (!subName || !leaf) continue;
       if (!VIDEO_EXT.test(leaf)) continue;
 
@@ -106,11 +160,28 @@ function mergeEmptyFoldersIntoParsed(
   parsed: Map<string, ParsedModuleFolder>,
   modulePrefixes: string[],
   subPrefixesByModule: Map<string, string[]>,
+  rootPrefix: string = MODULES_ROOT_PREFIX,
 ): void {
+  const rootSegmentsLower = rootPrefix
+    .replace(/^\/+|\/+$/g, "")
+    .split("/")
+    .filter(Boolean)
+    .map((s) => s.toLowerCase());
+  const rootDepth = rootSegmentsLower.length;
+  if (rootDepth === 0) return;
+
   for (const prefix of modulePrefixes) {
     const parts = prefix.replace(/\/$/, "").split("/").filter(Boolean);
-    if (parts.length < 2 || parts[0].toLowerCase() !== "modules") continue;
-    const moduleFolder = parts[1];
+    if (parts.length < rootDepth + 1) continue;
+    let matches = true;
+    for (let i = 0; i < rootDepth; i++) {
+      if (parts[i].toLowerCase() !== rootSegmentsLower[i]) {
+        matches = false;
+        break;
+      }
+    }
+    if (!matches) continue;
+    const moduleFolder = parts[rootDepth];
     if (!moduleFolder) continue;
 
     if (!parsed.has(moduleFolder)) {
@@ -127,7 +198,7 @@ function mergeEmptyFoldersIntoParsed(
     const subs = subPrefixesByModule.get(moduleFolder) ?? [];
     for (const sp of subs) {
       const sparts = sp.replace(/\/$/, "").split("/").filter(Boolean);
-      const subName = sparts[2];
+      const subName = sparts[rootDepth + 1];
       if (!subName) continue;
       if (!entry.subfolders.has(subName)) {
         entry.subfolders.set(subName, { title: humanizeFolder(subName), videos: [] });
@@ -173,6 +244,20 @@ export async function scanModulesFromBucket(prefix = "modules"): Promise<string[
   return listed.map((o) => o.key);
 }
 
+export type SyncParsedModulesOptions = {
+  /**
+   * Ziel-Kurs fuer NEU angelegte Module. Default: UNASSIGNED_COURSE_ID.
+   * Bestehende Module (match via storage_folder_key) werden NICHT verschoben.
+   */
+  targetCourseId?: string;
+  /**
+   * Wenn true, werden neu angelegte Module direkt als `is_published = true` markiert
+   * (praktisch fuer Free-Kurs, wo alle Videos sofort sichtbar sein sollen).
+   * Default: false (Admin muss manuell veroeffentlichen).
+   */
+  autoPublish?: boolean;
+};
+
 /**
  * Synchronisiert alle gescannten Modul-Ordner global in die DB.
  *
@@ -181,8 +266,8 @@ export async function scanModulesFromBucket(prefix = "modules"): Promise<string[
  *   → Nur Metadaten (thumbnail) aktualisieren. course_id und title werden NICHT geändert.
  *   → Umbenennung in der DB bleibt erhalten, kein Duplikat entsteht.
  * - Modul noch nicht vorhanden:
- *   → Wird in den "Nicht zugeordnet"-Kurs eingefügt (UNASSIGNED_COURSE_ID).
- *   → Admin kann es danach manuell einem echten Kurs zuordnen.
+ *   → Wird in den Ziel-Kurs eingefügt (Default: UNASSIGNED_COURSE_ID; fuer Free-Kurs-Scan explizit setzbar).
+ *   → Admin kann es danach manuell einem anderen Kurs zuordnen.
  * - Videos/Subkategorien: Nur neue Keys werden eingefügt, bestehende bleiben unberührt.
  * - Subkategorien: Zuordnung über storage_folder_key (Bucket-Unterordnername); Legacy-Zeilen ohne Key
  *   werden einmalig per title gematcht und erhalten storage_folder_key (Titel/Position unverändert).
@@ -191,17 +276,19 @@ export async function scanModulesFromBucket(prefix = "modules"): Promise<string[
 export async function syncParsedModulesGlobal(
   supabase: ServerClient,
   parsed: Map<string, ParsedModuleFolder>,
+  options: SyncParsedModulesOptions = {},
 ): Promise<ScanSyncResult> {
+  const targetCourseId = options.targetCourseId ?? UNASSIGNED_COURSE_ID;
+  const autoPublish = options.autoPublish ?? false;
   const errors: string[] = [];
   let modulesTouched = 0;
   let videosCreated = 0;
   let subcategoriesCreated = 0;
 
-  // Nächste order_index für neue Module im Unassigned-Kurs
   const { data: maxRow } = await supabase
     .from("modules")
     .select("order_index")
-    .eq("course_id", UNASSIGNED_COURSE_ID)
+    .eq("course_id", targetCourseId)
     .order("order_index", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -232,17 +319,17 @@ export async function syncParsedModulesGlobal(
           await supabase.from("modules").update(updates).eq("id", moduleId);
         }
       } else {
-        // Neues Modul: landet im "Nicht zugeordnet"-Kurs.
+        // Neues Modul: landet im konfigurierten Ziel-Kurs (Default: Unassigned).
         nextOrder += 1;
         const uniqueSlug = await nextUniqueModuleSlug(supabase, folder.slugBase);
         const { data: inserted, error: insErr } = await supabase
           .from("modules")
           .insert({
-            course_id: UNASSIGNED_COURSE_ID,
+            course_id: targetCourseId,
             title: folder.folderTitle,
             description: null,
             order_index: nextOrder,
-            is_published: false,
+            is_published: autoPublish,
             slug: uniqueSlug,
             thumbnail_storage_key: folder.thumbnailKey,
             storage_folder_key: folder.storageFolderKey,
@@ -366,30 +453,77 @@ export async function syncParsedModulesGlobal(
   return { modulesTouched, videosCreated, subcategoriesCreated, errors };
 }
 
-/** Scannt den gesamten Bucket und synchronisiert alle Module global (ohne Kurs-Zuweisung). */
-export async function runModuleScan(supabase: ServerClient, prefix = "modules") {
+/**
+ * Generischer Bucket-Scan: Liest alle Keys unter `prefix`, parst sie als
+ * Modul-Ordner und synchronisiert in die DB. Konfigurierbar ueber Optionen.
+ */
+export async function runBucketScan(
+  supabase: ServerClient,
+  options: { prefix: string } & SyncParsedModulesOptions,
+) {
+  const { prefix, ...syncOptions } = options;
   const keys = await scanModulesFromBucket(prefix);
-  const parsed = parseModuleScanKeys(keys);
+  const parsed = parseModuleScanKeys(keys, prefix);
 
+  const rootDepth = prefix
+    .replace(/^\/+|\/+$/g, "")
+    .split("/")
+    .filter(Boolean).length;
   const modulePrefixes = await listFolderPrefixes(prefix);
   const subPrefixesByModule = new Map<string, string[]>();
   for (const mp of modulePrefixes) {
     const parts = mp.replace(/\/$/, "").split("/").filter(Boolean);
-    const moduleFolder = parts[1];
+    const moduleFolder = parts[rootDepth];
     if (!moduleFolder) continue;
     const subs = await listFolderPrefixes(mp);
     subPrefixesByModule.set(moduleFolder, subs);
   }
-  mergeEmptyFoldersIntoParsed(parsed, modulePrefixes, subPrefixesByModule);
+  mergeEmptyFoldersIntoParsed(parsed, modulePrefixes, subPrefixesByModule, prefix);
 
-  const result = await syncParsedModulesGlobal(supabase, parsed);
+  const result = await syncParsedModulesGlobal(supabase, parsed, syncOptions);
   return { ...result, keyCount: keys.length, moduleFolders: parsed.size };
+}
+
+/** Scannt den "modules/"-Bereich und synchronisiert Module in den Unassigned-Kurs. */
+export async function runModuleScan(supabase: ServerClient, prefix = MODULES_ROOT_PREFIX) {
+  return runBucketScan(supabase, {
+    prefix,
+    targetCourseId: UNASSIGNED_COURSE_ID,
+    autoPublish: false,
+  });
+}
+
+/**
+ * Scannt den "FREE-KURS/FREE-VALUE/"-Bereich und synchronisiert Module direkt
+ * in den "Kostenloser Einblick"-Kurs. Dateien direkt unter dem Prefix landen in
+ * einem impliziten Default-Modul ("FREE-VALUE"); Unterordner werden zu eigenen
+ * Modulen. Neue Module werden sofort veroeffentlicht, damit Free-Nutzer sie
+ * unmittelbar sehen.
+ */
+export async function runFreeKursScan(supabase: ServerClient, prefix = FREE_KURS_ROOT_PREFIX) {
+  return runBucketScan(supabase, {
+    prefix,
+    targetCourseId: FREE_KURS_COURSE_ID,
+    autoPublish: true,
+  });
+}
+
+/**
+ * Scannt den "AUFZEICHNUNGEN/"-Bereich und synchronisiert Module in den
+ * "Aufzeichnungen"-Kurs (fuer Free + Paid sichtbar).
+ */
+export async function runAufzeichnungenScan(supabase: ServerClient, prefix = AUFZEICHNUNGEN_ROOT_PREFIX) {
+  return runBucketScan(supabase, {
+    prefix,
+    targetCourseId: AUFZEICHNUNGEN_COURSE_ID,
+    autoPublish: true,
+  });
 }
 
 /**
  * @deprecated Verwende stattdessen `runModuleScan` (ohne courseId).
  * Bleibt für Rückwärtskompatibilität erhalten.
  */
-export async function runModuleScanForCourse(supabase: ServerClient, _courseId: string, prefix = "modules") {
+export async function runModuleScanForCourse(supabase: ServerClient, _courseId: string, prefix = MODULES_ROOT_PREFIX) {
   return runModuleScan(supabase, prefix);
 }

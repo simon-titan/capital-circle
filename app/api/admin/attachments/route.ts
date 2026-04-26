@@ -30,6 +30,7 @@ export async function POST(request: Request) {
     position?: number;
     arsenal_kind?: "template" | "pdf" | null;
     arsenal_category_id?: string | null;
+    is_free?: boolean;
   };
   if (!body.video_id?.trim() || !body.storage_key?.trim() || !body.filename?.trim()) {
     return NextResponse.json({ ok: false, error: "missing_fields" }, { status: 400 });
@@ -45,6 +46,7 @@ export async function POST(request: Request) {
       position: body.position ?? 0,
       arsenal_kind: body.arsenal_kind ?? null,
       arsenal_category_id: body.arsenal_category_id?.trim() || null,
+      is_free: body.is_free === true,
     })
     .select("*")
     .single();
@@ -59,6 +61,7 @@ export async function PATCH(request: Request) {
     id: string;
     arsenal_kind?: "template" | "pdf" | null;
     arsenal_category_id?: string | null;
+    is_free?: boolean;
   };
   if (!body.id?.trim()) {
     return NextResponse.json({ ok: false, error: "missing_id" }, { status: 400 });
@@ -69,6 +72,9 @@ export async function PATCH(request: Request) {
   }
   if ("arsenal_category_id" in body) {
     patch.arsenal_category_id = body.arsenal_category_id?.trim() || null;
+  }
+  if (typeof body.is_free === "boolean") {
+    patch.is_free = body.is_free;
   }
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ ok: false, error: "nothing_to_update" }, { status: 400 });

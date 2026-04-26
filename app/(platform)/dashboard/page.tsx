@@ -1,6 +1,9 @@
 import { Grid, GridItem } from "@chakra-ui/react";
 import { redirect } from "next/navigation";
 import { DiscordBanner } from "@/components/platform/DiscordBanner";
+import { DashboardAppointmentCard, type Step2AppointmentData } from "@/components/platform/DashboardAppointmentCard";
+import { InsightBanner } from "@/components/platform/InsightBanner";
+import { DashboardLiveBanner } from "@/components/platform/DashboardLiveBanner";
 import { WelcomeCard } from "@/components/platform/WelcomeCard";
 import {
   DashboardLastVideoCard,
@@ -37,6 +40,11 @@ export default async function DashboardPage() {
   }
 
   const userId = user.id;
+  const profileAny = profile as Record<string, unknown>;
+  const showInsightBanner =
+    profileAny.application_status === "approved" &&
+    (profileAny.membership_tier === "free" || !profileAny.is_paid) &&
+    profileAny.step2_application_status == null;
 
   const academyRows = await getAcademyModulesOverview(userId);
   const supabase = await createClient();
@@ -118,11 +126,32 @@ export default async function DashboardPage() {
 
   const homeworkState = await getHomeworkDashboardState(userId, homework);
 
-  const { data: discordConnection } = await supabase
-    .from("discord_connections")
-    .select("discord_username")
-    .eq("user_id", userId)
-    .maybeSingle();
+  const isPaid = Boolean(profileAny.is_paid);
+
+  const [{ data: discordConnection }, { data: step2Row }] = await Promise.all([
+    isPaid
+      ? supabase
+          .from("discord_connections")
+          .select("discord_username")
+          .eq("user_id", userId)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabase
+      .from("step2_applications")
+      .select("status,calendly_booked_at,calendly_email_sent_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  const step2Appointment: Step2AppointmentData | null = step2Row
+    ? {
+        status: (step2Row as Record<string, unknown>).status as string,
+        calendlyBookedAt: ((step2Row as Record<string, unknown>).calendly_booked_at as string | null) ?? null,
+        calendlyEmailSentAt: ((step2Row as Record<string, unknown>).calendly_email_sent_at as string | null) ?? null,
+      }
+    : null;
 
   return (
     <Grid gap={{ base: 6, md: 8 }} templateColumns={{ base: "1fr", lg: "1fr 1fr" }}>
@@ -140,9 +169,30 @@ export default async function DashboardPage() {
         />
       </GridItem>
 
-      <GridItem colSpan={{ base: 1, lg: 2 }}>
-        <DiscordBanner discordUsername={(discordConnection?.discord_username as string | null) ?? null} />
-      </GridItem>
+      {/* Live-Stream-Banner: nur fuer Free-User (nicht is_paid) sichtbar, rendert sich aus wenn offline */}
+      {!isPaid && (
+        <GridItem colSpan={{ base: 1, lg: 2 }}>
+          <DashboardLiveBanner />
+        </GridItem>
+      )}
+
+      {showInsightBanner && (
+        <GridItem colSpan={{ base: 1, lg: 2 }}>
+          <InsightBanner />
+        </GridItem>
+      )}
+
+      {step2Appointment && (
+        <GridItem colSpan={{ base: 1, lg: 2 }}>
+          <DashboardAppointmentCard data={step2Appointment} />
+        </GridItem>
+      )}
+
+      {isPaid && (
+        <GridItem colSpan={{ base: 1, lg: 2 }}>
+          <DiscordBanner discordUsername={(discordConnection?.discord_username as string | null) ?? null} />
+        </GridItem>
+      )}
 
       <GridItem display="flex" flexDirection="column" minH={{ lg: "280px" }} colSpan={{ base: 1, lg: 2 }}>
         <DashboardLastVideoCard lastWatched={lastWatched} recommended={recommended} />
@@ -155,10 +205,11 @@ export default async function DashboardPage() {
               homework={homework}
               initialOfficialDone={homeworkState.officialDone}
               initialCustomTasks={homeworkState.customTasks}
+              isPaid={isPaid}
             />
           </GridItem>
           <GridItem>
-            <DashboardEventsCard events={events} />
+            <DashboardEventsCard events={events} isPaid={isPaid} />
           </GridItem>
         </Grid>
       </GridItem>

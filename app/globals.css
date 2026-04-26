@@ -98,6 +98,18 @@ a {
   text-decoration: none;
 }
 
+/* PaywallOverlay — entrance animation */
+@keyframes paywall-enter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
 .glass-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -347,6 +359,50 @@ a {
 
 .welcome-streak-flame {
   animation: welcome-streak-flame-pulse 2.4s ease-in-out infinite;
+}
+
+.appointment-card-glow {
+  background:
+    radial-gradient(ellipse 80% 70% at 15% 40%, rgba(212, 175, 55, 0.18), transparent 55%),
+    radial-gradient(ellipse 60% 60% at 85% 20%, rgba(255, 140, 50, 0.12), transparent 50%),
+    linear-gradient(155deg, rgba(16, 12, 8, 0.97) 0%, rgba(6, 6, 9, 0.99) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.32);
+  animation: appointment-card-pulse 5s ease-in-out infinite;
+}
+
+.appointment-card-glow-booked {
+  background:
+    radial-gradient(ellipse 80% 70% at 15% 40%, rgba(52, 211, 153, 0.12), transparent 55%),
+    radial-gradient(ellipse 60% 60% at 85% 20%, rgba(212, 175, 55, 0.08), transparent 50%),
+    linear-gradient(155deg, rgba(10, 18, 14, 0.97) 0%, rgba(6, 6, 9, 0.99) 100%);
+  border: 1px solid rgba(52, 211, 153, 0.28);
+  animation: appointment-card-pulse-green 5s ease-in-out infinite;
+}
+
+@keyframes appointment-card-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 36px rgba(212, 175, 55, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+  50% {
+    box-shadow:
+      0 0 52px rgba(212, 175, 55, 0.26),
+      inset 0 1px 0 rgba(255, 255, 255, 0.10);
+  }
+}
+
+@keyframes appointment-card-pulse-green {
+  0%, 100% {
+    box-shadow:
+      0 0 36px rgba(52, 211, 153, 0.10),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+  50% {
+    box-shadow:
+      0 0 48px rgba(52, 211, 153, 0.20),
+      inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  }
 }
 
 /* Institut-Karte (Dashboard): Medienkopf, warm wie Streak-Block */
@@ -681,4 +737,69 @@ a {
 
 .analysis-rich-editor .ProseMirror p {
   margin: 0.5em 0;
+}
+
+/* ---------- Application Modal Animations ---------- */
+
+@keyframes appWarningPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 28px 8px rgba(220, 38, 38, 0.18);
+  }
+}
+
+@keyframes appStepEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes appRipple {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+@keyframes appRedirectFill {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+@keyframes appWarningFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Horizontal scroll helper: kein Scrollbar sichtbar */
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
 }

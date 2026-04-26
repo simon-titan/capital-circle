@@ -23,8 +23,9 @@ import {
   Text,
   useDisclosure,
 } from "@chakra-ui/react";
-import { Eye, EyeOff, Trash2, UserPlus } from "lucide-react";
+import { Eye, EyeOff, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { UserTierOverrideModal, type Tier } from "./UserTierOverrideModal";
 
 type UserRow = {
   id: string;
@@ -36,6 +37,36 @@ type UserRow = {
   codexAccepted: boolean;
   discordUsername: string | null;
   createdAt: string;
+  membershipTier: Tier;
+  accessUntil: string | null;
+  applicationStatus: "pending" | "approved" | "rejected" | null;
+};
+
+const TIER_BADGE_COLORS: Record<Tier, { bg: string; color: string; border: string; label: string }> = {
+  free: {
+    bg: "rgba(255,255,255,0.06)",
+    color: "#9A9AA4",
+    border: "rgba(255,255,255,0.10)",
+    label: "Free",
+  },
+  monthly: {
+    bg: "rgba(212,175,55,0.10)",
+    color: "#E8C547",
+    border: "rgba(212,175,55,0.22)",
+    label: "Monthly",
+  },
+  lifetime: {
+    bg: "rgba(212,175,55,0.18)",
+    color: "#FFD66B",
+    border: "rgba(212,175,55,0.40)",
+    label: "Lifetime",
+  },
+  ht_1on1: {
+    bg: "rgba(132,82,255,0.14)",
+    color: "#C4B5FD",
+    border: "rgba(132,82,255,0.40)",
+    label: "1on1",
+  },
 };
 
 const fieldStyles = {
@@ -64,6 +95,9 @@ export function AdminMembersManager() {
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
   const [deleteTarget, setDeleteTarget] = useState<UserRow | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  const { isOpen: isTierOpen, onOpen: onTierOpen, onClose: onTierClose } = useDisclosure();
+  const [tierTarget, setTierTarget] = useState<UserRow | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -124,6 +158,11 @@ export function AdminMembersManager() {
   const confirmDelete = (user: UserRow) => {
     setDeleteTarget(user);
     onDeleteOpen();
+  };
+
+  const openTier = (user: UserRow) => {
+    setTierTarget(user);
+    onTierOpen();
   };
 
   const doDelete = async () => {
@@ -298,22 +337,32 @@ export function AdminMembersManager() {
             spacing={4}
             display={{ base: "none", lg: "flex" }}
           >
-            {["E-Mail / Name", "Paid", "Admin", "Codex", "Discord", "Registriert", ""].map((h) => (
-              <Text
-                key={h}
-                flex={h === "E-Mail / Name" ? 1 : undefined}
-                w={h === "" ? "40px" : h === "Registriert" ? "110px" : "70px"}
-                fontSize="11px"
-                className="inter"
-                fontWeight={500}
-                letterSpacing="0.08em"
-                textTransform="uppercase"
-                color="gray.600"
-                textAlign={h === "" ? "right" : "left"}
-              >
-                {h}
-              </Text>
-            ))}
+            {["E-Mail / Name", "Tier", "Paid", "Admin", "Codex", "Discord", "Registriert", ""].map(
+              (h) => (
+                <Text
+                  key={h}
+                  flex={h === "E-Mail / Name" ? 1 : undefined}
+                  w={
+                    h === ""
+                      ? "40px"
+                      : h === "Registriert"
+                        ? "110px"
+                        : h === "Tier"
+                          ? "100px"
+                          : "70px"
+                  }
+                  fontSize="11px"
+                  className="inter"
+                  fontWeight={500}
+                  letterSpacing="0.08em"
+                  textTransform="uppercase"
+                  color="gray.600"
+                  textAlign={h === "" ? "right" : "left"}
+                >
+                  {h}
+                </Text>
+              ),
+            )}
           </HStack>
 
           {loading ? (
@@ -347,6 +396,24 @@ export function AdminMembersManager() {
                     </Text>
                   ) : null}
                 </Stack>
+
+                {/* Tier */}
+                <Box w={{ base: "auto", lg: "100px" }}>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    onClick={() => openTier(user)}
+                    leftIcon={<ShieldCheck size={12} />}
+                    bg={TIER_BADGE_COLORS[user.membershipTier].bg}
+                    color={TIER_BADGE_COLORS[user.membershipTier].color}
+                    borderColor={TIER_BADGE_COLORS[user.membershipTier].border}
+                    _hover={{ filter: "brightness(1.1)" }}
+                    className="inter"
+                    fontWeight={500}
+                  >
+                    {TIER_BADGE_COLORS[user.membershipTier].label}
+                  </Button>
+                </Box>
 
                 {/* Paid */}
                 <Box w={{ base: "auto", lg: "70px" }}>
@@ -418,6 +485,51 @@ export function AdminMembersManager() {
           )}
         </Box>
       </Stack>
+
+      {/* ── Tier-Override ── */}
+      <UserTierOverrideModal
+        isOpen={isTierOpen}
+        onClose={onTierClose}
+        user={
+          tierTarget
+            ? { id: tierTarget.id, email: tierTarget.email, fullName: tierTarget.fullName }
+            : null
+        }
+        initial={
+          tierTarget
+            ? {
+                membership_tier: tierTarget.membershipTier,
+                access_until: tierTarget.accessUntil,
+                is_paid: tierTarget.isPaid,
+              }
+            : null
+        }
+        onSaved={(next) => {
+          if (!tierTarget) return;
+          setUsers((prev) =>
+            prev.map((u) =>
+              u.id === tierTarget.id
+                ? {
+                    ...u,
+                    membershipTier: next.membership_tier,
+                    accessUntil: next.access_until,
+                    isPaid: next.is_paid,
+                  }
+                : u,
+            ),
+          );
+          setTierTarget((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  membershipTier: next.membership_tier,
+                  accessUntil: next.access_until,
+                  isPaid: next.is_paid,
+                }
+              : prev,
+          );
+        }}
+      />
 
       {/* ── Löschen-Bestätigung ── */}
       <Modal isOpen={isDeleteOpen} onClose={onDeleteClose} isCentered>

@@ -84,7 +84,9 @@ export async function GET() {
     service.auth.admin.listUsers({ perPage: 500 }),
     service
       .from("profiles")
-      .select("id,full_name,username,is_admin,is_paid,codex_accepted,discord_username,created_at"),
+      .select(
+        "id,full_name,username,is_admin,is_paid,codex_accepted,discord_username,created_at,membership_tier,access_until,application_status",
+      ),
   ]);
 
   const { data: authUsers, error: listErr } = listResult;
@@ -108,6 +110,21 @@ export async function GET() {
       codexAccepted: Boolean(p?.codex_accepted),
       discordUsername: (p?.discord_username as string | null) ?? null,
       createdAt: u.created_at,
+      membershipTier:
+        (p?.membership_tier as
+          | "free"
+          | "monthly"
+          | "lifetime"
+          | "ht_1on1"
+          | undefined) ?? "free",
+      accessUntil: (p?.access_until as string | null) ?? null,
+      applicationStatus:
+        (p?.application_status as
+          | "pending"
+          | "approved"
+          | "rejected"
+          | null
+          | undefined) ?? null,
     };
   });
 

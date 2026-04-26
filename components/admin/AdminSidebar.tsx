@@ -7,7 +7,12 @@ import { Logo } from "@/components/brand/Logo";
 
 const links = [
   { href: "/admin", label: "Uebersicht" },
+  { href: "/admin/dashboard", label: "Analytics" },
+  { href: "/admin/applications", label: "Bewerbungen" },
+  { href: "/admin/ht-applications", label: "High-Ticket" },
+  { href: "/admin/step2-applications", label: "Step-2 Bewerbungen" },
   { href: "/admin/kurse", label: "Kurse & Module" },
+  { href: "/admin/free-kurs", label: "Free Kurs" },
   { href: "/admin/quiz", label: "Quiz" },
   { href: "/admin/events", label: "Events" },
   { href: "/admin/hausaufgaben", label: "Hausaufgaben" },
@@ -15,7 +20,11 @@ const links = [
   { href: "/admin/discord", label: "Discord" },
   { href: "/admin/arsenal", label: "Arsenal" },
   { href: "/admin/live-sessions", label: "Live Sessions" },
+  { href: "/admin/stream", label: "Live Stream" },
   { href: "/admin/analysis", label: "Analyse" },
+  { href: "/admin/news", label: "News" },
+  { href: "/admin/reviews", label: "Bewertungen" },
+  { href: "/admin/tracking", label: "Tracking Links" },
 ];
 
 export function AdminSidebar() {

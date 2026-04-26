@@ -7,10 +7,21 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-const links = [
+type SidebarLink = {
+  href: string;
+  label: string;
+  /** Sub-Shortcut unterhalb eines Haupt-Links (leicht eingerueckt). */
+  isSub?: boolean;
+  /** Visueller Gold-Akzent fuer Free-Bereich. */
+  accentFree?: boolean;
+};
+
+const links: SidebarLink[] = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/events", label: "Events" },
   { href: "/ausbildung", label: "Institut" },
+  { href: "/ausbildung#kostenloser-einblick", label: "Kostenloser Einblick", isSub: true, accentFree: true },
+  { href: "/ausbildung#aufzeichnungen", label: "Aufzeichnungen", isSub: true, accentFree: true },
   { href: "/settings", label: "Einstellungen" },
 ];
 
@@ -21,6 +32,7 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [name, setName] = useState("Mitglied");
   const [discordName, setDiscordName] = useState<string | null>(null);
+  const [isPaid, setIsPaid] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -28,12 +40,13 @@ export function Sidebar() {
       if (!data.user) return;
       const { data: profile } = await supabase
         .from("profiles")
-        .select("full_name,username,discord_username")
+        .select("full_name,username,discord_username,is_paid")
         .eq("id", data.user.id)
         .single();
       if (profile) {
         setName(profile.full_name || profile.username || "Mitglied");
         setDiscordName(profile.discord_username);
+        setIsPaid(Boolean(profile.is_paid));
       }
     };
     void load();
@@ -64,21 +77,34 @@ export function Sidebar() {
         </Button>
       </Flex>
       <Stack gap={2}>
-        {links.map((item) => (
-          <Button
-            as={Link}
-            key={item.href}
-            href={item.href}
-            justifyContent={collapsed ? "center" : "flex-start"}
-            variant={pathname?.startsWith(item.href) ? "solid" : "ghost"}
-            bg={pathname?.startsWith(item.href) ? "var(--color-accent-blue)" : "transparent"}
-          >
-            {collapsed ? item.label[0] : item.label}
-          </Button>
-        ))}
+        {links.map((item) => {
+          // Sub-Shortcuts mit Hash aktivieren wir nur beim exakten Pfadteil (ohne Hash-Tracking).
+          const base = item.href.split("#")[0];
+          const isActive = !item.isSub && base && pathname?.startsWith(base);
+          return (
+            <Button
+              as={Link}
+              key={item.href}
+              href={item.href}
+              size={item.isSub ? "sm" : "md"}
+              pl={collapsed ? undefined : item.isSub ? 6 : undefined}
+              justifyContent={collapsed ? "center" : "flex-start"}
+              variant={isActive ? "solid" : "ghost"}
+              bg={isActive ? "var(--color-accent-blue)" : "transparent"}
+              color={item.accentFree ? "var(--color-accent-gold)" : undefined}
+              borderLeftWidth={item.isSub ? "2px" : undefined}
+              borderLeftColor={item.accentFree ? "rgba(212,175,55,0.45)" : "transparent"}
+              borderRadius={item.isSub ? "8px" : undefined}
+              _hover={item.accentFree ? { bg: "rgba(212,175,55,0.08)" } : undefined}
+              fontWeight={item.isSub ? 500 : undefined}
+            >
+              {collapsed ? item.label[0] : item.label}
+            </Button>
+          );
+        })}
       </Stack>
       <Stack mt={8} pt={4} borderTop="1px solid var(--color-border)" gap={3}>
-        {!collapsed ? (
+        {!collapsed && isPaid ? (
           <Flex align="center" gap={2}>
             <Circle size="8px" bg={discordName ? "green.300" : "gray.500"} />
             <Text fontSize="sm" className="dm-sans">

@@ -20,9 +20,11 @@ import {
   Text,
   useDisclosure,
 } from "@chakra-ui/react";
+
 import { Logo } from "@/components/brand/Logo";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   BookMarked,
@@ -33,8 +35,11 @@ import {
   LayoutDashboard,
   LogOut,
   Menu as MenuIcon,
+  MessageCircle,
   Package,
+  Radio,
   UserRound,
+  X,
 } from "lucide-react";
 
 const navItems: Array<{
@@ -46,6 +51,7 @@ const navItems: Array<{
   { href: "/codex", label: "Codex", icon: BookOpen },
   { href: "/ausbildung", label: "Institut", icon: GraduationCap },
   { href: "/events", label: "Events", icon: Calendar },
+  { href: "/stream", label: "Live", icon: Radio },
 ];
 
 const tradingJournalSubLinks = [
@@ -69,11 +75,96 @@ function isNavActive(pathname: string | null, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function useUnreadNews(pathname: string | null): number {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/news/unread", { cache: "no-store" });
+        if (!res.ok) return;
+        const json = (await res.json()) as { ok: boolean; count?: number };
+        if (!cancelled && json.ok) setCount(json.count ?? 0);
+      } catch {
+        // still rendern, nur ohne Badge
+      }
+    };
+    void load();
+    const onFocus = () => void load();
+    window.addEventListener("focus", onFocus);
+    const interval = window.setInterval(load, 60_000);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", onFocus);
+      window.clearInterval(interval);
+    };
+  }, [pathname]);
+
+  // Wenn der Nutzer die News-Seite oeffnet, wird serverseitig last_seen_at gesetzt.
+  // Hier lokal ausblenden, damit die UI sofort reagiert.
+  useEffect(() => {
+    if (pathname?.startsWith("/news")) setCount(0);
+  }, [pathname]);
+
+  return count;
+}
+
+const FREE_BANNER_KEY = "cc_free_banner_dismissed";
+
+function useFreeBanner(supabase: ReturnType<typeof createClient>) {
+  const [show, setShow] = useState(false);
+  // Default true: Stream-Nav ausgeblendet bis Profil geladen ist (verhindert Flackern bei Paid-Usern).
+  const [isPaid, setIsPaid] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("is_paid, step2_application_status")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (!profile) return;
+        const paidFlag = Boolean((profile as Record<string, unknown>).is_paid);
+        setIsPaid(paidFlag);
+        // FreeBanner nur fuer Nicht-Paid-Nutzer ohne Step-2-Bewerbung
+        const isFree = !paidFlag;
+        const noStep2 = (profile as Record<string, unknown>).step2_application_status == null;
+        if (typeof window !== "undefined" && localStorage.getItem(FREE_BANNER_KEY) !== "1") {
+          if (isFree && noStep2) setShow(true);
+        }
+      } catch {
+        // silent — Banner optional
+      }
+    };
+    void load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const dismiss = () => {
+    if (typeof window !== "undefined") localStorage.setItem(FREE_BANNER_KEY, "1");
+    setShow(false);
+  };
+
+  return { show, dismiss, isPaid };
+}
+
 export function TopBar() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
   const { isOpen: drawerOpen, onOpen: onDrawerOpen, onClose: onDrawerClose } = useDisclosure();
+  const unreadNews = useUnreadNews(pathname);
+  const newsActive = !!pathname && pathname.startsWith("/news");
+  const { show: showFreeBanner, dismiss: dismissFreeBanner, isPaid } = useFreeBanner(supabase);
+
+  // Stream-Nav (/stream) nur fuer Free-User (nicht is_paid) sichtbar.
+  const visibleNavItems = isPaid
+    ? navItems.filter((item) => item.href !== "/stream")
+    : navItems;
 
   const tradingJournalActive = !!pathname && pathname.startsWith("/trading-journal");
 
@@ -98,7 +189,7 @@ export function TopBar() {
   }) => (
     <Stack gap={3} w="100%">
       <Stack gap={2}>
-            {navItems.slice(0, 3).map((item) => {
+            {visibleNavItems.slice(0, 3).map((item) => {
               const active = isNavActive(pathname, item.href);
               const Icon = item.icon;
               return (
@@ -157,7 +248,7 @@ export function TopBar() {
             </Button>
           );
         })}
-        {navItems.slice(3).map((item) => {
+        {visibleNavItems.slice(3).map((item) => {
           const active = isNavActive(pathname, item.href);
           const Icon = item.icon;
           return (
@@ -218,6 +309,41 @@ export function TopBar() {
         <Stack gap={2} pt={2} borderTopWidth="1px" borderColor="var(--color-border)">
           <Button
             as={Link}
+            href="/news"
+            onClick={onNavigate}
+            size="sm"
+            variant={newsActive ? "solid" : "ghost"}
+            justifyContent="flex-start"
+            leftIcon={<MessageCircle size={18} />}
+            rightIcon={
+              unreadNews > 0 ? (
+                <Box
+                  minW="20px"
+                  h="20px"
+                  px={1.5}
+                  borderRadius="full"
+                  bg="#D4AF37"
+                  color="#0C0D10"
+                  fontSize="10px"
+                  className="inter-semibold"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  {unreadNews > 99 ? "99+" : unreadNews}
+                </Box>
+              ) : undefined
+            }
+            bg={newsActive ? "rgba(212, 175, 55, 0.22)" : "transparent"}
+            borderWidth="1px"
+            borderColor={newsActive ? "rgba(212, 175, 55, 0.5)" : "transparent"}
+            _hover={{ bg: newsActive ? "rgba(212, 175, 55, 0.3)" : "rgba(255, 255, 255, 0.06)" }}
+            className="inter-medium"
+          >
+            Capital Circle News
+          </Button>
+          <Button
+            as={Link}
             href="/settings"
             onClick={onNavigate}
             size="sm"
@@ -261,11 +387,96 @@ export function TopBar() {
 
   return (
     <>
+      <Box position="sticky" top={0} zIndex={10001} w="100%">
+      {showFreeBanner && (
+        <Box
+          w="100%"
+          bg="linear-gradient(90deg, rgba(12,9,4,0.97) 0%, rgba(20,14,6,0.97) 50%, rgba(12,9,4,0.97) 100%)"
+          borderBottom="1px solid rgba(212,175,55,0.28)"
+          backdropFilter="blur(16px)"
+          sx={{ WebkitBackdropFilter: "blur(16px)" }}
+        >
+          <Flex
+            maxW="1440px"
+            mx="auto"
+            px={{ base: 3, md: 8 }}
+            py={{ base: "9px", md: "10px" }}
+            align="center"
+            justify="center"
+            position="relative"
+            gap={{ base: 2, md: 3 }}
+          >
+            <Box
+              display={{ base: "none", md: "flex" }}
+              alignItems="center"
+              gap={2}
+              mr={1}
+            >
+              <Box
+                w="6px"
+                h="6px"
+                borderRadius="full"
+                bg="var(--color-accent-gold)"
+                boxShadow="0 0 8px rgba(212,175,55,0.7)"
+              />
+            </Box>
+
+            <Text
+              display={{ base: "none", md: "block" }}
+              className="inter"
+              fontSize="sm"
+              color="rgba(245,236,210,0.82)"
+            >
+              Sichere dir deinen Platz im Capital Circle —
+            </Text>
+
+            <Box
+              as="a"
+              href="/bewerbung"
+              display="inline-flex"
+              alignItems="center"
+              gap={1.5}
+              px={{ base: 3, md: 4 }}
+              py={{ base: "5px", md: "6px" }}
+              borderRadius="8px"
+              bg="linear-gradient(135deg, var(--color-accent-gold-dark) 0%, var(--color-accent-gold-light) 100%)"
+              color="#0a0a0a"
+              fontSize={{ base: "xs", md: "sm" }}
+              className="inter-semibold"
+              transition="all 180ms ease"
+              _hover={{ filter: "brightness(1.08)", boxShadow: "0 0 18px rgba(212,175,55,0.40)" }}
+              textDecoration="none"
+              flexShrink={0}
+            >
+              <Text display={{ base: "inline", md: "none" }} className="inter-semibold" fontSize="xs">
+                Jetzt bewerben →
+              </Text>
+              <Text display={{ base: "none", md: "inline" }} className="inter-semibold" fontSize="sm">
+                Jetzt bewerben
+              </Text>
+            </Box>
+
+            <IconButton
+              position="absolute"
+              right={{ base: 2, md: 6 }}
+              aria-label="Banner schließen"
+              icon={<X size={14} strokeWidth={2.5} />}
+              size="xs"
+              variant="ghost"
+              color="rgba(255,255,255,0.45)"
+              _hover={{ color: "rgba(255,255,255,0.85)", bg: "rgba(255,255,255,0.06)" }}
+              onClick={dismissFreeBanner}
+              minW="auto"
+              h="auto"
+              p={1}
+              borderRadius="6px"
+            />
+          </Flex>
+        </Box>
+      )}
+
       <Box
         as="header"
-        position="sticky"
-        top={0}
-        zIndex={100}
         w="100%"
         borderBottom="1px solid rgba(212, 175, 55, 0.32)"
         bg="rgba(5, 6, 9, 0.88)"
@@ -298,7 +509,7 @@ export function TopBar() {
             flexWrap="wrap"
             px={1}
           >
-            {navItems.slice(0, 3).map((item) => {
+            {visibleNavItems.slice(0, 3).map((item) => {
               const active = isNavActive(pathname, item.href);
               const Icon = item.icon;
               return (
@@ -357,7 +568,7 @@ export function TopBar() {
                 ))}
               </MenuList>
             </Menu>
-            {navItems.slice(3).map((item) => {
+            {visibleNavItems.slice(3).map((item) => {
               const active = isNavActive(pathname, item.href);
               const Icon = item.icon;
               return (
@@ -419,6 +630,44 @@ export function TopBar() {
           </Flex>
 
           <HStack spacing={1} display={{ base: "none", md: "flex" }}>
+            <Box position="relative">
+              <IconButton
+                as={Link}
+                href="/news"
+                aria-label={unreadNews > 0 ? `Capital Circle News (${unreadNews} neu)` : "Capital Circle News"}
+                icon={<MessageCircle size={22} strokeWidth={2} />}
+                variant="ghost"
+                borderRadius="md"
+                color={newsActive ? "#FEF3C7" : undefined}
+                bg={newsActive ? "rgba(212, 175, 55, 0.18)" : undefined}
+                _hover={{ bg: "rgba(212, 175, 55, 0.15)" }}
+              />
+              {unreadNews > 0 ? (
+                <Box
+                  position="absolute"
+                  top="4px"
+                  right="4px"
+                  minW={unreadNews > 9 ? "18px" : "10px"}
+                  h={unreadNews > 9 ? "18px" : "10px"}
+                  px={unreadNews > 9 ? 1 : 0}
+                  borderRadius="full"
+                  bg="#D4AF37"
+                  borderWidth="2px"
+                  borderColor="rgba(5, 6, 9, 0.95)"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  boxShadow="0 0 12px rgba(212, 175, 55, 0.55)"
+                  pointerEvents="none"
+                >
+                  {unreadNews > 9 ? (
+                    <Box as="span" fontSize="10px" className="inter-semibold" color="#0C0D10" lineHeight="1">
+                      {unreadNews > 99 ? "99+" : unreadNews}
+                    </Box>
+                  ) : null}
+                </Box>
+              ) : null}
+            </Box>
             <IconButton
               as={Link}
               href="/settings"
@@ -448,6 +697,7 @@ export function TopBar() {
           />
         </Flex>
       </Box>
+      </Box>{/* end sticky wrapper */}
 
       <Drawer isOpen={drawerOpen} placement="right" onClose={onDrawerClose} size="xs">
         <DrawerOverlay bg="rgba(7, 8, 10, 0.7)" backdropFilter="blur(6px)" />

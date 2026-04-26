@@ -1,0 +1,46 @@
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { DankePageClient } from "./DankePageClient";
+
+export const metadata: Metadata = {
+  title: "Vielen Dank — Capital Circle Institut",
+  description: "Deine erweiterte Bewerbung ist eingegangen. Buche jetzt dein persönliches Gespräch.",
+};
+
+function buildCalendlyUrl(userId: string, email: string, firstName: string): string | null {
+  const base = process.env.NEXT_PUBLIC_CALENDLY_URL?.trim();
+  if (!base) return null;
+
+  const url = new URL(base);
+  if (firstName) url.searchParams.set("first_name", firstName);
+  if (email) url.searchParams.set("email", email);
+  url.searchParams.set("utm_source", "capital-circle");
+  url.searchParams.set("utm_medium", "step2");
+  url.searchParams.set("utm_content", userId);
+
+  return url.toString();
+}
+
+export default async function DankePage() {
+  const supabase = await createClient();
+  const { data: authData } = await supabase.auth.getUser();
+
+  if (!authData.user) {
+    redirect("/login");
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name,email")
+    .eq("id", authData.user.id)
+    .single();
+
+  const fullName = (profile?.full_name as string | null) ?? "";
+  const firstName = fullName.trim().split(/\s+/)[0] ?? "";
+  const email = (profile?.email as string | null) ?? authData.user.email ?? "";
+
+  const calendlyUrl = buildCalendlyUrl(authData.user.id, email, firstName);
+
+  return <DankePageClient calendlyUrl={calendlyUrl} />;
+}

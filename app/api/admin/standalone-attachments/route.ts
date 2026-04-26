@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     kind: "pdf" | "template";
     category_id?: string | null;
     position?: number;
+    is_free?: boolean;
   };
   if (!body.storage_key?.trim() || !body.filename?.trim() || !body.kind) {
     return NextResponse.json({ ok: false, error: "missing_fields" }, { status: 400 });
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
       kind: body.kind,
       category_id: body.category_id?.trim() || null,
       position: body.position ?? 0,
+      is_free: body.is_free === true,
     })
     .select("*")
     .single();
@@ -52,6 +54,7 @@ export async function PATCH(request: Request) {
     filename?: string;
     category_id?: string | null;
     kind?: "pdf" | "template";
+    is_free?: boolean;
   };
   if (!body.id?.trim()) {
     return NextResponse.json({ ok: false, error: "missing_id" }, { status: 400 });
@@ -65,6 +68,9 @@ export async function PATCH(request: Request) {
   }
   if (body.kind === "pdf" || body.kind === "template") {
     updates.kind = body.kind;
+  }
+  if (typeof body.is_free === "boolean") {
+    updates.is_free = body.is_free;
   }
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ ok: false, error: "no_updates" }, { status: 400 });
