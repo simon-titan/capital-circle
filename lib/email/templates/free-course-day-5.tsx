@@ -1,13 +1,6 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
-import {
-  EmailHeading,
-  EmailText,
-  EmailButton,
-  EmailSubheading,
-  EmailDivider,
-  EmailHighlight,
-} from "../layout/components";
+import { EmailText, EmailButton, EmailHighlight } from "../layout/components";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 
@@ -17,39 +10,42 @@ interface Props {
   userId: string;
 }
 
-export default function FreeCourseDay5Email({ firstName }: Props) {
+export default function FreeCourseDay5Email({ firstName }: Pick<Props, "firstName">) {
   const appUrl = getAppUrl();
   return (
-    <BaseEmail previewText="Tag 5 — Bereit für den nächsten Level?">
-      <EmailHeading>Tag 5 — Was jetzt, {firstName}?</EmailHeading>
+    <BaseEmail previewText="Die Bewerbung für Capital Circle steht dir jetzt offen.">
+      <EmailText>Hey {firstName},</EmailText>
       <EmailText>
-        Du hast die Grundlagen durch. Tag 1 bis 3 haben dir gezeigt, wie wir bei
-        Capital Circle denken — heute geht es darum, was als Nächstes kommt.
+        wenn du die letzten Tage richtig genutzt hast, dann solltest du
+        inzwischen gemerkt haben, dass es hier um deutlich mehr geht als nur
+        um einen Free Kurs.
       </EmailText>
-
-      <EmailSubheading>Wo stehst du jetzt</EmailSubheading>
-      <EmailText>
-        Du hast jetzt mehr Klarheit über Risiko, Setup-Selektion und
-        Markt-Antizipation als 90 % der Retail-Trader. Die Frage ist: Lässt du
-        es bei „nice to know“ — oder gehst du den Schritt in die echte
-        Umsetzung?
-      </EmailText>
-
-      <EmailDivider />
-
       <EmailHighlight>
-        Im Vollzugang bekommst du den kompletten Lehrplan, wöchentliche
-        Live-Sessions, das Trading-Journal und unseren Community-Discord.
+        Capital Circle ist kein öffentlicher Bereich und kein Ort für Leute,
+        die einfach nur ein bisschen Content konsumieren wollen.
       </EmailHighlight>
-
-      <EmailButton href={`${appUrl}/pricing`}>
-        Mitgliedschaft ansehen
-      </EmailButton>
-
-      <EmailText muted>
-        Kein Druck. Wenn du noch Zeit brauchst — du hast deinen Free-Zugang
-        weiterhin.
+      <EmailText>
+        Es ist ein exklusiver Raum für Menschen, die Trading wirklich verstehen,
+        sauber lernen und mit der richtigen Struktur vorankommen wollen.
       </EmailText>
+      <EmailText>
+        Wenn du für dich erkannt hast, dass du nicht weiter allein herumprobieren
+        willst und verstanden hast, wie groß die Chance ist, die du hier bekommen
+        hast, dann kannst du jetzt den nächsten Schritt gehen.
+      </EmailText>
+      <EmailText>
+        Die Bewerbung für Capital Circle steht dir jetzt offen.
+      </EmailText>
+      <EmailButton href={`${appUrl}/bewerbung`}>
+        Zur Bewerbung
+      </EmailButton>
+      <EmailText>
+        Beantworte die Fragen sauber und nimm dir dafür kurz bewusst Zeit.
+      </EmailText>
+      <EmailText>
+        Wenn deine Bewerbung passt, melden wir uns persönlich bei dir.
+      </EmailText>
+      <EmailText muted>Emre</EmailText>
     </BaseEmail>
   );
 }
@@ -57,7 +53,7 @@ export default function FreeCourseDay5Email({ firstName }: Props) {
 export async function sendFreeCourseDay5(props: Props): Promise<SendResult> {
   return sendEmail({
     to: props.email,
-    subject: "[Tag 5] Bereit für den nächsten Level?",
+    subject: "Nicht jeder bekommt die Möglichkeit, den nächsten Schritt zu gehen.",
     jsx: (
       <FreeCourseDay5Email firstName={props.firstName} />
     ),

@@ -1,9 +1,17 @@
 import { Stack } from "@chakra-ui/react";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { EventsPageCalendar } from "@/components/platform/EventsPageCards";
 import { EventsUpcomingShowcase } from "@/components/platform/EventsUpcomingShowcase";
+import { PaywallOverlay } from "@/components/ui/PaywallOverlay";
+import { getCurrentUserAndProfile } from "@/lib/server-data";
 
 export default async function EventsPage() {
+  const { user, profile } = await getCurrentUserAndProfile();
+  if (!user || !profile) redirect("/einstieg");
+
+  const isPaid = Boolean((profile as { is_paid?: boolean }).is_paid);
+
   const supabase = await createClient();
   const now = new Date().toISOString();
 
@@ -37,10 +45,16 @@ export default async function EventsPage() {
     live_session_id: sessionByEvent.get(ev.id) ?? null,
   }));
 
-  return (
+  const content = (
     <Stack spacing={{ base: 8, md: 10 }}>
       <EventsUpcomingShowcase events={upcoming ?? []} />
       <EventsPageCalendar events={allEvents} />
     </Stack>
   );
+
+  if (!isPaid) {
+    return <PaywallOverlay active>{content}</PaywallOverlay>;
+  }
+
+  return content;
 }

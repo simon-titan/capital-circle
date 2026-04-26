@@ -16,7 +16,7 @@ interface Props {
   userId: string;
 }
 
-export default function HtUpsell60dEmail({ firstName }: Props) {
+export default function HtUpsell60dEmail({ firstName }: Pick<Props, "firstName">) {
   const appUrl = getAppUrl();
   const calendlyUrl =
     process.env.NEXT_PUBLIC_CALENDLY_URL?.trim() || `${appUrl}/apply`;

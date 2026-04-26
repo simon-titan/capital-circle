@@ -14,7 +14,7 @@ interface Props {
   userId: string;
 }
 
-export default function PaymentFailed3Email({ firstName }: Props) {
+export default function PaymentFailed3Email({ firstName }: Pick<Props, "firstName">) {
   const appUrl = getAppUrl();
   return (
     <BaseEmail previewText="Dein Zugang ist pausiert — jetzt reaktivieren">

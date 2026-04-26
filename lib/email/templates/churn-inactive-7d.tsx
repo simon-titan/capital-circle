@@ -14,7 +14,7 @@ interface Props {
   userId: string;
 }
 
-export default function ChurnInactive7dEmail({ firstName }: Props) {
+export default function ChurnInactive7dEmail({ firstName }: Pick<Props, "firstName">) {
   const appUrl = getAppUrl();
   return (
     <BaseEmail previewText="Du verpasst gerade etwas...">

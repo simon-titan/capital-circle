@@ -107,7 +107,7 @@ export function BewerbungsLandingCard() {
           </Text>
           <Box
             as={NextLink}
-            href="/bewerbung"
+            href="/insight"
             w="full"
             minH="52px"
             borderRadius="12px"

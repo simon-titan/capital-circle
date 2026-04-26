@@ -6,10 +6,14 @@ import { landingConfig } from "@/config/landing-config";
 
 interface MobileCTAFooterProps {
   onApply: () => void;
+  ctaPrimary?: string;
+  trustLine?: string | null;
 }
 
-export function MobileCTAFooter({ onApply }: MobileCTAFooterProps) {
+export function MobileCTAFooter({ onApply, ctaPrimary: ctaPrimaryOverride, trustLine }: MobileCTAFooterProps) {
   const { cta } = landingConfig;
+  const resolvedPrimary = ctaPrimaryOverride ?? cta.primary;
+  const hideTrust = trustLine === null;
 
   return (
     <Box
@@ -65,19 +69,21 @@ export function MobileCTAFooter({ onApply }: MobileCTAFooterProps) {
           className="inter-semibold"
         >
           <Lock size={15} strokeWidth={2.5} style={{ marginRight: 2 }} />
-          {cta.primary}
+          {resolvedPrimary}
         </Button>
 
         {/* Trust row */}
-        <HStack justify="center" spacing={4}>
-          <Text fontSize="10px" color="rgba(255,255,255,0.32)" className="inter" letterSpacing="0.03em">
-            Kostenlos · Keine Kreditkarte
-          </Text>
-          <Box w="1px" h="10px" bg="rgba(255,255,255,0.12)" />
-          <Text fontSize="10px" color="rgba(255,255,255,0.32)" className="inter" letterSpacing="0.03em">
-            Bewerbung &lt; 5 Min.
-          </Text>
-        </HStack>
+        {!hideTrust && (
+          <HStack justify="center" spacing={4}>
+            <Text fontSize="10px" color="rgba(255,255,255,0.32)" className="inter" letterSpacing="0.03em">
+              {trustLine ?? "Kostenlos · Keine Kreditkarte"}
+            </Text>
+            <Box w="1px" h="10px" bg="rgba(255,255,255,0.12)" />
+            <Text fontSize="10px" color="rgba(255,255,255,0.32)" className="inter" letterSpacing="0.03em">
+              Bewerbung &lt; 5 Min.
+            </Text>
+          </HStack>
+        )}
       </Stack>
     </Box>
   );

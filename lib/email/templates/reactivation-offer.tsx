@@ -15,7 +15,7 @@ interface Props {
   userId: string;
 }
 
-export default function ReactivationOfferEmail({ firstName }: Props) {
+export default function ReactivationOfferEmail({ firstName }: Pick<Props, "firstName">) {
   const appUrl = getAppUrl();
   return (
     <BaseEmail previewText="Wir würden dich gern zurückbegrüßen">

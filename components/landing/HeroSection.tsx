@@ -8,8 +8,22 @@ import { GlassVideoPlayer } from "@/components/ui/GlassVideoPlayer";
 import { landingConfig } from "@/config/landing-config";
 import type { LandingFeature } from "@/config/landing-config";
 
+interface CtaOverrides {
+  primary?: string;
+  secondary?: string;
+  videoEndedLabel?: string;
+  trustLine?: string | null;
+  subheadline?: string;
+}
+
 interface HeroSectionProps {
   onApply: () => void;
+  ctaOverrides?: CtaOverrides;
+  /**
+   * Funnel-Video für diese Seite (z. B. /bewerbung aus NEXT_PUBLIC_STEP2_BEWERBUNG_VIDEO_URL).
+   * Wenn leer/fehlend: NEXT_PUBLIC_FREE_FUNNEL_VIDEO_URL (erste Bewerbungsseite / Landing).
+   */
+  funnelVideoSrc?: string;
 }
 
 const ICON_MAP: Record<string, ComponentType<{ size?: number; strokeWidth?: number }>> = {
@@ -204,9 +218,15 @@ function parseSubheadline(text: string): ReactNode[] {
   });
 }
 
-export function HeroSection({ onApply }: HeroSectionProps) {
+export function HeroSection({ onApply, ctaOverrides, funnelVideoSrc }: HeroSectionProps) {
   const { product, features, communityCard, cta } = landingConfig;
-  const videoSrc = process.env.NEXT_PUBLIC_FREE_FUNNEL_VIDEO_URL?.trim() ?? "";
+  const ctaPrimary = ctaOverrides?.primary ?? cta.primary;
+  const ctaSecondary = ctaOverrides?.secondary ?? cta.secondary;
+  const videoEndedLabel = ctaOverrides?.videoEndedLabel ?? "Jetzt kostenlos bewerben";
+  const subheadlineText = ctaOverrides?.subheadline ?? product.subheadline;
+  const defaultFunnelVideo = process.env.NEXT_PUBLIC_FREE_FUNNEL_VIDEO_URL?.trim() ?? "";
+  const override = funnelVideoSrc?.trim();
+  const videoSrc = override && override.length > 0 ? override : defaultFunnelVideo;
   const [videoEnded, setVideoEnded] = useState(false);
 
   return (
@@ -268,7 +288,7 @@ export function HeroSection({ onApply }: HeroSectionProps) {
           </Box>
 
           {/* ── 2. Video player (GlassVideoPlayer) ─────────────────── */}
-          <Box w="full" maxW="700px" position="relative">
+          <Box w="full" maxW={{ base: "100%", md: "980px" }} position="relative">
             {videoSrc ? (
               <>
                 <GlassVideoPlayer
@@ -337,7 +357,7 @@ export function HeroSection({ onApply }: HeroSectionProps) {
                       }}
                     >
                       <Lock size={14} strokeWidth={2.5} />
-                      Jetzt kostenlos bewerben
+                      {videoEndedLabel}
                     </Box>
                     <Text
                       fontSize="xs"
@@ -392,7 +412,7 @@ export function HeroSection({ onApply }: HeroSectionProps) {
           {/* ── 3. Community banner ───────────────────────────────── */}
           <Box
             w="full"
-            maxW="700px"
+            maxW={{ base: "100%", md: "980px" }}
             px={5}
             py={3}
             borderRadius="12px"
@@ -404,26 +424,36 @@ export function HeroSection({ onApply }: HeroSectionProps) {
             }}
           >
             <HStack spacing={3} justify="center">
-              <HStack spacing="-8px" flexShrink={0}>
-                {["E", "M", "J"].map((initial, i) => (
+              <HStack spacing="-10px" flexShrink={0} align="center">
+                {[
+                  "/client-pb/1765279404415.jpg",
+                  "/client-pb/393d1b15978eed96285cf196b2f51eda.avif",
+                  "/client-pb/4208db19763848b131989eadba9899aa.avif",
+                  "/client-pb/user_6819319_6ec853ff-5777-4398-8fcc-06e2621cbcf8.avif",
+                  "/client-pb/Screenshot 2026-03-03 071433.png",
+                ].map((src, i) => (
                   <Box
                     key={i}
-                    w="28px"
-                    h="28px"
+                    as="img"
+                    src={src}
+                    alt={`Trader ${i + 1}`}
+                    w={{ base: "22px", md: "36px" }}
+                    h={{ base: "22px", md: "36px" }}
                     borderRadius="full"
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    bg="rgba(212,175,55,0.18)"
-                    border="2px solid rgba(7,8,10,0.9)"
-                    color="var(--color-accent-gold, #D4AF37)"
-                    fontSize="10px"
-                    className="inter-bold"
-                    position="relative"
-                    zIndex={3 - i}
-                  >
-                    {initial}
-                  </Box>
+                    objectFit="cover"
+                    borderWidth={{ base: "1.5px", md: "2px" }}
+                    borderStyle="solid"
+                    borderColor="rgba(7,8,10,0.9)"
+                    boxShadow="0 2px 6px rgba(0,0,0,0.4)"
+                    zIndex={10 - i}
+                    sx={{
+                      transform: `translateX(${i * -3}px)`,
+                      "@media screen and (min-width: 48em)": {
+                        transform: `translateX(${i * -6}px)`,
+                      },
+                    }}
+                    ml={i === 0 ? 0 : { base: "-5px", md: "-10px" }}
+                  />
                 ))}
               </HStack>
               <Text fontSize="sm" color="rgba(255,255,255,0.58)" className="inter" fontWeight={400}>
@@ -494,7 +524,7 @@ export function HeroSection({ onApply }: HeroSectionProps) {
               }}
             >
               <Lock size={15} strokeWidth={2.5} />
-              {cta.primary}
+              {ctaPrimary}
             </Box>
             <Text
               fontSize="xs"
@@ -504,7 +534,7 @@ export function HeroSection({ onApply }: HeroSectionProps) {
               textAlign="center"
               lineHeight="1.55"
             >
-              {cta.secondary}
+              {ctaSecondary}
             </Text>
           </Stack>
 
@@ -518,36 +548,24 @@ export function HeroSection({ onApply }: HeroSectionProps) {
               lineHeight="1.75"
               textAlign="center"
             >
-              {parseSubheadline(product.subheadline)}
+              {parseSubheadline(subheadlineText)}
             </Text>
           </Box>
 
           {/* ── 7. Feature Cards ──────────────────────────────────── */}
 
-          {/* Mobile: horizontal edge-to-edge slider */}
-          <Box
-            display={{ base: "flex", md: "none" }}
-            alignSelf="stretch"
-            w="auto"
-            mx={-4}
-            gap={3}
-            pb={2}
-            sx={{
-              overflowX: "auto",
-              overflowY: "visible",
-              scrollSnapType: "x mandatory",
-              WebkitOverflowScrolling: "touch",
-              "&::-webkit-scrollbar": { display: "none" },
-              scrollbarWidth: "none",
-              msOverflowStyle: "none",
-              paddingLeft: "16px",
-              paddingRight: "16px",
-            }}
+          {/* Mobile: 2x3 grid */}
+          <SimpleGrid
+            display={{ base: "grid", md: "none" }}
+            columns={2}
+            spacing={3}
+            w="full"
+            px={{ base: 0 }}
           >
-            {features.map((feature, i) => (
+            {features.slice(0, 6).map((feature, i) => (
               <FeatureCard key={feature.label} feature={feature} index={i} mobile />
             ))}
-          </Box>
+          </SimpleGrid>
 
           {/* Desktop: 6-column grid */}
           <SimpleGrid

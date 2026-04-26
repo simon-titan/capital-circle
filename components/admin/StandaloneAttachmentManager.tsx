@@ -1,7 +1,7 @@
 "use client";
 
 import { uploadViaPresigned } from "@/lib/admin-upload-presigned";
-import { Box, Button, FormLabel, HStack, IconButton, Input, Progress, Select, Stack, Text } from "@chakra-ui/react";
+import { Box, Button, FormLabel, HStack, IconButton, Input, Progress, Select, Stack, Switch, Text } from "@chakra-ui/react";
 import { FileDown, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -15,6 +15,7 @@ export type StandaloneAttachmentRow = {
   kind: "pdf" | "template";
   category_id: string | null;
   position: number;
+  is_free: boolean | null;
   created_at: string;
 };
 
@@ -205,6 +206,23 @@ export function StandaloneAttachmentManager() {
     }
   };
 
+  const toggleIsFree = async (id: string, nextValue: boolean) => {
+    // Optimistic update
+    setItems((prev) => prev.map((x) => (x.id === id ? { ...x, is_free: nextValue } : x)));
+    const res = await fetch("/api/admin/standalone-attachments", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, is_free: nextValue }),
+    });
+    const json = (await res.json()) as { ok?: boolean; item?: StandaloneAttachmentRow; error?: string };
+    if (!json.ok || !json.item) {
+      setItems((prev) => prev.map((x) => (x.id === id ? { ...x, is_free: !nextValue } : x)));
+      setStatus(json.error || "Konnte Free-Flag nicht speichern.");
+      return;
+    }
+    setItems((prev) => prev.map((x) => (x.id === id ? json.item! : x)));
+  };
+
   const isError = !busy && !!status && (status.includes("fehlgeschlagen") || status.includes("Fehler") || status.includes("Bitte"));
 
   if (loading) {
@@ -371,7 +389,25 @@ export function StandaloneAttachmentManager() {
                       </Text>
                     </Box>
                   </HStack>
-                  <HStack flexShrink={0}>
+                  <HStack flexShrink={0} spacing={3}>
+                    <HStack spacing={2}>
+                      <Switch
+                        size="sm"
+                        colorScheme="yellow"
+                        isChecked={Boolean(a.is_free)}
+                        onChange={(e) => void toggleIsFree(a.id, e.target.checked)}
+                        aria-label="Free-Kurs Zugriff freischalten"
+                      />
+                      <Text
+                        fontSize="xs"
+                        className="inter-semibold"
+                        color={a.is_free ? "var(--color-accent-gold)" : "gray.500"}
+                        textTransform="uppercase"
+                        letterSpacing="0.06em"
+                      >
+                        {a.is_free ? "Free" : "Paid"}
+                      </Text>
+                    </HStack>
                     <Button size="xs" variant="outline" onClick={() => startEdit(a)} isDisabled={busy}>
                       Bearbeiten
                     </Button>
