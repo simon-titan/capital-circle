@@ -61,7 +61,7 @@ interface InsightCard {
 const INSIGHT_CARDS: InsightCard[] = [
   {
     iconName: "TrendingUp",
-    title: "Professionelles Trading",
+    title: "Warum du mit Retail-Strategien nie konsistent wirst",
     description:
       "Dieser Free Kurs ist nicht dafür gedacht, dir einfach nur kostenlose Inhalte zu geben.",
     bullet:
@@ -69,7 +69,7 @@ const INSIGHT_CARDS: InsightCard[] = [
   },
   {
     iconName: "BarChart3",
-    title: "Auction Market Theory",
+    title: "Wie institutionelle Trader den Markt lesen – und du es auch kannst",
     description:
       "Lerne die Methodik, die institutionelle Trader verwenden — nicht das, was auf Social Media kursiert.",
     bullet:
@@ -77,7 +77,7 @@ const INSIGHT_CARDS: InsightCard[] = [
   },
   {
     iconName: "CalendarDays",
-    title: "Framework Call",
+    title: "Jede Woche vorbereitet in den Markt – nie wieder blind traden",
     description:
       "Bereite dich jede Woche strukturiert auf die kommende Handelswoche vor.",
     bullet:
@@ -315,10 +315,10 @@ const SIDEBAR_THEME_GOLD = CARD_THEMES[2];
 const SIDEBAR_THEME_SILVER = CARD_THEMES[1];
 
 const SIDEBAR_HIGHLIGHT_ROWS: { text: string; icon: ReactNode }[] = [
-  { text: "6 Jahre Trading-Erfahrung", icon: <LineChart size={16} strokeWidth={2} /> },
-  { text: "1 Mio+ Payouts erzielt", icon: <Trophy size={16} strokeWidth={2} /> },
+  { text: "5 Jahren Trading-Erfahrung", icon: <LineChart size={16} strokeWidth={2} /> },
+  { text: "Mehrfach 6-stellige Payouts erzielt", icon: <Trophy size={16} strokeWidth={2} /> },
   { text: "1000+ Trader ausgebildet", icon: <Users size={16} strokeWidth={2} /> },
-  { text: "8-stelliger Funded-Status", icon: <Crown size={16} strokeWidth={2} /> },
+  { text: "Vollzeit Trader", icon: <Crown size={16} strokeWidth={2} /> },
 ];
 
 const SIDEBAR_CELL_THEMES = [
@@ -831,7 +831,7 @@ export function InsightLandingPageClient() {
                   color="var(--color-text-primary, #F0F0F2)"
                   lineHeight="1.2"
                 >
-                  Was dich im Free Kurs erwartet
+                  Warum 93% aller Trader nie einen Payout sehen – und wie du zu den 7% gehörst.
                 </Text>
                 <Text
                   fontSize={{ base: "sm", md: "md" }}
@@ -909,16 +909,7 @@ export function InsightLandingPageClient() {
                 mx="auto"
                 lineHeight="1.7"
               >
-                Mit dem Abschicken der Bewerbung stimmst du unserer{" "}
-                <Box
-                  as="a"
-                  href="/datenschutz"
-                  color="rgba(212,175,55,0.55)"
-                  textDecoration="underline"
-                >
-                  Datenschutzerklärung
-                </Box>{" "}
-                zu. Trading und Investitionen sind mit erheblichen
+                Trading und Investitionen sind mit erheblichen
                 Verlustrisiken verbunden. Frühere Ergebnisse sind keine
                 Garantie für zukünftige Gewinne.
               </Text>

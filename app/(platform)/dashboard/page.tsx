@@ -33,6 +33,8 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { calculateStreak, maxPlausibleStreakDays, sanitizeStreakValue } from "@/lib/streak";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const { user, profile } = await getCurrentUserAndProfile();
   if (!user || !profile) {
@@ -42,7 +44,7 @@ export default async function DashboardPage() {
   const userId = user.id;
   const profileAny = profile as Record<string, unknown>;
   const showInsightBanner =
-    profileAny.application_status === "approved" &&
+    String(profileAny.application_status) === "approved" &&
     (profileAny.membership_tier === "free" || !profileAny.is_paid) &&
     profileAny.step2_application_status == null;
 

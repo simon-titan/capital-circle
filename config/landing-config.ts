@@ -246,7 +246,7 @@ export const landingConfig: LandingConfig = {
 
   cta: {
     primary: "Jetzt kostenlos bewerben",
-    secondary: "Bist du dir sicher dass du dir diese Möglichkeit verdient hast?",
+    secondary: "Wir nehmen nicht jeden an. Emre liest jede Bewerbung persönlich.",
     disclaimer: "Keine Kreditkarte erforderlich · Kostenloser Kurs",
   },
 
