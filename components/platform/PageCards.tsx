@@ -49,11 +49,13 @@ export function PageAnalysisFeed({ posts }: { posts: AnalysisPostRow[] }) {
 export function PageLiveSessionGrid({
   categories,
   sessions,
+  isFreeMember,
 }: {
   categories: LiveSessionCategoryRow[];
   sessions: LiveSessionListItem[];
+  isFreeMember?: boolean;
 }) {
-  return <LiveSessionGrid categories={categories} sessions={sessions} />;
+  return <LiveSessionGrid categories={categories} sessions={sessions} isFreeMember={isFreeMember} />;
 }
 
 export function PageLiveSessionDetailClient({ playlist }: { playlist: LiveSessionVideoRow[] }) {

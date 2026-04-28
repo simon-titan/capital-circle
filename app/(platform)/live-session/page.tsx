@@ -6,6 +6,7 @@ import {
   getLiveSessionCategories,
   getLiveSessions,
 } from "@/lib/server-data";
+import { isApprovedFreeMember } from "@/lib/membership";
 import { Radio } from "lucide-react";
 
 export default async function LiveSessionPage() {
@@ -66,7 +67,7 @@ export default async function LiveSessionPage() {
           liegen auf unserem sicheren Speicher.
         </Text>
       </Stack>
-      <PageLiveSessionGrid categories={categories} sessions={sessions} />
+      <PageLiveSessionGrid categories={categories} sessions={sessions} isFreeMember={isApprovedFreeMember(profile)} />
     </Stack>
   );
 }

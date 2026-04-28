@@ -1,9 +1,12 @@
-import { Box, Heading, Stack, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, Heading, Stack, Text } from "@chakra-ui/react";
+import NextLink from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { Lock } from "lucide-react";
 import { ChakraLinkButton } from "@/components/platform/ChakraLinkButton";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { PageLiveSessionDetailClient } from "@/components/platform/PageCards";
 import { getCurrentUserAndProfile, getLiveSessionDetail } from "@/lib/server-data";
+import { isApprovedFreeMember } from "@/lib/membership";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -16,6 +19,81 @@ export default async function LiveSessionDetailPage({ params }: PageProps) {
 
   const detail = await getLiveSessionDetail(id);
   if (!detail) notFound();
+
+  const freeMember = isApprovedFreeMember(profile);
+  const isWeeklyOutlook = detail.category.title.toLowerCase().includes("weekly outlook");
+
+  if (freeMember && !isWeeklyOutlook) {
+    return (
+      <Stack gap={6} alignItems="start">
+        <ChakraLinkButton
+          href="/live-session"
+          variant="ghost"
+          size="sm"
+          color="var(--color-accent-gold)"
+          className="inter"
+        >
+          ← Zurück zur Übersicht
+        </ChakraLinkButton>
+
+        <GlassCard>
+          <Flex direction="column" align="center" justify="center" py={16} px={6} textAlign="center">
+            <Box
+              h="2px"
+              w="48px"
+              borderRadius="full"
+              mb={4}
+              bg="linear-gradient(90deg, rgba(212,175,55,0) 0%, rgba(232,197,71,0.85) 50%, rgba(212,175,55,0) 100%)"
+              boxShadow="0 0 10px rgba(212,175,55,0.3)"
+            />
+            <Flex
+              align="center"
+              justify="center"
+              w="56px"
+              h="56px"
+              borderRadius="14px"
+              bg="rgba(212, 175, 55, 0.12)"
+              border="1px solid rgba(212, 175, 55, 0.38)"
+              mb={5}
+            >
+              <Lock size={26} strokeWidth={2} aria-hidden style={{ color: "rgba(212,175,55,0.9)" }} />
+            </Flex>
+            <Stack spacing={2} mb={6} maxW="420px">
+              <Text className="radley-regular" fontSize="xl" color="var(--color-text-primary)">
+                {detail.title}
+              </Text>
+              <Text className="inter-semibold" fontSize="sm" color="var(--color-text-primary)">
+                Nur für vollwertige Mitglieder
+              </Text>
+              <Text className="inter" fontSize="sm" color="rgba(255,255,255,0.52)" lineHeight="1.7">
+                Diese Live Session ist exklusiv für vollwertige Capital Circle Mitglieder verfügbar.
+                Als Free-Mitglied hast du Zugang zu allen Weekly Outlook Sessions.
+              </Text>
+            </Stack>
+            <Button
+              as={NextLink}
+              href="/bewerbung"
+              size="md"
+              borderRadius="10px"
+              bg="rgba(212, 175, 55, 0.22)"
+              border="1px solid rgba(212, 175, 55, 0.48)"
+              color="rgba(232, 197, 71, 0.95)"
+              className="inter-semibold"
+              fontSize="sm"
+              px={8}
+              _hover={{
+                bg: "rgba(212, 175, 55, 0.32)",
+                borderColor: "rgba(232, 197, 71, 0.65)",
+                boxShadow: "0 0 16px rgba(212,175,55,0.22)",
+              }}
+            >
+              Jetzt Mitglied werden
+            </Button>
+          </Flex>
+        </GlassCard>
+      </Stack>
+    );
+  }
 
   return (
     <Stack gap={6} alignItems="start">
