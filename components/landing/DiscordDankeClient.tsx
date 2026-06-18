@@ -200,8 +200,7 @@ export function DiscordDankeClient() {
                 }}
               >
                 <Text className="inter" fontSize={{ base: "md", md: "lg" }} color="rgba(255,255,255,0.78)" lineHeight="1.7" maxW="520px" mx="auto">
-                  Dein Termin ist gebucht. Du erhältst gleich eine Bestätigung per Email,
-                  inklusive deinem kostenlosen Discord Zugang.
+                  Dein Termin ist gebucht. Du erhältst gleich eine Bestätigung per Email. Den Link zu deinem Termin findest du in dieser Mail.
                 </Text>
               </Box>
             ) : calendlyUrl ? (

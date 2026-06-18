@@ -20,7 +20,6 @@ interface DiscordTerminHeroProps {
 const SUBHEADLINE =
   "Bewirb dich für einen der {exklusiven} Plätze bei {Capital Circle} nur ausgewählte {Trader} werden aufgenommen.";
 const CTA_LABEL = "ZUGANG BEANTRAGEN";
-const CTA_SECONDARY = "Bist du dir sicher dass du dir diese Möglichkeit verdient hast?";
 
 interface Feature {
   icon: ComponentType<{ size?: number; strokeWidth?: number }>;
@@ -232,8 +231,8 @@ export function DiscordTerminHero({ onApply, videoSrc, onVideoProgress, onVideoE
       position="relative"
       overflowX={{ base: "visible", md: "hidden" }}
       overflowY="visible"
-      pt={{ base: 10, md: 14 }}
-      pb={{ base: 14, md: 20 }}
+      pt={{ base: 8, md: 10 }}
+      pb={{ base: 10, md: 14 }}
       px={{ base: 4, md: 8, lg: 12 }}
     >
       {/* Cyan/Lila-Glows auf Schwarz */}
@@ -262,19 +261,19 @@ export function DiscordTerminHero({ onApply, videoSrc, onVideoProgress, onVideoE
         }}
       />
 
-      <Box maxW="960px" mx="auto" position="relative" zIndex={2}>
-        <Stack spacing={{ base: 7, md: 8 }} align="center">
+      <Box maxW="820px" mx="auto" position="relative" zIndex={2}>
+        <Stack spacing={{ base: 6, md: 6 }} align="center">
           {/* Überschrift (ersetzt das Logo) */}
           <Text
             as="h1"
             className="inter-bold"
             textTransform="uppercase"
             color="#FFFFFF"
-            fontSize={{ base: "xl", sm: "2xl", md: "3xl", lg: "4xl" }}
-            lineHeight="1.18"
+            fontSize={{ base: "lg", sm: "xl", md: "2xl", lg: "3xl" }}
+            lineHeight="1.2"
             letterSpacing="0.005em"
             textAlign="center"
-            maxW="900px"
+            maxW="760px"
           >
             Schau dieses Video — es zeigt warum{" "}
             <Box as="span" className="inter-bold" sx={headlineHighlightSx}>
@@ -288,7 +287,7 @@ export function DiscordTerminHero({ onApply, videoSrc, onVideoProgress, onVideoE
           </Text>
 
           {/* Video */}
-          <Box w="full" maxW={{ base: "100%", md: "980px" }} position="relative">
+          <Box w="full" maxW={{ base: "100%", md: "720px" }} position="relative">
             {videoSrc ? (
               <>
                 <GlassVideoPlayer
@@ -374,7 +373,7 @@ export function DiscordTerminHero({ onApply, videoSrc, onVideoProgress, onVideoE
           {/* Community banner */}
           <Box
             w="full"
-            maxW={{ base: "100%", md: "980px" }}
+            maxW={{ base: "100%", md: "720px" }}
             px={5}
             py={3}
             borderRadius="12px"
@@ -441,9 +440,6 @@ export function DiscordTerminHero({ onApply, videoSrc, onVideoProgress, onVideoE
               <Lock size={15} strokeWidth={2.5} />
               {CTA_LABEL}
             </Box>
-            <Text fontSize="xs" color="rgba(255,255,255,0.32)" className="inter" textAlign="center" lineHeight="1.55">
-              {CTA_SECONDARY}
-            </Text>
           </Stack>
 
           {/* Subheadline */}
