@@ -47,6 +47,15 @@ async function handleInviteeCreated(payload: CalendlyPayload) {
   const p = payload.payload;
   if (!p) return;
 
+  // Discord-Funnel-Branch: standalone Leads (kein Auth-Account). `utm_content`
+  // ist hier der `discord_leads.token`, `utm_medium === "discord"` markiert die
+  // Herkunft. Wir aktualisieren NUR die discord_leads-Row und kehren danach
+  // zurück — step2_applications/profiles bleiben unberührt.
+  if (p.tracking?.utm_medium?.trim().toLowerCase() === "discord") {
+    await handleDiscordBooking(p);
+    return;
+  }
+
   const userId = p.tracking?.utm_content?.trim() || null;
   const inviteeEmail = p.email?.trim().toLowerCase() || null;
   const eventUri = p.event ?? null;
@@ -98,6 +107,73 @@ async function handleInviteeCreated(payload: CalendlyPayload) {
 
   if (profileErr) {
     console.error("[calendly/webhook] profile approve failed:", profileErr);
+  }
+}
+
+/**
+ * Discord-Funnel-Buchung: verknüpft die Calendly-Buchung mit dem standalone
+ * Lead in `discord_leads` (Lookup via token == utm_content).
+ */
+async function handleDiscordBooking(p: NonNullable<CalendlyPayload["payload"]>) {
+  const token = p.tracking?.utm_content?.trim() || null;
+  const inviteeEmail = p.email?.trim().toLowerCase() || null;
+
+  const eventUri = p.event ?? null;
+  const inviteeUri = p.uri ?? null;
+  const scheduledAt = p.scheduled_event?.start_time ?? null;
+  const now = new Date().toISOString();
+
+  const service = createServiceClient();
+
+  // 1) Lead per Token (utm_content) auflösen.
+  let leadId: string | null = null;
+  let existingEmail: string | null = null;
+  if (token) {
+    const { data } = await service
+      .from("discord_leads")
+      .select("id, email")
+      .eq("token", token)
+      .maybeSingle();
+    if (data) {
+      leadId = data.id as string;
+      existingEmail = (data.email as string | null) ?? null;
+    }
+  }
+
+  // 2) Fallback: Lead per Invitee-E-Mail (z. B. Buchung über internen Discord-Link ohne Token).
+  if (!leadId && inviteeEmail) {
+    const { data } = await service
+      .from("discord_leads")
+      .select("id, email")
+      .ilike("email", inviteeEmail)
+      .maybeSingle();
+    if (data) {
+      leadId = data.id as string;
+      existingEmail = (data.email as string | null) ?? null;
+    }
+  }
+
+  if (!leadId) {
+    console.warn("[calendly/webhook] discord booking: kein passender Lead", {
+      token,
+      email: inviteeEmail,
+    });
+    return;
+  }
+
+  const update: Record<string, unknown> = {
+    calendly_event_uri: eventUri,
+    calendly_invitee_uri: inviteeUri,
+    calendly_booked_at: scheduledAt ?? now,
+  };
+  // E-Mail nachtragen, falls der Lead (z. B. via Identify angelegt) noch keine hatte.
+  if (inviteeEmail && (!existingEmail || !existingEmail.trim())) {
+    update.email = inviteeEmail;
+  }
+
+  const { error } = await service.from("discord_leads").update(update).eq("id", leadId);
+  if (error) {
+    console.error("[calendly/webhook] discord_leads update failed:", error);
   }
 }
 

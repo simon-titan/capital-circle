@@ -306,6 +306,76 @@ export type Database = {
         Insert: Record<string, unknown>;
         Update: Record<string, unknown>;
       };
+      // 055_discord_funnel
+      discord_leads: {
+        Row: {
+          id: string;
+          token: string;
+          name: string;
+          email: string;
+          phone: string;
+          utm_source: string | null;
+          utm_medium: string | null;
+          utm_campaign: string | null;
+          utm_content: string | null;
+          utm_term: string | null;
+          referrer: string | null;
+          session_id: string | null;
+          ip_address: string | null;
+          user_agent: string | null;
+          discord_invite_code: string | null;
+          discord_invite_url: string | null;
+          discord_invite_sent_at: string | null;
+          discord_joined_at: string | null;
+          discord_user_id: string | null;
+          discord_username: string | null;
+          answers: Json | null;
+          questions_completed_at: string | null;
+          video_watch_seconds: number;
+          video_max_percent: number;
+          video_completed_at: string | null;
+          calendly_event_uri: string | null;
+          calendly_invitee_uri: string | null;
+          calendly_booked_at: string | null;
+          qualified: boolean | null;
+          no_show: boolean;
+          closed: "pending" | "closed_won" | "closed_lost";
+          product: string | null;
+          revenue_cents: number | null;
+          internal_notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Record<string, unknown>;
+        Update: Record<string, unknown>;
+      };
+      discord_page_visits: {
+        Row: {
+          id: string;
+          session_id: string | null;
+          utm_source: string | null;
+          utm_medium: string | null;
+          utm_campaign: string | null;
+          utm_content: string | null;
+          utm_term: string | null;
+          referrer: string | null;
+          created_at: string;
+        };
+        Insert: Record<string, unknown>;
+        Update: Record<string, unknown>;
+      };
+      // 058_discord_funnel_channels
+      discord_channels: {
+        Row: {
+          id: string;
+          label: string;
+          utm_source: string;
+          utm_campaign: string | null;
+          created_at: string;
+        };
+        Insert: Record<string, unknown>;
+        Update: Record<string, unknown>;
+      };
       // 046_phase5_audit
       user_audit_log: {
         Row: {

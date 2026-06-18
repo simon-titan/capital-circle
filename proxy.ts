@@ -17,7 +17,9 @@ const PUBLIC_PATHS = [
 
 // `/survey/*` ist Token-authentifiziert (Cancellation-Survey aus Paket 6) und
 // muss auch für nicht-eingeloggte User zugänglich sein.
-const PUBLIC_PREFIXES = ["/datenschutz", "/impressum", "/survey"];
+// `/discord/*` ist der öffentliche Discord-Funnel (Landing + /discord/termin) —
+// standalone Leads ohne Auth, daher der gesamte Prefix öffentlich.
+const PUBLIC_PREFIXES = ["/datenschutz", "/impressum", "/survey", "/discord"];
 
 function isPublicPath(pathname: string): boolean {
   if (PUBLIC_PATHS.includes(pathname)) return true;

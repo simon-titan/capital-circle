@@ -21,3 +21,4 @@ export { sendChurnInactive14d } from "./churn-inactive-14d";
 export { sendCancellationSurvey } from "./cancellation-survey";
 export { sendReactivationOffer } from "./reactivation-offer";
 export { sendHtUpsell60d } from "./ht-upsell-60d";
+export { sendDiscordInvite } from "./discord-invite";

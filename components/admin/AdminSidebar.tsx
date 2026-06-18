@@ -25,6 +25,7 @@ const links = [
   { href: "/admin/news", label: "News" },
   { href: "/admin/reviews", label: "Bewertungen" },
   { href: "/admin/tracking", label: "Tracking Links" },
+  { href: "/admin/discord-funnel", label: "Discord Funnel" },
 ];
 
 export function AdminSidebar() {

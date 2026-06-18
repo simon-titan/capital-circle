@@ -31,6 +31,14 @@ type GlassVideoPlayerProps = {
   autoPlay?: boolean;
   onEnded?: () => void;
   onProgress?: (seconds: number) => void;
+  /** Akzentfarbe (Hex) — Default Gold. Für den Discord-Funnel z. B. "#47F7DC". */
+  accent?: string;
+  /** Akzentfarbe als "r, g, b" für rgba()-Tönungen — Default Gold. */
+  accentRgb?: string;
+  /** Farbe des Zeitstrahls (Progress-Bar) — Default = accent. */
+  progressColor?: string;
+  /** Zeitstrahl-Farbe als "r, g, b" — Default = accentRgb. */
+  progressRgb?: string;
 };
 
 function formatTime(seconds: number) {
@@ -49,7 +57,14 @@ export function GlassVideoPlayer({
   autoPlay = false,
   onEnded,
   onProgress,
+  accent = "#D4AF37",
+  accentRgb = "212, 175, 55",
+  progressColor,
+  progressRgb,
 }: GlassVideoPlayerProps) {
+  // Zeitstrahl-Farbe: eigener Prop, sonst = Akzent.
+  const progClr = progressColor ?? accent;
+  const progRgb = progressRgb ?? accentRgb;
   const videoRef = useRef<HTMLVideoElement>(null);
   const shellRef = useRef<HTMLDivElement>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -412,8 +427,13 @@ export function GlassVideoPlayer({
             pointerEvents: "auto",
           },
         },
+        // Im Vollbildmodus bleiben die Controls sichtbar (überschreibt das Hover-Hide).
+        "&:fullscreen .cc-video-controls, &:-webkit-full-screen .cc-video-controls": {
+          opacity: 1,
+          pointerEvents: "auto",
+        },
       }}
-      boxShadow="0 16px 56px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(212, 175, 55, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1)"
+      boxShadow={`0 16px 56px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(${accentRgb}, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1)`}
     >
       <Box className="cc-video-stage" position="relative" w="full" pt="56.25%">
         <video
@@ -482,7 +502,7 @@ export function GlassVideoPlayer({
             pointerEvents="none"
             bg="rgba(0, 0, 0, 0.35)"
           >
-            <Spinner size="xl" color="brand.400" thickness="3px" speed="0.85s" />
+            <Spinner size="xl" color={accent} thickness="3px" speed="0.85s" />
           </Center>
         )}
 
@@ -505,15 +525,15 @@ export function GlassVideoPlayer({
               size="lg"
               isRound
               fontSize="2xl"
-              bg="rgba(212, 175, 55, 0.35)"
+              bg={`rgba(${accentRgb}, 0.35)`}
               borderWidth="1px"
-              borderColor="rgba(232, 197, 71, 0.55)"
+              borderColor={`rgba(${accentRgb}, 0.55)`}
               color="white"
               backdropFilter="blur(16px)"
               sx={{ WebkitBackdropFilter: "blur(16px)" }}
               boxShadow="0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)"
               _hover={{
-                bg: "rgba(212, 175, 55, 0.5)",
+                bg: `rgba(${accentRgb}, 0.5)`,
                 transform: "scale(1.05)",
               }}
               transition="all 0.2s ease"
@@ -549,7 +569,7 @@ export function GlassVideoPlayer({
             flexShrink={0}
             variant="ghost"
             color="rgba(240, 240, 242, 0.95)"
-            _hover={{ bg: "rgba(212, 175, 55, 0.15)" }}
+            _hover={{ bg: `rgba(${accentRgb}, 0.15)` }}
             onClick={(e) => {
               e.stopPropagation();
               void togglePlay();
@@ -570,14 +590,14 @@ export function GlassVideoPlayer({
             sx={disableSeeking ? { cursor: "default" } : undefined}
           >
             <SliderTrack bg="rgba(255,255,255,0.1)" h="6px" borderRadius="full">
-              <SliderFilledTrack bg="#D4AF37" borderRadius="full" />
+              <SliderFilledTrack bg={progClr} borderRadius="full" />
             </SliderTrack>
             <SliderThumb
               boxSize={3.5}
               borderWidth="2px"
               borderColor="white"
-              bg="#D4AF37"
-              boxShadow="0 0 12px rgba(212,175,55,0.5)"
+              bg={progClr}
+              boxShadow={`0 0 12px rgba(${progRgb},0.5)`}
               opacity={disableSeeking ? 0 : 1}
               pointerEvents={disableSeeking ? "none" : "auto"}
             />
@@ -601,7 +621,7 @@ export function GlassVideoPlayer({
               size="sm"
               variant="ghost"
               color="rgba(240, 240, 242, 0.9)"
-              _hover={{ bg: "rgba(212, 175, 55, 0.12)" }}
+              _hover={{ bg: `rgba(${accentRgb}, 0.12)` }}
               onClick={(e) => {
                 e.stopPropagation();
                 toggleMute();
@@ -619,9 +639,9 @@ export function GlassVideoPlayer({
                 colorScheme="brand"
               >
                 <SliderTrack bg="rgba(255,255,255,0.1)" h="4px" borderRadius="full">
-                  <SliderFilledTrack bg="rgba(212, 175, 55, 0.88)" borderRadius="full" />
+                  <SliderFilledTrack bg={`rgba(${accentRgb}, 0.88)`} borderRadius="full" />
                 </SliderTrack>
-                <SliderThumb boxSize={2.5} bg="white" borderWidth="1px" borderColor="rgba(212,175,55,0.5)" />
+                <SliderThumb boxSize={2.5} bg="white" borderWidth="1px" borderColor={`rgba(${accentRgb},0.5)`} />
               </Slider>
             </Box>
           </HStack>
@@ -658,13 +678,13 @@ export function GlassVideoPlayer({
                   colorScheme="brand"
                 >
                   <SliderTrack w="6px" h="full" bg="rgba(255,255,255,0.12)" borderRadius="full">
-                    <SliderFilledTrack bg="rgba(212, 175, 55, 0.9)" borderRadius="full" />
+                    <SliderFilledTrack bg={`rgba(${accentRgb}, 0.9)`} borderRadius="full" />
                   </SliderTrack>
                   <SliderThumb
                     boxSize={3}
                     bg="white"
                     borderWidth="2px"
-                    borderColor="rgba(212,175,55,0.6)"
+                    borderColor={`rgba(${accentRgb},0.6)`}
                   />
                 </Slider>
               </Box>
@@ -681,7 +701,7 @@ export function GlassVideoPlayer({
               size="sm"
               variant="ghost"
               color="rgba(240, 240, 242, 0.9)"
-              _hover={{ bg: "rgba(212, 175, 55, 0.12)" }}
+              _hover={{ bg: `rgba(${accentRgb}, 0.12)` }}
               onPointerDown={(e) => {
                 e.stopPropagation();
                 if (isMobileControls === true) onMobileVolPointerDown();
@@ -708,7 +728,7 @@ export function GlassVideoPlayer({
             flexShrink={0}
             variant="ghost"
             color="rgba(240, 240, 242, 0.9)"
-            _hover={{ bg: "rgba(212, 175, 55, 0.15)" }}
+            _hover={{ bg: `rgba(${accentRgb}, 0.15)` }}
             onClick={(e) => {
               e.stopPropagation();
               toggleFullscreen();
