@@ -22,7 +22,7 @@ Baue den kompletten Free-Funnel:
 1. **Stack:** Next.js 16.2.1, React 19.2.4, Chakra UI v2, Supabase SSR
 2. **Tabelle:** `profiles`. Admin via `requireAdmin()` aus `lib/supabase/admin-auth.ts`
 3. **Middleware:** `proxy.ts` — Routing-Änderungen hier eintragen
-4. **Design:** Gold `#D4AF37`, Glassmorphism aus DESIGN.json, `HERO-UI-SPEZIFIKATION.md` als Stil-Referenz. **Kein Blau.**
+4. **Design:** Gold `#D4AF37`, Glassmorphism aus DESIGN.json, `docs/design/hero-glass.md` als Stil-Referenz. **Kein Blau.**
 5. **Route-Groups:** Marketing-Seiten in `app/(marketing)/`, Auth-geschützte Seiten in `app/(platform)/`, Admin in `app/(admin)/admin/`
 6. **DSGVO:** Öffentliche Forms brauchen Turnstile + Rate-Limit
 

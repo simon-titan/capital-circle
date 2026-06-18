@@ -23,7 +23,7 @@
   --color-accent-gold-dark: #a67c00;
   --color-accent-glow: rgba(212, 175, 55, 0.28);
   --color-white: #ffffff;
-  /* Design System: DESIGN..json — Typografie */
+  /* Design System: DESIGN.json — Typografie */
   --font-heading: "Radley", serif;
   --font-body: "Inter", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
@@ -170,7 +170,7 @@ a {
   border-radius: 14px;
 }
 
-/* Dashboard: gleiche Familie wie Institut-Rings / Lernzeit-Woche (HERO-UI-SPEZIFIKATION) */
+/* Dashboard: gleiche Familie wie Institut-Rings / Lernzeit-Woche (docs/design/hero-glass.md) */
 .glass-card-dashboard {
   background:
     radial-gradient(circle at 100% 0%, rgba(212, 175, 55, 0.16), transparent 46%),

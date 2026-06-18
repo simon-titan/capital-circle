@@ -6,7 +6,9 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## Design System (Capital Circle)
 
-**Single source of truth:** `DESIGN..json` — Farben, Abstände, Komponenten-Tokens, Chakra-Mapping, CSS-Variablen. Bei UI-, Theme- oder Style-Änderungen zuerst dort prüfen und dann Code (`app/globals.css`, `theme/index.ts`, Komponenten) konsistent halten.
+**Vor jeder UI-/Style-Arbeit zuerst [`docs/design/README.md`](docs/design/README.md) lesen.** Das ist die navigierbare Design-Referenz: die zwei Stil-Modi (Plattform = Gold-only, Marketing/Funnel = Metall-Tier), Tokens (inkl. Abweichungen Spec↔Code), Komponenten, Hero-/Glass-Look und die Funnel-Page-Muster (`/insight`, `/bewerbung`).
+
+**Maschinenlesbare Token-Quelle (SSOT):** `DESIGN.json` — Farben, Abstände, Komponenten-Tokens, Chakra-Mapping, CSS-Variablen. Werte hier nachschlagen; `docs/design/tokens.md` nennt, wo der Code davon abweicht (im Zweifel gilt der Code: `app/globals.css`, `theme/index.ts`).
 
 **Typografie (verbindlich):**
 
@@ -18,7 +20,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 **Legacy:** Die Klasse `.dm-sans` ist ein Alias für Inter-Body (bestehende Komponenten); neue Markup soll `.inter` nutzen.
 
-**Praxis:** Keine zusätzlichen Webfonts ohne Anpassung von `DESIGN..json` und `app/layout.tsx` (Font-`<link>`).
+**Praxis:** Keine zusätzlichen Webfonts ohne Anpassung von `DESIGN.json` und `app/layout.tsx` (Font-`<link>`).
 
 ## UI Feedback Memo
 

@@ -7,7 +7,7 @@ export type GlassCardProps = BoxProps & {
   spotlight?: boolean;
   /** Hero-Variante für den Welcome-Bereich */
   hero?: boolean;
-  /** Dashboard-Karten im Hero-Subcard-Stil (siehe HERO-UI-SPEZIFIKATION.md) */
+  /** Dashboard-Karten im Hero-Subcard-Stil (siehe docs/design/hero-glass.md) */
   dashboard?: boolean;
 };
 

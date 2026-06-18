@@ -7,7 +7,7 @@ import { Box } from "@chakra-ui/react";
  *
  * Hintergrund: Plattformfarben aus DESIGN.json (Gold-Akzente werden auf
  * Komponentenebene gesetzt). Nutzt ein dezentes radiales Highlight oben
- * rechts — gleicher Stil wie HERO-UI-SPEZIFIKATION.
+ * rechts — gleicher Stil wie docs/design/hero-glass.md.
  */
 export default function MarketingLayout({ children }: { children: ReactNode }) {
   return (

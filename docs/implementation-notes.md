@@ -131,7 +131,7 @@ In `proxy.ts` muss die bestehende Profil-Select-Query um neue Spalten erweitert 
 
 ## 5. Design-System (verbindlich)
 
-**Single Source of Truth:** `DESIGN.json` + `HERO-UI-SPEZIFIKATION.md`
+**Single Source of Truth:** `DESIGN.json` + `docs/design/` (Einstieg: `docs/design/README.md`)
 
 | Farbe | Token | Hex |
 |-------|-------|-----|
