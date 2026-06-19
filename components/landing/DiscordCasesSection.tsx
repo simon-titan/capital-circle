@@ -186,10 +186,12 @@ function Lightbox({ c, onClose }: { c: CaseData; onClose: () => void }) {
             boxShadow: `0 8px 48px ${c.glow}, 0 0 0 1px rgba(255,255,255,0.04) inset`,
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={c.image}
             alt={c.name}
+            width={1440}
+            height={1440}
+            sizes="92vw"
             style={{
               maxWidth: "92vw",
               maxHeight: "78vh",
@@ -260,7 +262,6 @@ function CaseCard({ c, onOpen }: { c: CaseData; onOpen: () => void }) {
           fill
           sizes="(max-width: 48em) 100vw, 560px"
           style={{ objectFit: "cover", objectPosition: "top center" }}
-          unoptimized
         />
       </Box>
 
