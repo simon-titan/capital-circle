@@ -69,9 +69,10 @@ export function DiscordDankeClient() {
     if (lid) url.searchParams.set("utm_content", lid);
     if (leadInfo.firstName) url.searchParams.set("first_name", leadInfo.firstName);
     if (leadInfo.email) url.searchParams.set("email", leadInfo.email);
-    url.searchParams.set("background_color", "0a0a0a");
-    url.searchParams.set("text_color", "ffffff");
-    url.searchParams.set("primary_color", "16cc9b");
+    // Deutsche Sprache erzwingen (zusätzlich greift die Event-Type-Sprache im Calendly-Dashboard).
+    url.searchParams.set("locale", "de");
+    // Standard-Embed (heller Calendly-Look), nur Brand-Cyan als Akzentfarbe.
+    url.searchParams.set("primary_color", "47f7dc");
     url.searchParams.set("hide_gdpr_banner", "1");
     return url.toString();
   })();
