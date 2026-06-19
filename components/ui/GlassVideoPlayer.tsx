@@ -93,6 +93,9 @@ export function GlassVideoPlayer({
   const mobileVolWrapRef = useRef<HTMLDivElement>(null);
   const volPressTimerRef = useRef<number | null>(null);
   const volJustOpenedByLongPress = useRef(false);
+  /** Touch: Steuerleiste während der Wiedergabe automatisch ausblenden (wie Hover auf Desktop). */
+  const [controlsHidden, setControlsHidden] = useState(false);
+  const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isMobileControls = useBreakpointValue({ base: true, md: false });
 
@@ -401,6 +404,41 @@ export function GlassVideoPlayer({
     setProgressPct((clamped / el.duration) * 100);
   };
 
+  /* ── Touch: Steuerleiste automatisch aus-/einblenden ─────────────────────────
+     Desktop blendet die Leiste per CSS-Hover aus. Touch-Geräte haben kein Hover,
+     daher hier per Timer: während der Wiedergabe nach kurzer Zeit ausblenden,
+     bei Tipp/Interaktion wieder einblenden. Nicht im Vollbild (dort immer sichtbar). */
+  const clearControlsTimer = useCallback(() => {
+    if (controlsTimerRef.current) {
+      clearTimeout(controlsTimerRef.current);
+      controlsTimerRef.current = null;
+    }
+  }, []);
+
+  const revealControls = useCallback(() => {
+    clearControlsTimer();
+    setControlsHidden(false);
+    if (isMobileControls === true && playing && !fullscreen) {
+      controlsTimerRef.current = setTimeout(() => setControlsHidden(true), 2800);
+    }
+  }, [clearControlsTimer, isMobileControls, playing, fullscreen]);
+
+  useEffect(() => {
+    if (isMobileControls !== true || fullscreen) {
+      clearControlsTimer();
+      setControlsHidden(false);
+      return;
+    }
+    if (playing) {
+      clearControlsTimer();
+      controlsTimerRef.current = setTimeout(() => setControlsHidden(true), 2800);
+    } else {
+      clearControlsTimer();
+      setControlsHidden(false);
+    }
+    return clearControlsTimer;
+  }, [playing, fullscreen, isMobileControls, clearControlsTimer]);
+
   if (storageKey && urlLoading && !effectiveSrc) {
     return (
       <Box
@@ -481,6 +519,13 @@ export function GlassVideoPlayer({
             pointerEvents: "auto",
           },
         },
+        // Touch (kein Hover): Leiste während der Wiedergabe per JS-Klasse ausblenden.
+        "@media (hover: none)": {
+          "& .cc-video-controls.cc-controls-hidden": {
+            opacity: 0,
+            pointerEvents: "none",
+          },
+        },
         // Im Vollbildmodus bleiben die Controls sichtbar (überschreibt das Hover-Hide).
         "&:fullscreen .cc-video-controls, &:-webkit-full-screen .cc-video-controls": {
           opacity: 1,
@@ -507,7 +552,15 @@ export function GlassVideoPlayer({
             objectFit: "contain",
             background: "rgba(0,0,0,0.5)",
           }}
-          onClick={() => void togglePlay()}
+          onClick={() => {
+            // Touch & Leiste ausgeblendet: erster Tipp blendet nur ein (kein Pausieren).
+            if (isMobileControls === true && controlsHidden) {
+              revealControls();
+              return;
+            }
+            void togglePlay();
+            if (isMobileControls === true) revealControls();
+          }}
           onLoadedMetadata={(e) => {
             const el = e.currentTarget;
             setDuration(el.duration);
@@ -598,7 +651,10 @@ export function GlassVideoPlayer({
         )}
 
         <HStack
-          className="cc-video-controls"
+          className={`cc-video-controls${controlsHidden ? " cc-controls-hidden" : ""}`}
+          onPointerDown={() => {
+            if (isMobileControls === true) revealControls();
+          }}
           position="absolute"
           bottom={0}
           left={0}
