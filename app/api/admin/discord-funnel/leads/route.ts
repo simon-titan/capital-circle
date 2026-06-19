@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/supabase/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
+import { SOURCE_ORIGINS, CLOSERS } from "@/lib/discord-funnel/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -52,13 +53,15 @@ export async function GET(request: NextRequest) {
   const search = (sp.get("search") ?? "").trim();
   const status = sp.get("status");
   const rangeRaw = sp.get("range");
+  const sourceOriginRaw = sp.get("source_origin");
+  const closerRaw = sp.get("closer");
 
   const service = createServiceClient();
 
   let query = service
     .from("discord_leads")
     .select(
-      "id,token,name,email,phone,utm_source,utm_medium,utm_campaign,referrer,discord_invite_sent_at,discord_joined_at,discord_user_id,discord_username,answers,questions_completed_at,video_watch_seconds,video_max_percent,video_completed_at,calendly_booked_at,calendly_event_uri,qualified,no_show,closed,product,revenue_cents,internal_notes,created_at,updated_at",
+      "id,token,name,email,phone,utm_source,utm_medium,utm_campaign,referrer,source_origin,discord_invite_sent_at,discord_joined_at,discord_user_id,discord_username,answers,questions_completed_at,video_watch_seconds,video_max_percent,video_completed_at,video_view_count,video_last_watched_at,calendly_booked_at,calendly_event_uri,qualified,no_show,closed,closer,close_type,membership_installments,closed_at,product,revenue_cents,internal_notes,created_at,updated_at",
     )
     .order("created_at", { ascending: false });
 
@@ -72,6 +75,16 @@ export async function GET(request: NextRequest) {
     const { from, to } = resolveRange(range, sp.get("from"), sp.get("to"));
     if (from) query = query.gte("created_at", from);
     if (to) query = query.lt("created_at", to);
+  }
+
+  // Herkunfts-Filter (source_origin)
+  if (sourceOriginRaw && (SOURCE_ORIGINS as readonly string[]).includes(sourceOriginRaw)) {
+    query = query.eq("source_origin", sourceOriginRaw);
+  }
+
+  // Closer-Filter
+  if (closerRaw && (CLOSERS as readonly string[]).includes(closerRaw)) {
+    query = query.eq("closer", closerRaw);
   }
 
   // Status-Filter

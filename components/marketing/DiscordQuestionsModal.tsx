@@ -17,24 +17,73 @@ import {
   VisuallyHidden,
 } from "@chakra-ui/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { User, Mail, Phone } from "lucide-react";
 import {
   DISCORD_FUNNEL_QUESTIONS,
   type DiscordFunnelQuestion,
 } from "@/config/discord-funnel-questions";
+import type { SourceOrigin } from "@/lib/discord-funnel/types";
 
 const WARNING_SECONDS = 5;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Tracking-Payload für die Lead-Anlage (nur bei collectContact relevant). */
+export interface LeadFunnelTracking {
+  session_id: string;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  utm_content: string | null;
+  utm_term: string | null;
+  referrer: string | null;
+}
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  /** Lead-Token (lid) — wird mit den Antworten an die API gesendet. */
+  /**
+   * Lead-Token (lid) — wird mit den Antworten an die API gesendet.
+   * Bei collectContact=true wird der Token erst im Kontakt-Schritt erzeugt; dann darf
+   * hier "" übergeben werden.
+   */
   token: string;
-  /** Wird nach erfolgreichem Submit aufgerufen, damit der Parent Calendly enthüllt. */
-  onComplete: () => void;
+  /**
+   * Wird nach erfolgreichem Submit aufgerufen, damit der Parent Calendly enthüllt.
+   * Bei collectContact wird der frisch erzeugte Token mitgegeben.
+   */
+  onComplete: (token?: string) => void;
+  /**
+   * Sammelt einen zusätzlichen Schritt VOR den Fragen ab: Name, E-Mail, Telefon.
+   * Legt darüber einen Lead an (ohne Discord-Auth, ohne Invite-Mail). Default: false.
+   */
+  collectContact?: boolean;
+  /** utm_source-Fallback für die Lead-Anlage, falls kein UTM in der URL steht. */
+  leadSource?: string;
+  /** Tracking-Daten (session_id, utm_*, referrer) für die Lead-Anlage. */
+  tracking?: LeadFunnelTracking | null;
+  /** Herkunft für die Lead-Anlage (discord_funnel | termin_direct). */
+  sourceOrigin?: SourceOrigin;
 }
 
-export function DiscordQuestionsModal({ isOpen, onClose, token, onComplete }: Props) {
-  const totalSteps = DISCORD_FUNNEL_QUESTIONS.length;
+export function DiscordQuestionsModal({
+  isOpen,
+  onClose,
+  token,
+  onComplete,
+  collectContact = false,
+  leadSource,
+  tracking,
+  sourceOrigin,
+}: Props) {
+  const questionCount = DISCORD_FUNNEL_QUESTIONS.length;
+  const totalSteps = collectContact ? questionCount + 1 : questionCount;
+
+  // Bei collectContact startet der Flow im Kontakt-Schritt; sonst direkt bei den Fragen.
+  const [phase, setPhase] = useState<"contact" | "questions">(
+    collectContact ? "contact" : "questions",
+  );
+  const [leadToken, setLeadToken] = useState(token);
+  const [contact, setContact] = useState({ name: "", email: "", phone: "" });
 
   const [stepIndex, setStepIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>(() => {
@@ -51,15 +100,28 @@ export function DiscordQuestionsModal({ isOpen, onClose, token, onComplete }: Pr
   const [warningCountdown, setWarningCountdown] = useState(WARNING_SECONDS);
   const [warningFadingOut, setWarningFadingOut] = useState(false);
 
+  const inContactPhase = phase === "contact";
   const currentQuestion: DiscordFunnelQuestion | undefined = DISCORD_FUNNEL_QUESTIONS[stepIndex];
   const currentValue = currentQuestion ? (answers[currentQuestion.id] ?? "") : "";
-  const progressPct = ((stepIndex + 1) / totalSteps) * 100;
-  const isLastStep = stepIndex === totalSteps - 1;
+
+  // 1-basierter Anzeige-Schritt über alle Phasen (Kontakt zählt als Schritt 1).
+  const displayStep = inContactPhase ? 1 : stepIndex + 1 + (collectContact ? 1 : 0);
+  const progressPct = (displayStep / totalSteps) * 100;
+  const isLastStep = !inContactPhase && stepIndex === questionCount - 1;
+
+  const contactValid = useMemo(
+    () =>
+      contact.name.trim().length > 0 &&
+      EMAIL_RE.test(contact.email.trim()) &&
+      contact.phone.trim().length > 0,
+    [contact],
+  );
 
   const currentStepAnswered = useMemo(() => {
+    if (inContactPhase) return contactValid;
     if (!currentQuestion) return false;
     return currentQuestion.options.includes(currentValue);
-  }, [currentQuestion, currentValue]);
+  }, [inContactPhase, contactValid, currentQuestion, currentValue]);
 
   const handleClose = useCallback(() => {
     if (submitted || submitting || showWarning) return;
@@ -81,8 +143,63 @@ export function DiscordQuestionsModal({ isOpen, onClose, token, onComplete }: Pr
     }, 300);
   }
 
+  // Kontakt-Schritt: Lead anlegen (ohne Discord-Auth, ohne Invite-Mail) und Token merken.
+  async function submitContact() {
+    setServerError(null);
+    if (!contactValid) {
+      setStepError("Bitte fülle Name, gültige E-Mail und Telefon aus.");
+      return;
+    }
+    setStepError(null);
+
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/discord-funnel/lead", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name: contact.name.trim(),
+          email: contact.email.trim(),
+          phone: contact.phone.trim(),
+          session_id: tracking?.session_id,
+          utm_source: tracking?.utm_source ?? leadSource ?? null,
+          utm_medium: tracking?.utm_medium ?? null,
+          utm_campaign: tracking?.utm_campaign ?? null,
+          utm_content: tracking?.utm_content ?? null,
+          utm_term: tracking?.utm_term ?? null,
+          referrer: tracking?.referrer ?? null,
+          source_origin: sourceOrigin,
+          skip_invite: true,
+        }),
+      });
+      const json = (await res.json().catch(() => null)) as
+        | { ok?: boolean; token?: string; error?: string }
+        | null;
+
+      if (!res.ok || !json?.ok || !json.token) {
+        setServerError(json?.error ?? "Deine Daten konnten nicht gespeichert werden.");
+        setSubmitting(false);
+        return;
+      }
+
+      setLeadToken(json.token);
+      setPhase("questions");
+      setStepIndex(0);
+      setSubmitting(false);
+    } catch {
+      setServerError("Verbindungsfehler. Bitte erneut versuchen.");
+      setSubmitting(false);
+    }
+  }
+
   async function handleNext() {
     setServerError(null);
+
+    if (inContactPhase) {
+      await submitContact();
+      return;
+    }
+
     if (!currentStepAnswered) {
       setStepError("Bitte wähle eine Option.");
       return;
@@ -99,7 +216,7 @@ export function DiscordQuestionsModal({ isOpen, onClose, token, onComplete }: Pr
       const res = await fetch("/api/discord-funnel/questions", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ token, answers }),
+        body: JSON.stringify({ token: leadToken, answers }),
       });
       const json = (await res.json()) as { ok?: boolean; error?: string };
 
@@ -112,7 +229,7 @@ export function DiscordQuestionsModal({ isOpen, onClose, token, onComplete }: Pr
       setSubmitted(true);
       // Kurze Bestätigung zeigen, dann den Parent Calendly enthüllen lassen.
       setTimeout(() => {
-        onComplete();
+        onComplete(leadToken);
       }, 1600);
     } catch {
       setServerError("Verbindungsfehler. Bitte erneut versuchen.");
@@ -123,7 +240,12 @@ export function DiscordQuestionsModal({ isOpen, onClose, token, onComplete }: Pr
   function handleBack() {
     setStepError(null);
     setServerError(null);
-    if (stepIndex > 0) setStepIndex((i) => i - 1);
+    if (stepIndex > 0) {
+      setStepIndex((i) => i - 1);
+      return;
+    }
+    // Erste Frage → zurück zum Kontakt-Schritt (Lead bleibt idempotent erhalten).
+    if (collectContact && phase === "questions") setPhase("contact");
   }
 
   if (!currentQuestion && !submitted) return null;
@@ -300,7 +422,7 @@ export function DiscordQuestionsModal({ isOpen, onClose, token, onComplete }: Pr
                   color="#47F7DC"
                   className="inter-semibold"
                 >
-                  Capital Circle · Kurze Einordnung
+                  {inContactPhase ? "Capital Circle · Deine Daten" : "Capital Circle · Kurze Einordnung"}
                 </Text>
                 <Button
                   variant="ghost"
@@ -320,7 +442,11 @@ export function DiscordQuestionsModal({ isOpen, onClose, token, onComplete }: Pr
                 </Button>
               </HStack>
 
-              <StepIndicator current={stepIndex + 1} total={totalSteps} />
+              <StepIndicator
+                current={displayStep}
+                total={totalSteps}
+                unit={collectContact ? "Schritt" : "Frage"}
+              />
 
               <Box
                 h="2px"
@@ -344,11 +470,20 @@ export function DiscordQuestionsModal({ isOpen, onClose, token, onComplete }: Pr
 
         <ModalBody px={6} py={6} position="relative" zIndex={1}>
           <Box
-            key={submitted ? "thanks" : stepIndex}
+            key={submitted ? "thanks" : `${phase}-${stepIndex}`}
             sx={{ animation: "appStepEnter 0.3s cubic-bezier(0.16,1,0.3,1)" }}
           >
             {submitted ? (
               <ThanksStep />
+            ) : inContactPhase ? (
+              <ContactStep
+                value={contact}
+                onChange={(patch) => {
+                  setContact((c) => ({ ...c, ...patch }));
+                  if (stepError) setStepError(null);
+                }}
+                error={stepError}
+              />
             ) : currentQuestion ? (
               <RadioStep
                 question={currentQuestion}
@@ -450,12 +585,14 @@ export function DiscordQuestionsModal({ isOpen, onClose, token, onComplete }: Pr
                 _disabled={{ opacity: 0.5, cursor: "not-allowed", transform: "none", boxShadow: "none" }}
                 transition="all 200ms ease"
                 className="inter-semibold"
+                isLoading={submitting}
+                loadingText="Wird gespeichert…"
               >
                 Weiter
               </Button>
             )}
 
-            {stepIndex > 0 && (
+            {(stepIndex > 0 || (collectContact && phase === "questions")) && (
               <Button
                 variant="ghost"
                 w="full"
@@ -500,7 +637,15 @@ export function DiscordQuestionsModal({ isOpen, onClose, token, onComplete }: Pr
    Step Indicator (Gold Circles)
    ================================================================ */
 
-function StepIndicator({ current, total }: { current: number; total: number }) {
+function StepIndicator({
+  current,
+  total,
+  unit = "Frage",
+}: {
+  current: number;
+  total: number;
+  unit?: string;
+}) {
   const maxVisible = 6;
   const showCompact = total > maxVisible;
 
@@ -508,7 +653,7 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
     return (
       <HStack spacing={2} justify="center" align="center" w="full">
         <Text fontSize="xs" color="#47F7DC" className="inter-semibold">
-          Frage {current} von {total}
+          {unit} {current} von {total}
         </Text>
       </HStack>
     );
@@ -569,6 +714,107 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
         );
       })}
     </HStack>
+  );
+}
+
+/* ================================================================
+   Contact Step (Name / E-Mail / Telefon)
+   ================================================================ */
+
+const contactInputSx = {
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid rgba(255,255,255,0.18)",
+  borderRadius: "12px",
+  color: "#F0F0F2",
+  width: "100%",
+  height: "52px",
+  paddingLeft: "44px",
+  paddingRight: "16px",
+  fontSize: "15px",
+  outline: "none",
+  transition: "border-color 180ms ease, box-shadow 180ms ease",
+  _placeholder: { color: "rgba(255,255,255,0.35)" },
+  _focus: {
+    borderColor: "rgba(71,247,220,0.65)",
+    boxShadow: "0 0 0 3px rgba(71,247,220,0.14)",
+  },
+} as const;
+
+interface ContactValue {
+  name: string;
+  email: string;
+  phone: string;
+}
+
+function ContactStep({
+  value,
+  onChange,
+  error,
+}: {
+  value: ContactValue;
+  onChange: (patch: Partial<ContactValue>) => void;
+  error: string | null;
+}) {
+  const fields: { key: keyof ContactValue; type: string; placeholder: string; autoComplete: string; icon: React.ReactNode }[] = [
+    { key: "name", type: "text", placeholder: "Voller Name", autoComplete: "name", icon: <User size={18} strokeWidth={1.75} /> },
+    { key: "email", type: "email", placeholder: "E-Mail-Adresse", autoComplete: "email", icon: <Mail size={18} strokeWidth={1.75} /> },
+    { key: "phone", type: "tel", placeholder: "Telefonnummer", autoComplete: "tel", icon: <Phone size={18} strokeWidth={1.75} /> },
+  ];
+
+  return (
+    <Stack spacing={5}>
+      <Stack spacing={2}>
+        <Text
+          as="h2"
+          className="inter"
+          fontWeight={300}
+          fontSize={{ base: "xl", md: "2xl" }}
+          lineHeight="1.25"
+          letterSpacing="-0.01em"
+          color="var(--color-text-primary)"
+        >
+          Wohin dürfen wir deine Termin-Bestätigung schicken?
+        </Text>
+        <Text className="inter" fontSize="sm" color="rgba(255,255,255,0.55)" lineHeight="1.6">
+          Trag deine Daten ein — danach beantwortest du noch ein paar kurze Fragen.
+        </Text>
+      </Stack>
+
+      <Stack spacing={4}>
+        {fields.map((f) => (
+          <Box key={f.key} position="relative">
+            <Box
+              position="absolute"
+              left="14px"
+              top="50%"
+              transform="translateY(-50%)"
+              pointerEvents="none"
+              color="rgba(255,255,255,0.55)"
+              display="flex"
+              alignItems="center"
+            >
+              {f.icon}
+            </Box>
+            <Box
+              as="input"
+              type={f.type}
+              name={f.key}
+              placeholder={f.placeholder}
+              autoComplete={f.autoComplete}
+              value={value[f.key]}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange({ [f.key]: e.target.value })}
+              className="inter"
+              sx={contactInputSx}
+            />
+          </Box>
+        ))}
+        {error && (
+          <Text fontSize="sm" color="red.300" className="inter">
+            {error}
+          </Text>
+        )}
+      </Stack>
+    </Stack>
   );
 }
 

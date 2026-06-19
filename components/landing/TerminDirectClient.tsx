@@ -3,12 +3,13 @@
 import dynamic from "next/dynamic";
 import { Box, HStack, Stack, Text } from "@chakra-ui/react";
 import { Lock } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { Logo } from "@/components/brand/Logo";
 import { DiscordTerminHero } from "./DiscordTerminHero";
 import { DiscordTerminFounder } from "./DiscordTerminFounder";
 import { DiscordTerminMobileCTA } from "./DiscordTerminMobileCTA";
+import type { LeadFunnelTracking } from "@/components/marketing/DiscordQuestionsModal";
 import { createVideoTracker } from "@/lib/discord-funnel/video-tracking";
 
 const DiscordQuestionsModal = dynamic(
@@ -19,52 +20,111 @@ const DiscordQuestionsModal = dynamic(
   { ssr: false },
 );
 
+/** utm_source-Fallback, der diese Leads als Nicht-Discord-Herkunft markiert. */
+const LEAD_SOURCE = "termin-direkt";
+
+function getOrCreateSessionId(): string {
+  try {
+    const existing = sessionStorage.getItem("cc_discord_sid");
+    if (existing) return existing;
+    const newId = crypto.randomUUID();
+    sessionStorage.setItem("cc_discord_sid", newId);
+    return newId;
+  } catch {
+    return "unknown";
+  }
+}
+
+function readTracking(): LeadFunnelTracking {
+  let utm: Record<string, string | null> = {
+    utm_source: null,
+    utm_medium: null,
+    utm_campaign: null,
+    utm_content: null,
+    utm_term: null,
+  };
+  let referrer: string | null = null;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    utm = {
+      utm_source: params.get("utm_source"),
+      utm_medium: params.get("utm_medium"),
+      utm_campaign: params.get("utm_campaign"),
+      utm_content: params.get("utm_content"),
+      utm_term: params.get("utm_term"),
+    };
+    referrer = document.referrer || null;
+  } catch {
+    // window/document nicht verfügbar
+  }
+  return {
+    session_id: getOrCreateSessionId(),
+    // Ohne UTM in der URL den Funnel klar als "termin-direkt" kennzeichnen.
+    utm_source: utm.utm_source ?? LEAD_SOURCE,
+    utm_medium: utm.utm_medium,
+    utm_campaign: utm.utm_campaign,
+    utm_content: utm.utm_content,
+    utm_term: utm.utm_term,
+    referrer,
+  };
+}
+
 /**
- * /discord/termin — /bewerbung-Kopie im neuen Branding (Hero + CTA-Footer + Founder).
- * Der CTA öffnet das 6-Fragen-Popup; nach Abschluss → /discord/termin/danke (Calendly).
+ * /termin — exakte Kopie von /discord/termin OHNE Discord-OAuth.
+ * Der CTA öffnet das Popup, das zuerst Name/E-Mail/Telefon abfragt (legt einen Lead
+ * ohne Discord-Invite an) und danach die 6 Funnel-Fragen stellt. Anschließend →
+ * /termin/danke (Calendly). Die Leads landen im selben System (discord_leads),
+ * markiert als utm_source="termin-direkt" mit discord_user_id = NULL.
  */
-export function DiscordTerminClient() {
+export function TerminDirectClient() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const lid = (searchParams.get("lid") ?? "").trim();
-  // Identify-Loop-Schutz: Callback hängt einen `discord`-Param an.
-  const identifyAttempted = (searchParams.get("discord") ?? "") !== "";
 
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-
-  // Kein lid (intern beworbener Link) → Discord-User per OAuth identifizieren.
-  useEffect(() => {
-    if (!lid && !identifyAttempted) {
-      window.location.href = "/api/discord-funnel/identify";
-    }
-  }, [lid, identifyAttempted]);
+  const [tracking, setTracking] = useState<LeadFunnelTracking | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 300);
     return () => clearTimeout(timer);
   }, []);
 
-  /* ── Throttled Video Tracking (vereinheitlichter Helper) ─────────────────── */
-  // source 'discord_funnel' + lid; session_id ergänzt der Helper automatisch.
+  // Tracking-Snapshot erst beim Öffnen des Popups ermitteln (kein setState im Effect,
+  // window/sessionStorage stehen hier sicher zur Verfügung).
+  const openModal = () => {
+    setTracking((t) => t ?? readTracking());
+    setModalOpen(true);
+  };
+
+  // Visit-Tracking (einmal pro Mount) — feuert reines Fire-and-forget, kein State.
+  useEffect(() => {
+    const snapshot = readTracking();
+    try {
+      fetch("/api/discord-funnel/visit", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          session_id: snapshot.session_id,
+          utm_source: snapshot.utm_source,
+          utm_medium: snapshot.utm_medium,
+          utm_campaign: snapshot.utm_campaign,
+          utm_content: snapshot.utm_content,
+          utm_term: snapshot.utm_term,
+          referrer: snapshot.referrer,
+        }),
+      }).catch(() => undefined);
+    } catch {
+      // Tracking-Fehler still ignorieren
+    }
+  }, []);
+
+  // Video-Tracking: Watches der /termin-Seite werden anonym (nur session_id) erfasst
+  // und beim Lead-Anlegen rückwirkend verknüpft.
   const videoTracker = useMemo(
-    () => createVideoTracker({ token: lid || null, source: "discord_funnel" }),
-    [lid],
+    () => createVideoTracker({ token: null, source: "termin_direct" }),
+    [],
   );
 
-  const openModal = useCallback(() => setModalOpen(true), []);
-
-  const handleComplete = useCallback(() => {
-    setModalOpen(false);
-    router.push(`/discord/termin/danke?lid=${encodeURIComponent(lid)}`);
-  }, [router, lid]);
-
-  const videoSrc =
-    process.env.NEXT_PUBLIC_DISCORD_TERMIN_VIDEO_URL ??
-    process.env.NEXT_PUBLIC_STEP2_BEWERBUNG_VIDEO_URL;
-
-  // Während der Identify-Weiterleitung nichts rendern.
-  if (!lid && !identifyAttempted) return null;
+  const videoSrc = process.env.NEXT_PUBLIC_DISCORD_TERMIN_VIDEO_URL;
 
   return (
     <>
@@ -170,8 +230,15 @@ export function DiscordTerminClient() {
         <DiscordQuestionsModal
           isOpen={modalOpen}
           onClose={() => setModalOpen(false)}
-          token={lid}
-          onComplete={handleComplete}
+          token=""
+          collectContact
+          leadSource={LEAD_SOURCE}
+          tracking={tracking}
+          sourceOrigin="termin_direct"
+          onComplete={(newToken) => {
+            setModalOpen(false);
+            router.push(`/termin/danke?lid=${encodeURIComponent(newToken ?? "")}`);
+          }}
         />
       )}
     </>

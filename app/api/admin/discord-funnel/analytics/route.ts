@@ -5,6 +5,17 @@ import {
   DISCORD_FUNNEL_QUESTIONS,
   type DiscordFunnelQuestion,
 } from "@/config/discord-funnel-questions";
+import {
+  computeFunnelByOrigin,
+  computePerCloser,
+  computeTimeOnDiscord,
+  computeVideoEngagement,
+  computeTopOfFunnelVideo,
+  type AggLeadRow,
+  type AggVisitRow,
+  type AggVideoViewRow,
+} from "@/lib/discord-funnel/analytics-aggregate";
+import { SOURCE_ORIGINS, CLOSERS, type SourceOrigin, type CloserId } from "@/lib/discord-funnel/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,12 +34,18 @@ type RangeId = "week" | "month" | "last_month" | "custom";
 interface LeadRow {
   id: string;
   utm_source: string | null;
+  source_origin: SourceOrigin | null;
   answers: Record<string, string> | null;
   questions_completed_at: string | null;
   video_completed_at: string | null;
+  video_view_count: number | null;
   qualified: boolean | null;
   no_show: boolean | null;
   closed: string | null;
+  closer: CloserId | null;
+  close_type: string | null;
+  membership_installments: number | null;
+  closed_at: string | null;
   revenue_cents: number | null;
   calendly_booked_at: string | null;
   discord_joined_at: string | null;
@@ -106,6 +123,20 @@ export async function GET(request: NextRequest) {
     : "month";
   const { from, to } = resolveRange(range, sp.get("from"), sp.get("to"));
 
+  // source_origin-Filter wirkt auf Lead-Query (KPIs/Funnel).
+  const originRaw = sp.get("source_origin");
+  const sourceOrigin: SourceOrigin | null =
+    originRaw && (SOURCE_ORIGINS as readonly string[]).includes(originRaw)
+      ? (originRaw as SourceOrigin)
+      : null; // "all" oder ungültig → kein Filter
+
+  // closer-Filter wirkt NUR auf Closer-/Revenue-Sektionen, NICHT auf Top-of-Funnel.
+  const closerRaw = sp.get("closer");
+  const closerFilter: CloserId | null =
+    closerRaw && (CLOSERS as readonly string[]).includes(closerRaw)
+      ? (closerRaw as CloserId)
+      : null; // "all" oder ungültig → kein Filter
+
   const service = createServiceClient();
 
   // ── Traffic (discord_page_visits) — utm_source für Per-Kanal-Aufschlüsselung ──
@@ -117,10 +148,18 @@ export async function GET(request: NextRequest) {
   let leadsQuery = service
     .from("discord_leads")
     .select(
-      "id,utm_source,answers,questions_completed_at,video_completed_at,qualified,no_show,closed,revenue_cents,calendly_booked_at,discord_joined_at,created_at",
+      "id,utm_source,source_origin,answers,questions_completed_at,video_completed_at,video_view_count,qualified,no_show,closed,closer,close_type,membership_installments,closed_at,revenue_cents,calendly_booked_at,discord_joined_at,created_at",
     );
   if (from) leadsQuery = leadsQuery.gte("created_at", from);
   if (to) leadsQuery = leadsQuery.lt("created_at", to);
+  if (sourceOrigin) leadsQuery = leadsQuery.eq("source_origin", sourceOrigin);
+
+  // ── Video-Views (discord_video_views) im Range (created_at) ─────────────────
+  let videoViewsQuery = service
+    .from("discord_video_views")
+    .select("source,completed,session_id,lead_id");
+  if (from) videoViewsQuery = videoViewsQuery.gte("created_at", from);
+  if (to) videoViewsQuery = videoViewsQuery.lt("created_at", to);
 
   // ── Definierte Kanäle ───────────────────────────────────────────────────────
   const channelsQuery = service
@@ -128,10 +167,11 @@ export async function GET(request: NextRequest) {
     .select("id, label, utm_source, utm_campaign")
     .order("created_at", { ascending: false });
 
-  const [visitsRes, leadsRes, channelsRes] = await Promise.all([
+  const [visitsRes, leadsRes, channelsRes, videoViewsRes] = await Promise.all([
     visitsQuery,
     leadsQuery,
     channelsQuery,
+    videoViewsQuery,
   ]);
 
   if (visitsRes.error) {
@@ -140,10 +180,17 @@ export async function GET(request: NextRequest) {
   if (leadsRes.error) {
     return NextResponse.json({ ok: false, error: leadsRes.error.message }, { status: 500 });
   }
+  if (videoViewsRes.error) {
+    return NextResponse.json(
+      { ok: false, error: videoViewsRes.error.message },
+      { status: 500 },
+    );
+  }
 
   const visits = (visitsRes.data as { utm_source: string | null }[] | null) ?? [];
   const traffic = visits.length;
   const leads = (leadsRes.data as LeadRow[] | null) ?? [];
+  const videoViews = (videoViewsRes.data as AggVideoViewRow[] | null) ?? [];
   const channels =
     (channelsRes.data as
       | { id: string; label: string; utm_source: string; utm_campaign: string | null }[]
@@ -244,15 +291,33 @@ export async function GET(request: NextRequest) {
     revenueCents,
   };
 
+  // ── Neue Analytics-Sektionen (additiv via geteilte Helper) ──────────────────
+  // Closer-Filter wirkt NUR auf die Closer-/Revenue-Aggregation.
+  const closerLeads = closerFilter
+    ? (leads as unknown as AggLeadRow[]).filter((l) => l.closer === closerFilter)
+    : (leads as unknown as AggLeadRow[]);
+
+  const funnelByOrigin = computeFunnelByOrigin(leads as unknown as AggLeadRow[]);
+  const perCloser = computePerCloser(closerLeads);
+  const timeOnDiscord = computeTimeOnDiscord(leads as unknown as AggLeadRow[]);
+  const videoEngagement = computeVideoEngagement(videoViews, leads as unknown as AggLeadRow[]);
+  // Top-of-Funnel ignoriert closer/origin-Filter bewusst (anonyme /video-Seite).
+  const topOfFunnelVideo = computeTopOfFunnelVideo(visits as AggVisitRow[], videoViews);
+
   return NextResponse.json({
     ok: true,
     generatedAt: new Date().toISOString(),
     range: { id: range, from, to },
     kpis,
     funnel,
+    funnelByOrigin,
     contentInsights,
     closerPerformance,
+    perCloser,
     perChannel,
+    timeOnDiscord,
+    videoEngagement,
+    topOfFunnelVideo,
     joined,
     closingReady,
   });

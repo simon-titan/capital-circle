@@ -86,6 +86,7 @@ export async function GET(request: Request) {
       discord_username: displayName,
       discord_joined_at: new Date().toISOString(),
       utm_source: "discord-intern",
+      source_origin: "discord_funnel",
     });
     if (insertErr) {
       console.error("[discord-funnel/identify-callback] lead insert failed:", insertErr);

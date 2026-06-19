@@ -1,6 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/supabase/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
+import {
+  CLOSED_VALUES,
+  CLOSERS,
+  CLOSE_TYPES,
+  MEMBERSHIP_INSTALLMENTS,
+  type ClosedValue,
+  type CloserId,
+  type CloseType,
+} from "@/lib/discord-funnel/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,12 +18,16 @@ export const dynamic = "force-dynamic";
  * PATCH /api/admin/discord-funnel/leads/[id]
  *
  * Aktualisiert die Closer-Felder eines Leads. Body darf beliebige Teilmenge von:
- *   { qualified, no_show, closed, product, revenue_cents, internal_notes }
- * enthalten. `closed` wird gegen das Enum validiert.
+ *   { qualified, no_show, closed, closer, close_type, membership_installments,
+ *     closed_at, product, revenue_cents, internal_notes }
+ * enthalten. Enums werden gegen die Konstanten aus types.ts validiert.
+ *
+ * Konsistenzregeln (serverseitig):
+ *  - close_type != 'membership' (effektiv) → membership_installments zwingend null.
+ *  - membership_installments nur erlaubt, wenn close_type === 'membership' im Body
+ *    ODER bereits am Lead.
+ *  - closed = 'closed_won' im Body ohne mitgeliefertes closed_at → closed_at = now().
  */
-
-const CLOSED_VALUES = ["pending", "closed_won", "closed_lost"] as const;
-type ClosedValue = (typeof CLOSED_VALUES)[number];
 
 export async function PATCH(
   request: NextRequest,
@@ -102,6 +115,58 @@ export async function PATCH(
     update.internal_notes = v === "" ? null : v;
   }
 
+  // ── Neue Closer-Felder ──────────────────────────────────────────────────────
+  if ("closer" in body) {
+    const v = body.closer;
+    if (v !== null && (typeof v !== "string" || !CLOSERS.includes(v as CloserId))) {
+      return NextResponse.json(
+        { ok: false, error: "closer muss kevin|simon oder null sein." },
+        { status: 400 },
+      );
+    }
+    update.closer = v;
+  }
+
+  if ("close_type" in body) {
+    const v = body.close_type;
+    if (v !== null && (typeof v !== "string" || !CLOSE_TYPES.includes(v as CloseType))) {
+      return NextResponse.json(
+        { ok: false, error: "close_type muss one_to_one|membership oder null sein." },
+        { status: 400 },
+      );
+    }
+    update.close_type = v;
+  }
+
+  if ("membership_installments" in body) {
+    const v = body.membership_installments;
+    if (
+      v !== null &&
+      (typeof v !== "number" || !(MEMBERSHIP_INSTALLMENTS as readonly number[]).includes(v))
+    ) {
+      return NextResponse.json(
+        { ok: false, error: "membership_installments muss 1|2|4 oder null sein." },
+        { status: 400 },
+      );
+    }
+    update.membership_installments = v;
+  }
+
+  if ("closed_at" in body) {
+    const v = body.closed_at;
+    if (v !== null) {
+      if (typeof v !== "string" || Number.isNaN(new Date(v).getTime())) {
+        return NextResponse.json(
+          { ok: false, error: "closed_at muss ein ISO-Datum oder null sein." },
+          { status: 400 },
+        );
+      }
+      update.closed_at = new Date(v).toISOString();
+    } else {
+      update.closed_at = null;
+    }
+  }
+
   if (Object.keys(update).length === 0) {
     return NextResponse.json(
       { ok: false, error: "Keine gültigen Felder im Body." },
@@ -109,15 +174,62 @@ export async function PATCH(
     );
   }
 
+  const service = createServiceClient();
+
+  // Bestehenden Lead laden, um Konsistenzregeln gegen die effektiven Werte zu prüfen.
+  const { data: existing, error: fetchError } = await service
+    .from("discord_leads")
+    .select("close_type,membership_installments")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (fetchError) {
+    return NextResponse.json({ ok: false, error: fetchError.message }, { status: 500 });
+  }
+  if (!existing) {
+    return NextResponse.json({ ok: false, error: "Lead nicht gefunden." }, { status: 404 });
+  }
+
+  // ── Konsistenzregeln (gegen effektive Werte: Body überschreibt Bestand) ──────
+  const effectiveCloseType =
+    "close_type" in update
+      ? (update.close_type as CloseType | null)
+      : (existing.close_type as CloseType | null);
+
+  if (effectiveCloseType !== "membership") {
+    // Versuch, explizit Raten zu setzen, obwohl effektiv keine Mitgliedschaft → 400.
+    if ("membership_installments" in update && update.membership_installments !== null) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "membership_installments ist nur bei close_type='membership' erlaubt.",
+        },
+        { status: 400 },
+      );
+    }
+    // Stale Bestandswert (oder explizit gesetztes) bei nicht-Mitgliedschaft → null erzwingen.
+    if (
+      ("membership_installments" in update && update.membership_installments !== null) ||
+      (!("membership_installments" in update) && existing.membership_installments !== null)
+    ) {
+      update.membership_installments = null;
+    }
+  }
+
+  // closed = 'closed_won' im Body ohne mitgeliefertes closed_at → closed_at = now().
+  if (update.closed === "closed_won" && !("closed_at" in update)) {
+    update.closed_at = new Date().toISOString();
+  }
+
   update.updated_at = new Date().toISOString();
 
-  const service = createServiceClient();
   const { data, error } = await service
     .from("discord_leads")
     .update(update)
     .eq("id", id)
     .select(
-      "id,qualified,no_show,closed,product,revenue_cents,internal_notes,updated_at",
+      "id,qualified,no_show,closed,closer,close_type,membership_installments,closed_at,product,revenue_cents,internal_notes,updated_at",
     )
     .maybeSingle();
 
