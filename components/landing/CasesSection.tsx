@@ -350,21 +350,6 @@ export function CasesSection() {
           möglich ist
         </Text>
 
-        {/* Subtitle */}
-        <Text
-          fontSize={{ base: "sm", md: "md" }}
-          className="inter"
-          color="rgba(255,255,255,0.45)"
-          textAlign="center"
-          maxW="600px"
-          mx="auto"
-          lineHeight="1.65"
-          mb={{ base: 10, md: 14 }}
-        >
-          Capital Circle gibt es seit weniger als 2 Monaten.
-          Diese Ergebnisse unserer Member entstanden in dieser Zeit.
-        </Text>
-
         {/* 2x2 Card Grid */}
         <Box
           display="grid"
