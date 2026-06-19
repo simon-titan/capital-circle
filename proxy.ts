@@ -19,7 +19,9 @@ const PUBLIC_PATHS = [
 // muss auch für nicht-eingeloggte User zugänglich sein.
 // `/discord/*` ist der öffentliche Discord-Funnel (Landing + /discord/termin) —
 // standalone Leads ohne Auth, daher der gesamte Prefix öffentlich.
-const PUBLIC_PREFIXES = ["/datenschutz", "/impressum", "/survey", "/discord"];
+// `/termin/*` ist der öffentliche Direkt-Termin-Funnel (Cold Traffic / Ads) —
+// Landing + /termin/danke, ebenfalls ohne Auth zugänglich.
+const PUBLIC_PREFIXES = ["/datenschutz", "/impressum", "/survey", "/discord", "/termin"];
 
 function isPublicPath(pathname: string): boolean {
   if (PUBLIC_PATHS.includes(pathname)) return true;
@@ -29,10 +31,14 @@ function isPublicPath(pathname: string): boolean {
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  // Statische Assets aus `public/tg-slides/`, `public/founder/`, … — nicht durch
-  // Pending-/Onboarding-Gates schicken, sonst liefert der Browser für
-  // <img src="/…"> eine Redirect-HTML statt JPEG.
-  if (pathname.startsWith("/tg-slides/") || pathname.startsWith("/founder/")) {
+  // Statische Assets aus `public/tg-slides/`, `public/founder/`, `public/cases/`, … —
+  // nicht durch Auth-/Pending-/Onboarding-Gates schicken, sonst liefert der Browser
+  // für <img src="/…"> eine Redirect-HTML (Login-Seite) statt des Bildes.
+  if (
+    pathname.startsWith("/tg-slides/") ||
+    pathname.startsWith("/founder/") ||
+    pathname.startsWith("/cases/")
+  ) {
     return NextResponse.next();
   }
 
@@ -171,6 +177,6 @@ export async function proxy(request: NextRequest) {
 export const config = {
   // Statische Icons: Safari/WebKit u. a. holen apple-touch-icon / favicon ohne HTML — nicht zur Login-HTML umleiten.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|logo/|bg/|svg/|tg-slides/|founder/|apple-touch-icon|new-apple).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|logo/|bg/|svg/|tg-slides/|founder/|cases/|apple-touch-icon|new-apple).*)",
   ],
 };
