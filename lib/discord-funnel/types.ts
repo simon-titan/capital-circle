@@ -30,7 +30,7 @@ export type ClosedValue = (typeof CLOSED_VALUES)[number];
 export const VIDEO_SOURCES = ["discord_funnel", "termin_direct", "video_only", "unknown"] as const;
 export type VideoSource = (typeof VIDEO_SOURCES)[number];
 
-export type RangeId = "week" | "month" | "last_month" | "custom";
+export type RangeId = "today" | "week" | "month" | "last_month" | "custom";
 
 /** Anzeige-Labels für die Closer-Slugs (UI). */
 export const CLOSER_LABELS: Record<CloserId, string> = {

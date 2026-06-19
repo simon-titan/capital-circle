@@ -13,6 +13,7 @@ import {
 import { FieldLabel } from "./primitives";
 
 const RANGE_OPTIONS: { id: RangeId; label: string }[] = [
+  { id: "today", label: "Heute" },
   { id: "week", label: "Diese Woche" },
   { id: "month", label: "Dieser Monat" },
   { id: "last_month", label: "Letzter Monat" },

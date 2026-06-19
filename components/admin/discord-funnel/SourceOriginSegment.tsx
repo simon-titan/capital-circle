@@ -75,7 +75,7 @@ function MetricRow({ label, value }: { label: string; value: string }) {
       <Text fontSize="xs" color="var(--color-text-secondary)" className="inter">
         {label}
       </Text>
-      <Text className="jetbrains-mono" fontSize="sm" color="var(--color-text-primary)">
+      <Text className="inter-semibold" fontSize="sm" color="var(--color-text-primary)">
         {value}
       </Text>
     </HStack>
@@ -85,7 +85,7 @@ function MetricRow({ label, value }: { label: string; value: string }) {
 function OriginCard({ origin, metrics }: { origin: SourceOrigin; metrics: OriginMetrics }) {
   return (
     <Box bg="#0C0D10" border="1px solid rgba(255,255,255,0.07)" borderRadius="16px" p={5}>
-      <Text className="radley-regular" fontSize="md" color="var(--color-accent-gold-light, #E8C547)" mb={3}>
+      <Text className="inter-semibold" fontSize="md" color="var(--color-accent-gold-light, #E8C547)" mb={3}>
         {SOURCE_ORIGIN_LABELS[origin]}
       </Text>
       <Stack spacing={0}>
@@ -98,7 +98,7 @@ function OriginCard({ origin, metrics }: { origin: SourceOrigin; metrics: Origin
           <Text fontSize="xs" color="var(--color-text-secondary)" className="inter">
             Revenue
           </Text>
-          <Text className="jetbrains-mono" fontSize="sm" color="#34D399" fontWeight={700}>
+          <Text className="inter-semibold" fontSize="sm" color="#34D399" fontWeight={700}>
             {eurFromCents(metrics.revenueCents)}
           </Text>
         </HStack>

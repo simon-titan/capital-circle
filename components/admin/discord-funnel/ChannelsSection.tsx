@@ -18,7 +18,7 @@ import { eurFromCents, FieldLabel, SectionCard } from "./primitives";
 function ChannelStat({ label, value }: { label: string; value: string | number }) {
   return (
     <Stack spacing={0} align="center" minW="52px">
-      <Text className="jetbrains-mono" fontSize="sm" color="var(--color-text-primary)" fontWeight={700}>
+      <Text className="inter-semibold" fontSize="sm" color="var(--color-text-primary)" fontWeight={700}>
         {value}
       </Text>
       <Text fontSize="10px" color="#606068" className="inter" textTransform="uppercase" letterSpacing="0.06em">
@@ -151,7 +151,7 @@ export function ChannelsSection({ channels }: { channels: PerChannelRow[] }) {
                 value={utmSource}
                 onChange={(e) => setUtmSource(e.target.value)}
                 placeholder="z. B. youtube"
-                className="inter jetbrains-mono"
+                className="inter inter-semibold"
                 {...inputSx}
               />
             </Stack>
@@ -162,7 +162,7 @@ export function ChannelsSection({ channels }: { channels: PerChannelRow[] }) {
                 value={utmCampaign}
                 onChange={(e) => setUtmCampaign(e.target.value)}
                 placeholder="z. B. launch-juni"
-                className="inter jetbrains-mono"
+                className="inter inter-semibold"
                 {...inputSx}
               />
             </Stack>
@@ -212,7 +212,7 @@ export function ChannelsSection({ channels }: { channels: PerChannelRow[] }) {
                           borderRadius="6px"
                           fontSize="10px"
                           px={2}
-                          className="jetbrains-mono"
+                          className="inter-semibold"
                         >
                           {ch.utm_source}
                         </Badge>
@@ -243,7 +243,7 @@ export function ChannelsSection({ channels }: { channels: PerChannelRow[] }) {
                         <Text
                           fontSize="xs"
                           color="var(--color-text-secondary)"
-                          className="jetbrains-mono"
+                          className="inter-semibold"
                           noOfLines={1}
                           flex="1"
                         >
@@ -309,7 +309,7 @@ export function ChannelsSection({ channels }: { channels: PerChannelRow[] }) {
                   px={3}
                   py={2}
                 >
-                  <Text fontSize="xs" color="var(--color-text-secondary)" className="jetbrains-mono" noOfLines={1}>
+                  <Text fontSize="xs" color="var(--color-text-secondary)" className="inter-semibold" noOfLines={1}>
                     {c.utm_source}
                   </Text>
                   <HStack spacing={3}>

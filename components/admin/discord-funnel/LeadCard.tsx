@@ -116,7 +116,7 @@ export function LeadCard({
             >
               <HStack spacing={1}>
                 <Eye size={11} />
-                <Text className="jetbrains-mono" fontSize="11px">
+                <Text className="inter-semibold" fontSize="11px">
                   {viewCount}×
                 </Text>
               </HStack>
@@ -363,7 +363,7 @@ export function LeadCard({
                       if (cents !== lead.revenue_cents) onPatch(lead.id, { revenue_cents: cents });
                     }}
                     placeholder="0.00"
-                    className="inter jetbrains-mono"
+                    className="inter inter-semibold"
                     {...fieldSx}
                   />
                 </Stack>

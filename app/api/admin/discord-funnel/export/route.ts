@@ -29,7 +29,7 @@ export const dynamic = "force-dynamic";
  * bei Komma/Quote/Newline), UTF-8 BOM für Excel.
  */
 
-type RangeId = "week" | "month" | "last_month" | "custom";
+type RangeId = "today" | "week" | "month" | "last_month" | "custom";
 
 function resolveRange(
   range: RangeId,
@@ -42,6 +42,11 @@ function resolveRange(
       from: fromParam ? new Date(fromParam).toISOString() : null,
       to: toParam ? new Date(toParam).toISOString() : null,
     };
+  }
+  if (range === "today") {
+    const d = new Date(now);
+    d.setHours(0, 0, 0, 0);
+    return { from: d.toISOString(), to: null };
   }
   if (range === "week") {
     const d = new Date(now);
@@ -159,7 +164,7 @@ export async function GET(request: NextRequest) {
   let from: string | null = null;
   let to: string | null = null;
   if (rangeRaw) {
-    const range: RangeId = (["week", "month", "last_month", "custom"] as const).includes(
+    const range: RangeId = (["today", "week", "month", "last_month", "custom"] as const).includes(
       rangeRaw as RangeId,
     )
       ? (rangeRaw as RangeId)

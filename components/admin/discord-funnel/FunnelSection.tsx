@@ -27,7 +27,7 @@ function FunnelStages({ funnel }: { funnel: FunnelStage[] }) {
               <Text fontSize="sm" color="var(--color-text-primary)" className="inter">
                 {stage.label}
               </Text>
-              <Text className="jetbrains-mono" fontSize="sm" color="#E8C547" fontWeight={700}>
+              <Text className="inter-semibold" fontSize="sm" color="#E8C547" fontWeight={700}>
                 {eurFromCents(stage.value)}
               </Text>
             </HStack>
@@ -40,7 +40,7 @@ function FunnelStages({ funnel }: { funnel: FunnelStage[] }) {
               <Text fontSize="sm" color="var(--color-text-primary)" className="inter">
                 {stage.label}
               </Text>
-              <Text className="jetbrains-mono" fontSize="sm" color="var(--color-text-primary)">
+              <Text className="inter-semibold" fontSize="sm" color="var(--color-text-primary)">
                 {stage.value}
               </Text>
             </HStack>

@@ -77,7 +77,7 @@ export function SectionCard(props: {
             {props.icon ? (
               <Box color="var(--color-accent-gold-light, #E8C547)">{props.icon}</Box>
             ) : null}
-            <Text className="radley-regular" fontSize="lg" color="whiteAlpha.950">
+            <Text className="inter-semibold" fontSize="lg" color="whiteAlpha.950">
               {props.title}
             </Text>
           </HStack>
@@ -131,7 +131,7 @@ export function StatWidget(props: {
             {label}
           </Text>
         </HStack>
-        <Text className="jetbrains-mono" fontSize="28px" fontWeight={700} lineHeight="1" color="#F0F0F2">
+        <Text className="inter-semibold" fontSize="28px" fontWeight={700} lineHeight="1" color="#F0F0F2">
           {value}
         </Text>
         {sublabel ? (
@@ -158,7 +158,7 @@ export function MiniStat({ label, value, sub }: { label: string; value: string; 
       >
         {label}
       </Text>
-      <Text className="jetbrains-mono" fontSize="22px" fontWeight={700} color="#F0F0F2" lineHeight="1">
+      <Text className="inter-semibold" fontSize="22px" fontWeight={700} color="#F0F0F2" lineHeight="1">
         {value}
       </Text>
       {sub ? (
@@ -198,7 +198,7 @@ export function DistChart({
                 <Text fontSize="xs" color="var(--color-text-secondary)" className="inter" noOfLines={2}>
                   {o.option}
                 </Text>
-                <Text className="jetbrains-mono" fontSize="xs" color="var(--color-text-primary)" flexShrink={0}>
+                <Text className="inter-semibold" fontSize="xs" color="var(--color-text-primary)" flexShrink={0}>
                   {o.count}
                 </Text>
               </HStack>
@@ -302,7 +302,7 @@ export function DonutChart({
           spacing={0}
           pointerEvents="none"
         >
-          <Text className="jetbrains-mono" fontSize="lg" fontWeight={700} color="#F0F0F2" lineHeight="1">
+          <Text className="inter-semibold" fontSize="lg" fontWeight={700} color="#F0F0F2" lineHeight="1">
             {total}
           </Text>
           <Text fontSize="9px" color="#606068" className="inter" textTransform="uppercase" letterSpacing="0.08em">
@@ -327,7 +327,7 @@ export function DonutChart({
                   {seg.label}
                 </Text>
               </HStack>
-              <Text className="jetbrains-mono" fontSize="11px" color="var(--color-text-primary)" flexShrink={0}>
+              <Text className="inter-semibold" fontSize="11px" color="var(--color-text-primary)" flexShrink={0}>
                 {seg.value} · {(frac * 100).toFixed(0)}%
               </Text>
             </HStack>
@@ -354,7 +354,7 @@ export function MetaPill({ label, value }: { label: string; value: string }) {
       <Text fontSize="10px" color="#606068" className="inter" textTransform="uppercase" letterSpacing="0.06em">
         {label}
       </Text>
-      <Text fontSize="xs" color="var(--color-text-primary)" className="jetbrains-mono">
+      <Text fontSize="xs" color="var(--color-text-primary)" className="inter-semibold">
         {value}
       </Text>
     </Stack>

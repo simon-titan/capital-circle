@@ -67,7 +67,7 @@ export function VideoEngagementPanel({
               <Text fontSize="xs" color="var(--color-text-secondary)" className="inter">
                 Completion-Rate
               </Text>
-              <Text className="jetbrains-mono" fontSize="sm" color="#E8C547" fontWeight={700}>
+              <Text className="inter-semibold" fontSize="sm" color="#E8C547" fontWeight={700}>
                 {pctFmt(tofCompletionPct)}
               </Text>
             </HStack>
@@ -84,7 +84,7 @@ function TofRow({ label, value }: { label: string; value: number }) {
       <Text fontSize="xs" color="var(--color-text-secondary)" className="inter">
         {label}
       </Text>
-      <Text className="jetbrains-mono" fontSize="lg" color="var(--color-text-primary)" fontWeight={700}>
+      <Text className="inter-semibold" fontSize="lg" color="var(--color-text-primary)" fontWeight={700}>
         {value}
       </Text>
     </HStack>

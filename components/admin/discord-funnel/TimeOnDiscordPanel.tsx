@@ -33,7 +33,7 @@ export function TimeOnDiscordPanel({ data }: { data?: TimeOnDiscord }) {
           >
             Ø Verweildauer
           </Text>
-          <Text className="jetbrains-mono" fontSize="28px" fontWeight={700} color="#E8C547" lineHeight="1">
+          <Text className="inter-semibold" fontSize="28px" fontWeight={700} color="#E8C547" lineHeight="1">
             {avgHours != null ? `${avgHours.toFixed(1)} h` : "—"}
           </Text>
         </Box>
@@ -52,7 +52,7 @@ export function TimeOnDiscordPanel({ data }: { data?: TimeOnDiscord }) {
                     <Text fontSize="xs" color="var(--color-text-secondary)" className="inter">
                       {d.bucket}
                     </Text>
-                    <Text className="jetbrains-mono" fontSize="xs" color="var(--color-text-primary)">
+                    <Text className="inter-semibold" fontSize="xs" color="var(--color-text-primary)">
                       {d.count}
                     </Text>
                   </HStack>

@@ -29,7 +29,7 @@ export const dynamic = "force-dynamic";
  * Zeitraum filtert `discord_leads.created_at` und `discord_page_visits.created_at`.
  */
 
-type RangeId = "week" | "month" | "last_month" | "custom";
+type RangeId = "today" | "week" | "month" | "last_month" | "custom";
 
 interface LeadRow {
   id: string;
@@ -65,6 +65,13 @@ function resolveRange(
       from: fromParam ? new Date(fromParam).toISOString() : null,
       to: toParam ? new Date(toParam).toISOString() : null,
     };
+  }
+
+  if (range === "today") {
+    // Beginn des heutigen Tages (00:00 lokal) bis jetzt.
+    const d = new Date(now);
+    d.setHours(0, 0, 0, 0);
+    return { from: d.toISOString(), to: null };
   }
 
   if (range === "week") {
@@ -116,7 +123,7 @@ export async function GET(request: NextRequest) {
 
   const sp = new URL(request.url).searchParams;
   const rangeRaw = (sp.get("range") ?? "month") as RangeId;
-  const range: RangeId = (["week", "month", "last_month", "custom"] as const).includes(
+  const range: RangeId = (["today", "week", "month", "last_month", "custom"] as const).includes(
     rangeRaw,
   )
     ? rangeRaw

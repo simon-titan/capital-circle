@@ -28,7 +28,7 @@ function VersusBar({
   return (
     <Stack spacing={1.5}>
       <HStack justify="space-between">
-        <Text className="jetbrains-mono" fontSize="xs" color="#E8C547">
+        <Text className="inter-semibold" fontSize="xs" color="#E8C547">
           {format(leftValue)}
         </Text>
         <Text
@@ -40,7 +40,7 @@ function VersusBar({
         >
           {label}
         </Text>
-        <Text className="jetbrains-mono" fontSize="xs" color="#E8C547">
+        <Text className="inter-semibold" fontSize="xs" color="#E8C547">
           {format(rightValue)}
         </Text>
       </HStack>
@@ -71,7 +71,7 @@ function VersusBar({
 function CloserCard({ stats }: { stats: PerCloserStats }) {
   return (
     <Box bg="#0C0D10" border="1px solid rgba(255,255,255,0.07)" borderRadius="16px" p={5}>
-      <Text className="radley-regular" fontSize="md" color="var(--color-accent-gold-light, #E8C547)" mb={4}>
+      <Text className="inter-semibold" fontSize="md" color="var(--color-accent-gold-light, #E8C547)" mb={4}>
         {CLOSER_LABELS[stats.closer]}
       </Text>
       <SimpleGrid columns={2} spacing={3} mb={5}>
@@ -112,7 +112,7 @@ function CloserCard({ stats }: { stats: PerCloserStats }) {
         <Text fontSize="xs" color="var(--color-text-secondary)" className="inter">
           Ø Zeit bis Abschluss
         </Text>
-        <Text className="jetbrains-mono" fontSize="sm" color="var(--color-text-primary)">
+        <Text className="inter-semibold" fontSize="sm" color="var(--color-text-primary)">
           {stats.timeToCloseAvgDays != null ? `${stats.timeToCloseAvgDays.toFixed(1)} Tage` : "—"}
         </Text>
       </HStack>

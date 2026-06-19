@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
  *  - `range`/`from`/`to` filtern auf created_at (gleiche Logik wie analytics).
  */
 
-type RangeId = "week" | "month" | "last_month" | "custom";
+type RangeId = "today" | "week" | "month" | "last_month" | "custom";
 
 function resolveRange(
   range: RangeId,
@@ -28,6 +28,11 @@ function resolveRange(
       from: fromParam ? new Date(fromParam).toISOString() : null,
       to: toParam ? new Date(toParam).toISOString() : null,
     };
+  }
+  if (range === "today") {
+    const d = new Date(now);
+    d.setHours(0, 0, 0, 0);
+    return { from: d.toISOString(), to: null };
   }
   if (range === "week") {
     const d = new Date(now);
@@ -67,7 +72,7 @@ export async function GET(request: NextRequest) {
 
   // Zeitfilter (optional)
   if (rangeRaw) {
-    const range: RangeId = (["week", "month", "last_month", "custom"] as const).includes(
+    const range: RangeId = (["today", "week", "month", "last_month", "custom"] as const).includes(
       rangeRaw as RangeId,
     )
       ? (rangeRaw as RangeId)
