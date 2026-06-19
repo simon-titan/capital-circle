@@ -15,10 +15,14 @@ import {
 } from "@chakra-ui/react";
 import { Maximize, Minimize, Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+// Nur Typ (wird beim Build entfernt); die Laufzeit-Instanz kommt aus dem dynamischen import().
+import type HlsJs from "hls.js";
 
 type GlassVideoPlayerProps = {
-  /** Direkte öffentliche URL (z. B. externes Intro) */
+  /** Direkte öffentliche URL (z. B. externes Intro). HLS-Manifest (.m3u8) wird automatisch erkannt. */
   src?: string;
+  /** Standbild bis das Video startet (z. B. Cloudflare-Stream-Thumbnail). */
+  poster?: string;
   /** S3-Key — Player holt Signed URL über presignApiPath (Standard: /api/video-url) */
   storageKey?: string;
   /** GET-Endpoint mit ?key=… — JSON { ok, url } wie /api/video-url */
@@ -50,6 +54,7 @@ function formatTime(seconds: number) {
 
 export function GlassVideoPlayer({
   src,
+  poster,
   storageKey,
   presignApiPath = "/api/video-url",
   startAtSeconds = 0,
@@ -92,6 +97,8 @@ export function GlassVideoPlayer({
   const isMobileControls = useBreakpointValue({ base: true, md: false });
 
   const effectiveSrc = resolvedSrc;
+  /** HLS-Manifest (Cloudflare Stream o. Ä.) — wird über hls.js / nativ abgespielt. */
+  const isHls = Boolean(effectiveSrc && /\.m3u8(\?|$)/i.test(effectiveSrc));
 
   useEffect(() => {
     if (src) {
@@ -179,8 +186,55 @@ export function GlassVideoPlayer({
     setProgressPct(0);
     setDuration(0);
     setMuted(autoPlay);
-    el.load();
-  }, [effectiveSrc, autoPlay]);
+    // Bei HLS übernimmt die hls.js-/Native-Anbindung das Laden (s. Effect unten).
+    if (!isHls) el.load();
+  }, [effectiveSrc, autoPlay, isHls]);
+
+  /**
+   * HLS-Manifeste (.m3u8): Safari/iOS spielen nativ; Chrome/Firefox/Edge über hls.js
+   * (dynamischer Import → kein Bundle-Aufschlag für Seiten ohne Video). Das native
+   * <video>-Element bleibt dasselbe, daher feuern timeupdate/ended-Events (Tracking)
+   * unverändert weiter. Bei nicht-HLS-Quellen (MP4) macht dieser Effect nichts.
+   */
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !effectiveSrc || !isHls) return;
+
+    // Native HLS (Safari, iOS) — Manifest direkt setzen.
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = effectiveSrc;
+      return;
+    }
+
+    let hls: HlsJs | null = null;
+    let cancelled = false;
+
+    void (async () => {
+      const Hls = (await import("hls.js")).default;
+      if (cancelled || !videoRef.current) return;
+      if (Hls.isSupported()) {
+        hls = new Hls({ enableWorker: true });
+        hls.loadSource(effectiveSrc);
+        hls.attachMedia(videoRef.current);
+        hls.on(Hls.Events.ERROR, (_evt, data) => {
+          if (data.fatal) {
+            setLoadError("Video konnte nicht geladen werden. Netzwerk pruefen.");
+          }
+        });
+      } else {
+        // Letzter Fallback: nativ versuchen.
+        videoRef.current.src = effectiveSrc;
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (hls) {
+        hls.destroy();
+        hls = null;
+      }
+    };
+  }, [effectiveSrc, isHls]);
 
   useEffect(() => {
     const v = videoRef.current;
@@ -438,9 +492,11 @@ export function GlassVideoPlayer({
       <Box className="cc-video-stage" position="relative" w="full" pt="56.25%">
         <video
           ref={videoRef}
-          src={effectiveSrc}
+          // HLS-Quellen werden von hls.js / nativem HLS gesetzt (s. Effect), nicht hier.
+          src={isHls ? undefined : effectiveSrc ?? undefined}
+          poster={poster}
           playsInline
-          preload="auto"
+          preload="metadata"
           autoPlay={autoPlay}
           muted={muted}
           style={{

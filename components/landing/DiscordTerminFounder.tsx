@@ -41,7 +41,7 @@ const ACHIEVEMENT_CARDS = [
   { icon: Award, label: "Funded Status", value: "7-stellig", sub: "Nachgewiesen und gehalten", ...WHITE_CARD },
   { icon: DollarSign, label: "Verifizierte Payouts", value: "300.000 €", sub: "Ausgezahlte Gewinne", ...GRAY_CARD },
   { icon: Users, label: "Ausgebildete Trader", value: "1.000+", sub: "Persönlich betreut", ...BLUE_CARD },
-  { icon: TrendingUp, label: "Aktives Trading", value: "5 Jahre", sub: "An den Kapitalmärkten", ...WHITE_CARD },
+  { icon: TrendingUp, label: "Aktives Trading", value: "4 Jahre", sub: "An den Kapitalmärkten", ...WHITE_CARD },
 ];
 
 const socialHover = {
@@ -214,7 +214,7 @@ export function DiscordTerminFounder() {
             <Stack gap={4}>
               <Text fontSize={{ base: "sm", md: "md" }} color="rgba(255,255,255,0.68)" className="inter" lineHeight="1.82">
                 Ich trade seit über{" "}
-                <Box as="span" color="rgba(255,255,255,0.92)" className="inter-semibold">5 Jahren</Box>
+                <Box as="span" color="rgba(255,255,255,0.92)" className="inter-semibold">4 Jahren</Box>
                 . Nicht als Hobby. Nicht nebenbei.{" "}
                 <Box as="span" color="rgba(255,255,255,0.90)" className="inter-semibold">Vollzeit, an echten Märkten, mit echtem Geld.</Box>{" "}
                 Ich habe den{" "}

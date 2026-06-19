@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ComponentType, type ReactNode } from "react";
-import { Box, HStack, SimpleGrid, Stack, Text } from "@chakra-ui/react";
+import { Box, SimpleGrid, Stack, Text } from "@chakra-ui/react";
 import { Lock, Video, TrendingUp, Users, BookOpen, Trophy } from "lucide-react";
 import { GlassVideoPlayer } from "@/components/ui/GlassVideoPlayer";
 
@@ -13,6 +13,7 @@ import { GlassVideoPlayer } from "@/components/ui/GlassVideoPlayer";
 interface DiscordTerminHeroProps {
   onApply: () => void;
   videoSrc?: string;
+  videoPoster?: string;
   onVideoProgress?: (seconds: number) => void;
   onVideoEnded?: () => void;
 }
@@ -220,7 +221,7 @@ function parseSubheadline(text: string): ReactNode[] {
   });
 }
 
-export function DiscordTerminHero({ onApply, videoSrc, onVideoProgress, onVideoEnded }: DiscordTerminHeroProps) {
+export function DiscordTerminHero({ onApply, videoSrc, videoPoster, onVideoProgress, onVideoEnded }: DiscordTerminHeroProps) {
   const [videoEnded, setVideoEnded] = useState(false);
 
   return (
@@ -292,6 +293,7 @@ export function DiscordTerminHero({ onApply, videoSrc, onVideoProgress, onVideoE
               <>
                 <GlassVideoPlayer
                   src={videoSrc}
+                  poster={videoPoster}
                   autoPlay
                   accent="#47F7DC"
                   accentRgb="71, 247, 220"
@@ -368,54 +370,6 @@ export function DiscordTerminHero({ onApply, videoSrc, onVideoProgress, onVideoE
                 </Text>
               </Box>
             )}
-          </Box>
-
-          {/* Community banner */}
-          <Box
-            w="full"
-            maxW={{ base: "100%", md: "720px" }}
-            px={5}
-            py={3}
-            borderRadius="12px"
-            sx={{
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(71,247,220,0.16)",
-              backdropFilter: "blur(16px)",
-              WebkitBackdropFilter: "blur(16px)",
-            }}
-          >
-            <HStack spacing={3} justify="center">
-              <HStack spacing="-10px" flexShrink={0} align="center">
-                {[
-                  "/client-pb/1765279404415.jpg",
-                  "/client-pb/393d1b15978eed96285cf196b2f51eda.avif",
-                  "/client-pb/4208db19763848b131989eadba9899aa.avif",
-                  "/client-pb/user_6819319_6ec853ff-5777-4398-8fcc-06e2621cbcf8.avif",
-                  "/client-pb/Screenshot 2026-03-03 071433.png",
-                ].map((src, i) => (
-                  <Box
-                    key={i}
-                    as="img"
-                    src={src}
-                    alt={`Trader ${i + 1}`}
-                    w={{ base: "22px", md: "36px" }}
-                    h={{ base: "22px", md: "36px" }}
-                    borderRadius="full"
-                    objectFit="cover"
-                    borderWidth={{ base: "1.5px", md: "2px" }}
-                    borderStyle="solid"
-                    borderColor="rgba(0,0,0,0.9)"
-                    boxShadow="0 2px 6px rgba(0,0,0,0.4)"
-                    zIndex={10 - i}
-                    ml={i === 0 ? 0 : { base: "-5px", md: "-10px" }}
-                  />
-                ))}
-              </HStack>
-              <Text fontSize="sm" color="rgba(255,255,255,0.58)" className="inter">
-                <Box as="span" color="#47F7DC" fontWeight="500">1.000+</Box>{" "}
-                Trader bereits auf ihrem Weg begleitet
-              </Text>
-            </HStack>
           </Box>
 
           {/* Desktop CTA */}

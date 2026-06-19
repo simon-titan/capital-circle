@@ -46,6 +46,7 @@
     "chart.js": "^4.4.1",
     "dotenv": "^17.3.1",
     "framer-motion": "^11.18.2",
+    "hls.js": "^1.6.16",
     "lucide-react": "^1.7.0",
     "next": "16.2.1",
     "react": "19.2.4",

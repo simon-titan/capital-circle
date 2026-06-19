@@ -125,6 +125,7 @@ export function TerminDirectClient() {
   );
 
   const videoSrc = process.env.NEXT_PUBLIC_DISCORD_TERMIN_VIDEO_URL;
+  const videoPoster = process.env.NEXT_PUBLIC_DISCORD_TERMIN_VIDEO_POSTER;
 
   return (
     <>
@@ -201,6 +202,7 @@ export function TerminDirectClient() {
           <DiscordTerminHero
             onApply={openModal}
             videoSrc={videoSrc}
+            videoPoster={videoPoster}
             onVideoProgress={videoTracker.handleProgress}
             onVideoEnded={videoTracker.handleEnded}
           />

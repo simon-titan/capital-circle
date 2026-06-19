@@ -183,50 +183,6 @@ export function VideoOnlyClient() {
                   </Box>
                 )}
               </Box>
-
-              {/* Community banner */}
-              <Box
-                w="full"
-                maxW={{ base: "100%", md: "720px" }}
-                px={5}
-                py={3}
-                borderRadius="12px"
-                sx={{
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(71,247,220,0.16)",
-                  backdropFilter: "blur(16px)",
-                  WebkitBackdropFilter: "blur(16px)",
-                }}
-              >
-                <HStack spacing={3} justify="center">
-                  <HStack spacing="-10px" flexShrink={0} align="center">
-                    {AVATARS.map((src, i) => (
-                      <Box
-                        key={i}
-                        as="img"
-                        src={src}
-                        alt={`Trader ${i + 1}`}
-                        w={{ base: "22px", md: "36px" }}
-                        h={{ base: "22px", md: "36px" }}
-                        borderRadius="full"
-                        objectFit="cover"
-                        borderWidth={{ base: "1.5px", md: "2px" }}
-                        borderStyle="solid"
-                        borderColor="rgba(0,0,0,0.9)"
-                        boxShadow="0 2px 6px rgba(0,0,0,0.4)"
-                        zIndex={10 - i}
-                        ml={i === 0 ? 0 : { base: "-5px", md: "-10px" }}
-                      />
-                    ))}
-                  </HStack>
-                  <Text fontSize="sm" color="rgba(255,255,255,0.58)" className="inter">
-                    <Box as="span" color="#47F7DC" fontWeight="500">
-                      1.000+
-                    </Box>{" "}
-                    Trader bereits auf ihrem Weg begleitet
-                  </Text>
-                </HStack>
-              </Box>
             </Stack>
           </Box>
         </Box>

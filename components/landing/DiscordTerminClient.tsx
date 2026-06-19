@@ -62,6 +62,7 @@ export function DiscordTerminClient() {
   const videoSrc =
     process.env.NEXT_PUBLIC_DISCORD_TERMIN_VIDEO_URL ??
     process.env.NEXT_PUBLIC_STEP2_BEWERBUNG_VIDEO_URL;
+  const videoPoster = process.env.NEXT_PUBLIC_DISCORD_TERMIN_VIDEO_POSTER;
 
   // Während der Identify-Weiterleitung nichts rendern.
   if (!lid && !identifyAttempted) return null;
@@ -141,6 +142,7 @@ export function DiscordTerminClient() {
           <DiscordTerminHero
             onApply={openModal}
             videoSrc={videoSrc}
+            videoPoster={videoPoster}
             onVideoProgress={videoTracker.handleProgress}
             onVideoEnded={videoTracker.handleEnded}
           />
