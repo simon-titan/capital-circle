@@ -25,7 +25,8 @@ import {
   VStack,
   useDisclosure,
 } from "@chakra-ui/react";
-import { ChevronDown, ChevronRight, Clock, ImagePlus, Pencil, Trash2 } from "lucide-react";
+import { ArrowRightLeft, ChevronDown, ChevronRight, Clock, FolderUp, ImagePlus, Pencil, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useCallback, useMemo, useState } from "react";
 import { uploadSmallFilePresigned } from "@/lib/admin-upload-presigned";
@@ -33,6 +34,7 @@ import { AttachmentManager } from "@/components/admin/AttachmentManager";
 import { DraggableList } from "@/components/admin/DraggableList";
 import type { SubcategoryRow } from "@/components/admin/SubcategoryManager";
 import { VideoManager, type VideoRow } from "@/components/admin/VideoManager";
+import { VideoMoveModal } from "@/components/admin/VideoMoveModal";
 import { VideoUploader, type VideoUploadedPayload } from "@/components/admin/VideoUploader";
 
 export type MergedRow =
@@ -104,6 +106,10 @@ export function ModuleContentManager({
     () => [...subcategories].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
     [subcategories],
   );
+
+  const router = useRouter();
+  const [promotingSubId, setPromotingSubId] = useState<string | null>(null);
+  const [moveVideo, setMoveVideo] = useState<VideoRow | null>(null);
 
   const [expandedVideoIds, setExpandedVideoIds] = useState<Set<string>>(new Set());
   const [expandedSubIds, setExpandedSubIds] = useState<Set<string>>(new Set());
@@ -341,6 +347,33 @@ export function ModuleContentManager({
       void onReload?.();
     }
   };
+
+  const promoteSubcategory = async (sub: SubcategoryRow) => {
+    if (
+      !confirm(
+        `„${sub.title}" in ein eigenständiges Modul umwandeln?\n\nDie enthaltenen Videos und der Lernfortschritt der Mitglieder werden ins neue Modul übernommen. Die Subkategorie wird danach aufgelöst.`,
+      )
+    )
+      return;
+    setPromotingSubId(sub.id);
+    try {
+      const res = await fetch(`/api/admin/subcategories/${sub.id}/promote`, { method: "POST" });
+      const json = (await res.json()) as { ok?: boolean; moduleId?: string; error?: string };
+      if (!json.ok || !json.moduleId) {
+        alert(json.error ?? "Umwandeln fehlgeschlagen.");
+        return;
+      }
+      // Subkategorie + Videos liegen jetzt im neuen Modul → dorthin wechseln
+      router.push(`/admin/kurse/${courseId}/module/${json.moduleId}`);
+      router.refresh();
+    } finally {
+      setPromotingSubId(null);
+    }
+  };
+
+  const onVideoMoved = useCallback(async () => {
+    await onReload?.();
+  }, [onReload]);
 
   const openEditSub = (row: SubcategoryRow) => {
     setEditSubId(row.id);
@@ -603,6 +636,15 @@ export function ModuleContentManager({
                 <Button
                   size="md"
                   variant="outline"
+                  colorScheme="yellow"
+                  leftIcon={<ArrowRightLeft size={18} />}
+                  onClick={() => setMoveVideo(item)}
+                >
+                  In anderes Modul verschieben
+                </Button>
+                <Button
+                  size="md"
+                  variant="outline"
                   colorScheme="red"
                   leftIcon={<Trash2 size={18} />}
                   borderWidth="2px"
@@ -672,6 +714,22 @@ export function ModuleContentManager({
           <Button
             size="sm"
             variant="outline"
+            colorScheme="yellow"
+            borderColor="yellow.400"
+            color="yellow.100"
+            leftIcon={<FolderUp size={14} />}
+            isLoading={promotingSubId === sub.id}
+            loadingText="Wandle um…"
+            onClick={(e) => {
+              e.stopPropagation();
+              void promoteSubcategory(sub);
+            }}
+          >
+            Zu eigenem Modul
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
             colorScheme="red"
             borderWidth="2px"
             borderColor="red.400"
@@ -709,6 +767,7 @@ export function ModuleContentManager({
               allSubcategories={subcategories}
               externalVideos={allVideos}
               onExternalVideosChange={setAllVideos}
+              onReload={onReload}
             />
           </Box>
         </Collapse>
@@ -813,6 +872,15 @@ export function ModuleContentManager({
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      <VideoMoveModal
+        isOpen={moveVideo != null}
+        onClose={() => setMoveVideo(null)}
+        video={moveVideo ? { id: moveVideo.id, title: moveVideo.title } : null}
+        currentCourseId={courseId}
+        currentModuleId={moduleId}
+        onMoved={onVideoMoved}
+      />
     </Stack>
   );
 }

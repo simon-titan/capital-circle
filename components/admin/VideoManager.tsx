@@ -18,11 +18,12 @@ import {
   Textarea,
   VStack,
 } from "@chakra-ui/react";
-import { ChevronDown, ChevronRight, Clock, ImagePlus, Trash2 } from "lucide-react";
+import { ArrowRightLeft, ChevronDown, ChevronRight, Clock, ImagePlus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { uploadSmallFilePresigned } from "@/lib/admin-upload-presigned";
 import { AttachmentManager } from "@/components/admin/AttachmentManager";
 import { DraggableList } from "@/components/admin/DraggableList";
+import { VideoMoveModal } from "@/components/admin/VideoMoveModal";
 import { VideoUploader, type VideoUploadedPayload } from "@/components/admin/VideoUploader";
 import type { SubcategoryRow } from "@/components/admin/SubcategoryManager";
 
@@ -48,6 +49,8 @@ type VideoManagerProps = {
   /** Wenn gesetzt: externer State-Modus — VideoManager lädt keine eigenen Videos */
   externalVideos?: VideoRow[];
   onExternalVideosChange?: (updater: (prev: VideoRow[]) => VideoRow[]) => void;
+  /** Nach modulübergreifendem Verschieben: Modul-Inhalte neu laden */
+  onReload?: () => void | Promise<void>;
 };
 
 export function VideoManager({
@@ -57,6 +60,7 @@ export function VideoManager({
   allSubcategories,
   externalVideos,
   onExternalVideosChange,
+  onReload,
 }: VideoManagerProps) {
   const isExternal = externalVideos !== undefined && onExternalVideosChange !== undefined;
 
@@ -64,6 +68,7 @@ export function VideoManager({
   const [loading, setLoading] = useState(!isExternal);
   const [allSubsState, setAllSubsState] = useState<SubcategoryRow[]>(allSubcategories ?? []);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [moveVideo, setMoveVideo] = useState<VideoRow | null>(null);
 
   // Im externen Modus: filtere nur die Videos dieser Subkategorie (oder direkte Modul-Videos)
   const items: VideoRow[] = useMemo(() => {
@@ -75,9 +80,13 @@ export function VideoManager({
     return [...filtered].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   }, [isExternal, externalVideos, subcategoryId, internalItems]);
 
-  const setItems = isExternal
-    ? (updater: (prev: VideoRow[]) => VideoRow[]) => onExternalVideosChange!(updater)
-    : setInternalItems;
+  const setItems = useMemo(
+    () =>
+      isExternal
+        ? (updater: (prev: VideoRow[]) => VideoRow[]) => onExternalVideosChange!(updater)
+        : setInternalItems,
+    [isExternal, onExternalVideosChange],
+  );
 
   const qs =
     subcategoryId != null
@@ -196,6 +205,20 @@ export function VideoManager({
     // Im externen Modus: Video in globalem State aktualisieren (bleibt sichtbar in der neuen Gruppe)
     setItems((prev) => prev.map((x) => (x.id === item.id ? moved : x)));
   };
+
+  const onVideoMoved = useCallback(async () => {
+    if (onReload) {
+      await onReload();
+      return;
+    }
+    if (!isExternal) {
+      await load();
+      return;
+    }
+    // Externer Modus ohne Reload: verschobenes Video aus der lokalen Gruppe entfernen
+    const movedId = moveVideo?.id;
+    if (movedId) setItems((prev) => prev.filter((v) => v.id !== movedId));
+  }, [onReload, isExternal, load, moveVideo, setItems]);
 
   const orderedSubOptions = useMemo(
     () => [...allSubsState].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
@@ -659,6 +682,15 @@ export function VideoManager({
                         <Button
                           size="md"
                           variant="outline"
+                          colorScheme="yellow"
+                          leftIcon={<ArrowRightLeft size={18} />}
+                          onClick={() => setMoveVideo(item)}
+                        >
+                          In anderes Modul verschieben
+                        </Button>
+                        <Button
+                          size="md"
+                          variant="outline"
                           colorScheme="red"
                           leftIcon={<Trash2 size={18} />}
                           borderWidth="2px"
@@ -684,6 +716,15 @@ export function VideoManager({
         moduleId={moduleId}
         subcategoryId={subcategoryId}
         onUploaded={onUploaded}
+      />
+
+      <VideoMoveModal
+        isOpen={moveVideo != null}
+        onClose={() => setMoveVideo(null)}
+        video={moveVideo ? { id: moveVideo.id, title: moveVideo.title } : null}
+        currentCourseId={courseId}
+        currentModuleId={moduleId}
+        onMoved={onVideoMoved}
       />
     </Stack>
   );

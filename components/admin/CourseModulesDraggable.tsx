@@ -46,9 +46,8 @@ export function CourseModulesDraggable({
   const [moveLoading, setMoveLoading] = useState(false);
   const [moveError, setMoveError] = useState<string | null>(null);
 
-  // Verschieben ist nur im "Nicht zugeordnet"-Kurs erlaubt.
-  // Einmal einem echten Kurs zugeordnet, bleibt ein Modul dort.
-  const canMove = courseId === UNASSIGNED_COURSE_ID;
+  // Verschieben ist aus jedem Kurs heraus erlaubt (Ziel ist jeder andere echte Kurs).
+  const canMove = true;
 
   const otherCourses = useMemo(
     () => allCourses.filter((c) => c.id !== courseId && c.id !== UNASSIGNED_COURSE_ID),
@@ -114,7 +113,7 @@ export function CourseModulesDraggable({
   if (items.length === 0) {
     return (
       <Text className="inter" fontSize="sm" color="gray.400">
-        Noch keine Module — oben auf „+ Neues Modul" klicken.
+        Noch keine Module — oben auf „+ Neues Modul“ klicken.
       </Text>
     );
   }
