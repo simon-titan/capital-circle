@@ -37,7 +37,7 @@ export type ParsedModuleFolder = {
   >;
 };
 
-function slugifySegment(input: string): string {
+export function slugifySegment(input: string): string {
   const s = input
     .normalize("NFD")
     .replace(/\p{M}/gu, "")
@@ -221,7 +221,7 @@ async function maxVideoPosition(
   return typeof p === "number" ? p : -1;
 }
 
-async function nextUniqueModuleSlug(supabase: ServerClient, base: string): Promise<string> {
+export async function nextUniqueModuleSlug(supabase: ServerClient, base: string): Promise<string> {
   let candidate = base;
   let n = 0;
   while (true) {
