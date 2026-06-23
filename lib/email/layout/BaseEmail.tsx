@@ -13,6 +13,12 @@ interface BaseEmailProps {
   headerLogo?: boolean;
   /** Standard: kein rechtlicher Footer. Bei `false` Impressum, Datenschutz, optional Abmelden. */
   hideFooter?: boolean;
+  /**
+   * Optionaler CSS-`background` für die Trennlinie unter dem Logo.
+   * Standard: Gold-Verlauf. Funnel-Mails (z. B. Discord) übergeben hier ihren
+   * eigenen Akzent, damit die Mail zum Look der Landingpage passt.
+   */
+  accentGradient?: string;
 }
 
 /**
@@ -33,6 +39,7 @@ export function BaseEmail({
   unsubscribeToken,
   headerLogo = true,
   hideFooter = true,
+  accentGradient,
 }: BaseEmailProps) {
   const appUrl = getAppUrl();
   const unsubscribeUrl = unsubscribeToken
@@ -132,7 +139,9 @@ export function BaseEmail({
                           style={{
                             height: "2px",
                             width: "100%",
-                            background: `linear-gradient(90deg, transparent, ${T.gold} 30%, ${T.goldDark} 70%, transparent)`,
+                            background:
+                              accentGradient ??
+                              `linear-gradient(90deg, transparent, ${T.gold} 30%, ${T.goldDark} 70%, transparent)`,
                           }}
                         />
                       </td>
