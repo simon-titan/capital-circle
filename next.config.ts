@@ -9,6 +9,15 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "2gb",
     },
   },
+  async redirects() {
+    return [
+      {
+        source: "/free-discord",
+        destination: "https://whop.com/capital-circle/cc-kostenloser-discord/",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
