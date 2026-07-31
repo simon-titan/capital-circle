@@ -12,10 +12,23 @@
  *
  * Länge: ~900 Zeichen, das Limit für Textnachrichten liegt bei 4096.
  */
+
+/**
+ * Simuliert „durchgestrichen" in einem Button-Label.
+ *
+ * Inline-Keyboard-Buttons rendert Telegram als REINEN Text — `parse_mode` gilt
+ * nur für die Nachricht, `<s>` würde im Button wörtlich erscheinen. Einziger
+ * Weg ist der Combining Long Stroke Overlay (U+0336) hinter jedem Zeichen.
+ * Bewusst als Funktion statt als unsichtbare Zeichen im Quelltext, damit die
+ * Zeile lesbar und kopierbar bleibt.
+ */
+const strikethrough = (text: string): string =>
+  [...text].map((char) => `${char}\u0336`).join("");
+
 export const TELEGRAM_BOT = {
   /** Whop-Checkout — einziges Ziel des einzigen Buttons. */
   joinUrl: "https://whop.com/capital-circle/capital-circle-academy/",
-  buttonLabel: "JETZT BEITRETEN - 99€ Monatl.",
+  buttonLabel: `JETZT BEITRETEN - 99€ Monatl. statt ${strikethrough("129€")}`,
   welcomeText: `<b>🏆 Willkommen bei Capital Circle.</b>
 ⬇️ Über 1.000 Trader ausgebildet. Hier siehst du, wie du startest.
 
