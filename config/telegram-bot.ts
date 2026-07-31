@@ -15,7 +15,7 @@
 export const TELEGRAM_BOT = {
   /** Whop-Checkout — einziges Ziel des einzigen Buttons. */
   joinUrl: "https://whop.com/capital-circle/capital-circle-academy/",
-  buttonLabel: "JETZT BEITRETEN",
+  buttonLabel: "JETZT BEITRETEN - 99€ Monatl.",
   welcomeText: `<b>🏆 Willkommen bei Capital Circle.</b>
 ⬇️ Über 1.000 Trader ausgebildet. Hier siehst du, wie du startest.
 
@@ -30,7 +30,7 @@ Die Erfolge meiner Community sprechen für sich. Ich weiß, was ich kann.
 
 🎯 Monatliche Giveaways (Im wert von 200€)
 
-🚀 Bald 129 €/Monat. Jetzt beitreten und in 90 Tagen profitabel werden.
+🚀 Bald 129 € Monat. Jetzt beitreten und in 90 Tagen profitabel werden.
 
 ⚠️ Das Abo ist jederzeit kündbar. Keine versteckten Fristen. Keine Fallen.`,
 } as const;
