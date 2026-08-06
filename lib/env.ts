@@ -34,10 +34,18 @@ const OPTIONAL_ENV = [
   "TURNSTILE_SECRET_KEY",
   "NEXT_PUBLIC_TURNSTILE_SITE_KEY",
   "NEXT_PUBLIC_APP_URL",
+  /** Journal-Home: YouTube-RSS. Ohne Wert greift der Default-Kanal (@emre.capital). */
+  "YOUTUBE_CHANNEL_ID",
   /** Telegram-Bot: Token von @BotFather. Ohne ihn antwortet der Bot nicht. */
   "TELEGRAM_BOT_TOKEN",
   /** Telegram-Bot: secret_token des Webhooks. Ohne ihn ist die Route ungeschützt. */
   "TELEGRAM_WEBHOOK_SECRET",
+  /**
+   * Whop-Migrations-Kampagne: Resend-Segment-ID der Empfängerliste.
+   * Ohne sie legt `scripts/sync-whop-campaign-segment.mjs` beim nächsten Lauf
+   * ein neues (leeres) Segment an statt das bestehende weiterzuverwenden.
+   */
+  "RESEND_WHOP_SEGMENT_ID",
 ] as const;
 
 let _checked = false;

@@ -20,6 +20,10 @@
     {
       "path": "/api/cron/ht-upsell-60d",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/whop-migration-followups",
+      "schedule": "0 8 * * *"
     }
   ]
 }

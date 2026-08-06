@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# generated exports (enthalten oft PII, z. B. Mitglieder-CSVs) — nie committen
+/exports/

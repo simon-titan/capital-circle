@@ -1,7 +1,8 @@
 import { createServiceClient } from "@/lib/supabase/service";
 
 export interface SequenceLogEntry {
-  userId: string;
+  /** `null` für Empfänger ohne `profiles`-Zeile (z. B. reine Resend-Segment-Kontakte). */
+  userId: string | null;
   applicationId?: string;
   recipientEmail: string;
   /** z. B. `free_course_welcome`, `payment_failed`, `churn_inactive` ... */

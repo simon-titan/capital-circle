@@ -106,3 +106,46 @@ export function verifySurveyToken(token: string): string | null {
     return null;
   }
 }
+
+/**
+ * Variante für Kampagnen, deren Empfänger aus einem Resend-Segment kommen und
+ * keine (oder nicht zwingend eine) `profiles`-Zeile haben — z. B.
+ * `whop_migration`. Signiert die Email-Adresse statt einer `userId`, damit
+ * `/api/unsubscribe/contact` direkt `resend.contacts.update({ unsubscribed })`
+ * aufrufen kann, ganz ohne Profil-Lookup.
+ */
+const CONTACT_PURPOSE = "contact_unsubscribe";
+
+function signEmail(email: string): string {
+  return createHmac("sha256", getSecret())
+    .update(`${email.toLowerCase()}:${CONTACT_PURPOSE}`)
+    .digest("base64url");
+}
+
+export function generateContactUnsubscribeToken(email: string): string {
+  const normalized = email.toLowerCase();
+  const sig = signEmail(normalized);
+  return Buffer.from(JSON.stringify({ email: normalized, sig })).toString("base64url");
+}
+
+export function verifyContactUnsubscribeToken(token: string): string | null {
+  try {
+    const decoded = JSON.parse(
+      Buffer.from(token, "base64url").toString("utf8"),
+    ) as { email?: unknown; sig?: unknown };
+
+    if (typeof decoded.email !== "string" || typeof decoded.sig !== "string") {
+      return null;
+    }
+
+    const expected = signEmail(decoded.email);
+    const a = Buffer.from(decoded.sig);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length || !timingSafeEqual(a, b)) {
+      return null;
+    }
+    return decoded.email;
+  } catch {
+    return null;
+  }
+}

@@ -7,8 +7,12 @@ interface BaseEmailProps {
   previewText: string;
   /**
    * Nur wirksam wenn `hideFooter={false}`: DSGVO-Unsubscribe-Link im Footer.
+   * Baut `${appUrl}/api/unsubscribe?token=...`. Für abweichende Routen
+   * (z. B. Kampagnen ohne `profiles`-Zeile) stattdessen `unsubscribeUrl` nutzen.
    */
   unsubscribeToken?: string;
+  /** Vollständige Unsubscribe-URL — hat Vorrang vor `unsubscribeToken`. */
+  unsubscribeUrl?: string;
   /** Standard: Logo per URL. Bei `false` goldener Schriftzug „Capital Circle“. */
   headerLogo?: boolean;
   /** Standard: kein rechtlicher Footer. Bei `false` Impressum, Datenschutz, optional Abmelden. */
@@ -19,6 +23,17 @@ interface BaseEmailProps {
    * eigenen Akzent, damit die Mail zum Look der Landingpage passt.
    */
   accentGradient?: string;
+  /** Farbe der Footer-Links (Impressum/Datenschutz/Abmelden). Standard: Gold. */
+  footerLinkColor?: string;
+  /** Überschreibt `fontFamily` von Body + Footer. Standard: `EMAIL_TOKENS.fontBody`. */
+  bodyFontFamily?: string;
+  /**
+   * Optionales Stylesheet (z. B. Google-Fonts-URL), als `<link>` im `<head>`
+   * eingebunden — nur die Mail-Clients berücksichtigen es, die externe
+   * Stylesheets im Mail-Head laden (u. a. Apple/iOS Mail); überall sonst
+   * greift stillschweigend der System-Fallback in `bodyFontFamily`.
+   */
+  headFontLinkHref?: string;
 }
 
 /**
@@ -37,15 +52,21 @@ export function BaseEmail({
   children,
   previewText,
   unsubscribeToken,
+  unsubscribeUrl: unsubscribeUrlProp,
   headerLogo = true,
   hideFooter = true,
   accentGradient,
+  footerLinkColor,
+  bodyFontFamily,
+  headFontLinkHref,
 }: BaseEmailProps) {
   const appUrl = getAppUrl();
-  const unsubscribeUrl = unsubscribeToken
-    ? `${appUrl}/api/unsubscribe?token=${unsubscribeToken}`
-    : null;
+  const unsubscribeUrl =
+    unsubscribeUrlProp ??
+    (unsubscribeToken ? `${appUrl}/api/unsubscribe?token=${unsubscribeToken}` : null);
   const logoSrc = `${appUrl}/logo/logo-white.png`;
+  const linkColor = footerLinkColor ?? T.gold;
+  const bodyFont = bodyFontFamily ?? T.fontBody;
 
   return (
     <html lang="de">
@@ -57,6 +78,7 @@ export function BaseEmail({
         <meta name="color-scheme" content="dark" />
         <meta name="supported-color-schemes" content="dark" />
         <title>Capital Circle</title>
+        {headFontLinkHref ? <link rel="stylesheet" href={headFontLinkHref} /> : null}
       </head>
       <body
         style={{
@@ -64,7 +86,7 @@ export function BaseEmail({
           padding: 0,
           backgroundColor: T.bgPage,
           color: T.text,
-          fontFamily: T.fontBody,
+          fontFamily: bodyFont,
           WebkitFontSmoothing: "antialiased",
         }}
       >
@@ -164,7 +186,7 @@ export function BaseEmail({
                           <p
                             style={{
                               margin: "16px 0 8px",
-                              fontFamily: T.fontBody,
+                              fontFamily: bodyFont,
                               fontSize: "12px",
                               color: T.textFooter,
                               lineHeight: 1.6,
@@ -175,7 +197,7 @@ export function BaseEmail({
                           <p
                             style={{
                               margin: "0 0 12px",
-                              fontFamily: T.fontBody,
+                              fontFamily: bodyFont,
                               fontSize: "12px",
                               color: T.textFooter,
                               lineHeight: 1.6,
@@ -184,7 +206,7 @@ export function BaseEmail({
                             <a
                               href={`${appUrl}/impressum`}
                               style={{
-                                color: T.gold,
+                                color: linkColor,
                                 textDecoration: "none",
                                 margin: "0 8px",
                               }}
@@ -195,7 +217,7 @@ export function BaseEmail({
                             <a
                               href={`${appUrl}/datenschutz`}
                               style={{
-                                color: T.gold,
+                                color: linkColor,
                                 textDecoration: "none",
                                 margin: "0 8px",
                               }}
@@ -208,7 +230,7 @@ export function BaseEmail({
                                 <a
                                   href={unsubscribeUrl}
                                   style={{
-                                    color: T.gold,
+                                    color: linkColor,
                                     textDecoration: "none",
                                     margin: "0 8px",
                                   }}
@@ -221,7 +243,7 @@ export function BaseEmail({
                           <p
                             style={{
                               margin: "16px 0 0",
-                              fontFamily: T.fontBody,
+                              fontFamily: bodyFont,
                               fontSize: "11px",
                               color: T.textFooter,
                               opacity: 0.7,

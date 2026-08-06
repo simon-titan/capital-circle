@@ -62,6 +62,25 @@ export async function sendEmail(opts: SendOptions): Promise<SendResult> {
   });
 
   if (error) {
+    // Rollback: der Log-Insert oben hat die Idempotenz-Zeile bereits gesetzt.
+    // Bleibt sie bei einem fehlgeschlagenen Send stehen, hält die UNIQUE-
+    // Constraint (recipient_email, sequence, step) jeden künftigen Versuch für
+    // "schon gesendet" — obwohl nie etwas rausgegangen ist. Also zurückrollen,
+    // damit derselbe Empfänger erneut versucht werden kann.
+    if (opts.log) {
+      try {
+        const supabase = createServiceClient();
+        await supabase
+          .from("email_sequence_log")
+          .delete()
+          .eq("recipient_email", opts.log.recipientEmail)
+          .eq("sequence", opts.log.sequence)
+          .eq("step", opts.log.step)
+          .is("resend_message_id", null);
+      } catch (rollbackErr) {
+        console.error("[email/send] Log-Rollback fehlgeschlagen:", rollbackErr);
+      }
+    }
     throw new Error(error.message ?? "Resend: unbekannter Fehler");
   }
 
