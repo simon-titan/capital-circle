@@ -23,7 +23,7 @@ import {
   Text,
   useDisclosure,
 } from "@chakra-ui/react";
-import { Eye, EyeOff, ShieldCheck, Trash2, UserPlus } from "lucide-react";
+import { Download, Eye, EyeOff, FileText, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { UserTierOverrideModal, type Tier } from "./UserTierOverrideModal";
 
@@ -99,6 +99,8 @@ export function AdminMembersManager() {
   const { isOpen: isTierOpen, onOpen: onTierOpen, onClose: onTierClose } = useDisclosure();
   const [tierTarget, setTierTarget] = useState<UserRow | null>(null);
 
+  const [gdprLoadingId, setGdprLoadingId] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     setLoading(true);
     const res = await fetch("/api/admin/users");
@@ -163,6 +165,33 @@ export function AdminMembersManager() {
   const openTier = (user: UserRow) => {
     setTierTarget(user);
     onTierOpen();
+  };
+
+  const exportCsv = () => {
+    window.open("/api/admin/users/export", "_blank");
+  };
+
+  const exportGdpr = async (user: UserRow) => {
+    setGdprLoadingId(user.id);
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}/gdpr-export`, { method: "POST" });
+      if (!res.ok) {
+        const json = (await res.json().catch(() => null)) as { error?: string } | null;
+        setFormStatus({ msg: json?.error ?? "DSGVO-Auskunft konnte nicht erzeugt werden.", ok: false });
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `dsgvo-auskunft_${user.email}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } finally {
+      setGdprLoadingId(null);
+    }
   };
 
   const doDelete = async () => {
@@ -311,14 +340,28 @@ export function AdminMembersManager() {
               {loading ? "Wird geladen…" : `${users.length} Nutzer gesamt`}
             </Text>
           </Box>
-          <Input
-            placeholder="Suche nach E-Mail, Name…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            maxW="300px"
-            size="sm"
-            {...fieldStyles}
-          />
+          <HStack spacing={3}>
+            <Input
+              placeholder="Suche nach E-Mail, Name…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              maxW="300px"
+              size="sm"
+              {...fieldStyles}
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              leftIcon={<Download size={14} />}
+              onClick={exportCsv}
+              borderColor="rgba(212,175,55,0.35)"
+              color="#E8C547"
+              className="inter"
+              _hover={{ bg: "rgba(212,175,55,0.10)" }}
+            >
+              CSV exportieren
+            </Button>
+          </HStack>
         </HStack>
 
         <Box
@@ -344,7 +387,7 @@ export function AdminMembersManager() {
                   flex={h === "E-Mail / Name" ? 1 : undefined}
                   w={
                     h === ""
-                      ? "40px"
+                      ? "76px"
                       : h === "Registriert"
                         ? "110px"
                         : h === "Tier"
@@ -469,16 +512,28 @@ export function AdminMembersManager() {
                   {new Date(user.createdAt).toLocaleDateString("de-DE")}
                 </Text>
 
-                {/* Löschen */}
-                <Box w={{ base: "auto", lg: "40px" }} textAlign="right">
-                  <IconButton
-                    aria-label="Nutzer löschen"
-                    size="sm"
-                    variant="ghost"
-                    colorScheme="red"
-                    icon={<Trash2 size={16} />}
-                    onClick={() => confirmDelete(user)}
-                  />
+                {/* Aktionen */}
+                <Box w={{ base: "auto", lg: "76px" }} textAlign="right">
+                  <HStack spacing={1} justify="flex-end">
+                    <IconButton
+                      aria-label="DSGVO-Auskunft erzeugen"
+                      title="DSGVO-Auskunft erzeugen"
+                      size="sm"
+                      variant="ghost"
+                      color="#E8C547"
+                      icon={<FileText size={16} />}
+                      isLoading={gdprLoadingId === user.id}
+                      onClick={() => void exportGdpr(user)}
+                    />
+                    <IconButton
+                      aria-label="Nutzer löschen"
+                      size="sm"
+                      variant="ghost"
+                      colorScheme="red"
+                      icon={<Trash2 size={16} />}
+                      onClick={() => confirmDelete(user)}
+                    />
+                  </HStack>
                 </Box>
               </HStack>
             ))
