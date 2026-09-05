@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/middleware";
 import { updateLastLoginIfNeeded } from "@/lib/auth/middleware-last-login";
 import { isFreeMember } from "@/lib/membership";
+import { createServiceClient } from "@/lib/supabase/service";
 
 // Marketing-Pfade (öffentlich, kein Auth nötig). /free + /pricing + /apply
 // werden in den Marketing-Paketen 3/4/7 aufgebaut.
@@ -13,6 +14,8 @@ const PUBLIC_PATHS = [
   "/pricing",
   "/apply",
   "/insight",
+  "/erfolge",
+  "/wartung",
 ];
 
 // `/survey/*` ist Token-authentifiziert (Cancellation-Survey aus Paket 6) und
@@ -26,6 +29,35 @@ const PUBLIC_PREFIXES = ["/datenschutz", "/impressum", "/survey", "/discord", "/
 function isPublicPath(pathname: string): boolean {
   if (PUBLIC_PATHS.includes(pathname)) return true;
   return PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
+// Wartungsmodus: Flag liegt in `app_settings` (key="maintenance_mode"), oeffentlich lesbar.
+// Kurzes In-Memory-Caching (Modul-Scope) haelt den DB-Read pro Request unnoetig,
+// solange der Prozess laeuft — bewusst simpel gehalten, kein Über-Engineering.
+type MaintenanceState = { enabled: boolean };
+let maintenanceCache: { state: MaintenanceState; fetchedAt: number } | null = null;
+const MAINTENANCE_CACHE_TTL_MS = 15_000;
+
+async function getMaintenanceState(): Promise<MaintenanceState> {
+  const now = Date.now();
+  if (maintenanceCache && now - maintenanceCache.fetchedAt < MAINTENANCE_CACHE_TTL_MS) {
+    return maintenanceCache.state;
+  }
+  try {
+    const service = createServiceClient();
+    const { data } = await service
+      .from("app_settings")
+      .select("value")
+      .eq("key", "maintenance_mode")
+      .maybeSingle();
+    const value = (data?.value ?? {}) as { enabled?: unknown };
+    const state: MaintenanceState = { enabled: Boolean(value.enabled) };
+    maintenanceCache = { state, fetchedAt: now };
+    return state;
+  } catch {
+    // Bei Fehler (z. B. DB kurzzeitig nicht erreichbar) die Plattform NICHT aussperren.
+    return { enabled: false };
+  }
 }
 
 export async function proxy(request: NextRequest) {
@@ -53,6 +85,28 @@ export async function proxy(request: NextRequest) {
 
   const { data } = await supabase.auth.getUser();
   const user = data.user;
+
+  // Wartungsmodus-Gate: additiv, betrifft weder /api (oben bereits returned) noch /wartung,
+  // /admin* oder /login. Nicht-Admins (inkl. nicht eingeloggter Besucher) werden umgeleitet.
+  const maintenanceExempt =
+    pathname === "/wartung" || pathname.startsWith("/admin") || pathname === "/login";
+  if (!maintenanceExempt) {
+    const maintenance = await getMaintenanceState();
+    if (maintenance.enabled) {
+      let isMaintenanceAdmin = false;
+      if (user) {
+        const { data: maintenanceProfile } = await supabase
+          .from("profiles")
+          .select("is_admin")
+          .eq("id", user.id)
+          .maybeSingle();
+        isMaintenanceAdmin = Boolean(maintenanceProfile?.is_admin);
+      }
+      if (!isMaintenanceAdmin) {
+        return NextResponse.redirect(new URL("/wartung", request.url));
+      }
+    }
+  }
 
   if (!user) {
     // "/" zeigt die Landing Page — kein Login-Redirect für nicht-eingeloggte User
@@ -177,6 +231,6 @@ export async function proxy(request: NextRequest) {
 export const config = {
   // Statische Icons: Safari/WebKit u. a. holen apple-touch-icon / favicon ohne HTML — nicht zur Login-HTML umleiten.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|logo/|bg/|svg/|tg-slides/|founder/|cases/|apple-touch-icon|new-apple).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|logo/|bg/|svg/|tg-slides/|founder/|cases/|apex/|apple-touch-icon|new-apple).*)",
   ],
 };
