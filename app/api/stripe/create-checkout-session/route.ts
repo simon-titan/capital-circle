@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 
 interface Body {
   plan?: string;
+  promo?: string;
 }
 
 const PLANS = {
@@ -118,6 +119,17 @@ export async function POST(request: NextRequest) {
 
   const appUrl = getAppUrl();
 
+  // Optionaler vorausgefüllter Rabattcode (z. B. `?promo=XYZ` aus einer
+  // Marketing-E-Mail). `discounts` und `allow_promotion_codes` schließen sich
+  // in der Checkout-Session-API gegenseitig aus — bei einem gültigen Code
+  // wird der Code direkt angewendet, sonst bleibt das normale Eingabefeld.
+  let promotionCodeId: string | null = null;
+  const promoCode = body.promo?.trim();
+  if (promoCode) {
+    const found = await stripe.promotionCodes.list({ code: promoCode, active: true, limit: 1 });
+    promotionCodeId = found.data[0]?.id ?? null;
+  }
+
   const session = await stripe.checkout.sessions.create({
     // `embedded_page` ist seit Stripe-API `2026-03-25.dahlia` der neue Name
     // für das vorherige `embedded` (Stripe-Checkout als iframe in der eigenen
@@ -128,7 +140,9 @@ export async function POST(request: NextRequest) {
     line_items: [{ price: priceId, quantity: 1 }],
     return_url: `${appUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
     automatic_tax: { enabled: true },
-    allow_promotion_codes: true,
+    ...(promotionCodeId
+      ? { discounts: [{ promotion_code: promotionCodeId }] }
+      : { allow_promotion_codes: true }),
     metadata: { user_id: user.id, plan },
     ...(planConfig.mode === "subscription"
       ? {
