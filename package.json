@@ -14,7 +14,8 @@
     "export:unpaid-members": "node scripts/export-unpaid-members.mjs",
     "sync:whop-segment": "node scripts/sync-whop-campaign-segment.mjs",
     "import:csv-to-whop-segment": "node scripts/import-csv-to-whop-segment.mjs",
-    "verify:journal": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/verify-journal-import.mjs"
+    "verify:journal": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/verify-journal-import.mjs",
+    "discord:sync": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/discord-role-sync.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1018.0",

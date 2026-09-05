@@ -1,5 +1,6 @@
 import type Stripe from "stripe";
 import { sendPaymentFailed1 } from "@/lib/email/templates/payment-failed-1";
+import { addGuildMemberRole, removeGuildMemberRole } from "@/lib/discord/roles";
 import {
   loadAuthEmail,
   loadProfileByCustomerId,
@@ -91,5 +92,42 @@ export async function handleInvoicePaymentFailed(
           .eq("id", profile.id);
       }
     }
+  }
+
+  await moveDiscordToWaitingRoom(supabase, profile.id);
+}
+
+/**
+ * Best-effort: reguläre Rolle entfernen, Warteraum-Rolle vergeben. Läuft nach
+ * den kritischen DB-Writes oben — ein Discord-Fehler darf den Webhook nicht
+ * fehlschlagen lassen (Stripe würde sonst unnötig retryen).
+ */
+async function moveDiscordToWaitingRoom(supabase: WebhookSupabase, userId: string): Promise<void> {
+  const guildId = process.env.DISCORD_GUILD_ID;
+  const botToken = process.env.DISCORD_BOT_TOKEN;
+  const roleId = process.env.DISCORD_ROLE_ID;
+  const waitingRoomRoleId = process.env.DISCORD_WAITING_ROOM_ROLE_ID;
+
+  if (!guildId || !botToken || !roleId || !waitingRoomRoleId) {
+    console.warn(
+      "[stripe-webhook] invoice.payment_failed: DISCORD_WAITING_ROOM_ROLE_ID / DISCORD_GUILD_ID / DISCORD_BOT_TOKEN / DISCORD_ROLE_ID nicht vollständig gesetzt — Warteraum-Wechsel übersprungen.",
+    );
+    return;
+  }
+
+  try {
+    const { data: dc } = await supabase
+      .from("discord_connections")
+      .select("discord_user_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const discordUserId = (dc?.discord_user_id as string | null) ?? null;
+    if (!discordUserId) return;
+
+    await removeGuildMemberRole(guildId, botToken, discordUserId, roleId);
+    await addGuildMemberRole(guildId, botToken, discordUserId, waitingRoomRoleId);
+  } catch (err) {
+    console.error("[stripe-webhook] invoice.payment_failed: Discord-Warteraum-Wechsel fehlgeschlagen:", err);
   }
 }

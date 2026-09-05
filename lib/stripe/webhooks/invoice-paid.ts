@@ -1,5 +1,6 @@
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe/server";
+import { addGuildMemberRole, getGuildMember, removeGuildMemberRole } from "@/lib/discord/roles";
 import {
   extractCurrentPeriod,
   loadProfileByCustomerId,
@@ -103,5 +104,48 @@ export async function handleInvoicePaid(
         payment_failed_email_3_sent_at: null,
       })
       .eq("id", profile.id);
+  }
+
+  await restoreDiscordFromWaitingRoom(supabase, profile.id);
+}
+
+/**
+ * Recovery-Pfad: es gibt kein explizites "Grace beendet"-Flag in der DB —
+ * `access_until` wird sowohl für die normale Laufzeit als auch für die 48h-
+ * Grace nach `invoice.payment_failed` verwendet. Statt eines fragilen
+ * DB-Signals fragen wir Discord selbst: Hat der Nutzer aktuell die
+ * Warteraum-Rolle, wird sie entfernt und die reguläre Rolle wieder vergeben.
+ * Kein Warteraum → nichts zu tun. Best-effort, blockiert den Webhook nicht.
+ */
+async function restoreDiscordFromWaitingRoom(supabase: WebhookSupabase, userId: string): Promise<void> {
+  const guildId = process.env.DISCORD_GUILD_ID;
+  const botToken = process.env.DISCORD_BOT_TOKEN;
+  const roleId = process.env.DISCORD_ROLE_ID;
+  const waitingRoomRoleId = process.env.DISCORD_WAITING_ROOM_ROLE_ID;
+
+  if (!guildId || !botToken || !roleId || !waitingRoomRoleId) {
+    console.warn(
+      "[stripe-webhook] invoice.paid: DISCORD_WAITING_ROOM_ROLE_ID / DISCORD_GUILD_ID / DISCORD_BOT_TOKEN / DISCORD_ROLE_ID nicht vollständig gesetzt — Warteraum-Rückholung übersprungen.",
+    );
+    return;
+  }
+
+  try {
+    const { data: dc } = await supabase
+      .from("discord_connections")
+      .select("discord_user_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const discordUserId = (dc?.discord_user_id as string | null) ?? null;
+    if (!discordUserId) return;
+
+    const member = await getGuildMember(guildId, botToken, discordUserId);
+    if (!member?.roles?.includes(waitingRoomRoleId)) return;
+
+    await removeGuildMemberRole(guildId, botToken, discordUserId, waitingRoomRoleId);
+    await addGuildMemberRole(guildId, botToken, discordUserId, roleId);
+  } catch (err) {
+    console.error("[stripe-webhook] invoice.paid: Warteraum-Rückholung fehlgeschlagen:", err);
   }
 }

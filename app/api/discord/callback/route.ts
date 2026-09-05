@@ -1,31 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { addGuildMemberRole } from "@/lib/discord/roles";
 
 function siteUrl() {
   return process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-}
-
-/** Bestehende Mitglieder: Discord ignoriert `roles` im Add-Member-Body bei 204 — Rolle separat setzen. */
-async function assignDiscordMemberRole(
-  guildId: string,
-  botToken: string,
-  discordUserId: string,
-  roleId: string,
-): Promise<void> {
-  const roleRes = await fetch(
-    `https://discord.com/api/v10/guilds/${guildId}/members/${discordUserId}/roles/${roleId}`,
-    {
-      method: "PUT",
-      headers: {
-        Authorization: `Bot ${botToken}`,
-      },
-    },
-  );
-
-  if (!roleRes.ok && roleRes.status !== 204) {
-    const errBody = await roleRes.text();
-    console.error("[discord/callback] assign member role failed:", roleRes.status, errBody);
-  }
 }
 
 export async function GET(request: Request) {
@@ -142,7 +120,7 @@ export async function GET(request: Request) {
       console.error("[discord/callback] guild member PUT failed:", memberRes.status, errBody);
     } else if (memberRes.status === 204) {
       // Bereits im Server: `roles` im Body werden ignoriert — Rolle explizit zuweisen
-      await assignDiscordMemberRole(guildId, botToken, discordUser.id, roleId);
+      await addGuildMemberRole(guildId, botToken, discordUser.id, roleId);
     }
   } else {
     console.warn(

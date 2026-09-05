@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { removeFromGuild as removeFromGuildViaBot } from "@/lib/discord/roles";
 
 /**
  * Entfernt den Nutzer per Bot-Token vom Discord-Server.
@@ -14,21 +15,7 @@ async function removeFromGuild(discordUserId: string): Promise<void> {
     return;
   }
 
-  const res = await fetch(
-    `https://discord.com/api/v10/guilds/${guildId}/members/${discordUserId}`,
-    {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bot ${botToken}`,
-      },
-    },
-  );
-
-  // 204 = erfolgreich entfernt, 404 = war kein Mitglied (beides ok)
-  if (!res.ok && res.status !== 204 && res.status !== 404) {
-    const body = await res.text();
-    console.error("[discord/disconnect] guild member DELETE failed:", res.status, body);
-  }
+  await removeFromGuildViaBot(guildId, botToken, discordUserId);
 }
 
 /**

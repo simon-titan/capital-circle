@@ -1,7 +1,10 @@
 "use client";
 
-import { Box, HStack, Input, Stack, Text } from "@chakra-ui/react";
+import { Badge, Box, Button, HStack, Input, Stack, Text, useToast } from "@chakra-ui/react";
+import { RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+
+type DiscordRoleStatus = "regular" | "waiting_room" | "none" | null;
 
 type AdminDiscordRow = {
   userId: string;
@@ -11,7 +14,34 @@ type AdminDiscordRow = {
   discordUserId: string | null;
   connectedAt: string | null;
   connected: boolean;
+  roleStatus: DiscordRoleStatus;
 };
+
+function roleStatusLabel(status: DiscordRoleStatus): string {
+  switch (status) {
+    case "regular":
+      return "Regulär";
+    case "waiting_room":
+      return "Warteraum";
+    case "none":
+      return "Keine";
+    default:
+      return "—";
+  }
+}
+
+function roleStatusColors(status: DiscordRoleStatus): { bg: string; color: string } {
+  switch (status) {
+    case "regular":
+      return { bg: "rgba(212,175,55,0.15)", color: "var(--color-accent-gold)" };
+    case "waiting_room":
+      return { bg: "rgba(255,255,255,0.08)", color: "gray.300" };
+    case "none":
+      return { bg: "rgba(229,72,77,0.10)", color: "rgba(248,113,113,0.85)" };
+    default:
+      return { bg: "transparent", color: "gray.600" };
+  }
+}
 
 const fieldStyles = {
   bg: "rgba(255,255,255,0.06)",
@@ -24,7 +54,9 @@ const fieldStyles = {
 export function AdminDiscordManager() {
   const [rows, setRows] = useState<AdminDiscordRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [search, setSearch] = useState("");
+  const toast = useToast();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -38,6 +70,38 @@ export function AdminDiscordManager() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data fetch (AdminMembersManager pattern)
     void load();
   }, [load]);
+
+  const handleSync = useCallback(async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch("/api/admin/discord/sync", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ apply: true }),
+      });
+      const json = (await res.json()) as { ok: boolean; error?: string; fixedCount?: number; checkedCount?: number };
+      if (!json.ok) {
+        toast({
+          title: "Abgleich fehlgeschlagen",
+          description: json.error ?? "Unbekannter Fehler.",
+          status: "error",
+          duration: 4000,
+          isClosable: true,
+        });
+        return;
+      }
+      toast({
+        title: "Bestand abgeglichen",
+        description: `${json.fixedCount ?? 0} von ${json.checkedCount ?? 0} Verknüpfungen korrigiert.`,
+        status: "success",
+        duration: 4000,
+        isClosable: true,
+      });
+      await load();
+    } finally {
+      setSyncing(false);
+    }
+  }, [load, toast]);
 
   const filtered = rows.filter((r) => {
     if (!search.trim()) return true;
@@ -74,14 +138,31 @@ export function AdminDiscordManager() {
             {loading ? "Wird geladen…" : `${rows.length} Nutzer gesamt`}
           </Text>
         </Box>
-        <Input
-          placeholder="Suche nach Name, E-Mail, Discord…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          maxW="340px"
-          size="sm"
-          {...fieldStyles}
-        />
+        <HStack spacing={3}>
+          <Input
+            placeholder="Suche nach Name, E-Mail, Discord…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            maxW="340px"
+            size="sm"
+            {...fieldStyles}
+          />
+          <Button
+            leftIcon={<RefreshCw size={14} />}
+            onClick={handleSync}
+            isLoading={syncing}
+            loadingText="Gleicht ab…"
+            size="sm"
+            borderRadius="10px"
+            className="inter-semibold"
+            bg="rgba(212,175,55,0.15)"
+            color="var(--color-accent-gold)"
+            border="1px solid rgba(212,175,55,0.35)"
+            _hover={{ bg: "rgba(212,175,55,0.25)", borderColor: "rgba(212,175,55,0.60)" }}
+          >
+            Bestand abgleichen
+          </Button>
+        </HStack>
       </HStack>
 
       <Box
@@ -100,7 +181,7 @@ export function AdminDiscordManager() {
           display={{ base: "none", xl: "flex" }}
           flexWrap="wrap"
         >
-          {["Name", "E-Mail", "Discord", "Discord ID", "Verbunden seit", "Status"].map((h) => (
+          {["Name", "E-Mail", "Discord", "Discord ID", "Verbunden seit", "Status", "Rollen-Status"].map((h) => (
             <Text
               key={h}
               flex={h === "E-Mail" ? 1.2 : h === "Name" ? 1 : undefined}
@@ -111,9 +192,11 @@ export function AdminDiscordManager() {
                     ? "130px"
                     : h === "Status"
                       ? "120px"
-                      : h === "Discord"
+                      : h === "Rollen-Status"
                         ? "120px"
-                        : undefined
+                        : h === "Discord"
+                          ? "120px"
+                          : undefined
               }
               minW={h === "E-Mail" ? "160px" : undefined}
               fontSize="11px"
@@ -181,6 +264,18 @@ export function AdminDiscordManager() {
               <Text w={{ base: "100%", xl: "120px" }} fontSize="sm" className="inter" color="gray.200">
                 {r.connected ? "✅ Verbunden" : "⚠️ Nicht verbunden"}
               </Text>
+              <Box w={{ base: "100%", xl: "120px" }}>
+                <Badge
+                  fontSize="xs"
+                  px={2}
+                  py={0.5}
+                  borderRadius="6px"
+                  border="none"
+                  {...roleStatusColors(r.roleStatus)}
+                >
+                  {roleStatusLabel(r.roleStatus)}
+                </Badge>
+              </Box>
             </HStack>
           ))
         )}
