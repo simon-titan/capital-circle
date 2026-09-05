@@ -26,6 +26,12 @@ const links = [
   { href: "/admin/reviews", label: "Bewertungen" },
   { href: "/admin/tracking", label: "Tracking Links" },
   { href: "/admin/discord-funnel", label: "Discord Funnel" },
+  { href: "/admin/gutscheine", label: "Gutscheine" },
+  { href: "/admin/zahlungsstoerungen", label: "Zahlungsstoerungen" },
+  { href: "/admin/tickets", label: "Support-Tickets" },
+  { href: "/admin/zertifikate", label: "Zertifikate" },
+  { href: "/admin/team", label: "Team" },
+  { href: "/admin/wartung", label: "Wartungsmodus" },
 ];
 
 export function AdminSidebar() {
