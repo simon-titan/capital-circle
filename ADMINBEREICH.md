@@ -59,4 +59,5 @@ Capital-Circle-Funktionsumfang.
 ---
 
 *Letzte Aktualisierung: 06.09.2026 — siehe [GO-LIVE.md](GO-LIVE.md) für den laufenden
-Status und offene Punkte vor dem produktiven Einsatz der neuen Module.*
+Status, offene Punkte vor dem produktiven Einsatz der neuen Module, sowie den Stand der
+Rechtstexte (Impressum/Datenschutz/AGB/Widerruf — entschieden, aber noch nicht gebaut).*

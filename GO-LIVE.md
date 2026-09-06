@@ -6,6 +6,28 @@ in den jeweiligen Abschnitt, mit Datum.
 
 Stack: Next.js 16 (App Router) · React 19 · Supabase (Postgres/Auth/RLS) · Stripe ·
 Resend (react-email) · Chakra UI v2 · Hetzner S3 (Datei-Uploads) · Discord-Bot · Telegram-Bot.
+Hosting: Vercel (Domain `capitalcircletrading.com`). Repo: `simon-titan/capital-circle`
+(GitHub, privat).
+
+## Projektüberblick
+
+Capital Circle ist eine Trading-Ausbildungs-/Mentoring-Plattform (Coach: Emre) mit vier
+Mitgliedschafts-Stufen in `profiles.membership_tier`:
+
+| Tier | Preis | Vertriebsweg |
+|---|---|---|
+| `free` | kostenlos | Discord-Funnel / Free-Kurs |
+| `monthly` | 97 €/Monat | Self-Checkout (`/pricing` → Stripe) |
+| `lifetime` | 699 € einmalig | Self-Checkout (`/pricing` → Stripe) |
+| `ht_1on1` | individuell | Bewerbung + Calendly-Call, kein Self-Checkout |
+
+Kernbereiche: Ausbildung/Kurse (sequenzielles Freischalten), Arsenal (Tools/Templates),
+Events (Kalender/Webinare), News (Ankündigungs-Feed), Analyse (Markt-Updates),
+Trading Journal (aktuell in eigenem, separatem Umbau — siehe unten), Discord-Community,
+Telegram-Bot, Bewerbungs-/Sales-Funnel für High-Ticket. Zahlungen laufen vollständig
+über Stripe (Checkout + Customer Portal + Webhooks), Mails über Resend/react-email,
+Datei-Uploads (Videos, Anhänge, Zertifikate) über Hetzner S3 mit Presigned URLs statt
+Supabase Storage.
 
 ---
 
@@ -93,12 +115,35 @@ siehe "Was jetzt noch zu tun ist" am Ende.
 - `auth.admin.listUsers({perPage:1000})` wird an mehreren Stellen ungepaged verwendet —
   unkritisch bei aktueller Mitgliederzahl, Pagination nachrüsten bei Wachstum.
 
-## Bekannte Lücke (unabhängig von dieser Änderung, schon vorher vorhanden)
+## Rechtstexte (Impressum/Datenschutz/AGB/Widerruf) — Status: entschieden, nicht gebaut
 
 `proxy.ts` referenziert öffentliche Pfade `/datenschutz`, `/impressum` — beide Seiten
-existieren im App-Router **nicht**. Vor jedem echten Go-Live (nicht nur dieser fünf
-Module) müssen Impressum/Datenschutz/AGB/Widerruf gebaut und rechtlich geprüft werden —
-bei MoonTrading war genau das ein dokumentierter Blocker.
+existieren im App-Router **nicht**, `/agb` und `/widerruf` fehlen komplett. Vor jedem
+echten Go-Live müssen sie gebaut und rechtlich geprüft werden — bei MoonTrading war
+genau das ein dokumentierter Blocker.
+
+**Bereits entschieden (06.09.2026):**
+- Rechtsform: **Einzelunternehmen/Freiberufler** → Impressum braucht den vollen Namen
+  der/des Inhabers, kein Handelsregister-Eintrag nötig.
+- Widerrufsrecht bei den digitalen Mitgliedschaften (monthly/lifetime): **Sofortzugriff
+  mit ausdrücklicher Verzichts-Checkbox im Checkout** (statt volles 14-Tage-Widerrufsrecht
+  mit Zugriffssperre/Rückerstattungsrisiko). Das bedingt einen kleinen Umbau am
+  Checkout-Flow (neue Pflicht-Checkbox + Speicherung von Zustimmungszeitpunkt/-text als
+  Nachweis), noch nicht umgesetzt.
+
+🔒 **Blockierend, bevor die vier Seiten inhaltlich geschrieben werden können** — fehlende
+Pflichtangaben fürs Impressum:
+- Vollständiger Name der/des Inhabers
+- Ladungsfähige Anschrift (Straße/PLZ/Ort)
+- Telefonnummer + Kontakt-E-Mail (Vorschlag offen: `kontakt@capitalcircletrading.com`,
+  da die Domain schon für Transaktions-Mails genutzt wird)
+- Kleinunternehmer nach §19 UStG oder regelbesteuert mit USt-IdNr?
+
+Sobald diese vier Punkte vorliegen: `config/legal.ts` (zentrale Textbausteine, nach
+MoonTrading-Vorbild) + vier Seiten (`app/impressum`, `app/datenschutz`, `app/agb`,
+`app/widerruf`, Gold-only) + Checkout-Checkbox + `proxy.ts`-PUBLIC_PATHS-Ergänzung um
+`/agb`/`/widerruf`. Bis dahin bewusst nicht mit Platzhalter-Fantasiedaten gebaut, um
+kein scheinbar fertiges, aber rechtlich falsches Impressum online zu riskieren.
 
 ---
 
