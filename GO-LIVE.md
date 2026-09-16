@@ -8,7 +8,8 @@ Stack: Next.js 16 (App Router) · React 19 · Supabase (Postgres/Auth/RLS) · St
 Resend (react-email) · Chakra UI v2 · **Cloudflare Stream** (Kursvideos) · **Cloudflare R2**
 (sonstige Datei-Uploads) · Discord-Bot · Telegram-Bot.
 Hosting: Vercel (Domain `capitalcircletrading.com`). Repo: `simon-titan/capital-circle`
-(GitHub, privat).
+(GitHub, **öffentlich** — der gesamte Quelltext inkl. Admin-Routen ist einsehbar; Zugangsdaten liegen ausschließlich in `.env*`, das per `.gitignore` ausgeschlossen ist).
+Deploy-Checkliste: [`DEPLOY-VERCEL.md`](DEPLOY-VERCEL.md).
 
 ## Projektüberblick
 
@@ -78,6 +79,57 @@ Stripe-Preise per `npm run stripe:preise -- --apply` angelegt (Test-Modus, Produ
 `prod_VGo4kOUjnyWCfp`). Dabei fiel auf: die bisher eingetragene `STRIPE_PRICE_MONTHLY`
 gehörte zu einem **anderen Stripe-Konto** als der hinterlegte `sk_test`-Key.
 
+**Dashboard überarbeitet.** „Weiter wo du warst" zeigt jetzt tatsächlich das zuletzt
+gesehene Video mit Vorschaubild aus Cloudflare — vorher stand dort konstant derselbe alte
+Free-Kurs-Eintrag, weil `POST /api/progress` das `updated_at` nie geschrieben hat (die
+Spalte hat nur `default now()`, keinen Trigger) und die Sortierung deshalb auf
+eingefrorenen Zeitstempeln lief. Dieselbe Route lief außerdem bei **jedem** Speichern in
+einen 500er: Sie selektierte `profiles.total_learning_seconds` / `learning_seconds_by_day`,
+die es nicht gab. Weiter: Live-Karte mit Event-Typ-Badge, „Beitreten" öffnet den externen
+Link direkt statt über eine Weiterleitung (`lib/external-url.ts`), Fortschrittskarte auf
+gleicher Höhe wie ihre Nachbarn, und unter „Nächster Termin" steht ein Mini-Monatskalender
+mit Punkten je Termin. Der Gold-Glow ist dort auf Wunsch raus (`.cc-neutral`, siehe
+[`AGENTS.md`](AGENTS.md)).
+
+**Institut (`/ausbildung`) neu sortiert.** Keine Kursgruppen mehr, sondern ein flaches
+Modulraster (3 pro Reihe), alle Karten gleich hoch und immer ausgeklappt, die ganze Karte
+ist der Link ins Modul. Module ohne sichtbares Video werden ausgeblendet. Wo ein Cover
+hinterlegt ist, füllt es die Kartenoberkante und die Inhaltsliste entfällt.
+
+**Admin-Navigation aufgeräumt.** Bewerbungen, Free-Kurs, Live Stream und Codex sind aus der
+Seitenleiste raus (die Seiten selbst bleiben erreichbar), Analytics hat eine eigene
+Gruppe „Auswertung", Analyse bleibt unter „Inhalte". Jede Gruppe ist auf- und zuklappbar,
+der Zustand liegt in `localStorage` (`cc-admin-nav-zu`, gelesen über `useSyncExternalStore`,
+damit es keine Hydration-Abweichung gibt). `/admin/kurse` nutzt die volle Bildschirmbreite.
+
+**Bild-Uploads per Drag & Drop** (`components/admin/ImageDropZone.tsx`), plus Cover-Löschen.
+Hintergrund: Auf dem Rechner des Nutzers fror der **Windows-Dateidialog** den gesamten
+Browser ein — nachweisbar über Windows-Ereignis-ID 1002, elf Vorfälle in sechs Stunden,
+betroffen waren `chrome.exe` **und** `opera.exe`. Also kein App-Fehler; der Weg per
+Drag & Drop umgeht den Dialog ganz. Vier Stellen hängen noch am Dateidialog
+(`LiveSessionManager` 2×, `NewsManager`, Video-Thumbnails).
+
+**`/vorschau` — offene Adresse für die Verkaufsseite.** Rendert dieselbe
+`MembershipLanding` wie `/`, aber ohne Anmeldepflicht, ohne Dashboard-Weiche und **ohne
+Wartungs-Gate**. Gedacht zum Herzeigen, während die Plattform zu ist. `noindex, nofollow`
+plus `canonical: "/"` und Sperre in `robots.ts`, damit sie nicht als doppelter Inhalt
+neben der echten Startseite im Index landet. Die Kauf-Schaltflächen zeigen weiter auf
+`/go/<plan>` und bleiben im Wartungsmodus gesperrt — Vorschau heißt ansehen, nicht kaufen.
+
+**Migrationsstand geklärt.** Es gibt keine Migrationstabelle; `npm run db:check` prüft
+stattdessen alle 72 Migrationen gegen die echte Datenbank, indem es die erzeugten Tabellen
+und Spalten abfragt. Dabei fielen 006, 019 und 040 als nie angewendet auf. In 040 fehlte
+eine schließende Klammer (`least(...)::integer` statt `least(...)::integer)`) — ein
+Altbestand im Repo. `npm run db:pending` prüft die Klammerbilanz seitdem selbst und bricht
+bei Ungleichgewicht ab, statt eine kaputte Sammeldatei zu erzeugen. Stand: alle 72
+angewendet.
+
+**Zusammengeführt und veröffentlicht.** `feature/admin-depth-discord-bot` per Fast-Forward
+nach `master` (431 Dateien), Produktions-Build grün (TypeScript sauber, 129 Seiten).
+Beim Aufräumen fürs öffentliche Repo ausgeschlossen: eine Rechnungs-PDF, herumliegende
+Emoji-/Screenshot-Bilder im Projektwurzelverzeichnis, lokale Agenten-Zustände und die
+generierte `_JETZT_EINSPIELEN.sql` (siehe `.gitignore`).
+
 ---
 
 ## 06.09.2026 — Plattform-Migrations-Kampagne (Whop → eigene Plattform)
@@ -105,8 +157,10 @@ Whop-Migration (siehe Meilensteine unten), nur umgekehrte Richtung:
   Whop-API-Integration vorhanden, um das zu automatisieren.
 
 🔒 **Blockierend, bevor Mail 1 ausgelöst wird:**
-- Dieselben Go-Live-Blocker wie unten (Migrationen 062–066, Rechtstexte) — zahlende
-  Whop-Mitglieder sollen nicht auf eine rechtlich unvollständige Seite geschickt werden.
+- ~~Dieselben Go-Live-Blocker wie unten (Migrationen 062–066, Rechtstexte)~~ — die
+  Migrationen sind seit 16.09.2026 angewendet (alle 72, geprüft mit `npm run db:check`).
+  **Die Rechtstexte bleiben blockierend:** zahlende Whop-Mitglieder sollen nicht auf eine
+  rechtlich unvollständige Seite geschickt werden.
 - ~~`STRIPE_PRICE_MONTHLY` (`price_1TOK0fGUgAQCwJluNepVhRzn`) ließ sich gegen den
   hinterlegten Testmodus-Key nicht auflösen (`404 resource_missing`).~~
   **Am 16.09.2026 geklärt und behoben:** Die Preis-ID gehörte zu einem *anderen
@@ -183,39 +237,71 @@ siehe "Was jetzt noch zu tun ist" am Ende.
 
 ---
 
-## Was jetzt noch zu tun ist (vor Live-Schaltung dieser fünf Module)
+## Was jetzt noch zu tun ist
 
-🔒 **Blockierend:**
-- Migrationen `062`–`067` **und** `069` gegen Supabase ausführen — bisher nur lokal
-  geschrieben, nicht angewendet. Für `062`–`067` liegt eine wiederholbar ausführbare
-  Sammeldatei bereit: `supabase/migrations/_JETZT_EINSPIELEN_062-067.sql` (Dashboard →
-  SQL Editor → einfügen → Run; erzeugt aus `npm run db:pending`). Ohne `067` fehlt
-  `videos.cloudflare_uid` und die Cloudflare-Anbindung läuft gar nicht, ohne `069` fehlen
-  die Laufzeiten `quarterly`/`yearly` im CHECK und die Trichter-Tabelle.
-- Danach `npm run cf:link -- --apply` — verknüpft die Videos mit Cloudflare und schaltet
-  den Signatur-Zwang ein. Bis dahin sind alle Kursvideos über ihre UID öffentlich.
-- **Dateien neu hochladen:** Thumbnails, Arsenal-PDFs, Zertifikate und Avatare lagen auf
-  dem verschwundenen Hetzner-Bucket. R2 ist leer.
-- **Stripe-Webhook-Endpoint** auf `https://<domain>/api/stripe/webhook` einrichten, Events
-  inkl. des neuen `checkout.session.expired`; `STRIPE_WEBHOOK_SECRET` setzen. Ohne den
-  Webhook entsteht nach einer Gast-Zahlung **kein Konto**.
-- **Live-Preise anlegen**, sobald der Stripe-Account live geht (`npm run stripe:preise --
-  --apply` mit `sk_live`-Key) und die drei `STRIPE_PRICE_*` in Vercel setzen — zusammen mit
-  den `CLOUDFLARE_*`- und `R2_*`-Variablen.
-- `DISCORD_WAITING_ROOM_ROLE_ID` in Discord-Server anlegen und in den Env-Vars (Vercel +
-  lokal) setzen, sonst bleibt die Warteraum-Logik inaktiv (harmlos, aber ungenutzt).
-- Einmalig einen echten `admin_role='owner'` setzen (siehe oben) — sonst bleibt die
-  Owner-Regel im "Fallback für alle Admins"-Modus.
-- Alle fünf Bereiche mit echten Testdaten/-zahlungen durchklicken (Stripe Testmodus:
-  Coupon-Redemption, Zahlungsausfall→Warteraum→Recovery; Zertifikat-Upload→Freigabe;
-  Ticket-Antwort→E-Mail; Wartungsmodus ein/aus).
+*Stand 16.09.2026, gegen Datenbank und Repo geprüft — nicht aus dem Gedächtnis.*
+
+🔒 **Blockierend vor dem echten Go-Live:**
+
+- **Rechtstexte.** `/impressum`, `/datenschutz`, `/agb`, `/widerruf` existieren im
+  App-Router **nicht**. `/datenschutz` ist bereits aus `app/(marketing)/apply/page.tsx`
+  und `app/(marketing)/free/page.tsx` verlinkt und läuft dort auf 404. Details und die
+  vier fehlenden Pflichtangaben siehe eigener Abschnitt unten.
+- **Stripe läuft vollständig im Testmodus.** Für Live gebraucht werden: `sk_live`-/
+  `pk_live`-Schlüssel, drei im Live-Modus neu angelegte Preise
+  (`npm run stripe:preise -- --apply`) und ein Webhook-Endpoint auf
+  `https://capitalcircletrading.com/api/stripe/webhook` samt `STRIPE_WEBHOOK_SECRET`.
+  **Ohne den Webhook entsteht nach einer Gast-Zahlung kein Konto** — der Käufer zahlt
+  und bekommt nichts.
+- **Widerrufs-Checkbox im Checkout** (am 06.09. entschieden, nicht gebaut) — gehört
+  zum Rechtstexte-Paket.
+
+📦 **Inhalte — die Plattform ist technisch fertig, aber halb leer:**
+
+- **71 Videos liegen im unsortierten Stapel.** Sie haben eine Cloudflare-UID, sind also
+  abspielbar; ihnen fehlt nur die Zuordnung zu einem Modul. Bis dahin sieht sie niemand.
+- **38 Videos haben keine Cloudflare-Quelle** und sind depubliziert
+  (`exports/tote-videos.csv`, Rückweg: `node scripts/unpublish-dead-videos.mjs --zurueck`).
+  Drei **veröffentlichte** Module sind dadurch leer und fallen aus dem Institut:
+  Livetrades (0 von 4), Trade Recaps (0 von 10), Psychology (0 von 0).
+  Die gesunden Module zum Vergleich: Volume Profile + Orderflow 23/26, Fundamentale
+  Analyse 14/15, NYSE iFVG Momentum 13/25, Market Foundations 11/13,
+  Auction Market Theory 9/10, Tools & Indikatoren 4/5, Risk Management 2/6.
+- **R2 ist leer.** **0 von 14 Modulen** haben ein Cover — die Cover-Anzeige im Institut
+  zeigt derzeit bei keinem einzigen Modul etwas. Ebenso fehlen alle Video-Thumbnails,
+  Arsenal-PDFs, Zertifikate und Avatare; sie lagen auf dem verschwundenen
+  Hetzner-Bucket.
+
+⚙️ **Konfiguration:**
+
+- **Der Wartungsmodus ist aktuell AN.** `/` leitet für alle außer Admins auf `/wartung`;
+  die Verkaufsseite ist über `/vorschau` trotzdem zu sehen.
+- **Kein `owner` gesetzt** — 3 Admins, davon 0 mit `admin_role = 'owner'`. Die
+  Owner-Regel läuft im Fallback („alle bestehenden Admins dürfen").
+- `DISCORD_WAITING_ROOM_ROLE_ID` ist nirgends gesetzt, die Warteraum-Logik bleibt
+  inaktiv (harmlos, aber ungenutzt).
+- **R2-CORS deckt keine Branch-Preview-URLs ab.** Erlaubt sind `capitalcircletrading.com`,
+  `www.capitalcircletrading.com`, `capital-circle-s5bg.vercel.app` und `localhost:3000`.
+  Auf `capital-circle-git-<branch>-….vercel.app` scheitern Bild-Uploads mit CORS-Fehler.
+- Alle fünf Admin-Bereiche mit echten Testdaten durchklicken (Coupon-Einlösung,
+  Zahlungsausfall → Warteraum → Recovery, Zertifikat-Upload → Freigabe, Ticket-Antwort
+  → E-Mail, Wartungsmodus ein/aus).
 
 ☐ **Nicht blockierend, aber offen:**
+
+- Vier Bild-Uploads laufen noch über den Windows-Dateidialog statt Drag & Drop
+  (`LiveSessionManager` 2×, `NewsManager`, Video-Thumbnails) — genau der Dialog, der
+  den Browser des Nutzers einfriert.
 - Keine Rate-Limits auf Zertifikat-Einreichung oder Ticket-Erstellung.
 - GDPR-Export deckt eine sinnvolle Teilmenge ab (profiles, subscriptions, payments,
   applications), nicht jede Tabelle im Projekt.
 - `auth.admin.listUsers({perPage:1000})` wird an mehreren Stellen ungepaged verwendet —
   unkritisch bei aktueller Mitgliederzahl, Pagination nachrüsten bei Wachstum.
+- Emotion-`CacheProvider` im AdminFrame fehlt, daher eine Hydration-Warnung in der
+  Konsole (kosmetisch).
+- `next.config.ts` setzt `proxyClientMaxBodySize: "2gb"`; Vercel begrenzt Request-Bodies
+  auf 100 MB. Folgenlos, weil Videos direkt zu Cloudflare Stream und Bilder per
+  Presigned PUT direkt zu R2 gehen — der Wert ist nur irreführend.
 
 ## Rechtstexte (Impressum/Datenschutz/AGB/Widerruf) — Status: entschieden, nicht gebaut
 

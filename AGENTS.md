@@ -4,6 +4,28 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
+## Dateien und Videos (Stand 16.09.2026)
+
+**Kursvideos** liegen in **Cloudflare Stream** (`videos.cloudflare_uid`, signiertes HLS
+per RS256-JWT, `requireSignedURLs`). **Alle übrigen Uploads** — Thumbnails, Anhänge,
+Zertifikate, Avatare, Cover — liegen in **Cloudflare R2** (S3-kompatibel, Presigned PUT,
+Region immer `auto`, Bucket in der EU-Jurisdiktion). Zentral in `lib/storage.ts` und
+`lib/cloudflare-stream.ts`.
+
+**Hetzner Object Storage ist tot.** Der Bucket antwortet mit `NoSuchBucket`, die
+Schlüssel mit `InvalidAccessKeyId`. `HETZNER_*`-Variablen und
+`getHetznerStorageMisconfiguration()` existieren nur noch als Altlast bzw. Alias —
+nicht in neuem Code verwenden, `getStorageMisconfiguration()` heißt die aktuelle Form.
+
+**Es gibt keine Migrationstabelle.** Migrationen werden von Hand im Supabase-SQL-Editor
+eingespielt. `npm run db:check` prüft alle Migrationen gegen die echte Datenbank, indem es
+die erzeugten Tabellen und Spalten abfragt; `npm run db:pending` baut die Sammeldatei.
+
+**Bild-Uploads bitte per Drag & Drop** (`components/admin/ImageDropZone.tsx`). Der
+Windows-Dateidialog friert auf dem Rechner des Nutzers den gesamten Browser ein
+(Ereignis-ID 1002, betraf Chrome *und* Opera) — das ist kein App-Fehler, aber der Grund,
+warum wir den Dialog umgehen.
+
 ## Design System (Capital Circle)
 
 **Schema v3.2 „Champagner auf Graphit“ (seit 2026-09, Struktur aus Kunden-Mockups, Farben 1:1 nach Kunden-Mockup, Look auf Nutzerwunsch mit Gold-Effekten):** ein Schema für Plattform **und** Marketing — Graphitgrund mit Sternenfeld und Champagner-Licht, graphitgraue Glas-Karten mit Gold-Kante (`.cc-card`, Hero `.cc-card--hero`), eine Schrift (Inter), Champagner-Gold `#D4B080` mit Verlauf/Glow für Aktion, aktive Navigation, Fokus und Live. Daten im Dashboard (Fortschritt, Segmente, Streak-Haken) stehen in heller Datentinte (`--cc-ink`). Flächen bleiben dunkel und ruhig; Gold ist der einzige Akzent (Grün/Rot nur semantisch). Das alte Brand-Gold `#D4AF37` kommt in der App nicht mehr vor. **Migration abgeschlossen (2026-09-14):** Plattform, Marketing/Funnel, Auth/Onboarding, Einzelseiten und Admin laufen auf v3.2.

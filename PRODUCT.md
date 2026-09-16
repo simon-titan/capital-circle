@@ -33,7 +33,7 @@ Du tradest selbst, mit einem festen System, festen Regeln und einer Community, d
 
 ## Capabilities and Constraints
 
-- Stack: Next.js (App Router), Supabase, Chakra UI v2, Hetzner Object Storage / Cloudflare Stream für Videos.
+- Stack: Next.js (App Router), Supabase, Chakra UI v2, Cloudflare Stream (Kursvideos, signiertes HLS) und Cloudflare R2 (übrige Datei-Uploads). Hetzner Object Storage ist seit 16.09.2026 abgelöst — der Bucket existiert nicht mehr.
 - Bereiche: Dashboard, Institut (`/ausbildung`), Codex, Trading-Journal (+ klassisches Journal, Positionsrechner), Live (`/stream`, `/live-session`, `/events`), Ressourcen/Arsenal (Analyse, Hausaufgabe, Tools, Fremdkapital, Templates, PDFs), News, Einstellungen.
 - Terminologie: „Institut“ (nicht „Kurs“), „Wochenaufgabe“, „Streak“, „Mitglied“, „Capital Circle Member“.
 

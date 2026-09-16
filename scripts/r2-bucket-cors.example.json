@@ -1,0 +1,18 @@
+{
+  "rules": [
+    {
+      "allowed": {
+        "origins": [
+          "https://capitalcircletrading.com",
+          "https://www.capitalcircletrading.com",
+          "https://capital-circle-s5bg.vercel.app",
+          "http://localhost:3000"
+        ],
+        "methods": ["GET", "PUT", "HEAD"],
+        "headers": ["*"]
+      },
+      "exposeHeaders": ["ETag"],
+      "maxAgeSeconds": 3600
+    }
+  ]
+}

@@ -13,7 +13,14 @@ Capital-Circle-Funktionsumfang.
   Funnel-Stufen (Standard-Mitgliedschaft, High-Ticket-1:1, Step-2-Vertiefung), inkl.
   Calendly-Integration bei High-Ticket.
 - **Kurse & Module** / **Free Kurs** / **Quiz** — Ausbildungsinhalte, sequenzielles
-  Freischalten, Video-/Anhang-Verwaltung über Hetzner-Presigned-Upload.
+  Freischalten. Videos gehen per Direkt-Upload zu **Cloudflare Stream**
+  (`videos.cloudflare_uid`, signiertes HLS), alle übrigen Dateien per Presigned PUT
+  zu **Cloudflare R2**. Seit 16.09.2026 Drag & Drop mit Warteschlange, mehrere Dateien
+  gleichzeitig, Titel aus dem Dateinamen; Videos ohne Modul landen im **Stapel** und
+  lassen sich von dort in ein Modul ziehen.
+- **Modul-Übersicht** (`/admin/kurse/[courseId]`) — Module als Raster nebeneinander,
+  Klick klappt die Untermodule mit Videos, Dauer und Unveröffentlicht-Markierung auf.
+  Nutzt die volle Bildschirmbreite.
 - **Events** — Kalender/Webinar-Termine (iCal-fähig), auch wiederkehrende Termine.
 - **Hausaufgaben** — Aufgaben-Zuweisung und -Prüfung.
 - **Live Sessions** / **Live Stream** — Terminverwaltung bzw. Cloudflare-Stream-Toggle.
@@ -50,6 +57,16 @@ Capital-Circle-Funktionsumfang.
   `user_audit_log` nachvollziehbar. Nur `owner` darf Rollen ändern (Fallback: solange
   kein `owner` existiert, dürfen alle bestehenden Admins die Seite nutzen).
 
+## Navigation
+
+Die Seitenleiste ist seit 16.09.2026 nach Gruppen sortiert, jede Gruppe auf- und
+zuklappbar; der Zustand liegt pro Browser in `localStorage` (`cc-admin-nav-zu`). Enthält
+eine zugeklappte Gruppe die gerade offene Seite, markiert ein Goldpunkt sie.
+
+**Aus der Navigation entfernt** (die Seiten selbst bleiben über ihre Adresse erreichbar):
+Bewerbungen, Free-Kurs, Live Stream, Codex. **Analytics** hat eine eigene Gruppe
+„Auswertung", **Analyse** bleibt unter „Inhalte".
+
 ## Betrieb
 - **Wartungsmodus** (`/admin/wartung`, seit 06.09.2026) — globaler Schalter, sperrt die
   gesamte Plattform (außer `/admin*`, `/login`, `/wartung`) für Nicht-Admins, mit
@@ -58,6 +75,6 @@ Capital-Circle-Funktionsumfang.
 
 ---
 
-*Letzte Aktualisierung: 06.09.2026 — siehe [GO-LIVE.md](GO-LIVE.md) für den laufenden
+*Letzte Aktualisierung: 16.09.2026 — siehe [GO-LIVE.md](GO-LIVE.md) für den laufenden
 Status, offene Punkte vor dem produktiven Einsatz der neuen Module, sowie den Stand der
 Rechtstexte (Impressum/Datenschutz/AGB/Widerruf — entschieden, aber noch nicht gebaut).*

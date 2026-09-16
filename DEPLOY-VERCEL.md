@@ -1,6 +1,6 @@
 # Deploy nach Vercel — Checkliste
 
-Stand 16.09.2026. Alle Werte liegen in `.env.local`; diese Datei sagt nur, **welche**
+Stand 16.09.2026, gegen die Datenbank geprüft. Alle Werte liegen in `.env.local`; diese Datei sagt nur, **welche**
 Schlüssel nach Vercel gehören und **welche Werte dort anders lauten müssen** als lokal.
 
 Projekt: `simon-titan/capital-circle` · Domain `capitalcircletrading.com`
@@ -118,11 +118,31 @@ funktioniert alles. Die Video-Poster bleiben leer, dann zeigt der Player nur das
 
 ---
 
-## 4. Was nach dem Deploy noch fehlt (inhaltlich, nicht technisch)
+## 4. Wartungsmodus und die offene Vorschau
+
+Der Wartungsmodus ist ein Schalter in der Datenbank (`app_settings`, Schlüssel
+`maintenance_mode`), umlegbar unter `/admin/wartung`. Ist er an, schiebt `proxy.ts` alle
+Nicht-Admins auf `/wartung`.
+
+**Ausgenommen sind `/wartung`, `/login`, `/admin*` und `/vorschau`.**
+`/vorschau` zeigt dieselbe Verkaufsseite wie `/`, ohne Anmeldung und ohne Wartungs-Gate —
+die Adresse zum Herzeigen, während die Plattform zu ist. Sie trägt `noindex, nofollow`
+und steht in `robots.ts` auf der Sperrliste, damit sie nicht neben der echten Startseite
+im Suchindex landet.
+
+Die Kauf-Schaltflächen dort zeigen auf `/go/<plan>` und bleiben im Wartungsmodus
+gesperrt. Soll auch während der Wartung verkauft werden, muss `/go` in `proxy.ts`
+ebenfalls in `maintenanceExempt`.
+
+## 5. Was nach dem Deploy noch fehlt (inhaltlich, nicht technisch)
 
 - Alle Vorschaubilder, PDFs, Zertifikate und Avatare sind mit dem Hetzner-Bucket
   verloren und müssen neu hochgeladen werden — R2 ist leer.
-- 72 Videos liegen im unsortierten Stapel. Die Module *Psychology*, *Trade Recaps*
-  und *Livetrades* haben dadurch 0 Videos und werden im Institut ausgeblendet.
-- 43 Videos ohne Cloudflare-Pendant sind depubliziert (`exports/tote-videos.csv`,
-  Rückweg über `node scripts/unpublish-dead-videos.mjs --zurueck`).
+- **71 Videos liegen im unsortierten Stapel** — mit Cloudflare-UID, also abspielbar,
+  nur keinem Modul zugeordnet.
+- **38 Videos ohne Cloudflare-Pendant sind depubliziert** (`exports/tote-videos.csv`,
+  Rückweg über `node scripts/unpublish-dead-videos.mjs --zurueck`). Drei veröffentlichte
+  Module sind dadurch leer und fallen aus dem Institut: *Livetrades* (0 von 4),
+  *Trade Recaps* (0 von 10), *Psychology* (0 von 0).
+- **0 von 14 Modulen haben ein Cover** — die Cover-Anzeige im Institut zeigt derzeit
+  nirgends etwas.

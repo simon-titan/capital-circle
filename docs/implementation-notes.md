@@ -30,7 +30,7 @@ aber dieses Projekt nutzt `proxy.ts` mit manuellem Export. **Alle Auth-Redirects
 ## 2. Hosting (IST)
 
 - **App:** **Vercel** (kein Dockerfile, kein Coolify, kein PM2 vorhanden)
-- **Object-Storage:** Hetzner S3-kompatibel (Presigned PUT via `app/api/admin/presign-upload/`)
+- **Object-Storage:** Cloudflare R2, S3-kompatibel (Presigned PUT via `app/api/admin/presign-upload/`). Region immer `auto`, Bucket in der EU-Jurisdiktion. Bis 16.09.2026 war das Hetzner Object Storage; dessen Bucket ist verschwunden, siehe [`r2-presigned-upload-cors.md`](r2-presigned-upload-cors.md)
 - **Cron Jobs:** → **Vercel Cron Jobs** via `vercel.json` (Bearer-Auth gegen `CRON_SECRET` bleibt)
 - **Webhook-Routes:** müssen `export const runtime = 'nodejs'` haben (raw body für Stripe-Signatur)
 

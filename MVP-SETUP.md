@@ -55,12 +55,19 @@ Wenn du versehentlich wieder Ordner **`[courseSlug]`** oder **`[moduleId]`** auf
 - Prüfen: `npm run check:routes`
 - Beheben (PowerShell): `Remove-Item -LiteralPath 'app\(platform)\ausbildung\[courseSlug]' -Recurse -Force` (analog `[moduleId]`), dann `.next` loeschen und `npm run dev` neu starten.
 
-## Hetzner: Intro-URL vs. S3-Scan
+## Object-Storage: Intro-URL vs. S3-Scan
+
+> Seit 16.09.2026 ist das **Cloudflare R2**, nicht mehr Hetzner. Die alten
+> `HETZNER_*`-Variablen sind wirkungslos — der Bucket existiert nicht mehr.
 
 - **Intro-Video** (`NEXT_PUBLIC_INTRO_VIDEO_URL` oder Default): normale **HTTPS-URL** zur Datei — kein Listing noetig.
 - **Admin „Bucket scannen“** / Presigned URLs: brauchen **S3-API** in `.env.local`:
-  - `HETZNER_ENDPOINT` = z. B. `https://nbg1.your-objectstorage.com` (Region-Endpoint aus der Hetzner-Konsole, **nicht** die lange Public-Object-URL einzelner Keys).
-  - `HETZNER_BUCKET_NAME`, `HETZNER_ACCESS_KEY`, `HETZNER_SECRET_KEY`
+  - `R2_ENDPOINT` = S3-Endpunkt des Buckets. Der Bucket liegt in der **EU-Jurisdiktion**, deshalb traegt der Host `.eu.` — die Adresse steht in der Cloudflare-Konsole unter R2 → Bucket → Settings.
+  - `R2_BUCKET_NAME`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`
+  - Region ist bei R2 immer `auto`; `lib/storage.ts` setzt das fest.
+- **Kursvideos** laufen nicht ueber den Bucket, sondern ueber Cloudflare Stream
+  (`CLOUDFLARE_*`, signiertes HLS). Pruefen mit `npm run cf:check`.
+- CORS fuer Browser-Uploads: [`docs/r2-presigned-upload-cors.md`](docs/r2-presigned-upload-cors.md).
 
 ## 3) Demo-Flow fuer Praesentation
 
