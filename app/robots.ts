@@ -29,6 +29,9 @@ export default function robots(): MetadataRoute.Robots {
           "/einsteig",
           "/pending-review",
           "/survey/",
+          // Offene Vorschau der Verkaufsseite — inhaltsgleich mit `/` und nur
+          // zum Herzeigen gedacht. Indexiert waere sie doppelter Inhalt.
+          "/vorschau",
         ],
       },
     ],

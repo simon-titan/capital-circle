@@ -26,6 +26,10 @@ const PUBLIC_PATHS = [
   "/checkout/success",
   "/checkout/zurueck",
   "/set-password",
+  // Offene Vorschau der Verkaufsseite (`app/vorschau/page.tsx`) — derselbe
+  // Inhalt wie `/`, aber ohne Anmeldepflicht, ohne Dashboard-Weiche und
+  // ohne Wartungs-Gate (siehe `maintenanceExempt` weiter unten).
+  "/vorschau",
   // `app/robots.ts` erzeugt diese Adresse. Sie steht im Matcher unten nicht
   // unter den Ausnahmen, also käme sie ohne diesen Eintrag als Login-HTML
   // beim Crawler an — und `/go/` wäre nicht gesperrt.
@@ -123,8 +127,13 @@ export async function proxy(request: NextRequest) {
 
   // Wartungsmodus-Gate: additiv, betrifft weder /api (oben bereits returned) noch /wartung,
   // /admin* oder /login. Nicht-Admins (inkl. nicht eingeloggter Besucher) werden umgeleitet.
+  // `/vorschau` ist bewusst dabei: Die Adresse existiert genau dafür, die
+  // Verkaufsseite auch dann herzeigen zu koennen, wenn die Plattform zu ist.
   const maintenanceExempt =
-    pathname === "/wartung" || pathname.startsWith("/admin") || pathname === "/login";
+    pathname === "/wartung" ||
+    pathname === "/vorschau" ||
+    pathname.startsWith("/admin") ||
+    pathname === "/login";
   if (!maintenanceExempt) {
     const maintenance = await getMaintenanceState();
     if (maintenance.enabled) {
