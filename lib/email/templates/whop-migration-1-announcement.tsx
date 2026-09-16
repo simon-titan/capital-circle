@@ -28,10 +28,8 @@ export default function WhopMigrationMail1({
   return (
     <BaseEmail
       previewText="Ab heute ist der Grund vom Tisch, warum du bisher nicht dabei warst."
-      accentGradient={`linear-gradient(90deg, transparent, ${T.brandRed} 30%, ${T.brandRedSoft} 70%, transparent)`}
       hideFooter={false}
       unsubscribeUrl={unsubscribeUrl}
-      footerLinkColor={T.accent}
       bodyFontFamily={T.fontBody}
       headFontLinkHref={T.fontLinkHref}
     >

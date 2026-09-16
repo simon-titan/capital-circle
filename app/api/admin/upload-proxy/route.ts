@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { buildAdminStorageKey, type AdminUploadKeyInput } from "@/lib/admin-upload-key";
 import { requireAdmin } from "@/lib/supabase/admin-auth";
-import { getHetznerStorageMisconfiguration, putObjectBody } from "@/lib/storage";
+import { getStorageMisconfiguration, putObjectBody } from "@/lib/storage";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   const { error } = await requireAdmin();
   if (error) return error;
 
-  const cfgErr = getHetznerStorageMisconfiguration();
+  const cfgErr = getStorageMisconfiguration();
   if (cfgErr) {
     return NextResponse.json({ ok: false, error: cfgErr }, { status: 503 });
   }

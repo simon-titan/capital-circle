@@ -1,17 +1,31 @@
-/* FullCalendar angepasst an DESIGN.json (Dark Monochrome + Gold-Akzent) */
+/*
+ * FullCalendar im Schema v3.2 „Champagner auf Graphit“ (DESIGN.md):
+ * Graphit-Zellen mit Haarlinien, Champagner für Heute, Auswahl und Events,
+ * Inter mit tabellarischen Ziffern. Farben ausschließlich über --cc-*.
+ */
 
 .events-calendar-root .fc {
-  --fc-border-color: rgba(255, 255, 255, 0.1);
-  --fc-today-bg-color: rgba(212, 175, 55, 0.1);
+  --fc-border-color: var(--cc-line);
+  --fc-today-bg-color: var(--cc-gold-wash);
   --fc-page-bg-color: transparent;
-  --fc-neutral-bg-color: rgba(255, 255, 255, 0.04);
-  --fc-list-event-hover-bg-color: rgba(255, 255, 255, 0.08);
-  font-family: var(--font-body, "Inter", sans-serif);
-  padding-top: 6px;
+  --fc-neutral-bg-color: rgba(255, 255, 255, 0.03);
+  --fc-neutral-text-color: var(--cc-text-2);
+  --fc-highlight-color: rgba(212, 176, 128, 0.1);
+  --fc-list-event-hover-bg-color: rgba(212, 176, 128, 0.06);
+  /* Events: Champagner-Hauch mit Gold-Haarlinie (einziger Akzent) */
+  --fc-event-bg-color: rgba(212, 176, 128, 0.18);
+  --fc-event-border-color: rgba(232, 192, 148, 0.5);
+  --fc-event-text-color: var(--cc-text);
+  font-family: "Inter", system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  color: var(--cc-text-soft);
+  padding-top: 2px;
 }
 
 .events-calendar-root .fc-theme-standard td,
-.events-calendar-root .fc-theme-standard th {
+.events-calendar-root .fc-theme-standard th,
+.events-calendar-root .fc-theme-standard .fc-scrollgrid {
   border-color: var(--fc-border-color);
 }
 
@@ -25,7 +39,6 @@
 }
 
 .events-calendar-root .fc-toolbar {
-  gap: 16px;
   margin-bottom: 20px !important;
 }
 
@@ -34,13 +47,14 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 12px !important;
+  min-width: 0;
 }
 
 .events-calendar-root .fc-button-group {
   display: inline-flex !important;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px !important;
+  gap: 8px !important;
   vertical-align: middle;
 }
 
@@ -51,34 +65,55 @@
 }
 
 .events-calendar-root .fc-toolbar-title {
-  font-size: 1.35rem !important;
+  font-size: 20px !important;
   font-weight: 600;
-  letter-spacing: -0.02em;
-  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  color: var(--cc-text);
 }
 
+/* Buttons = Line-Variante: Haarlinie, beim Hover Gold-Kante */
 .events-calendar-root .fc-button {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid var(--cc-line-strong) !important;
   border-radius: 8px !important;
-  color: #e8e8ea !important;
+  color: var(--cc-text) !important;
+  font-family: inherit;
   font-size: 13px !important;
   font-weight: 500 !important;
-  padding: 0.46em 1em !important;
+  text-transform: none;
+  padding: 0.5em 1em !important;
   box-shadow: none !important;
-  transition: background 150ms ease, border-color 150ms ease, color 150ms ease !important;
+  transition:
+    background-color 180ms var(--cc-ease),
+    border-color 180ms var(--cc-ease),
+    color 180ms var(--cc-ease),
+    box-shadow 180ms var(--cc-ease) !important;
 }
 
 .events-calendar-root .fc-button:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border-color: rgba(255, 255, 255, 0.2) !important;
+  background: rgba(212, 176, 128, 0.06) !important;
+  border-color: var(--cc-gold-line) !important;
+  box-shadow: 0 0 18px rgba(212, 176, 128, 0.12) !important;
 }
 
+.events-calendar-root .fc-button:focus-visible {
+  outline: 2px solid var(--cc-gold-line);
+  outline-offset: 2px;
+}
+
+.events-calendar-root .fc-button:disabled {
+  opacity: 0.45 !important;
+  cursor: default;
+}
+
+/* Aktive Ansicht: wie der aktive Nav-Punkt — Gold-Haarlinie, Gold-Verlauf, Text in Gold hell */
 .events-calendar-root .fc-button-primary:not(:disabled):active,
 .events-calendar-root .fc-button-primary:not(:disabled).fc-button-active {
-  background: rgba(212, 175, 55, 0.18) !important;
-  border-color: rgba(212, 175, 55, 0.55) !important;
-  color: #e8c547 !important;
+  background: linear-gradient(90deg, rgba(212, 176, 128, 0.16) 0%, rgba(212, 176, 128, 0.04) 100%) !important;
+  border-color: var(--cc-gold-line) !important;
+  color: var(--cc-gold-light) !important;
+  box-shadow: 0 0 16px rgba(212, 176, 128, 0.1) !important;
 }
 
 .events-calendar-root .fc-prev-button,
@@ -87,29 +122,45 @@
   height: 32px !important;
   border-radius: 999px !important;
   padding: 0 !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
 }
 
 .events-calendar-root .fc-col-header-cell {
-  padding: 8px 4px;
-  font-size: 11px;
+  padding: 8px 2px;
+  font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.56);
+  color: var(--cc-text-2);
+}
+
+.events-calendar-root .fc-col-header-cell.fc-day-today {
+  color: var(--cc-gold-light);
+}
+
+.events-calendar-root .fc-col-header-cell-cushion,
+.events-calendar-root .fc-daygrid-day-number,
+.events-calendar-root .fc-list-day-cushion a {
+  color: inherit;
 }
 
 .events-calendar-root .fc-daygrid-day-number {
-  font-family: var(--font-mono, "JetBrains Mono", monospace);
   font-size: 12px;
+  font-weight: 500;
   padding: 6px 8px;
-  color: rgba(240, 240, 242, 0.9);
+  color: var(--cc-text-soft);
 }
 
+/* Heute: Gold-Verlauf mit dunkler Tinte */
 .events-calendar-root .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
-  background: rgba(212, 175, 55, 0.36);
+  margin: 4px;
+  padding: 2px 7px;
+  background: var(--cc-gold-grad);
   border-radius: 6px;
-  color: #0a0a0a;
+  color: var(--cc-on-gold);
   font-weight: 600;
+  box-shadow: 0 0 12px rgba(212, 176, 128, 0.35);
 }
 
 .events-calendar-root .fc-daygrid-day-frame {
@@ -117,7 +168,7 @@
 }
 
 .events-calendar-root .fc-event {
-  border-radius: 7px !important;
+  border-radius: 6px !important;
   border-width: 1px !important;
   border-style: solid !important;
   padding: 3px 7px;
@@ -125,23 +176,102 @@
   font-weight: 600;
   line-height: 1.25;
   box-shadow: none;
+  cursor: pointer;
+  transition:
+    border-color 150ms var(--cc-ease),
+    box-shadow 150ms var(--cc-ease);
 }
 
-/* Locked (premium-only) events for Free Members: de-emphasize */
-.events-calendar-root .fc-event.fc-event--premium-locked {
-  filter: grayscale(80%);
-  opacity: 0.5;
-  pointer-events: auto; /* keep hover state for tooltip, but block click in JS */
-  background: rgba(255, 255, 255, 0.04) !important;
-  color: rgba(255, 255, 255, 0.6) !important;
-  border-color: rgba(255, 255, 255, 0.06) !important;
+.events-calendar-root .fc-event:not(.fc-list-event):hover {
+  border-color: rgb(var(--ev-rgb)) !important;
+  box-shadow: 0 0 12px rgba(var(--ev-rgb), 0.3);
 }
 
-/* Free Call (Sunday) highlight */
+.events-calendar-root .fc-event:focus-visible {
+  outline: 2px solid var(--cc-gold-line);
+  outline-offset: 2px;
+}
+
+/*
+ * Event-Töne aus der Markenpalette (config/event-colors.ts): der Admin wählt die Farbe,
+ * `EventsCalendar` setzt `ev-tone-<key>`. Hauch + Haarlinie im jeweiligen Ton;
+ * Free-Call/gesperrt (weiter unten) überschreiben das.
+ */
+.events-calendar-root .fc-event {
+  --ev-rgb: 212, 176, 128;
+}
+
+.events-calendar-root .fc-event.ev-tone-champagner-hell {
+  --ev-rgb: 232, 192, 148;
+}
+
+.events-calendar-root .fc-event.ev-tone-bronze {
+  --ev-rgb: 184, 147, 95;
+}
+
+.events-calendar-root .fc-event.ev-tone-silber {
+  --ev-rgb: 209, 208, 212;
+}
+
+.events-calendar-root .fc-event.ev-tone-graphit {
+  --ev-rgb: 128, 134, 141;
+}
+
+.events-calendar-root .fc-event[class*="ev-tone-"] {
+  --fc-event-bg-color: rgba(var(--ev-rgb), 0.18);
+  --fc-event-border-color: rgba(var(--ev-rgb), 0.55);
+}
+
+.events-calendar-root .fc-list-event .fc-list-event-dot,
+.events-calendar-root .fc-daygrid-event-dot {
+  border-color: rgb(var(--ev-rgb)) !important;
+}
+
+/* Monatsansicht: Punkt-Events als Champagner-Chip statt nacktem Text */
+.events-calendar-root .fc-daygrid-dot-event {
+  background: var(--fc-event-bg-color);
+  border-color: var(--fc-event-border-color) !important;
+  color: var(--fc-event-text-color);
+}
+
+.events-calendar-root .fc-daygrid-dot-event:hover {
+  background: rgba(var(--ev-rgb), 0.28);
+}
+
+/* Free Call (Sonntag) für Free-Mitglieder: Gold-Verlauf mit dunkler Tinte */
 .events-calendar-root .fc-event.fc-event--free-call {
-  background: #D4AF37 !important;
-  border-color: #D4AF37 !important;
-  color: #0a0a0a !important;
+  --fc-event-bg-color: var(--cc-gold);
+  --fc-event-border-color: var(--cc-gold-light);
+  --fc-event-text-color: var(--cc-on-gold);
+}
+
+.events-calendar-root .fc-event.fc-event--free-call:not(.fc-list-event) {
+  background: var(--cc-gold-grad) !important;
+  border-color: rgba(232, 192, 148, 0.9) !important;
+  color: var(--cc-on-gold) !important;
+  box-shadow: 0 0 14px rgba(212, 176, 128, 0.35);
+}
+
+.events-calendar-root .fc-list-event.fc-event--free-call .fc-list-event-title {
+  color: var(--cc-gold-light);
+  font-weight: 600;
+}
+
+/* Gesperrte (Premium-)Events für Free-Mitglieder: sichtbar, aber zurückgenommen; Klick blockt das JS */
+.events-calendar-root .fc-event.fc-event--premium-locked {
+  --fc-event-bg-color: rgba(255, 255, 255, 0.03);
+  --fc-event-border-color: var(--cc-line);
+  --fc-event-text-color: var(--cc-text-3);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.events-calendar-root .fc-event.fc-event--premium-locked:not(.fc-list-event),
+.events-calendar-root .fc-event.fc-event--premium-locked:not(.fc-list-event):hover {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: var(--cc-line) !important;
+  color: var(--cc-text-3) !important;
+  box-shadow: none;
 }
 
 /*
@@ -183,69 +313,120 @@
   align-items: center;
 }
 
-.events-calendar-root .fc-event-title,
-.events-calendar-root .fc-event-time {
-  font-family: var(--font-body, "Inter", sans-serif);
-}
-
 .events-calendar-root .fc-timegrid-axis-cushion,
 .events-calendar-root .fc-timegrid-slot-label-cushion {
-  font-family: var(--font-mono, "JetBrains Mono", monospace);
   font-size: 11px;
-  color: rgba(240, 240, 242, 0.7);
+  font-weight: 500;
+  color: var(--cc-text-3);
   padding: 0 8px;
 }
 
 .events-calendar-root .fc-timegrid-slot,
 .events-calendar-root .fc-timegrid-axis {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--cc-line);
 }
 
 .events-calendar-root .fc-timegrid-slot {
   height: 36px;
 }
 
-.events-calendar-root .fc-timegrid-col.fc-day-today {
-  background: rgba(212, 175, 55, 0.07);
-}
-
+/* Liste */
 .events-calendar-root .fc-list {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
+  border: 1px solid var(--cc-line) !important;
+  border-radius: 10px;
   overflow: hidden;
 }
 
 .events-calendar-root .fc-list-day-cushion {
-  background: rgba(255, 255, 255, 0.06);
-  color: #f5f0e6;
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: var(--cc-text-soft);
   font-size: 12px;
-  letter-spacing: 0.05em;
+  font-weight: 500;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  border-bottom: 1px solid rgba(212, 175, 55, 0.25);
+}
+
+.events-calendar-root .fc-list-day.fc-day-today .fc-list-day-cushion {
+  color: var(--cc-gold-light);
 }
 
 .events-calendar-root .fc-list-event td {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--cc-line);
+  background: transparent;
   padding-top: 12px;
   padding-bottom: 12px;
+  transition: background-color 150ms var(--cc-ease);
 }
 
 .events-calendar-root .fc-list-event-time {
-  font-family: var(--font-mono, "JetBrains Mono", monospace);
-  color: #e8c547;
+  color: var(--cc-text-2);
+  white-space: nowrap;
 }
 
 .events-calendar-root .fc-list-event-title {
-  color: #f0f0f2;
+  color: var(--cc-text);
   font-weight: 500;
 }
 
+.events-calendar-root .fc-list-event-title a {
+  color: inherit;
+}
+
 .events-calendar-root .fc-list-event-dot {
-  border-color: currentcolor !important;
-  border-width: 6px !important;
+  border-width: 5px !important;
 }
 
 .events-calendar-root .fc-list-event:hover td {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(212, 176, 128, 0.06);
+}
+
+.events-calendar-root .fc-list-empty {
+  background: transparent;
+  color: var(--cc-text-2);
+}
+
+/* Schmale Screens (bis 390px): Toolbar bricht sauber um, nichts läuft seitlich über */
+@media (max-width: 767px) {
+  .events-calendar-root .fc-header-toolbar {
+    gap: 12px !important;
+  }
+
+  .events-calendar-root .fc-toolbar-chunk {
+    gap: 8px !important;
+  }
+
+  .events-calendar-root .fc-button-group {
+    gap: 6px !important;
+  }
+
+  .events-calendar-root .fc-button {
+    padding: 0.45em 0.8em !important;
+  }
+
+  .events-calendar-root .fc-toolbar-title {
+    font-size: 16px !important;
+  }
+
+  .events-calendar-root .fc-col-header-cell {
+    font-size: 10px;
+    letter-spacing: 0.02em;
+  }
+
+  .events-calendar-root .fc-daygrid-day-frame {
+    min-height: 64px;
+  }
+
+  .events-calendar-root .fc-timegrid-axis-cushion,
+  .events-calendar-root .fc-timegrid-slot-label-cushion {
+    font-size: 10px;
+    padding: 0 4px;
+  }
+
+  /* Wochenansicht auf dem Handy: Spalten sind ~40px schmal — Titel abschneiden statt mitten im Wort umbrechen */
+  .events-calendar-root .fc-timegrid-event .fc-event-time,
+  .events-calendar-root .fc-timegrid-event .fc-event-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }

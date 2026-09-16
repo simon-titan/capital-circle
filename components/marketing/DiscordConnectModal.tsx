@@ -1,26 +1,10 @@
 "use client";
 
-import { Box, Stack, Text } from "@chakra-ui/react";
+import { Box, Button, IconButton, Stack, Text } from "@chakra-ui/react";
 import { useEffect } from "react";
 import { X } from "lucide-react";
 import { FaDiscord } from "react-icons/fa6";
-
-const DISCORD_PURPLE = "#5865F2";
-
-const accentCtaSx = {
-  background: "linear-gradient(135deg, #8FFBEB 0%, #47F7DC 50%, #1FB9A6 100%)",
-  boxShadow:
-    "0 0 28px rgba(71,247,220,0.40), 0 4px 16px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.34)",
-  border: "none",
-  cursor: "pointer",
-  transition: "all 220ms cubic-bezier(0.16, 1, 0.3, 1)",
-  _hover: {
-    background: "linear-gradient(135deg, #A8FCEF 0%, #5FFAE2 50%, #2AD3BE 100%)",
-    boxShadow:
-      "0 0 48px rgba(71,247,220,0.60), 0 6px 22px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.40)",
-    transform: "translateY(-1px)",
-  },
-};
+import { FunnelHeadline, noMotion } from "./funnel-ui";
 
 /**
  * Popup nach dem Lead-Formular: bietet den direkten Discord-Beitritt per OAuth an.
@@ -54,70 +38,64 @@ export function DiscordConnectModal({
       justifyContent="center"
       px={4}
       onClick={onClose}
+      bg="rgba(8, 10, 12, 0.72)"
       sx={{
-        background: "rgba(0,0,0,0.82)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
         animation: "dcmFadeIn 200ms ease forwards",
         "@keyframes dcmFadeIn": { "0%": { opacity: 0 }, "100%": { opacity: 1 } },
+        ...noMotion,
       }}
     >
       <Box
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="discord-connect-title"
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
         position="relative"
         w="full"
         maxW="440px"
-        borderRadius="20px"
+        borderRadius="12px"
+        overflow="hidden"
         p={{ base: 7, md: 9 }}
         textAlign="center"
+        bg="var(--cc-panel-solid)"
+        bgImage="radial-gradient(circle at 100% 0%, rgba(212, 176, 128, 0.14), transparent 50%), radial-gradient(circle at 0% 100%, rgba(232, 192, 148, 0.05), transparent 50%)"
+        border="1px solid rgba(232, 192, 148, 0.3)"
+        boxShadow="0 24px 60px rgba(0, 0, 0, 0.6), 0 0 44px rgba(212, 176, 128, 0.12)"
         sx={{
-          background: "rgba(6,6,8,0.96)",
-          border: "1px solid rgba(71,247,220,0.30)",
-          boxShadow:
-            "0 24px 70px rgba(0,0,0,0.75), 0 0 0 1px rgba(71,247,220,0.10), 0 0 60px rgba(71,247,220,0.12)",
           animation: "dcmScaleIn 260ms cubic-bezier(0.16,1,0.3,1) forwards",
           "@keyframes dcmScaleIn": {
             "0%": { opacity: 0, transform: "scale(0.94) translateY(8px)" },
             "100%": { opacity: 1, transform: "scale(1) translateY(0)" },
           },
+          ...noMotion,
         }}
       >
+        {/* Gold-Lichtkante oben */}
         <Box
-          h="2px"
           position="absolute"
           top={0}
           left={0}
           right={0}
-          sx={{
-            background:
-              "linear-gradient(90deg, transparent 5%, rgba(71,247,220,0.55) 30%, rgba(71,247,220,0.55) 70%, transparent 95%)",
-            borderRadius: "20px 20px 0 0",
-          }}
+          h="1px"
+          bgImage="linear-gradient(90deg, transparent 0%, rgba(232, 192, 148, 0.9) 45%, rgba(212, 176, 128, 0.3) 100%)"
+          aria-hidden
         />
 
-        <Box
-          as="button"
+        <IconButton
+          aria-label="Schließen"
+          icon={<X size={18} strokeWidth={1.75} />}
           position="absolute"
           top="14px"
           right="14px"
-          w="36px"
-          h="36px"
+          size="sm"
+          variant="line"
           borderRadius="full"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          cursor="pointer"
+          color="var(--cc-text-2)"
+          _hover={{ color: "var(--cc-text)", bg: "rgba(255, 255, 255, 0.06)", borderColor: "var(--cc-gold-line)" }}
           onClick={onClose}
-          sx={{
-            background: "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,255,255,0.10)",
-            color: "rgba(255,255,255,0.65)",
-            transition: "all 160ms ease",
-            _hover: { background: "rgba(255,255,255,0.12)", color: "#fff" },
-          }}
-        >
-          <X size={18} />
-        </Box>
+        />
 
         <Stack spacing={5} align="center">
           <Box
@@ -127,53 +105,36 @@ export function DiscordConnectModal({
             display="flex"
             alignItems="center"
             justifyContent="center"
-            color={DISCORD_PURPLE}
-            sx={{
-              background:
-                "radial-gradient(circle at 50% 40%, rgba(88,101,242,0.24), rgba(88,101,242,0.05) 70%)",
-              border: "1px solid rgba(88,101,242,0.50)",
-              boxShadow:
-                "0 0 28px rgba(88,101,242,0.42), inset 0 1px 0 rgba(255,255,255,0.12)",
-            }}
+            color="var(--cc-gold-light)"
+            bg="radial-gradient(circle at 50% 35%, rgba(232, 192, 148, 0.24), rgba(212, 176, 128, 0.05) 70%)"
+            border="1px solid rgba(232, 192, 148, 0.45)"
+            boxShadow="0 0 28px rgba(212, 176, 128, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.12)"
+            aria-hidden
           >
-            <FaDiscord size={32} />
+            <FaDiscord size={30} />
           </Box>
 
           <Stack spacing={2}>
-            <Text
-              className="inter-bold"
-              fontSize={{ base: "xl", md: "2xl" }}
-              color="var(--color-text-primary, #F0F0F2)"
-              lineHeight="1.25"
-            >
+            <FunnelHeadline as="h2" scale="md" id="discord-connect-title" fontSize={{ base: "21px", md: "24px" }}>
               Fast geschafft. Verbinde dein Discord.
-            </Text>
-            <Text className="inter" fontSize="sm" color="rgba(255,255,255,0.55)" lineHeight="1.6">
+            </FunnelHeadline>
+            <Text fontSize="14px" color="var(--cc-text-2)" lineHeight="1.6">
               Ein Klick und du bist drin. Du wirst automatisch dem Server
               hinzugefügt und bekommst deinen Zugang freigeschaltet.
             </Text>
           </Stack>
 
-          <Box
+          <Button
             as="a"
             href={joinUrl}
+            variant="gold"
             w="full"
-            minH="52px"
-            borderRadius="12px"
+            h="52px"
             fontSize="15px"
-            letterSpacing="0.02em"
-            color="#07080A"
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            gap={2}
-            className="inter-semibold"
-            sx={accentCtaSx}
+            leftIcon={<FaDiscord size={18} />}
           >
-            <FaDiscord size={18} />
             Discord verbinden
-          </Box>
-
+          </Button>
         </Stack>
       </Box>
     </Box>

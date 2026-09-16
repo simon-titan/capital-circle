@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, type ComponentType, type ReactNode } from "react";
-import { Box, HStack, SimpleGrid, Stack, Text } from "@chakra-ui/react";
-import { Lock, Video, TrendingUp, Users, BookOpen, Trophy, Target, Shield } from "lucide-react";
+import type { ReactNode } from "react";
+import { Box, Button, Flex, SimpleGrid, Stack, Text } from "@chakra-ui/react";
+import { BookOpen, Lock, Shield, Target, TrendingUp, Trophy, Users, Video, type LucideIcon } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
-import { GlassVideoPlayer } from "@/components/ui/GlassVideoPlayer";
 import { landingConfig } from "@/config/landing-config";
 import type { LandingFeature } from "@/config/landing-config";
+import { Accent, DisplayHeading, GoldIconTile, heroRise, VideoStage } from "./landing-ui";
 
 interface CtaOverrides {
   primary?: string;
@@ -27,7 +27,7 @@ interface HeroSectionProps {
   funnelVideoSrc?: string;
 }
 
-const ICON_MAP: Record<string, ComponentType<{ size?: number; strokeWidth?: number }>> = {
+const ICON_MAP: Record<string, LucideIcon> = {
   VideoCamera: Video,
   ChartLineUp: TrendingUp,
   Users: Users,
@@ -37,82 +37,13 @@ const ICON_MAP: Record<string, ComponentType<{ size?: number; strokeWidth?: numb
   Shield: Shield,
 };
 
-// Bronze / Silver / Gold — rotating 3-color scheme
-interface CardStyle {
-  border: string;
-  bg: string;
-  iconBg: string;
-  iconColor: string;
-  topLine: string;
-  shadow: string;
-}
-
-const CARD_STYLES: CardStyle[] = [
-  {
-    // Bronze (Kupfer-Bronze — deutlich rotstichig, klar von Gold getrennt)
-    border: "rgba(184,94,48,0.48)",
-    bg: "radial-gradient(circle at 85% 15%, rgba(184,94,48,0.18) 0%, rgba(8,8,8,0.70) 60%)",
-    iconBg: "rgba(184,94,48,0.20)",
-    iconColor: "#CD7F32",
-    topLine: "linear-gradient(90deg, transparent 10%, rgba(184,94,48,0.62) 50%, transparent 90%)",
-    shadow: "0 0 22px rgba(184,94,48,0.16), 0 3px 14px rgba(0,0,0,0.50)",
-  },
-  {
-    // Silver
-    border: "rgba(180,195,220,0.32)",
-    bg: "radial-gradient(circle at 15% 85%, rgba(180,200,230,0.12) 0%, rgba(8,8,8,0.72) 60%)",
-    iconBg: "rgba(180,195,220,0.14)",
-    iconColor: "#AAC0D8",
-    topLine: "linear-gradient(90deg, transparent 15%, rgba(160,180,210,0.48) 55%, transparent 90%)",
-    shadow: "0 0 18px rgba(180,200,230,0.10), 0 2px 12px rgba(0,0,0,0.50)",
-  },
-  {
-    // Gold
-    border: "rgba(212,175,55,0.42)",
-    bg: "radial-gradient(circle at 50% 0%, rgba(212,175,55,0.15) 0%, rgba(8,8,8,0.68) 60%)",
-    iconBg: "rgba(212,175,55,0.18)",
-    iconColor: "#D4AF37",
-    topLine: "linear-gradient(90deg, transparent 8%, rgba(212,175,55,0.65) 45%, rgba(212,175,55,0.65) 55%, transparent 92%)",
-    shadow: "0 0 24px rgba(212,175,55,0.14), 0 3px 14px rgba(0,0,0,0.48)",
-  },
+const COMMUNITY_AVATARS = [
+  "/client-pb/1765279404415.jpg",
+  "/client-pb/393d1b15978eed96285cf196b2f51eda.avif",
+  "/client-pb/4208db19763848b131989eadba9899aa.avif",
+  "/client-pb/user_6819319_6ec853ff-5777-4398-8fcc-06e2621cbcf8.avif",
+  "/client-pb/Screenshot 2026-03-03 071433.png",
 ];
-
-const BEWERBUNG_STATEMENT: LandingFeature = {
-  icon: "Trophy",
-  label: "",
-  detail: null,
-};
-
-const BEWERBUNG_STATEMENT_TITLE: ReactNode = (
-  <Text
-    as="div"
-    fontSize="sm"
-    color="#07080A"
-    className="inter"
-    fontWeight={500}
-    lineHeight="1.4"
-  >
-    <Box as="span" fontWeight={700} className="inter-bold">
-      Capital Circle
-    </Box>
-    {" ist kein "}
-    <Box as="span" fontWeight={700} className="inter-bold">
-      Kurs
-    </Box>
-    {". Es ist das "}
-    <Box as="span" fontWeight={700} className="inter-bold">
-      Umfeld
-    </Box>
-    {" das aus "}
-    <Box as="span" fontWeight={700} className="inter-bold">
-      inkonsistenten Tradern
-    </Box>{" "}
-    <Box as="span" fontWeight={700} className="inter-bold">
-      profitable
-    </Box>{" "}
-    macht.
-  </Text>
-);
 
 const BEWERBUNG_FEATURES: LandingFeature[] = [
   { icon: "BookOpen", label: "Von 0 zum ersten Setup – strukturiert", detail: null },
@@ -121,148 +52,112 @@ const BEWERBUNG_FEATURES: LandingFeature[] = [
   { icon: "VideoCamera", label: "Wöchentliche Zoom Calls direkt mit Emre", detail: null },
 ];
 
-function FeatureCard({ feature, index, mobile }: { feature: LandingFeature; index: number; mobile?: boolean }) {
-  const Icon = ICON_MAP[feature.icon] ?? Video;
-  const style = CARD_STYLES[index % CARD_STYLES.length];
-
+/** Setzt ein Wort der Headline (den Markennamen) in Gold hell. */
+function withAccent(text: string, word: string): ReactNode {
+  const at = text.indexOf(word);
+  if (at < 0) return text;
   return (
-    <Box
-      {...(mobile && {
-        minW: "190px",
-        maxW: "220px",
-        flexShrink: 0,
-        sx: { scrollSnapAlign: "start" },
-      })}
-      position="relative"
-      borderRadius="14px"
-      overflow="hidden"
-      px={{ base: 3, md: 3 }}
-      py={3}
-      textAlign="center"
-      sx={{
-        background: style.bg,
-        border: `1px solid ${style.border}`,
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        boxShadow: style.shadow,
-        transition: "all 250ms cubic-bezier(0.16, 1, 0.3, 1)",
-        _hover: { transform: "translateY(-3px) scale(1.015)" },
-        _before: {
-          content: '""',
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: "2px",
-          background: style.topLine,
-          zIndex: 1,
-        },
-        ...(mobile && { scrollSnapAlign: "start" }),
-      }}
-    >
-      <Box position="relative" zIndex={1} display="flex" flexDirection="column" alignItems="center" gap={2}>
-        <Box
-          w="36px"
-          h="36px"
-          borderRadius="10px"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          sx={{ background: style.iconBg, border: `1px solid ${style.border}` }}
-          color={style.iconColor}
-        >
-          <Icon size={16} strokeWidth={1.75} />
-        </Box>
-        <Box>
-          <Text fontSize="sm" fontWeight="500" color="var(--color-text-primary, #F0F0F2)" className="inter-medium" lineHeight="1.3">
-            {feature.label}
-          </Text>
-          {feature.detail && (
-            <Text fontSize="xs" color="rgba(255,255,255,0.38)" className="inter" fontWeight={400} lineHeight="1.4" mt="2px">
-              {feature.detail}
-            </Text>
-          )}
-        </Box>
-      </Box>
-    </Box>
+    <>
+      {text.slice(0, at)}
+      <Accent>{word}</Accent>
+      {text.slice(at + word.length)}
+    </>
   );
 }
 
-function CommunityCard({ feature, titleContent }: { feature: LandingFeature; titleContent?: ReactNode }) {
-  const Icon = ICON_MAP[feature.icon] ?? Trophy;
-
-  return (
-    <Box
-      w="full"
-      position="relative"
-      borderRadius="12px"
-      overflow="hidden"
-      px={{ base: 4, md: 5 }}
-      py={{ base: 3.5, md: 3.5 }}
-      sx={{
-        background: "linear-gradient(135deg, #E8C547 0%, #D4AF37 50%, #A67C00 100%)",
-        boxShadow:
-          "0 0 32px rgba(212,175,55,0.35), 0 4px 18px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.22)",
-        transition: "all 220ms cubic-bezier(0.16, 1, 0.3, 1)",
-        _hover: {
-          background: "linear-gradient(135deg, #F0DC82 0%, #E8C547 50%, #D4AF37 100%)",
-          boxShadow:
-            "0 0 44px rgba(212,175,55,0.50), 0 6px 22px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.28)",
-          transform: "translateY(-1px)",
-        },
-      }}
-    >
-      <Box display="flex" alignItems="center" justifyContent="center" gap={3}>
-        <Box
-          w="34px"
-          h="34px"
-          borderRadius="10px"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          flexShrink={0}
-          bg="rgba(7,8,10,0.18)"
-          border="1px solid rgba(7,8,10,0.12)"
-          color="#07080A"
-        >
-          <Icon size={16} strokeWidth={2.2} />
-        </Box>
-        <Box textAlign="left">
-          {titleContent ?? (
-            <Text fontSize="sm" fontWeight="700" color="#07080A" className="inter-bold" lineHeight="1.2">
-              {feature.label}
-            </Text>
-          )}
-          {feature.detail && (
-            <Text fontSize="xs" fontWeight="500" color="rgba(7,8,10,0.68)" className="inter-medium" lineHeight="1.4" mt="2px">
-              {feature.detail}
-            </Text>
-          )}
-        </Box>
-      </Box>
-    </Box>
-  );
-}
-
+/** `{Wort}` in der Subheadline wird Gold hell. */
 function parseSubheadline(text: string): ReactNode[] {
   const segments = text.split(/(\{[^}]+\})/g);
   return segments.map((seg, i) => {
     if (seg.startsWith("{") && seg.endsWith("}")) {
-      const word = seg.slice(1, -1);
       return (
-        <Box
-          key={i}
-          as="span"
-          color="var(--color-accent-gold-light, #E8C547)"
-          fontWeight="500"
-          sx={{ background: "rgba(212,175,55,0.10)", borderRadius: "4px", paddingInline: "4px" }}
-        >
-          {word}
+        <Box key={i} as="span" color="var(--cc-gold-light)" fontWeight={500}>
+          {seg.slice(1, -1)}
         </Box>
       );
     }
     return seg;
   });
+}
+
+function Strong({ children }: { children: ReactNode }) {
+  return (
+    <Box as="span" color="var(--cc-text)" fontWeight={600}>
+      {children}
+    </Box>
+  );
+}
+
+/** Leistungen als ruhiges Datenblatt auf einer Glas-Karte statt als Kachel-Raster. */
+function FeatureSpec({ items, columns }: { items: LandingFeature[]; columns: { base: number; md: number } }) {
+  return (
+    <Box className="cc-card cc-card--still" w="full" p={{ base: 2, md: 3 }}>
+      <SimpleGrid as="ul" role="list" listStyleType="none" columns={columns} spacing={{ base: 1, md: 2 }}>
+        {items.map((feature) => {
+          const Icon = ICON_MAP[feature.icon] ?? Video;
+          return (
+            <Flex
+              as="li"
+              key={feature.label}
+              direction="column"
+              gap={3}
+              p={{ base: 3, md: 4 }}
+              borderRadius="10px"
+              transition="background-color 200ms var(--cc-ease)"
+              _hover={{ bg: "rgba(212, 176, 128, 0.05)" }}
+            >
+              <Flex
+                w="36px"
+                h="36px"
+                align="center"
+                justify="center"
+                borderRadius="10px"
+                bg="var(--cc-gold-wash)"
+                border="1px solid rgba(212, 176, 128, 0.25)"
+                color="var(--cc-gold-light)"
+                aria-hidden
+              >
+                <Icon size={18} strokeWidth={1.75} />
+              </Flex>
+              <Box>
+                <Text fontSize={{ base: "14px", md: "15px" }} fontWeight={600} lineHeight={1.35} color="var(--cc-text)">
+                  {feature.label}
+                </Text>
+                {feature.detail ? (
+                  <Text mt={1} fontSize="13px" lineHeight={1.45} color="var(--cc-text-2)">
+                    {feature.detail}
+                  </Text>
+                ) : null}
+              </Box>
+            </Flex>
+          );
+        })}
+      </SimpleGrid>
+    </Box>
+  );
+}
+
+/** Aussage mit Gold-Icon-Kachel auf Glas mit Gold-Rand. */
+function StatementCard({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
+  return (
+    <Flex
+      className="cc-card"
+      w="full"
+      maxW="720px"
+      align="center"
+      gap={4}
+      px={{ base: 4, md: 6 }}
+      py={{ base: 4, md: 5 }}
+      style={{ borderColor: "rgba(212, 176, 128, 0.38)" }}
+    >
+      <GoldIconTile size={44}>
+        <Icon size={20} strokeWidth={1.75} />
+      </GoldIconTile>
+      <Box minW={0} textAlign="left">
+        {children}
+      </Box>
+    </Flex>
+  );
 }
 
 export function HeroSection({ onApply, ctaOverrides, funnelVideoSrc, landingSlug }: HeroSectionProps) {
@@ -274,362 +169,168 @@ export function HeroSection({ onApply, ctaOverrides, funnelVideoSrc, landingSlug
   const defaultFunnelVideo = process.env.NEXT_PUBLIC_FREE_FUNNEL_VIDEO_URL?.trim() ?? "";
   const override = funnelVideoSrc?.trim();
   const videoSrc = override && override.length > 0 ? override : defaultFunnelVideo;
-  const [videoEnded, setVideoEnded] = useState(false);
   const isBewerbungLanding = landingSlug === "bewerbung";
+  const CommunityIcon = ICON_MAP[communityCard.icon] ?? Trophy;
 
   return (
     <Box
       as="section"
       id="hero-section"
+      aria-labelledby="hero-title"
       w="100%"
       position="relative"
-      overflowX={{ base: "visible", md: "hidden" }}
-      overflowY="visible"
-      pt={{ base: 10, md: 14 }}
+      overflowX="clip"
+      pt={{ base: 8, md: 12 }}
       pb={{ base: 14, md: 20 }}
       px={{ base: 4, md: 8, lg: 12 }}
-      sx={{
-        backgroundImage: "url('/bg/dashboard.png')",
-        backgroundSize: "cover",
-        backgroundPosition: "center center",
-        backgroundRepeat: "no-repeat",
-      }}
     >
-      {/* Radial dark vignette */}
+      {/* Lichtlinie oben + Champagner-Schein hinter dem Kopf */}
       <Box
-        position="absolute"
-        inset={0}
-        zIndex={0}
-        pointerEvents="none"
-        sx={{
-          background:
-            "radial-gradient(ellipse 88% 92% at 50% 50%, rgba(7,8,10,0.95) 0%, rgba(7,8,10,0.84) 28%, rgba(7,8,10,0.60) 52%, rgba(7,8,10,0.28) 72%, rgba(7,8,10,0.06) 100%)",
-        }}
-      />
-
-      {/* Gold top border */}
-      <Box
+        aria-hidden
         position="absolute"
         top={0}
-        left={0}
-        right={0}
-        h="2px"
-        zIndex={1}
+        left="12%"
+        right="12%"
+        h="1px"
+        bg="linear-gradient(90deg, transparent, rgba(232, 192, 148, 0.6), transparent)"
+      />
+      <Box
+        aria-hidden
+        position="absolute"
+        top="-160px"
+        left="50%"
+        w="1100px"
+        maxW="160%"
+        h="560px"
+        transform="translateX(-50%)"
         pointerEvents="none"
-        sx={{
-          background:
-            "linear-gradient(90deg, transparent 5%, rgba(212,175,55,0.45) 30%, rgba(212,175,55,0.45) 70%, transparent 95%)",
-        }}
+        bg="radial-gradient(ellipse 50% 50% at 50% 42%, rgba(212, 176, 128, 0.14), transparent 70%)"
       />
 
-      <Box maxW="960px" mx="auto" position="relative" zIndex={2}>
-        <Stack spacing={{ base: 7, md: 8 }} align="center">
-
-          {/* ── 1. Logo ───────────────────────────────────────────── */}
-          <Box lineHeight={1}>
-            <Box display={{ base: "block", md: "none" }}>
-              <Logo variant="onDark" width={260} height={73} priority />
-            </Box>
-            <Box display={{ base: "none", md: "block" }}>
-              <Logo variant="onDark" width={330} height={93} priority />
-            </Box>
+      <Stack maxW="980px" mx="auto" position="relative" zIndex={1} spacing={{ base: 7, md: 9 }} align="center">
+        {/* ── Logo ── */}
+        <Box lineHeight={1} {...heroRise(0)}>
+          <Box display={{ base: "block", md: "none" }}>
+            <Logo variant="onDark" width={210} height={59} priority />
           </Box>
-
-          {/* ── 2. Video player (GlassVideoPlayer) ─────────────────── */}
-          <Box w="full" maxW={{ base: "100%", md: "980px" }} position="relative">
-            {videoSrc ? (
-              <>
-                <GlassVideoPlayer
-                  src={videoSrc}
-                  autoPlay
-                  onEnded={() => setVideoEnded(true)}
-                />
-                {videoEnded && (
-                  <Box
-                    position="absolute"
-                    inset={0}
-                    zIndex={5}
-                    display="flex"
-                    flexDirection="column"
-                    alignItems="center"
-                    justifyContent="center"
-                    gap={4}
-                    borderRadius="16px"
-                    sx={{
-                      background: "radial-gradient(circle, rgba(7,8,10,0.93) 0%, rgba(7,8,10,0.82) 100%)",
-                      backdropFilter: "blur(12px)",
-                      WebkitBackdropFilter: "blur(12px)",
-                    }}
-                  >
-                    <Text
-                      className="inter-semibold"
-                      color="var(--color-text-primary, #F0F0F2)"
-                      fontSize={{ base: "lg", md: "xl" }}
-                      textAlign="center"
-                      px={4}
-                    >
-                      Bereit für den nächsten Schritt?
-                    </Text>
-                    <Box
-                      as="button"
-                      onClick={() => { setVideoEnded(false); onApply(); }}
-                      minH="48px"
-                      px={8}
-                      borderRadius="12px"
-                      fontWeight="600"
-                      fontSize="15px"
-                      letterSpacing="0.02em"
-                      color="#07080A"
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="center"
-                      gap={2}
-                      className="inter-semibold"
-                      sx={{
-                        background: "linear-gradient(135deg, #E8C547 0%, #D4AF37 50%, #A67C00 100%)",
-                        boxShadow:
-                          "0 0 28px rgba(212,175,55,0.35), 0 4px 16px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.22)",
-                        border: "none",
-                        cursor: "pointer",
-                        transition: "all 220ms cubic-bezier(0.16, 1, 0.3, 1)",
-                        _hover: {
-                          background: "linear-gradient(135deg, #F0DC82 0%, #E8C547 50%, #D4AF37 100%)",
-                          boxShadow:
-                            "0 0 44px rgba(212,175,55,0.50), 0 6px 22px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.28)",
-                          transform: "translateY(-1px)",
-                        },
-                        _active: {
-                          transform: "translateY(0px)",
-                          boxShadow: "0 0 16px rgba(212,175,55,0.20)",
-                        },
-                      }}
-                    >
-                      <Lock size={14} strokeWidth={2.5} />
-                      {videoEndedLabel}
-                    </Box>
-                    <Text
-                      fontSize="xs"
-                      color="rgba(255,255,255,0.35)"
-                      className="inter"
-                      fontWeight={400}
-                      textAlign="center"
-                      mt={-1}
-                    >
-                      Klicke um das Video erneut abzuspielen
-                    </Text>
-                  </Box>
-                )}
-              </>
-            ) : (
-              <Box
-                borderRadius="16px"
-                overflow="hidden"
-                sx={{
-                  aspectRatio: "16 / 9",
-                  border: "1px solid rgba(212,175,55,0.22)",
-                  boxShadow: "0 16px 56px rgba(0,0,0,0.55), 0 0 0 1px rgba(212,175,55,0.08)",
-                  background: "rgba(0,0,0,0.60)",
-                }}
-                display="flex"
-                flexDirection="column"
-                alignItems="center"
-                justifyContent="center"
-                gap={3}
-              >
-                <Box
-                  w="56px"
-                  h="56px"
-                  borderRadius="full"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  bg="rgba(212,175,55,0.12)"
-                  border="1px solid rgba(212,175,55,0.35)"
-                  color="var(--color-accent-gold, #D4AF37)"
-                  fontSize="22px"
-                >
-                  ▶
-                </Box>
-                <Text className="inter" color="rgba(255,255,255,0.35)" fontSize="sm" fontWeight={400}>
-                  Vorstellungsvideo folgt in Kürze
-                </Text>
-              </Box>
-            )}
+          <Box display={{ base: "none", md: "block" }}>
+            <Logo variant="onDark" width={260} height={73} priority />
           </Box>
+        </Box>
 
-          {/* ── 3. Community banner ───────────────────────────────── */}
-          <Box
-            w="full"
-            maxW={{ base: "100%", md: "980px" }}
-            px={5}
-            py={3}
-            borderRadius="12px"
-            sx={{
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(212,175,55,0.16)",
-              backdropFilter: "blur(16px)",
-              WebkitBackdropFilter: "blur(16px)",
-            }}
-          >
-            <HStack spacing={3} justify="center">
-              <HStack spacing="-10px" flexShrink={0} align="center">
-                {[
-                  "/client-pb/1765279404415.jpg",
-                  "/client-pb/393d1b15978eed96285cf196b2f51eda.avif",
-                  "/client-pb/4208db19763848b131989eadba9899aa.avif",
-                  "/client-pb/user_6819319_6ec853ff-5777-4398-8fcc-06e2621cbcf8.avif",
-                  "/client-pb/Screenshot 2026-03-03 071433.png",
-                ].map((src, i) => (
-                  <Box
-                    key={i}
-                    as="img"
-                    src={src}
-                    alt={`Trader ${i + 1}`}
-                    w={{ base: "22px", md: "36px" }}
-                    h={{ base: "22px", md: "36px" }}
-                    borderRadius="full"
-                    objectFit="cover"
-                    borderWidth={{ base: "1.5px", md: "2px" }}
-                    borderStyle="solid"
-                    borderColor="rgba(7,8,10,0.9)"
-                    boxShadow="0 2px 6px rgba(0,0,0,0.4)"
-                    zIndex={10 - i}
-                    sx={{
-                      transform: `translateX(${i * -3}px)`,
-                      "@media screen and (min-width: 48em)": {
-                        transform: `translateX(${i * -6}px)`,
-                      },
-                    }}
-                    ml={i === 0 ? 0 : { base: "-5px", md: "-10px" }}
-                  />
-                ))}
-              </HStack>
-              <Text fontSize="sm" color="rgba(255,255,255,0.58)" className="inter" fontWeight={400}>
-                <Box as="span" color="var(--color-accent-gold, #D4AF37)" fontWeight="500">
-                  1.000+
-                </Box>{" "}
-                Trader bereits auf ihrem Weg begleitet
-              </Text>
-            </HStack>
-          </Box>
-
-          {/* ── 4. CTA — Desktop only ─────────────────────────────── */}
-          <Stack spacing={2} align="center" w="full" maxW="700px" display={{ base: "none", md: "flex" }}>
-            <Box
-              as="button"
-              onClick={onApply}
-              w="full"
-              minH="52px"
-              borderRadius="12px"
-              fontWeight="600"
-              fontSize="16px"
-              letterSpacing="0.02em"
-              color="#07080A"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              gap={2}
-              className="inter-semibold"
-              sx={{
-                background: "linear-gradient(135deg, #E8C547 0%, #D4AF37 50%, #A67C00 100%)",
-                boxShadow:
-                  "0 0 28px rgba(212,175,55,0.30), 0 4px 16px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.22)",
-                border: "none",
-                cursor: "pointer",
-                transition: "all 220ms cubic-bezier(0.16, 1, 0.3, 1)",
-                _hover: {
-                  background: "linear-gradient(135deg, #F0DC82 0%, #E8C547 50%, #D4AF37 100%)",
-                  boxShadow:
-                    "0 0 44px rgba(212,175,55,0.50), 0 6px 22px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.28)",
-                  transform: "translateY(-1px)",
-                },
-                _active: {
-                  transform: "translateY(0px)",
-                  boxShadow: "0 0 16px rgba(212,175,55,0.20)",
-                },
-              }}
-            >
-              <Lock size={15} strokeWidth={2.5} />
-              {ctaPrimary}
-            </Box>
-            <Text
-              fontSize="xs"
-              color="rgba(255,255,255,0.32)"
-              className="inter"
-              fontWeight={400}
-              textAlign="center"
-              lineHeight="1.55"
-            >
-              {ctaSecondary}
-            </Text>
-          </Stack>
-
-          {/* ── 5. Short subtext ──────────────────────────────────── */}
-          <Box w="full" maxW="600px">
-            <Text
-              fontSize={{ base: "md", md: "lg" }}
-              color="rgba(255,255,255,0.52)"
-              className="inter"
-              fontWeight={400}
-              lineHeight="1.75"
-              textAlign="center"
-            >
-              {parseSubheadline(subheadlineText)}
-            </Text>
-          </Box>
-
-          {isBewerbungLanding ? (
-            <>
-              {/* ── 6. Bewerbung Statement ───────────────────────────── */}
-              <Box w="full" maxW="700px">
-                <CommunityCard feature={BEWERBUNG_STATEMENT} titleContent={BEWERBUNG_STATEMENT_TITLE} />
-              </Box>
-
-              {/* ── 7. Bewerbung Feature Cards ───────────────────────── */}
-              <SimpleGrid columns={{ base: 2, md: 4 }} spacing={3} w="full" px={{ base: 0 }}>
-                {BEWERBUNG_FEATURES.map((feature, i) => (
-                  <FeatureCard key={feature.label} feature={feature} index={i} />
-                ))}
-              </SimpleGrid>
-            </>
-          ) : (
-            <>
-              {/* ── 6. Feature Cards ──────────────────────────────────── */}
-
-              {/* Mobile: 2x3 grid */}
-              <SimpleGrid
-                display={{ base: "grid", md: "none" }}
-                columns={2}
-                spacing={3}
-                w="full"
-                px={{ base: 0 }}
-              >
-                {features.slice(0, 6).map((feature, i) => (
-                  <FeatureCard key={feature.label} feature={feature} index={i} mobile />
-                ))}
-              </SimpleGrid>
-
-              {/* Desktop: 6-column grid */}
-              <SimpleGrid
-                display={{ base: "none", md: "grid" }}
-                columns={6}
-                spacing={3}
-                w="full"
-              >
-                {features.map((feature, i) => (
-                  <FeatureCard key={feature.label} feature={feature} index={i} />
-                ))}
-              </SimpleGrid>
-
-              {/* ── 7. Handverlesene Community — full-width card below ── */}
-              <Box w="full" maxW="700px">
-                <CommunityCard feature={communityCard} />
-              </Box>
-            </>
-          )}
-
+        {/* ── Headline + gedämpfte zweite Zeile ── */}
+        <Stack spacing={{ base: 3, md: 4 }} align="center" textAlign="center" maxW="780px" {...heroRise(1)}>
+          <DisplayHeading as="h1" id="hero-title" tier="hero">
+            {withAccent(product.headline, product.name)}
+          </DisplayHeading>
+          <Text fontSize={{ base: "16px", md: "18px" }} lineHeight={1.65} color="var(--cc-text-2)" maxW="620px">
+            {parseSubheadline(subheadlineText)}
+          </Text>
         </Stack>
-      </Box>
+
+        {/* ── Video ── */}
+        <Box w="full" {...heroRise(2)}>
+          <VideoStage src={videoSrc} endedLabel={videoEndedLabel} onApply={onApply} replayHint />
+        </Box>
+
+        {/* ── Community-Beleg ── */}
+        <Flex
+          align="center"
+          justify="center"
+          gap={3}
+          px={{ base: 4, md: 5 }}
+          py={{ base: 2.5, md: 3 }}
+          maxW="100%"
+          borderRadius={{ base: "12px", md: "full" }}
+          border="1px solid var(--cc-line-strong)"
+          bg="rgba(255, 255, 255, 0.02)"
+          backdropFilter="blur(14px)"
+          {...heroRise(3)}
+        >
+          <Flex flexShrink={0} align="center">
+            {COMMUNITY_AVATARS.map((src, i) => (
+              <Box
+                key={src}
+                as="img"
+                src={src}
+                alt=""
+                w={{ base: "24px", md: "34px" }}
+                h={{ base: "24px", md: "34px" }}
+                ml={i === 0 ? 0 : { base: "-7px", md: "-10px" }}
+                borderRadius="full"
+                objectFit="cover"
+                border="2px solid var(--cc-bg)"
+                boxShadow="0 2px 6px rgba(0, 0, 0, 0.4)"
+                position="relative"
+                zIndex={COMMUNITY_AVATARS.length - i}
+              />
+            ))}
+          </Flex>
+          <Text fontSize={{ base: "13px", md: "14px" }} lineHeight={1.4} color="var(--cc-text-2)">
+            <Box as="span" className="cc-num" color="var(--cc-gold-light)" fontWeight={600}>
+              1.000+
+            </Box>{" "}
+            Trader bereits auf ihrem Weg begleitet
+          </Text>
+        </Flex>
+
+        {/* ── CTA (Desktop; mobil übernimmt der feste Balken) ── */}
+        <Stack spacing={3} align="center" w="full" maxW="560px" display={{ base: "none", md: "flex" }} {...heroRise(4)}>
+          <Button
+            variant="gold"
+            size="lg"
+            w="full"
+            h="56px"
+            fontSize="16px"
+            letterSpacing="0.01em"
+            leftIcon={<Lock size={16} strokeWidth={2.25} />}
+            onClick={onApply}
+            boxShadow="0 0 32px rgba(212, 176, 128, 0.3), 0 8px 22px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.35)"
+          >
+            {ctaPrimary}
+          </Button>
+          <Text fontSize="13px" lineHeight={1.55} color="var(--cc-text-2)" textAlign="center">
+            {ctaSecondary}
+          </Text>
+        </Stack>
+
+        {isBewerbungLanding ? (
+          <>
+            <Flex w="full" justify="center" {...heroRise(5)}>
+              <StatementCard icon={Trophy}>
+                <Text fontSize={{ base: "15px", md: "17px" }} lineHeight={1.5} color="var(--cc-text-2)">
+                  <Strong>Capital Circle</Strong> ist kein <Strong>Kurs</Strong>. Es ist das{" "}
+                  <Box as="span" color="var(--cc-gold-light)" fontWeight={600}>
+                    Umfeld
+                  </Box>{" "}
+                  das aus <Strong>inkonsistenten Tradern</Strong> <Strong>profitable</Strong> macht.
+                </Text>
+              </StatementCard>
+            </Flex>
+            <Box w="full" {...heroRise(6)}>
+              <FeatureSpec items={BEWERBUNG_FEATURES} columns={{ base: 2, md: 4 }} />
+            </Box>
+          </>
+        ) : (
+          <>
+            <Box w="full" {...heroRise(5)}>
+              <FeatureSpec items={features} columns={{ base: 2, md: 3 }} />
+            </Box>
+            <Flex w="full" justify="center" {...heroRise(6)}>
+              <StatementCard icon={CommunityIcon}>
+                <Text fontSize="16px" fontWeight={600} lineHeight={1.3} color="var(--cc-text)">
+                  {communityCard.label}
+                </Text>
+                {communityCard.detail ? (
+                  <Text mt={0.5} fontSize="14px" lineHeight={1.45} color="var(--cc-text-2)">
+                    {communityCard.detail}
+                  </Text>
+                ) : null}
+              </StatementCard>
+            </Flex>
+          </>
+        )}
+      </Stack>
     </Box>
   );
 }

@@ -1,5 +1,6 @@
-import { Stack, Text } from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
 import { createClient } from "@/lib/supabase/server";
+import { AdminPageHeader } from "@/components/admin/adminUi";
 import { ModuleForm } from "@/components/admin/ModuleForm";
 
 type PageProps = {
@@ -29,16 +30,9 @@ export default async function EditModulePage({ params }: PageProps) {
     | null;
 
   return (
-    <Stack gap={8} maxW="var(--adminMaxWidth, 1440px)" mx="auto" px={{ base: 4, md: 6 }} py={{ base: 6, md: 8 }}>
-      <Stack spacing={2}>
-        <Text as="h1" className="radley-regular" fontSize={{ base: "xl", md: "2xl" }} color="whiteAlpha.900">
-          Modul bearbeiten
-        </Text>
-        <Text className="inter" fontSize="sm" color="gray.500">
-          Metadaten, Videos und Subkategorien verwalten.
-        </Text>
-      </Stack>
+    <Box w="full">
+      <AdminPageHeader title="Modul bearbeiten" subtitle="Metadaten, Videos und Subkategorien verwalten." />
       <ModuleForm courseId={courseId} moduleId={moduleId} initialModule={initialModule ?? undefined} />
-    </Stack>
+    </Box>
   );
 }

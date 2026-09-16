@@ -2,6 +2,11 @@
 
 ← zurück zum [Index](./README.md)
 
+> ⚠️ **HISTORISCH (Schema v2).** Abgelöst durch [`DESIGN.md`](../../DESIGN.md) v3.2 „Champagner auf Graphit“,
+> seit 2026-09-14 in der gesamten App umgesetzt. Die hier beschriebenen `.glass-card*`-Klassen und
+> `components/ui/GlassCard.tsx` sind aus dem Code entfernt — Glas-Karten heißen heute `.cc-card`.
+> Nur noch als Archiv; **nicht für neue Arbeit verwenden.**
+
 > Reproduktions-Referenz für den Hero-/Glass-Look (Dashboard-Welcome & verwandte Karten).
 > Konsolidiert die frühere `HERO-UI-SPEZIFIKATION.md`. Die hier genannten Klassen leben in
 > [`app/globals.css`](../../app/globals.css); Wrapper-Komponente ist

@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { HStack, Stack, Text } from "@chakra-ui/react";
+import { Box, HStack, Text } from "@chakra-ui/react";
 import { createClient } from "@/lib/supabase/server";
+import { PageHeader } from "@/components/journal/PageHeader";
 import { TicketThread, type TicketDetailRow, type TicketMessageRow } from "@/components/support/TicketThread";
 
 export const metadata: Metadata = {
@@ -37,34 +38,28 @@ export default async function SupportTicketPage({ params }: { params: Promise<{ 
     .eq("ticket_id", id)
     .order("created_at", { ascending: true });
 
+  const detail = ticket as TicketDetailRow;
+
   return (
-    <Stack spacing={{ base: 6, md: 8 }} maxW="800px" mx="auto" w="full">
-      <Stack spacing={2}>
+    <Box maxW="800px" mx="auto" w="full">
+      {/* Link aussen herum statt `as={Link}` — siehe app/(admin)/admin/page.tsx. */}
+      <Link href="/support" style={{ textDecoration: "none", display: "block", width: "fit-content" }}>
         <HStack
-          as={Link}
-          href="/support"
           spacing={2}
-          fontSize="xs"
-          color="var(--color-text-tertiary)"
-          className="inter"
-          _hover={{ color: "var(--color-accent-gold-light)" }}
+          mb={4}
+          fontSize="14px"
+          color="var(--cc-text-2)"
+          transition="color 150ms ease"
+          _hover={{ color: "var(--cc-gold-light)" }}
         >
-          <ArrowLeft size={14} />
+          <ArrowLeft size={14} aria-hidden />
           <Text>Zurück zur Übersicht</Text>
         </HStack>
-        <Text
-          as="h1"
-          className="radley-regular"
-          fontWeight={400}
-          fontSize={{ base: "2xl", md: "3xl" }}
-          lineHeight="1.2"
-          color="var(--color-text-primary)"
-        >
-          {ticket.subject}
-        </Text>
-      </Stack>
+      </Link>
 
-      <TicketThread ticket={ticket as TicketDetailRow} messages={(messages as TicketMessageRow[] | null) ?? []} />
-    </Stack>
+      <PageHeader title={detail.subject} />
+
+      <TicketThread ticket={detail} messages={(messages as TicketMessageRow[] | null) ?? []} />
+    </Box>
   );
 }

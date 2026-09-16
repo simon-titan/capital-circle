@@ -4,16 +4,18 @@ import {
   Avatar,
   Box,
   Button,
-  HStack,
+  Flex,
   IconButton,
   Stack,
+  StackDivider,
   Text,
   Textarea,
   useToast,
 } from "@chakra-ui/react";
 import { Bookmark, BookmarkCheck, Heart, MessageSquare, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { NewsCommentRow } from "@/lib/server-data";
+import { Meta } from "@/components/platform/dashboard/primitives";
 
 type Props = {
   postId: string;
@@ -28,6 +30,27 @@ type Props = {
 };
 
 const MAX_COMMENT = 2000;
+
+/** Eingabefeld im Schema v3.2: Haarlinie, Gold-Kante bei Fokus. */
+const fieldSx = {
+  bg: "rgba(255, 255, 255, 0.03)",
+  borderColor: "var(--cc-line-strong)",
+  borderRadius: "8px",
+  color: "var(--cc-text)",
+  fontSize: "15px",
+  _placeholder: { color: "var(--cc-text-3)" },
+  _hover: { borderColor: "rgba(212, 176, 128, 0.35)" },
+  _focusVisible: { borderColor: "var(--cc-gold-line)", boxShadow: "0 0 0 1px var(--cc-gold-line)" },
+};
+
+/** Chakra färbt Avatare zufällig nach Name — hier neutral wie die Icon-Kacheln. */
+const avatarProps = {
+  size: "sm",
+  bg: "var(--cc-surface-2)",
+  color: "var(--cc-text-soft)",
+  borderWidth: "1px",
+  borderColor: "var(--cc-line-strong)",
+} as const;
 
 function formatRelative(iso: string): string {
   try {
@@ -135,7 +158,7 @@ export function NewsPostDetailClient({
 
   const deleteMyComment = async () => {
     if (!myComment) return;
-    if (!confirm("Deinen Kommentar wirklich loeschen?")) return;
+    if (!confirm("Deinen Kommentar wirklich löschen?")) return;
     setBusy(true);
     try {
       const res = await fetch(`/api/news/comment?postId=${encodeURIComponent(postId)}`, {
@@ -145,173 +168,167 @@ export function NewsPostDetailClient({
       setComments((list) => list.filter((c) => c.id !== myComment.id));
       setMyComment(null);
     } catch {
-      toast({ status: "error", title: "Kommentar konnte nicht geloescht werden." });
+      toast({ status: "error", title: "Kommentar konnte nicht gelöscht werden." });
     } finally {
       setBusy(false);
     }
   };
 
+  const otherComments = comments.filter((c) => c.user_id !== currentUserId);
+
   return (
-    <Stack gap={6} id="interactions">
-      <HStack
-        gap={1}
-        pt={4}
-        mt={2}
-        borderTopWidth="1px"
-        borderColor="rgba(255, 255, 255, 0.08)"
-        align="center"
-      >
+    <Box id="interactions" mt={6}>
+      <Flex gap={1} pt={4} borderTop="1px solid var(--cc-line)" align="center">
         <ActionBar
-          icon={<Heart size={18} fill={liked ? "#D4AF37" : "none"} />}
+          icon={<Heart size={18} strokeWidth={1.75} fill={liked ? "currentColor" : "none"} />}
           label={`${likeCount}`}
           active={liked}
+          pressed={liked}
           onClick={() => void toggleLike()}
-          aria-label="Gefaellt mir"
+          aria-label={`Gefällt mir (${likeCount})`}
         />
         <ActionBar
-          icon={<MessageSquare size={18} />}
+          icon={<MessageSquare size={18} strokeWidth={1.75} />}
           label={`${comments.length}`}
           active={Boolean(myComment)}
           onClick={() => {
             const el = document.getElementById("comments");
             if (el) el.scrollIntoView({ behavior: "smooth" });
           }}
-          aria-label="Kommentare"
+          aria-label={`Kommentare (${comments.length})`}
         />
         <Box flex="1" />
         <IconButton
           aria-label={saved ? "Gespeichert" : "Speichern"}
-          icon={saved ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
+          aria-pressed={saved}
+          icon={saved ? <BookmarkCheck size={18} strokeWidth={1.75} /> : <Bookmark size={18} strokeWidth={1.75} />}
           onClick={() => void toggleSave()}
           variant="ghost"
-          color={saved ? "#D4AF37" : "var(--color-text-tertiary)"}
-          _hover={{ bg: "rgba(212, 175, 55, 0.12)", color: "#FEF3C7" }}
+          color={saved ? "var(--cc-gold-light)" : "var(--cc-text-2)"}
+          _hover={{ bg: "rgba(255, 255, 255, 0.04)", color: saved ? "var(--cc-gold-light)" : "var(--cc-text)" }}
         />
-      </HStack>
+      </Flex>
 
-      <Stack gap={4} id="comments" scrollMarginTop="90px">
-        <Text className="inter-semibold" fontSize="md" color="var(--color-text-primary)">
+      <Box
+        as="section"
+        id="comments"
+        aria-labelledby="comments-title"
+        scrollMarginTop="90px"
+        mt={5}
+        pt={6}
+        borderTop="1px solid var(--cc-line)"
+      >
+        <Box
+          as="h2"
+          id="comments-title"
+          className="cc-num"
+          fontSize="13px"
+          lineHeight="18px"
+          fontWeight={500}
+          letterSpacing="0.12em"
+          textTransform="uppercase"
+          color="var(--cc-text-soft)"
+          mb={4}
+        >
           Kommentare ({comments.length})
-        </Text>
+        </Box>
 
         {myComment ? (
           <Box
             p={4}
-            borderRadius="12px"
-            borderWidth="1px"
-            borderColor="rgba(212, 175, 55, 0.32)"
-            bg="rgba(212, 175, 55, 0.06)"
+            borderRadius="10px"
+            border="1px solid rgba(212, 176, 128, 0.3)"
+            bg="var(--cc-gold-wash)"
           >
-            <HStack justify="space-between" align="flex-start" mb={2} gap={3}>
-              <HStack gap={2.5} align="center">
-                <Avatar size="sm" name={myComment.author_name ?? "Ich"} src={myComment.author_avatar_url ?? undefined} />
-                <Stack gap={0}>
-                  <Text fontSize="sm" className="inter-semibold" color="var(--color-text-primary)">
+            <Flex justify="space-between" align="flex-start" mb={2} gap={3}>
+              <Flex gap={2.5} align="center" minW={0}>
+                <Avatar {...avatarProps} name={myComment.author_name ?? "Ich"} src={myComment.author_avatar_url ?? undefined} />
+                <Stack gap={0} minW={0}>
+                  <Text fontSize="14px" fontWeight={600} color="var(--cc-text)" noOfLines={1}>
                     {myComment.author_name ?? "Du"}
                   </Text>
-                  <Text fontSize="xs" color="var(--color-text-tertiary)" className="inter">
+                  <Meta fontSize="13px" className="cc-num">
                     Dein Kommentar · {formatRelative(myComment.created_at)}
-                  </Text>
+                  </Meta>
                 </Stack>
-              </HStack>
+              </Flex>
               <IconButton
-                aria-label="Kommentar loeschen"
-                icon={<Trash2 size={16} />}
+                aria-label="Kommentar löschen"
+                icon={<Trash2 size={16} strokeWidth={1.75} />}
                 size="sm"
                 variant="ghost"
-                color="#F87171"
+                color="var(--cc-text-3)"
                 isDisabled={busy}
                 onClick={() => void deleteMyComment()}
-                _hover={{ bg: "rgba(248, 113, 113, 0.12)" }}
+                _hover={{ bg: "rgba(248, 113, 113, 0.1)", color: "var(--cc-danger)" }}
               />
-            </HStack>
-            <Text fontSize="sm" className="inter" color="var(--color-text-secondary)" whiteSpace="pre-wrap">
+            </Flex>
+            <Text fontSize="15px" lineHeight={1.6} color="var(--cc-text-soft)" whiteSpace="pre-wrap" overflowWrap="break-word">
               {myComment.body}
             </Text>
           </Box>
         ) : (
-          <Stack
-            gap={2}
-            p={4}
-            borderRadius="12px"
-            borderWidth="1px"
-            borderColor="rgba(255, 255, 255, 0.1)"
-            bg="rgba(255, 255, 255, 0.03)"
-          >
-            <Text fontSize="xs" color="var(--color-text-tertiary)" className="inter">
-              Du kannst pro Beitrag genau einen Kommentar hinterlassen.
-            </Text>
+          <Stack gap={3}>
+            <Meta fontSize="13px">Du kannst pro Beitrag genau einen Kommentar hinterlassen.</Meta>
             <Textarea
+              aria-label="Dein Kommentar"
               placeholder="Dein Kommentar..."
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               maxLength={MAX_COMMENT}
               rows={3}
-              bg="rgba(0, 0, 0, 0.25)"
-              borderColor="rgba(255, 255, 255, 0.1)"
-              _focus={{ borderColor: "rgba(212, 175, 55, 0.55)", boxShadow: "none" }}
-              className="inter"
-              color="var(--color-text-primary)"
+              {...fieldSx}
             />
-            <HStack justify="space-between">
-              <Text fontSize="xs" color="var(--color-text-tertiary)" className="inter">
+            <Flex justify="space-between" align="center" gap={3}>
+              <Text fontSize="13px" color="var(--cc-text-3)" className="cc-num">
                 {draft.length}/{MAX_COMMENT}
               </Text>
               <Button
                 size="sm"
+                variant="line"
                 onClick={() => void submitComment()}
                 isLoading={busy}
                 isDisabled={!draft.trim()}
-                bg="rgba(212, 175, 55, 0.35)"
-                color="#FEF3C7"
-                borderWidth="1px"
-                borderColor="rgba(212, 175, 55, 0.55)"
-                _hover={{ bg: "rgba(212, 175, 55, 0.5)" }}
-                className="inter-medium"
               >
                 Kommentieren
               </Button>
-            </HStack>
+            </Flex>
           </Stack>
         )}
 
-        <Stack gap={3}>
-          {comments
-            .filter((c) => c.user_id !== currentUserId)
-            .map((c) => (
-              <Box
-                key={c.id}
-                p={4}
-                borderRadius="12px"
-                borderWidth="1px"
-                borderColor="rgba(255, 255, 255, 0.08)"
-                bg="rgba(255, 255, 255, 0.02)"
-              >
-                <HStack gap={2.5} align="center" mb={2}>
-                  <Avatar size="sm" name={c.author_name ?? "Mitglied"} src={c.author_avatar_url ?? undefined} />
-                  <Stack gap={0}>
-                    <Text fontSize="sm" className="inter-semibold" color="var(--color-text-primary)">
+        {otherComments.length > 0 ? (
+          <Stack
+            mt={5}
+            spacing={0}
+            divider={<StackDivider borderColor="var(--cc-line)" />}
+            borderTop="1px solid var(--cc-line)"
+          >
+            {otherComments.map((c) => (
+              <Box key={c.id} py={4}>
+                <Flex gap={2.5} align="center" mb={2} minW={0}>
+                  <Avatar {...avatarProps} name={c.author_name ?? "Mitglied"} src={c.author_avatar_url ?? undefined} />
+                  <Stack gap={0} minW={0}>
+                    <Text fontSize="14px" fontWeight={600} color="var(--cc-text)" noOfLines={1}>
                       {c.author_name ?? "Mitglied"}
                     </Text>
-                    <Text fontSize="xs" color="var(--color-text-tertiary)" className="inter">
+                    <Meta fontSize="13px" className="cc-num">
                       {formatRelative(c.created_at)}
-                    </Text>
+                    </Meta>
                   </Stack>
-                </HStack>
-                <Text fontSize="sm" className="inter" color="var(--color-text-secondary)" whiteSpace="pre-wrap">
+                </Flex>
+                <Text fontSize="15px" lineHeight={1.6} color="var(--cc-text-soft)" whiteSpace="pre-wrap" overflowWrap="break-word">
                   {c.body}
                 </Text>
               </Box>
             ))}
+          </Stack>
+        ) : null}
 
-          {comments.length === 0 ? (
-            <Text fontSize="sm" className="inter" color="var(--color-text-tertiary)">
-              Noch keine Kommentare. Sei die Erste / der Erste.
-            </Text>
-          ) : null}
-        </Stack>
-      </Stack>
-    </Stack>
+        {comments.length === 0 ? (
+          <Meta mt={4}>Noch keine Kommentare. Sei die Erste / der Erste.</Meta>
+        ) : null}
+      </Box>
+    </Box>
   );
 }
 
@@ -319,36 +336,40 @@ function ActionBar({
   icon,
   label,
   active,
+  pressed,
   onClick,
   "aria-label": ariaLabel,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   active: boolean;
+  pressed?: boolean;
   onClick: () => void;
   "aria-label": string;
 }) {
   return (
     <Box
       as="button"
+      type="button"
       onClick={onClick}
       aria-label={ariaLabel}
+      aria-pressed={pressed}
       display="inline-flex"
       alignItems="center"
       gap={1.5}
       px={3}
       py={2}
       borderRadius="8px"
-      color={active ? "#D4AF37" : "var(--color-text-secondary)"}
-      fontSize="sm"
-      className="inter-medium"
-      transition="all 0.18s ease"
-      _hover={{ bg: "rgba(212, 175, 55, 0.12)", color: "#FEF3C7" }}
+      color={active ? "var(--cc-gold-light)" : "var(--cc-text-2)"}
+      fontSize="14px"
+      fontWeight={500}
+      transition="background-color 180ms var(--cc-ease), color 180ms var(--cc-ease)"
+      _hover={{ bg: "rgba(255, 255, 255, 0.04)", color: active ? "var(--cc-gold-light)" : "var(--cc-text)" }}
     >
       {icon}
-      <Text as="span" fontSize="sm" className="inter-medium">
+      <Box as="span" className="cc-num" aria-hidden>
         {label}
-      </Text>
+      </Box>
     </Box>
   );
 }

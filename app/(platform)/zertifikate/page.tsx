@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
-import { Box, Stack, Text } from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
 import { createClient } from "@/lib/supabase/server";
 import { getPresignedGetUrl } from "@/lib/storage";
+import { PageHeader } from "@/components/journal/PageHeader";
 import { ZertifikateManager, type CertificateItem } from "@/components/zertifikate/ZertifikateManager";
 
 export const dynamic = "force-dynamic";
@@ -43,38 +44,12 @@ export default async function ZertifikatePage() {
   );
 
   return (
-    <Stack gap={{ base: 6, md: 8 }}>
-      <Stack gap={3}>
-        <Text
-          fontSize="xs"
-          letterSpacing="0.14em"
-          textTransform="uppercase"
-          className="inter-semibold"
-          color="#D4AF37"
-        >
-          Erfolge
-        </Text>
-        <Box
-          as="h1"
-          className="radley-regular"
-          fontSize="clamp(1.75rem, 4vw, 2.25rem)"
-          color="var(--color-text-primary)"
-        >
-          Zertifikate &amp; Erfolge einreichen
-        </Box>
-        <Box
-          h="2px"
-          w={{ base: "100%", md: "min(320px, 100%)" }}
-          borderRadius="full"
-          bg="linear-gradient(90deg, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.95) 45%, rgba(212, 175, 55, 0.1) 100%)"
-          boxShadow="0 0 20px rgba(212, 175, 55, 0.15)"
-        />
-        <Text className="inter" fontSize="sm" color="var(--color-text-muted)" maxW="42rem">
-          Reiche einen Trading-Nachweis ein (z. B. Broker-Statement, Erfolgs-Screenshot). Nach Freigabe durch
-          unser Team erscheint er &ndash; sofern du magst &ndash; auf der oeffentlichen Erfolge-Seite.
-        </Text>
-      </Stack>
+    <Box>
+      <PageHeader
+        title="Zertifikate & Erfolge einreichen"
+        subtitle="Reiche einen Trading-Nachweis ein (z. B. Broker-Statement, Erfolgs-Screenshot). Nach Freigabe durch unser Team erscheint er – sofern du magst – auf der öffentlichen Erfolge-Seite."
+      />
       <ZertifikateManager initial={initial} />
-    </Stack>
+    </Box>
   );
 }

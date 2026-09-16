@@ -1,7 +1,9 @@
 "use client";
 
-import { Badge, Box, Button, HStack, Text, VStack } from "@chakra-ui/react";
-import { GlassCard } from "@/components/ui/GlassCard";
+import { Box, Button, Flex, HStack, Text } from "@chakra-ui/react";
+import { Lock } from "lucide-react";
+import type { ReactNode } from "react";
+import { clampLines } from "@/components/platform/dashboard/primitives";
 import { AppleBrandIcon, GoogleCalendarBrandIcon } from "@/components/platform/eventCalendarBrandIcons";
 
 export type EventFeatureItem = {
@@ -20,13 +22,77 @@ type EventFeatureCardProps = {
   variant?: "featured" | "standard" | "compact";
   /** Eingebettet z. B. in Dashboard: weniger Padding */
   embedded?: boolean;
-  /** Nächstes anstehendes Event: Gold-Ring + Badge (Dashboard / Events-Übersicht) */
+  /** Nächstes anstehendes Event: Hero-Karte + Badge (Events-Übersicht) */
   nextEventSpotlight?: boolean;
   /** If false: the current user is a Free member (not paid). Default: true */
   isPaid?: boolean;
 };
 
-/** Einzelnes Event als hervorgehobene Glass-Card (DESIGN.json: Radley, Inter, Mono, Accent Blue). */
+/** Alle Zeitangaben in Berlin — gleiche Ausgabe auf Server und Client, passend zur Sonntags-Logik. */
+const TZ = "Europe/Berlin";
+
+function fmt(date: Date, opts: Intl.DateTimeFormatOptions) {
+  return new Intl.DateTimeFormat("de-DE", { ...opts, timeZone: TZ }).format(date);
+}
+
+type PillTone = "gold" | "neutral" | "muted";
+
+const PILL_TONES: Record<PillTone, { color: string; borderColor: string; bg: string }> = {
+  gold: { color: "var(--cc-gold-light)", borderColor: "rgba(212, 176, 128, 0.3)", bg: "rgba(212, 176, 128, 0.07)" },
+  neutral: { color: "var(--cc-text-2)", borderColor: "var(--cc-line)", bg: "rgba(255, 255, 255, 0.03)" },
+  muted: { color: "var(--cc-text-3)", borderColor: "var(--cc-line)", bg: "transparent" },
+};
+
+function Pill({ tone, icon, upper = false, children }: { tone: PillTone; icon?: ReactNode; upper?: boolean; children: ReactNode }) {
+  return (
+    <HStack
+      as="span"
+      display="inline-flex"
+      spacing={1.5}
+      px={2.5}
+      py={1}
+      borderRadius="full"
+      borderWidth="1px"
+      borderStyle="solid"
+      fontSize={upper ? "11px" : "12px"}
+      lineHeight="16px"
+      fontWeight={500}
+      whiteSpace="nowrap"
+      {...PILL_TONES[tone]}
+      {...(upper ? { letterSpacing: "0.12em", textTransform: "uppercase" as const } : null)}
+    >
+      {icon}
+      <span>{children}</span>
+    </HStack>
+  );
+}
+
+/** Datums-Kachel: neutral wie die Icon-Kacheln im Kunden-Mockup. */
+function DateTile({ day, month }: { day: string; month: string }) {
+  return (
+    <Flex
+      direction="column"
+      align="center"
+      justify="center"
+      w="56px"
+      h="56px"
+      flexShrink={0}
+      borderRadius="12px"
+      border="1px solid var(--cc-line-strong)"
+      bg="rgba(255, 255, 255, 0.02)"
+      boxShadow="inset 0 1px 0 rgba(255, 255, 255, 0.05)"
+    >
+      <Text className="cc-num" fontSize="20px" fontWeight={600} lineHeight={1} letterSpacing="-0.02em" color="var(--cc-text)">
+        {day}
+      </Text>
+      <Text fontSize="11px" fontWeight={500} lineHeight={1} letterSpacing="0.12em" textTransform="uppercase" color="var(--cc-text-2)" mt={1.5}>
+        {month}
+      </Text>
+    </Flex>
+  );
+}
+
+/** Einzelnes Event als Glas-Karte (`.cc-card`); das nächste Event trägt die Hero-Behandlung. */
 export function EventFeatureCard({
   event,
   variant = "standard",
@@ -37,28 +103,19 @@ export function EventFeatureCard({
   const start = new Date(event.start_time);
   const end = event.end_time ? new Date(event.end_time) : null;
 
-  const dayNum = start.toLocaleDateString("de-DE", { day: "2-digit" });
-  const month = start.toLocaleDateString("de-DE", { month: "short" });
-  const weekday = start.toLocaleDateString("de-DE", { weekday: "long" });
-  const timeStart = start.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
-  const timeEnd = end
-    ? end.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
-    : null;
+  const dayNum = fmt(start, { day: "2-digit" });
+  const month = fmt(start, { month: "short" }).replace(".", "");
+  const weekday = fmt(start, { weekday: "long" });
+  const timeStart = fmt(start, { hour: "2-digit", minute: "2-digit" });
+  const timeEnd = end ? fmt(end, { hour: "2-digit", minute: "2-digit" }) : null;
   const googleStart = toCalendarStamp(event.start_time);
   const googleEnd = toCalendarStamp(event.end_time ?? new Date(start.getTime() + 60 * 60 * 1000).toISOString());
   const detailsForGoogle = `${event.description ?? ""}${event.external_url ? `\n\nLink: ${event.external_url}` : ""}`;
   const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${googleStart}/${googleEnd}&details=${encodeURIComponent(detailsForGoogle)}`;
   const isFeatured = variant === "featured";
-  const pad = embedded ? { base: 2.5, md: isFeatured ? 3.5 : 2.5 } : { base: 3, md: isFeatured ? 4 : 3 };
-  const spotlightShadow =
-    nextEventSpotlight && isFeatured
-      ? embedded
-        ? "0 0 36px rgba(212, 175, 55, 0.35), 0 0 0 1px rgba(232, 197, 71, 0.5)"
-        : "0 0 40px rgba(212, 175, 55, 0.3), 0 0 0 1px rgba(232, 197, 71, 0.48)"
-      : undefined;
+  const hero = nextEventSpotlight && isFeatured;
 
-  const berlinWeekday = new Intl.DateTimeFormat("de-DE", { weekday: "long", timeZone: "Europe/Berlin" }).format(start);
-  const isSunday = berlinWeekday === "Sonntag";
+  const isSunday = weekday === "Sonntag";
   const lockedForFree = !isPaid && !isSunday;
 
   const exportIcs = () => {
@@ -72,275 +129,120 @@ export function EventFeatureCard({
     URL.revokeObjectURL(url);
   };
 
-  const glassCard = (
-    <GlassCard
-      position="relative"
-      overflow="hidden"
-      h="100%"
-      display="flex"
-      flexDirection="column"
-      p={pad}
-      borderRadius={embedded ? "12px" : "16px"}
-      className={isFeatured ? "glass-card-highlight" : undefined}
-      boxShadow={
-        spotlightShadow ??
-        (isFeatured && !embedded ? "0 0 32px rgba(212, 175, 55, 0.22), 0 0 0 1px rgba(212, 175, 55, 0.35)" : undefined)
-      }
-      transition="transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease"
-      _hover={
-        embedded
-          ? { borderColor: "rgba(212, 175, 55, 0.55)" }
-          : isFeatured
-            ? {
-                transform: "translateY(-3px)",
-                boxShadow:
-                  "0 0 40px rgba(212, 175, 55, 0.32), 0 16px 40px rgba(0, 0, 0, 0.38), 0 0 0 1px rgba(212, 175, 55, 0.42)",
-              }
-            : {
-                transform: "translateY(-3px)",
-                boxShadow: "0 12px 36px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(212, 175, 55, 0.24)",
-              }
-      }
-      // If the user is a free member and this is not the Sunday Free Call, visually de-emphasize and disable interactions.
-      sx={
-        lockedForFree
-          ? {
-              filter: "grayscale(70%)",
-              opacity: 0.55,
-              pointerEvents: "none",
-            }
-          : undefined
-      }
-    >
-      <Box
-        position="absolute"
-        top={0}
-        left={0}
-        right={0}
-        h="3px"
-        bgGradient="linear(to-r, #E8C547, rgba(212, 175, 55, 0.2))"
-        pointerEvents="none"
-      />
-
-      {nextEventSpotlight && isFeatured ? (
-        <Badge
-          position="absolute"
-          top={embedded ? 2 : 3}
-          right={embedded ? 2 : 3}
-          zIndex={3}
-          px={2.5}
-          py={1}
-          borderRadius="full"
-          bg="rgba(212, 175, 55, 0.22)"
-          color="var(--color-accent-gold-light)"
-          borderWidth="1px"
-          borderColor="rgba(232, 197, 71, 0.45)"
-          className="inter-medium"
-          fontSize="10px"
-          textTransform="uppercase"
-          letterSpacing="0.14em"
-          pointerEvents="none"
-        >
-          Nächstes Event
-        </Badge>
-      ) : null}
-      {/* If this is the Free Call (Sunday) show a distinguishing badge. If locked for free members, show a Premium badge. */}
-      {(() => {
-        if (!isPaid && !isSunday) {
-          return (
-            <Badge
-              position="absolute"
-              top={embedded ? 2 : 3}
-              left={embedded ? 2 : 3}
-              zIndex={3}
-              px={2}
-              py={1}
-              borderRadius="full"
-              bg="rgba(255,255,255,0.04)"
-              color="rgba(255,255,255,0.6)"
-              borderWidth="1px"
-              borderColor="rgba(255,255,255,0.06)"
-              className="inter-medium"
-              fontSize="10px"
-              textTransform="uppercase"
-              letterSpacing="0.12em"
-              pointerEvents="none"
-            >
-              Nur Premium
-            </Badge>
-          );
-        }
-        if (!isPaid && isSunday) {
-          return (
-            <Badge
-              position="absolute"
-              top={embedded ? 2 : 3}
-              left={embedded ? 2 : 3}
-              zIndex={3}
-              px={2}
-              py={1}
-              borderRadius="full"
-              bg="rgba(212, 175, 55, 0.24)"
-              color="var(--color-accent-gold-light)"
-              borderWidth="1px"
-              borderColor="rgba(232, 197, 71, 0.45)"
-              className="inter-medium"
-              fontSize="10px"
-              textTransform="uppercase"
-              letterSpacing="0.12em"
-              pointerEvents="none"
-            >
-              Free Call
-            </Badge>
-          );
-        }
-        return null;
-      })()}
-
-      <Box display="flex" gap={embedded ? 1.5 : 2.5} flex="1" flexDir="column" alignItems="center" textAlign="center">
-        <HStack
-          spacing={embedded ? 1.5 : 2}
-          py={embedded ? 1 : 1.5}
-          px={embedded ? 2 : 2.5}
-          borderRadius="10px"
-          bg="rgba(212, 175, 55, 0.1)"
-          border="1px solid rgba(212, 175, 55, 0.28)"
-          minW={embedded ? "108px" : "128px"}
-          justify="center"
-        >
-          <Text
-            className="jetbrains-mono"
-            fontSize={embedded ? (isFeatured ? "md" : "sm") : isFeatured ? "lg" : "md"}
-            fontWeight={500}
-            lineHeight={1}
-            color="var(--color-text-primary)"
-          >
-            {dayNum}
-          </Text>
-          <Text className="inter-medium" fontSize="xs" textTransform="uppercase" letterSpacing="0.14em" color="var(--color-accent-gold-light)">
-            {month}
-          </Text>
-        </HStack>
-
-        <Text className="inter" fontSize="xs" color="var(--color-text-muted)" textTransform="uppercase" letterSpacing="0.08em">
-          {weekday}
-        </Text>
-
-        <Text
-          as="h3"
-          className={isFeatured ? "radley-regular" : "inter-semibold"}
-          fontSize={
-            embedded
-              ? isFeatured
-                ? "lg"
-                : variant === "compact"
-                  ? "sm"
-                  : "md"
-              : isFeatured
-                ? "xl"
-                : variant === "compact"
-                  ? "md"
-                  : "lg"
-          }
-          fontWeight={isFeatured ? 400 : 600}
-          lineHeight="short"
-          noOfLines={3}
-          color="var(--color-text-primary)"
-        >
-          {event.title}
-        </Text>
-
-        {event.event_type ? (
-          <Box
-            as="span"
-            display="inline-block"
-            px={2.5}
-            py={1}
-            borderRadius="md"
-            bg="rgba(212, 175, 55, 0.14)"
-            border="1px solid rgba(212, 175, 55, 0.32)"
-          >
-            <Text className="inter-medium" fontSize="xs" color="var(--color-accent-gold-light)">
-              {event.event_type}
-            </Text>
-          </Box>
-        ) : null}
-
-        <Text
-          className="inter-semibold"
-          fontSize={embedded ? "sm" : "md"}
-          letterSpacing="0.02em"
-          color="var(--color-accent-gold-light)"
-        >
-          {timeStart}
-          {timeEnd ? ` – ${timeEnd}` : ""}
-        </Text>
-
-        {event.description ? (
-          <Text
-            className="inter"
-            fontSize={embedded ? "xs" : "sm"}
-            color="rgba(240, 240, 242, 0.72)"
-            lineHeight="tall"
-            noOfLines={variant === "compact" || embedded ? 2 : 3}
-            flex="1"
-          >
-            {event.description}
-          </Text>
-        ) : (
-          <Text className="inter" fontSize={embedded ? "xs" : "sm"} fontStyle="italic" color="var(--color-text-muted)">
-            Keine Beschreibung hinterlegt.
-          </Text>
-        )}
-
-        <VStack spacing={embedded ? 1.5 : 2} pt={embedded ? 0 : 1} align="center" w="100%">
-            <HStack spacing={embedded ? 2 : 3} justify="center" flexWrap="wrap">
-              <Button
-                as="a"
-                href={isPaid ? googleUrl : "#"}
-                target={isPaid ? "_blank" : undefined}
-                rel={isPaid ? "noreferrer" : undefined}
-                size="xs"
-                variant="ghost"
-                leftIcon={<GoogleCalendarBrandIcon boxSize="16px" />}
-                border="1px solid rgba(212, 175, 55, 0.28)"
-                color="var(--color-accent-gold-light)"
-                _hover={isPaid ? { bg: "rgba(212, 175, 55, 0.12)" } : undefined}
-                aria-disabled={!isPaid}
-              >
-                Google Kalender
-              </Button>
-              <Button
-                onClick={isPaid ? exportIcs : undefined}
-                size="xs"
-                variant="ghost"
-                leftIcon={<AppleBrandIcon boxSize="16px" />}
-                border="1px solid rgba(255, 255, 255, 0.2)"
-                color="var(--color-text-primary)"
-                _hover={isPaid ? { bg: "rgba(255,255,255,0.08)" } : undefined}
-                aria-disabled={!isPaid}
-              >
-                Apple Kalender
-              </Button>
-            </HStack>
-        </VStack>
-      </Box>
-    </GlassCard>
-  );
-
-  if (nextEventSpotlight && isFeatured) {
-    return (
-      <Box
-        className={embedded ? "event-next-spotlight-ring event-next-spotlight-ring--embedded" : "event-next-spotlight-ring"}
-        position="relative"
-        h="100%"
-      >
-        {glassCard}
-      </Box>
+  const badges: ReactNode[] = [];
+  if (hero) {
+    badges.push(
+      <Pill key="next" tone="gold" upper>
+        Nächstes Event
+      </Pill>,
+    );
+  }
+  if (!isPaid) {
+    badges.push(
+      isSunday ? (
+        <Pill key="free" tone="gold" upper>
+          Free Call
+        </Pill>
+      ) : (
+        <Pill key="premium" tone="muted" upper icon={<Lock size={11} strokeWidth={2} aria-hidden />}>
+          Nur Premium
+        </Pill>
+      ),
     );
   }
 
-  return glassCard;
+  const titleSize = isFeatured
+    ? { base: "18px", md: "20px" }
+    : variant === "compact"
+      ? { base: "16px", md: "17px" }
+      : { base: "17px", md: "18px" };
+
+  return (
+    <Flex
+      as="article"
+      direction="column"
+      className={["cc-card", hero ? "cc-card--hero" : null].filter(Boolean).join(" ")}
+      h="100%"
+      minW={0}
+      p={embedded ? 4 : { base: 5, md: 6 }}
+      // Free-Mitglieder: alles außer dem Sonntags-Call ist gesperrt — sichtbar, aber nicht bedienbar.
+      sx={lockedForFree ? { opacity: 0.6, filter: "grayscale(60%)", pointerEvents: "none" } : undefined}
+    >
+      {badges.length > 0 ? (
+        <Flex wrap="wrap" gap={2} mb={4}>
+          {badges}
+        </Flex>
+      ) : null}
+
+      <Flex gap={4} align="flex-start">
+        <DateTile day={dayNum} month={month} />
+        <Box flex="1" minW={0}>
+          <Text
+            as="h3"
+            fontSize={titleSize}
+            fontWeight={600}
+            lineHeight={1.3}
+            letterSpacing="-0.01em"
+            color="var(--cc-text)"
+            sx={clampLines(3)}
+          >
+            {event.title}
+          </Text>
+          <Text className="cc-num" fontSize="14px" lineHeight={1.5} color="var(--cc-text-soft)" mt={1}>
+            {weekday} · {timeStart}
+            {timeEnd ? ` – ${timeEnd}` : ""} Uhr
+          </Text>
+        </Box>
+      </Flex>
+
+      {event.event_type ? (
+        <Box mt={4}>
+          <Pill tone="neutral">{event.event_type}</Pill>
+        </Box>
+      ) : null}
+
+      {event.description ? (
+        <Text
+          fontSize="14px"
+          lineHeight={1.6}
+          color="var(--cc-text-2)"
+          mt={3}
+          sx={clampLines(variant === "compact" || embedded ? 2 : 3)}
+        >
+          {event.description}
+        </Text>
+      ) : (
+        <Text fontSize="14px" lineHeight={1.6} color="var(--cc-text-3)" mt={3}>
+          Keine Beschreibung hinterlegt.
+        </Text>
+      )}
+
+      <Flex wrap="wrap" gap={2} mt="auto" pt={5}>
+        <Button
+          as="a"
+          href={isPaid ? googleUrl : undefined}
+          target={isPaid ? "_blank" : undefined}
+          rel={isPaid ? "noreferrer" : undefined}
+          size="sm"
+          variant="line"
+          leftIcon={<GoogleCalendarBrandIcon boxSize="14px" />}
+          isDisabled={!isPaid}
+        >
+          Google Kalender
+        </Button>
+        <Button
+          type="button"
+          onClick={isPaid ? exportIcs : undefined}
+          size="sm"
+          variant="line"
+          leftIcon={<AppleBrandIcon boxSize="15px" />}
+          isDisabled={!isPaid}
+        >
+          Apple Kalender
+        </Button>
+      </Flex>
+    </Flex>
+  );
 }
 
 function toCalendarStamp(isoDate: string): string {

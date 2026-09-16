@@ -25,6 +25,18 @@ import { ArrowRightLeft, FolderOpen } from "lucide-react";
 type ModuleRow = { id: string; title: string; storage_folder_key: string | null };
 type CourseOption = { id: string; title: string };
 
+const fieldSx = {
+  bg: "rgba(255, 255, 255, 0.03)",
+  border: "1px solid",
+  borderColor: "var(--cc-line-strong)",
+  borderRadius: "8px",
+  color: "var(--cc-text)",
+  _hover: { borderColor: "rgba(255, 255, 255, 0.22)" },
+  _focusVisible: { borderColor: "var(--cc-gold-line)", boxShadow: "0 0 0 1px var(--cc-gold-line)" },
+} as const;
+
+const optionStyle = { background: "var(--cc-panel-solid)" };
+
 export function UnassignedModulesManager({
   initialModules,
   courses,
@@ -79,32 +91,27 @@ export function UnassignedModulesManager({
 
   return (
     <>
-      <Stack
-        spacing={4}
-        p={{ base: 4, md: 6 }}
-        borderRadius="16px"
-        border="1px solid rgba(212,175,55,0.25)"
-        bg="rgba(212,175,55,0.04)"
-        boxShadow="0 0 0 1px rgba(212,175,55,0.08)"
-      >
+      <Stack spacing={4} className="cc-card cc-card--still" p={{ base: 4, md: 5 }}>
         <HStack spacing={3} align="center">
           <Box
-            w="32px"
-            h="32px"
-            borderRadius="8px"
-            bg="rgba(212,175,55,0.12)"
+            w="36px"
+            h="36px"
+            borderRadius="10px"
+            border="1px solid var(--cc-line-strong)"
+            bg="rgba(255, 255, 255, 0.02)"
+            color="var(--cc-text)"
             display="flex"
             alignItems="center"
             justifyContent="center"
             flexShrink={0}
           >
-            <FolderOpen size={16} color="rgba(212,175,55,0.9)" aria-hidden />
+            <FolderOpen size={17} strokeWidth={1.75} aria-hidden />
           </Box>
           <Stack spacing={0}>
-            <Text className="inter-semibold" fontSize="sm" color="gray.100">
+            <Text fontSize="15px" fontWeight={600} color="var(--cc-text)">
               Nicht zugeordnete Module
             </Text>
-            <Text className="inter" fontSize="xs" color="gray.500">
+            <Text fontSize="13px" color="var(--cc-text-2)">
               Diese Module wurden beim Bucket-Scan gefunden, aber noch keinem Kurs zugewiesen.
             </Text>
           </Stack>
@@ -114,10 +121,12 @@ export function UnassignedModulesManager({
               px={2}
               py={0.5}
               borderRadius="full"
-              bg="rgba(212,175,55,0.15)"
-              color="rgba(212,175,55,0.9)"
-              fontSize="xs"
-              className="inter"
+              bg="rgba(212, 176, 128, 0.12)"
+              color="var(--cc-gold-light)"
+              fontSize="11px"
+              fontWeight={500}
+              textTransform="none"
+              className="cc-num"
               flexShrink={0}
             >
               {modules.length}
@@ -126,7 +135,7 @@ export function UnassignedModulesManager({
         </HStack>
 
         {modules.length === 0 ? (
-          <Text className="inter" fontSize="sm" color="gray.500" pl={1}>
+          <Text fontSize="14px" color="var(--cc-text-3)" pl={1}>
             Alle Module sind einem Kurs zugeordnet.
           </Text>
         ) : (
@@ -135,33 +144,30 @@ export function UnassignedModulesManager({
               <HStack
                 key={mod.id}
                 px={4}
-                py={3}
-                borderRadius="12px"
-                border="1px solid rgba(255,255,255,0.07)"
-                bg="rgba(255,255,255,0.03)"
+                py={2.5}
+                borderRadius="10px"
+                border="1px solid var(--cc-line)"
+                bg="rgba(255, 255, 255, 0.02)"
                 spacing={3}
                 align="center"
-                transition="background 150ms"
-                _hover={{ bg: "rgba(255,255,255,0.06)" }}
+                transition="background-color 150ms var(--cc-ease)"
+                _hover={{ bg: "rgba(255, 255, 255, 0.04)" }}
               >
                 <Stack flex={1} spacing={0.5} minW={0}>
-                  <Text className="inter" fontSize="sm" fontWeight={500} color="gray.100" noOfLines={1}>
+                  <Text fontSize="14px" fontWeight={500} color="var(--cc-text)" noOfLines={1}>
                     {mod.title}
                   </Text>
                   {mod.storage_folder_key && (
-                    <Text className="jetbrains-mono" fontSize="10px" color="gray.600" noOfLines={1}>
+                    <Text className="cc-num" fontSize="11px" color="var(--cc-text-3)" noOfLines={1}>
                       {mod.storage_folder_key}
                     </Text>
                   )}
                 </Stack>
                 <Button
                   size="sm"
-                  variant="outline"
-                  borderColor="rgba(212,175,55,0.4)"
-                  color="rgba(212,175,55,0.9)"
+                  variant="line"
                   leftIcon={<ArrowRightLeft size={13} />}
                   flexShrink={0}
-                  _hover={{ bg: "rgba(212,175,55,0.08)", borderColor: "rgba(212,175,55,0.7)" }}
                   onClick={() => openAssign(mod)}
                   isDisabled={courses.length === 0}
                 >
@@ -173,66 +179,64 @@ export function UnassignedModulesManager({
         )}
 
         {courses.length === 0 && modules.length > 0 && (
-          <Text className="inter" fontSize="xs" color="orange.400">
+          <Text fontSize="13px" color="var(--cc-gold-light)">
             Keine Kurse vorhanden. Bitte zuerst einen Kurs anlegen.
           </Text>
         )}
       </Stack>
 
       <Modal isOpen={assignOpen} onClose={() => !loading && setAssignOpen(false)} isCentered size="md">
-        <ModalOverlay bg="rgba(7, 8, 10, 0.8)" backdropFilter="blur(8px)" />
+        <ModalOverlay bg="rgba(8, 10, 12, 0.72)" backdropFilter="blur(6px)" />
         <ModalContent
-          bg="rgba(10, 11, 14, 0.97)"
-          border="1px solid rgba(255,255,255,0.09)"
-          borderRadius="20px"
+          bg="var(--cc-panel-solid)"
+          border="1px solid rgba(212, 176, 128, 0.28)"
+          borderRadius="12px"
+          boxShadow="0 24px 60px rgba(0, 0, 0, 0.6)"
           mx={4}
         >
-          <ModalHeader className="radley-regular" fontWeight={400} color="gray.100">
+          <ModalHeader fontSize="17px" fontWeight={600} color="var(--cc-text)">
             Modul einem Kurs zuordnen
           </ModalHeader>
-          <ModalCloseButton isDisabled={loading} />
+          <ModalCloseButton isDisabled={loading} color="var(--cc-text-2)" />
           <ModalBody>
             <Stack spacing={4}>
-              <Text className="inter" fontSize="sm" color="gray.400">
+              <Text fontSize="14px" lineHeight={1.5} color="var(--cc-text-2)">
                 Modul{" "}
-                <Text as="span" fontWeight={600} color="gray.200">
-                  „{activeModule?.title}"
+                <Text as="span" fontWeight={600} color="var(--cc-text)">
+                  „{activeModule?.title}&quot;
                 </Text>{" "}
                 wird dem gewählten Kurs zugewiesen und dort ans Ende der Modulliste gesetzt.
               </Text>
               <FormControl>
-                <FormLabel className="inter" fontSize="xs" color="gray.500">
+                <FormLabel fontSize="13px" fontWeight={500} color="var(--cc-text-2)">
                   Ziel-Kurs
                 </FormLabel>
                 <Select
                   value={targetCourseId}
                   onChange={(e) => setTargetCourseId(e.target.value)}
-                  borderColor="whiteAlpha.200"
+                  {...fieldSx}
                   isDisabled={loading}
-                  className="inter"
                 >
                   {courses.map((c) => (
-                    <option key={c.id} value={c.id}>
+                    <option key={c.id} value={c.id} style={optionStyle}>
                       {c.title}
                     </option>
                   ))}
                 </Select>
               </FormControl>
               {assignError && (
-                <Text className="inter" fontSize="sm" color="red.300">
+                <Text fontSize="14px" color="var(--cc-danger)">
                   {assignError}
                 </Text>
               )}
             </Stack>
           </ModalBody>
           <ModalFooter gap={3}>
-            <Button variant="ghost" onClick={() => setAssignOpen(false)} isDisabled={loading} color="gray.400">
+            <Button variant="line" onClick={() => setAssignOpen(false)} isDisabled={loading}>
               Abbrechen
             </Button>
             <Button
-              bg="rgba(212,175,55,0.9)"
-              color="black"
-              _hover={{ bg: "rgba(212,175,55,1)" }}
+              variant="gold"
               onClick={() => void confirmAssign()}
               isLoading={loading}
               isDisabled={!targetCourseId}

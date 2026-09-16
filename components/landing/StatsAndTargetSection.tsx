@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Box, SimpleGrid, Stack, Text } from "@chakra-ui/react";
+import { Box, Button, Stack, Text } from "@chakra-ui/react";
 import {
   TrendingUp,
   Trophy,
@@ -18,6 +18,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { landingConfig } from "@/config/landing-config";
+import { Accent, CardRail, DisplayHeading, Eyebrow, OfferCard, Reveal } from "./landing-ui";
 
 const CARD_HEADER_ICONS: Record<string, ReactNode> = {
   Student: <BookOpen size={22} strokeWidth={1.5} />,
@@ -26,232 +27,29 @@ const CARD_HEADER_ICONS: Record<string, ReactNode> = {
 };
 
 const BULLET_ICONS: Record<string, ReactNode> = {
-  Clock: <Clock size={16} strokeWidth={2} />,
-  HelpCircle: <HelpCircle size={16} strokeWidth={2} />,
-  XCircle: <XCircle size={16} strokeWidth={2} />,
-  BarChart3: <BarChart3 size={16} strokeWidth={2} />,
-  Flame: <Flame size={16} strokeWidth={2} />,
-  FileX: <FileX size={16} strokeWidth={2} />,
-  Dumbbell: <Dumbbell size={16} strokeWidth={2} />,
-  Rocket: <Rocket size={16} strokeWidth={2} />,
-  Brain: <Brain size={16} strokeWidth={2} />,
+  Clock: <Clock size={15} strokeWidth={1.75} />,
+  HelpCircle: <HelpCircle size={15} strokeWidth={1.75} />,
+  XCircle: <XCircle size={15} strokeWidth={1.75} />,
+  BarChart3: <BarChart3 size={15} strokeWidth={1.75} />,
+  Flame: <Flame size={15} strokeWidth={1.75} />,
+  FileX: <FileX size={15} strokeWidth={1.75} />,
+  Dumbbell: <Dumbbell size={15} strokeWidth={1.75} />,
+  Rocket: <Rocket size={15} strokeWidth={1.75} />,
+  Brain: <Brain size={15} strokeWidth={1.75} />,
 };
 
-interface CardTheme {
-  border: string;
-  borderHover: string;
-  bg: string;
-  bgHover: string;
-  iconBg: string;
-  iconColor: string;
-  topLine: string;
-  shadow: string;
-  shadowHover: string;
-  bulletBg: string;
+function Gold({ children }: { children: ReactNode }) {
+  return (
+    <Box as="span" color="var(--cc-gold-light)" fontWeight={600}>
+      {children}
+    </Box>
+  );
 }
 
-const CARD_THEMES: CardTheme[] = [
-  {
-    // Amber/Bronze
-    border: "rgba(255,148,50,0.50)",
-    borderHover: "rgba(255,148,50,0.75)",
-    bg: "radial-gradient(circle at 90% 90%, rgba(255,148,50,0.20) 0%, rgba(8,8,8,0.70) 60%)",
-    bgHover: "radial-gradient(circle at 90% 90%, rgba(255,148,50,0.28) 0%, rgba(8,8,8,0.70) 60%)",
-    iconBg: "rgba(255,148,50,0.20)",
-    iconColor: "rgba(255,148,50,1)",
-    topLine: "linear-gradient(90deg, transparent 30%, rgba(255,148,50,0.70) 70%, transparent 95%)",
-    shadow: "0 0 28px rgba(255,148,50,0.18), 0 4px 16px rgba(0,0,0,0.50)",
-    shadowHover: "0 0 40px rgba(255,148,50,0.28), 0 8px 32px rgba(0,0,0,0.60)",
-    bulletBg: "rgba(255,148,50,0.10)",
-  },
-  {
-    // Silber / Platin
-    border: "rgba(180,195,220,0.32)",
-    borderHover: "rgba(180,195,220,0.55)",
-    bg: "radial-gradient(circle at 50% 10%, rgba(180,195,220,0.14) 0%, rgba(8,8,8,0.74) 65%)",
-    bgHover: "radial-gradient(circle at 50% 10%, rgba(180,195,220,0.22) 0%, rgba(8,8,8,0.74) 65%)",
-    iconBg: "rgba(180,195,220,0.14)",
-    iconColor: "#AAC0D8",
-    topLine: "linear-gradient(90deg, transparent 10%, rgba(160,180,210,0.65) 50%, transparent 90%)",
-    shadow: "0 4px 24px rgba(0,0,0,0.50), 0 0 20px rgba(160,180,210,0.08)",
-    shadowHover: "0 12px 40px rgba(0,0,0,0.60), 0 0 32px rgba(160,180,210,0.18)",
-    bulletBg: "rgba(180,195,220,0.08)",
-  },
-  {
-    // Gold
-    border: "rgba(212,175,55,0.45)",
-    borderHover: "rgba(212,175,55,0.72)",
-    bg: "radial-gradient(circle at 85% 15%, rgba(212,175,55,0.18) 0%, rgba(8,8,8,0.72) 65%)",
-    bgHover: "radial-gradient(circle at 85% 15%, rgba(212,175,55,0.26) 0%, rgba(8,8,8,0.72) 65%)",
-    iconBg: "rgba(212,175,55,0.16)",
-    iconColor: "#D4AF37",
-    topLine: "linear-gradient(90deg, transparent 30%, rgba(212,175,55,0.70) 70%, rgba(212,175,55,0.30) 100%)",
-    shadow: "0 4px 24px rgba(0,0,0,0.50), 0 0 20px rgba(212,175,55,0.12)",
-    shadowHover: "0 12px 40px rgba(0,0,0,0.60), 0 0 36px rgba(212,175,55,0.24)",
-    bulletBg: "rgba(212,175,55,0.08)",
-  },
-];
-
-function TargetCard({
-  group,
-  index,
-  onApply,
-}: {
-  group: (typeof landingConfig.targetGroups)[number];
-  index: number;
-  onApply: () => void;
-}) {
-  const theme = CARD_THEMES[index % CARD_THEMES.length];
-
+function Strong({ children }: { children: ReactNode }) {
   return (
-    <Box
-      position="relative"
-      p={{ base: 5, md: 6 }}
-      borderRadius="20px"
-      display="flex"
-      flexDirection="column"
-      minH={{ base: "auto", md: "400px" }}
-      overflow="hidden"
-      sx={{
-        background: theme.bg,
-        border: `1px solid ${theme.border}`,
-        backdropFilter: "blur(18px)",
-        WebkitBackdropFilter: "blur(18px)",
-        boxShadow: theme.shadow,
-        transition: "all 260ms cubic-bezier(0.16,1,0.3,1)",
-        _hover: {
-          borderColor: theme.borderHover,
-          background: theme.bgHover,
-          transform: "translateY(-4px)",
-          boxShadow: theme.shadowHover,
-        },
-        // Top accent line via pseudo-element
-        _before: {
-          content: '""',
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          h: "2px",
-          background: theme.topLine,
-          borderRadius: "20px 20px 0 0",
-        },
-      }}
-    >
-      {/* Card header icon */}
-      <Box
-        w="48px"
-        h="48px"
-        borderRadius="14px"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-        mb={5}
-        flexShrink={0}
-        sx={{
-          background: theme.iconBg,
-          border: `1px solid ${theme.border}`,
-          color: theme.iconColor,
-          boxShadow: `0 0 18px ${theme.iconBg}`,
-        }}
-      >
-        {CARD_HEADER_ICONS[group.iconName] ?? <TrendingUp size={22} strokeWidth={1.5} />}
-      </Box>
-
-      {/* Title + Description — fixed height so divider is always at same position */}
-      <Stack spacing={2} mb={5} minH={{ base: "auto", md: "108px" }}>
-        <Text
-          fontSize={{ base: "lg", md: "xl" }}
-          color="var(--color-text-primary, #F0F0F2)"
-          className="inter-bold"
-          lineHeight="1.25"
-        >
-          {group.title}
-        </Text>
-        <Text
-          fontSize="sm"
-          color="rgba(255,255,255,0.52)"
-          className="inter"
-          lineHeight="1.65"
-        >
-          {group.description}
-        </Text>
-      </Stack>
-
-      {/* Divider */}
-      <Box
-        h="1px"
-        mb={5}
-        sx={{ background: `linear-gradient(90deg, ${theme.border} 0%, transparent 100%)` }}
-      />
-
-      {/* Bullets — prominent mini badges */}
-      <Stack spacing={3} flex={1}>
-        {group.bullets.map((bullet) => (
-          <Box
-            key={bullet.text}
-            display="flex"
-            alignItems="center"
-            gap={3}
-            px={3}
-            py={2}
-            borderRadius="10px"
-            sx={{
-              background: theme.bulletBg,
-              border: `1px solid ${theme.border}`,
-            }}
-          >
-            <Box
-              flexShrink={0}
-              w="28px"
-              h="28px"
-              borderRadius="8px"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              sx={{
-                background: theme.iconBg,
-                color: theme.iconColor,
-              }}
-            >
-              {BULLET_ICONS[bullet.icon] ?? <ArrowRight size={16} strokeWidth={2} />}
-            </Box>
-            <Text
-              fontSize="sm"
-              color="rgba(255,255,255,0.82)"
-              className="inter-semibold"
-              lineHeight="1.4"
-            >
-              {bullet.text}
-            </Text>
-          </Box>
-        ))}
-      </Stack>
-
-      {/* CTA link */}
-      <Box
-        as="button"
-        mt={6}
-        fontSize="sm"
-        className="inter-semibold"
-        letterSpacing="0.02em"
-        display="flex"
-        alignItems="center"
-        gap={2}
-        bg="transparent"
-        border="none"
-        cursor="pointer"
-        p={0}
-        onClick={onApply}
-        sx={{
-          color: theme.iconColor,
-          transition: "all 160ms ease",
-          _hover: { opacity: 0.80, gap: "10px" },
-        }}
-      >
-        {group.cta}
-        <ArrowRight size={14} strokeWidth={2.5} />
-      </Box>
+    <Box as="span" color="var(--cc-text)" fontWeight={600}>
+      {children}
     </Box>
   );
 }
@@ -260,259 +58,99 @@ export function StatsAndTargetSection({ onApply }: { onApply: () => void }) {
   const { targetGroups, product } = landingConfig;
 
   return (
-    <Box
-      as="section"
-      w="100%"
-      bg="var(--color-bg-primary, #07080A)"
-      py={{ base: 14, md: 20 }}
-      px={{ base: 4, md: 8, lg: 12 }}
-    >
+    <Box as="section" aria-labelledby="target-title" w="100%" py={{ base: 16, md: 24 }} px={{ base: 4, md: 8, lg: 12 }}>
       <Box maxW="1200px" mx="auto">
+        {/* Kopf */}
+        <Reveal>
+          <Stack spacing={4} align="center" textAlign="center" mb={{ base: 10, md: 14 }}>
+            <Eyebrow>Wen wählen wir aus?</Eyebrow>
+            <DisplayHeading id="target-title">
+              Wen wählen wir für den{" "}
+              <Box as="br" display={{ base: "none", md: "block" }} />
+              <Accent>{product.name}</Accent> aus?
+            </DisplayHeading>
+            <Text fontSize={{ base: "16px", md: "17px" }} lineHeight={1.65} color="var(--cc-text-2)" maxW="540px">
+              Nicht jeder bekommt einen Platz. Wir schauen genau hin und entscheiden bewusst.
+            </Text>
+          </Stack>
+        </Reveal>
 
-        {/* Section header */}
-        <Stack spacing={3} textAlign="center" mb={12}>
-          <Text
-            fontSize="xs"
-            letterSpacing="0.22em"
-            textTransform="uppercase"
-            color="rgba(255,255,255,0.40)"
-            className="inter-semibold"
-          >
-            Wen wählen wir aus?
-          </Text>
-          <Text
-            as="h2"
-            className="inter-bold"
-            fontSize={{ base: "2xl", md: "3xl", lg: "4xl" }}
-            color="var(--color-text-primary, #F0F0F2)"
-            lineHeight="1.2"
-          >
-            <Box as="span" color="#7EB6FF">
-              Wen
-            </Box>{" "}
-            wählen wir für den{" "}
-            <Box as="br" display={{ base: "none", md: "block" }} />
-            <Box
-              as="span"
-              px={2}
-              py={0.5}
-              borderRadius="6px"
-              sx={{
-                background: "linear-gradient(90deg, rgba(126,182,255,0.16), transparent 95%)",
-                border: "1px solid rgba(126,182,255,0.22)",
-                display: "inline-block",
-              }}
-            >
-              {product.name}
-            </Box>{" "}
-            aus?
-          </Text>
-          <Text
-            fontSize={{ base: "sm", md: "md" }}
-            color="rgba(255,255,255,0.45)"
-            className="inter"
-            maxW="540px"
-            mx="auto"
-            lineHeight="1.7"
-          >
-            Nicht jeder bekommt einen Platz. Wir schauen genau hin und entscheiden bewusst.
-          </Text>
-        </Stack>
+        {/* Karten — mobil wischbar, ab md dreispaltig */}
+        <Reveal delay={80}>
+          <CardRail label="Zielgruppen">
+            {targetGroups.map((group, i) => (
+              <OfferCard
+                key={group.title}
+                index={i}
+                icon={CARD_HEADER_ICONS[group.iconName] ?? <TrendingUp size={22} strokeWidth={1.5} />}
+                title={group.title}
+                description={group.description}
+                bullets={group.bullets.map((b) => ({
+                  text: b.text,
+                  icon: BULLET_ICONS[b.icon] ?? <ArrowRight size={15} strokeWidth={1.75} />,
+                }))}
+                ctaLabel={group.cta}
+                onApply={onApply}
+                headMinH="132px"
+              />
+            ))}
+          </CardRail>
+        </Reveal>
 
-        {/* Cards — horizontal scroll on mobile, grid on desktop */}
-        <Box
-          display={{ base: "flex", md: "none" }}
-          gap={4}
-          pb={4}
-          sx={{
-            overflowX: "auto",
-            scrollSnapType: "x mandatory",
-            WebkitOverflowScrolling: "touch",
-            scrollbarWidth: "none",
-            "&::-webkit-scrollbar": { display: "none" },
-          }}
-        >
-          {targetGroups.map((group, i) => (
-            <Box key={group.title} flexShrink={0} w="82vw" sx={{ scrollSnapAlign: "start" }}>
-              <TargetCard group={group} index={i} onApply={onApply} />
-            </Box>
-          ))}
-        </Box>
-
-        <SimpleGrid display={{ base: "none", md: "grid" }} columns={3} spacing={6}>
-          {targetGroups.map((group, i) => (
-            <TargetCard key={group.title} group={group} index={i} onApply={onApply} />
-          ))}
-        </SimpleGrid>
-
-        {/* CTA Block */}
-        <Box
-          mt={16}
-          borderRadius="24px"
-          overflow="hidden"
-          position="relative"
-          sx={{
-            background:
-              "linear-gradient(135deg, rgba(212,175,55,0.07) 0%, rgba(10,10,14,0.95) 50%, rgba(180,195,220,0.05) 100%)",
-            border: "1px solid rgba(212,175,55,0.18)",
-            backdropFilter: "blur(16px)",
-            WebkitBackdropFilter: "blur(16px)",
-            boxShadow: "0 8px 48px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.04)",
-          }}
-        >
-          {/* Blue top accent */}
-          <Box
-            h="2px"
-            sx={{
-              background:
-                "linear-gradient(90deg, transparent 10%, rgba(126,182,255,0.65) 40%, rgba(126,182,255,0.65) 60%, transparent 90%)",
-            }}
-          />
-
-          <Box px={{ base: 6, md: 12 }} py={{ base: 8, md: 12 }} textAlign="center">
-            {/* Tag */}
+        {/* Abschluss: Bewerbungsaufforderung als Hero-Karte */}
+        <Reveal mt={{ base: 12, md: 20 }}>
+          <Box className="cc-card cc-card--hero" px={{ base: 6, md: 12 }} py={{ base: 9, md: 12 }} textAlign="center">
             <Box
               display="inline-flex"
               alignItems="center"
               px={3}
               py={1}
+              mb={6}
               borderRadius="full"
-              mb={5}
-              sx={{
-                background: "rgba(126,182,255,0.10)",
-                border: "1px solid rgba(126,182,255,0.30)",
-              }}
+              bg="var(--cc-gold-wash)"
+              border="1px solid var(--cc-gold-line)"
+              boxShadow="0 0 18px rgba(212, 176, 128, 0.14)"
             >
-              <Text
-                fontSize="xs"
-                letterSpacing="0.18em"
-                textTransform="uppercase"
-                color="rgba(126,182,255,0.90)"
-                className="inter-semibold"
-              >
+              <Text as="span" fontSize="12px" fontWeight={600} letterSpacing="0.12em" textTransform="uppercase" color="var(--cc-gold-light)">
                 Deine Chance
               </Text>
             </Box>
 
             <Stack
               spacing={4}
-              maxW="600px"
+              maxW="620px"
               mx="auto"
               mb={{ base: 0, md: 8 }}
-              textAlign="center"
+              fontSize={{ base: "16px", md: "18px" }}
+              lineHeight={1.75}
+              color="var(--cc-text-2)"
             >
-              <Text
-                fontSize={{ base: "sm", md: "md" }}
-                color="rgba(255,255,255,0.58)"
-                className="inter"
-                lineHeight="1.80"
-              >
-                Du hast die Seite gelesen. Du weißt was{" "}
-                <Box
-                  as="span"
-                  color="var(--color-accent-gold, #D4AF37)"
-                  className="inter-semibold"
-                >
-                  Capital Circle
-                </Box>{" "}
-                ist und{" "}
-                <Box
-                  as="span"
-                  color="rgba(126,182,255,0.90)"
-                  className="inter-semibold"
-                >
-                  was es nicht ist
-                </Box>
-                .
+              <Text>
+                Du hast die Seite gelesen. Du weißt was <Gold>Capital Circle</Gold> ist und <Strong>was es nicht ist</Strong>.
               </Text>
-              <Text
-                fontSize={{ base: "sm", md: "md" }}
-                color="rgba(255,255,255,0.58)"
-                className="inter"
-                lineHeight="1.80"
-              >
-                Wenn du erkennst dass du{" "}
-                <Box
-                  as="span"
-                  color="rgba(126,182,255,0.90)"
-                  className="inter-semibold"
-                >
-                  einer der drei Trader
-                </Box>{" "}
-                bist –{" "}
-                <Box
-                  as="span"
-                  color="var(--color-accent-gold, #D4AF37)"
-                  className="inter-semibold"
-                >
-                  dann bewirb dich jetzt
-                </Box>
-                .
+              <Text>
+                Wenn du erkennst dass du <Strong>einer der drei Trader</Strong> bist – <Gold>dann bewirb dich jetzt</Gold>.
               </Text>
-              <Text
-                fontSize={{ base: "sm", md: "md" }}
-                color="rgba(255,255,255,0.58)"
-                className="inter"
-                lineHeight="1.80"
-              >
-                <Box
-                  as="span"
-                  color="var(--color-accent-gold, #D4AF37)"
-                  className="inter-semibold"
-                >
-                  Emre
-                </Box>{" "}
-                liest jede Bewerbung{" "}
-                <Box
-                  as="span"
-                  color="rgba(126,182,255,0.90)"
-                  className="inter-semibold"
-                >
-                  persönlich
-                </Box>
-                .{" "}
-                <Box
-                  as="span"
-                  color="var(--color-accent-gold, #D4AF37)"
-                  className="inter-semibold"
-                >
-                  Nicht jeder wird angenommen
-                </Box>
-                .
+              <Text>
+                <Gold>Emre</Gold> liest jede Bewerbung <Strong>persönlich</Strong>. <Gold>Nicht jeder wird angenommen</Gold>.
               </Text>
             </Stack>
 
-            {/* Button — Desktop only */}
-            <Box
-              as="button"
-              display={{ base: "none", md: "inline-flex" }}
-              alignItems="center"
-              gap={2}
+            {/* Button — nur Desktop (mobil: fester Balken) */}
+            <Button
+              variant="gold"
+              size="lg"
+              h="52px"
               px={8}
-              py={3}
-              borderRadius="12px"
-              fontSize="sm"
-              className="inter-semibold"
-              letterSpacing="0.05em"
-              color="#07080A"
+              fontSize="16px"
+              display={{ base: "none", md: "inline-flex" }}
+              rightIcon={<ArrowRight size={16} strokeWidth={2.25} />}
               onClick={onApply}
-              sx={{
-                background: "linear-gradient(135deg, #E8C547 0%, #D4AF37 55%, #A67C00 100%)",
-                boxShadow: "0 4px 22px rgba(212,175,55,0.38)",
-                transition: "all 220ms cubic-bezier(0.16,1,0.3,1)",
-                _hover: {
-                  transform: "translateY(-2px)",
-                  boxShadow: "0 8px 32px rgba(212,175,55,0.55)",
-                },
-                _active: { transform: "translateY(0)" },
-              }}
             >
               Jetzt bewerben
-              <ArrowRight size={15} strokeWidth={2.5} />
-            </Box>
+            </Button>
           </Box>
-        </Box>
-
+        </Reveal>
       </Box>
     </Box>
   );

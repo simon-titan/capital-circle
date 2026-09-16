@@ -1,152 +1,91 @@
-# Tokens (Reality-Check: Spec ↔ Code)
+# Tokens (v3.2 „Champagner auf Graphit“)
 
-← zurück zum [Index](./README.md)
+← zurück zum [Index](./README.md) · Werte: [`DESIGN.json`](../../DESIGN.json) · Code: `app/globals.css` (`:root`-Block v3.2 + Effekte `.cc-stars`, `.cc-goldlight`, `.cc-card`)
 
-> Diese Datei nennt die **tatsächlich geltenden** Werte. `DESIGN.json` ist die idealisierte Spec
-> und weicht an den unten markierten Stellen vom Code ab. **Im Zweifel gilt der Code**
-> (`app/globals.css :root` + `theme/index.ts`).
+Farben seit v3.2 1:1 aus dem Kunden-Mockup (01-dashboard).
 
-## ⚠️ Bekannte Abweichungen Spec ↔ Code
+## Grund & Flächen
 
-| Thema | `DESIGN.json` (Spec) | Real im Code | Hinweis |
-|-------|----------------------|--------------|---------|
-| Primär-Hintergrund | `--color-bg-primary: #07080A` | `--color-bg: #080808` (globals.css), `brand.bg: #080808` (theme) | **Zwei Namen, zwei Werte.** Plattform-`body` rendert `#080808`. |
-| Token-Name BG | `--color-bg-primary` | existiert **nicht** in `:root` | Landing-Komponenten nutzen `var(--color-bg-primary, #07080A)` → greift **immer** den Fallback `#07080A`. |
-| Text primär | `#F0F0F2` | `--color-text-primary: #f0f0f0` | minimale Differenz; Landing nutzt Fallback `#F0F0F2`. |
-| Akzent-Alias | `accent.gold.*` | `--color-accent-blue: #d4af37` + `brand.accentBlue` | **Legacy-Alias auf Gold**, `@deprecated`. Nicht für Neues nutzen. |
-| `--color-text-secondary` | `#9A9AA4` | **nicht** in `:root` definiert | Wird in CSS (`.article-body` etc.) genutzt → Fallback/Vererbung. Bei Bedarf ergänzen. |
+| Variable / Klasse | Wert | Rolle |
+|-------------------|------|-------|
+| `--cc-bg` | `#12171c` | Graphitgrund |
+| `.cc-stars` | Punkte 1–1.5px, zweite Ebene funkelt | Sternenfeld (fixed) |
+| `.cc-goldlight` | Champagner-Radial oben rechts 0.17 / unten links 0.07 | Champagner-Licht (fixed) |
+| `--cc-bg-raised` | `rgba(22,26,32,0.92)` + Blur | Sidebar, Leiste, mobile Kopfzeile |
+| `--cc-panel-solid` | `#151a1e` | Drawer |
+| `--cc-surface` | `#191e23` | Grundton der Karten |
+| `.cc-card` | Verlauf `rgba(27,32,38,0.94)` → `rgba(24,29,34,0.94)`, Blur 14px, Rahmen `rgba(255,255,255,0.07)`, Radius 12px, Gold-Kante oben | Karten |
+| `.cc-card--hero` | Gold-Rahmen 0.4, Champagner-Radial, Verlauf `rgba(29,34,40,0.94)` → `rgba(24,29,34,0.94)`, atmender Glow | Hero-Karte |
+| `--cc-surface-2` | `#222427` | Tooltips, feste Innenflächen |
+| `--cc-line` / `--cc-line-strong` | `rgba(255,255,255,0.07)` / `0.15` | Haarlinien; kräftig = Kontur Line-Button, Icon-Kachel |
 
-> **Praxisregel:** In neuem Code, der sowohl auf Plattform als auch Landing laufen kann,
-> immer mit Fallback schreiben: `var(--color-bg, #080808)` bzw. `var(--color-text-primary, #F0F0F2)`.
+## Text & Daten
 
----
+`--cc-text #f2f3f5` · `--cc-text-soft #d4d7db` · `--cc-text-2 #a3a9b0` · `--cc-text-3 #80868d`
 
-## Farben
+| Variable | Wert | Rolle |
+|----------|------|-------|
+| `--cc-ink` | `#d1d0d4` | Datentinte im Dashboard: Weiterlernen-Balken (`ProgressBar tone="ink"`), Fortschrittssegmente, Streak-Haken |
+| `--cc-track` | `#292c32` | Spur, Scrollbar |
 
-### Real definiert in `app/globals.css :root`
+## Gold (Champagner)
 
-```css
---color-bg: #080808;
---color-bg-secondary: #0f0f0f;
---color-surface: rgba(255, 255, 255, 0.04);
---color-border: rgba(255, 255, 255, 0.08);
---color-text-primary: #f0f0f0;
---color-text-muted: rgba(255, 255, 255, 0.4);
---color-accent-blue: #d4af37;   /* @deprecated Legacy-Alias auf Gold */
---color-accent-gold: #d4af37;
---color-accent-gold-light: #e8c547;
---color-accent-gold-dark: #a67c00;
---color-accent-glow: rgba(212, 175, 55, 0.28);
---color-white: #ffffff;
-```
+| Variable | Wert |
+|----------|------|
+| `--cc-gold` | `#d4b080` |
+| `--cc-gold-hover` / `--cc-gold-press` | `#ddbd90` / `#c7a26f` |
+| `--cc-gold-light` | `#e8c094` (Name, Hero-Titel, aktive Nav, Live) |
+| `--cc-gold-dark` | `#b8935f` |
+| `--cc-gold-grad` | `linear-gradient(135deg, #ecc99c, #d4b080 50%, #b8935f)` — Buttons, Play |
+| `--cc-gold-bar` | `linear-gradient(90deg, #b8935f, #d4b080 55%, #e8c094)` — Fortschritt (`ProgressBar` Standard, z. B. Lernseite) |
+| `--cc-gold-line` / `--cc-gold-wash` | `rgba(232,192,148,0.6)` / `rgba(212,176,128,0.08)` |
+| `--cc-on-gold` | `#1a140c` |
 
-### Gold-Skala (verbindlich, aus `DESIGN.json` / `theme.brand`)
-
-| Stop | Hex | Rolle |
-|------|-----|-------|
-| 50 | `#FFFBEB` | hellster Tint |
-| 100 | `#FEF3C7` | |
-| 200 | `#FDE68A` | |
-| 300 | `#FCD34D` | |
-| 400 | `#E8C547` | `gold.light` — Hover/Highlight |
-| **500** | **`#D4AF37`** | **`gold.DEFAULT` — Standard-Akzent** |
-| 600 | `#B8860B` | |
-| 700 | `#A67C00` | `gold.dark` — Gradient-Tiefe (theme), in DESIGN.json `#92400E` |
-| 800 | `#92400E` | |
-| 900 | `#78350F` | |
-
-> Hinweis: `theme/index.ts` setzt `brand.700 = #A67C00`, `DESIGN.json chakraUI.colors.brand.700 = #A67C00`,
-> aber `colors.accent.gold.700 = #92400E`. Für **Gradients** gilt die dunkle Tiefe `#A67C00`
-> (siehe `goldCtaSx`, Progress-Fill, Button primary).
-
-### Marketing-Metall-Tier (nur Funnel/Landing)
-
-```
-Gold    #D4AF37   (rgba(212,175,55,…))
-Silber  #AAC0D8   (rgba(180,195,220,…) Border, rgba(180,200,230,…) Glow)
-Bronze  #CD7F32   (rgba(184,94,48,…))
-Orange  #FF9432   (rgba(255,148,50,…))
-Rot     —         (rgba(229,62,62,…)  Verknappungs-Highlight)
-```
-
-### Semantik (nur funktional)
-
-| Rolle | DEFAULT | Text | Subtle |
-|-------|---------|------|--------|
-| success / profit | `#22C55E` | `#4ADE80` | `rgba(34,197,94,0.10)` |
-| error / loss | `#EF4444` | `#F87171` | `rgba(239,68,68,0.10)` |
-| warning | `#EAB308` | `#FDE047` | `rgba(234,179,8,0.10)` |
-
----
+Streak-Flamme (einzige Nicht-Gold-Farbe): Kachel Orange→Champagner, Icon `#ffb454`. Grün/Rot nur semantisch.
+Legacy: `--color-accent-gold*` ist seit der Migration nur noch ein Alias auf Champagner (`#d4b080` / `#e8c094` / `#b8935f`).
 
 ## Typografie
 
-```css
---font-heading: "Radley", serif;
---font-body:    "Inter", sans-serif;   /* theme: 'Inter', system-ui, sans-serif */
---font-mono:    "JetBrains Mono", monospace;
-```
+Nur **Inter** (die einzige Schrift, die `app/layout.tsx` lädt), Zahlen mit `.cc-num`. Begrüßung 28/36px (Name in Gold) · Kartentitel 13px Versalien 0.12em ·
+Wert 17/18px · Meta 14px · Streak-Zahl 44px · Prozent 30px in Text · Nav 15px · Wortmarke 15px 0.32em.
 
-**CSS-Klassen (in `app/globals.css`):** `.radley-regular`, `.radley-regular-italic`,
-`.inter`, `.inter-medium` (500), `.inter-semibold` (600), `.inter-bold` (700),
-`.jetbrains-mono`, `.dm-sans` (Legacy = Inter).
+## Radien · Layout
 
-**CDN (`app/layout.tsx`):**
-- `Radley:ital@0;1`
-- `Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900`
-- `JetBrains+Mono:wght@400;500;700`
-
-**Skala (aus DESIGN.json `typography.scale`):** `xs 11` · `sm 13` · `base 15` · `md 16` ·
-`lg 18` · `xl 20` · `2xl 24` · `3xl 30` · `4xl 36` · `5xl 48` · `6xl 64` (px).
-
----
-
-## Spacing (4px-Raster)
-
-`0` · `4` · `8` · `12` · `16` · `20` · `24` · `28` · `32` · `40` · `48` · `56` · `64` · `80` · `96` · `128` (px).
-
-Layout-Konstanten (DESIGN.json `spacing.layout`): `navHeight 64`, `sidebarWidth 240`
-(collapsed `64`), `contentMaxWidth 1280`, `moduleMaxWidth 860`, `adminMaxWidth 1440`,
-`cardPadding 20`, `sectionVerticalSpacing 80`.
-
-## Radii
-
-```
-sm 6 · DEFAULT 10 · md 12 · lg 16 · xl 20 · 2xl 24 · 3xl 32 · full 9999
-```
-Semantisch: `card 16` · `widget 20` · `button 10` · `input 10` · `badge 6` · `modal 24`.
-
-> **Code-Realität:** `theme/index.ts` radii = `card 12 / button 8 / modal 24`
-> (weicht von DESIGN.json `card 16 / button 10` ab). Chakra-Komponenten nutzen die theme-Werte.
-
-## Shadows
-
-```
-sm      0 1px 3px rgba(0,0,0,.50)
-DEFAULT 0 4px 12px rgba(0,0,0,.60)
-md      0 8px 24px rgba(0,0,0,.60)
-lg      0 16px 48px rgba(0,0,0,.70)
-card    0 4px 16px rgba(0,0,0,.60), inset 0 1px 0 rgba(255,255,255,.05)
-glass   0 8px 32px rgba(0,0,0,.50), inset 0 1px 0 rgba(255,255,255,.07)
-glow.gold 0 0 24px rgba(212,175,55,.22), 0 0 8px rgba(212,175,55,.12)
-```
+Buttons 8px · Kacheln/Karten 12px · Segmente 4px. Leiste 48px · Sidebar 264px (ab lg) · Main max. 1280px.
 
 ## Motion
 
-```
-duration: instant 80 · fast 150 · base 220 · slow 350 · enter 400 · page 500 (ms)
-easing.default: cubic-bezier(0.16, 1, 0.3, 1)   ← Standard für fast alles
-easing.spring:  cubic-bezier(0.34, 1.56, 0.64, 1)
-easing.smooth:  cubic-bezier(0.4, 0, 0.2, 1)
-```
+`--cc-ease: cubic-bezier(0.16, 1, 0.3, 1)`
 
-Page-Transition (Framer): `{opacity, y:6}` → `{opacity:1, y:0}`, `duration 0.30`, ease `[0.16,1,0.3,1]`.
+| Klasse | Einsatz |
+|--------|---------|
+| `.cc-rise` | Karten steigen beim Laden nacheinander auf |
+| `.cc-fill` | Fortschritt/Segmente füllen sich einmal |
+| `.cc-card--hero` | atmender Gold-Glow (6s) |
+| `.cc-flame` | Streak-Flamme pulsiert |
+| `.cc-ping` | Live-Ring |
+| `.cc-stars::after` | Sterne funkeln |
+| `.cc-spark` | Lichtfunke an der Sidebar-Kante |
+| `.cc-marquee` | Promo-Band mobil |
 
----
+Alle aus bei `prefers-reduced-motion: reduce`.
 
-## Regel für neue Tokens
+## Chakra-Theme (`theme/index.ts`)
 
-Neuer Token = **drei Orte synchron** halten:
-1. `DESIGN.json` (Spec/SSOT)
-2. `app/globals.css` `:root` und/oder `theme/index.ts` (Implementierung)
-3. Diese Datei (`tokens.md`) — inkl. Eintrag in die Abweichungs-Tabelle, falls Spec ≠ Code.
+| Bereich | Wert |
+|---------|------|
+| `fonts.heading` / `body` / `mono` | Inter |
+| `colors.brand` | Champagner-Palette: `brand.200` = `#E8C094` (= `--cc-gold-light`, Chakra nutzt im Dark Mode meist Stufe 200), `brand.500` = `#D4B080` (= `--cc-gold`), `brand.600` = `#B8935F` |
+| `defaultProps` | `Switch`, `Checkbox`, `Radio`, `Progress`, `Slider`, `Tabs` → `colorScheme: "brand"` (kein Chakra-Blau mehr) |
+| `Alert` Variante `solid` (Toasts) | Graphit-Panel (`--cc-panel-solid`, Rand `--cc-line-strong`); Icon grün/rot bei `colorScheme` green/red, sonst Champagner |
+| `Button` | Varianten `gold` / `line` (siehe [components.md](./components.md)) |
+| `shadows.outline` | Fokusring `0 0 0 2px rgba(212,176,128,0.75)` |
+
+## Legacy (nicht für neue Arbeit)
+
+Die `--color-*`-Tokens oben in `app/globals.css` bleiben als **Aliasse** — ihre Werte entsprechen seit der Migration
+der v3.2-Palette (z. B. `--color-bg` = `#12171c`, `--color-accent-gold` = `#d4b080`). `--color-profit` / `--color-loss`
+bleiben semantische Journal-Tokens. Neuer Code nutzt `--cc-*`.
+
+Die Klassen `.radley-regular*`, `.jetbrains-mono`, `.dm-sans` setzen nur noch Inter und werden nicht mehr verwendet.
+Entfernt: `.glass-card*`, `.welcome-streak-*`, `.appointment-card-*`, `.institut-card-*`.

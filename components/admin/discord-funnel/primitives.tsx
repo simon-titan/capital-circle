@@ -1,7 +1,14 @@
 "use client";
 
-import { Badge, Box, HStack, Stack, Text } from "@chakra-ui/react";
+import { Box, HStack, Stack, Text } from "@chakra-ui/react";
 import type { ReactNode } from "react";
+import {
+  ADMIN_CARD_CLASS,
+  ADMIN_CHART,
+  adminCardPadding,
+  adminInsetProps,
+  StatusPill,
+} from "@/components/admin/adminUi";
 import type { ClosedValue, OptionDistribution } from "./types";
 
 /* ── Formatters ───────────────────────────────────────────────────────────── */
@@ -62,6 +69,7 @@ export function toDateInputValue(iso: string | null | undefined): string {
 
 /* ── Section Card ─────────────────────────────────────────────────────────── */
 
+/** Glas-Karte einer Sektion; Titelzeile mit neutralem Icon, Aktion rechts. */
 export function SectionCard(props: {
   title: string;
   subtitle?: string;
@@ -70,19 +78,21 @@ export function SectionCard(props: {
   children: ReactNode;
 }) {
   return (
-    <Stack spacing={4}>
+    <Stack as="section" spacing={4} className={ADMIN_CARD_CLASS} p={adminCardPadding}>
       <HStack justify="space-between" flexWrap="wrap" gap={2}>
         <Stack spacing={0.5}>
           <HStack spacing={2}>
             {props.icon ? (
-              <Box color="var(--color-accent-gold-light, #E8C547)">{props.icon}</Box>
+              <Box color="var(--cc-text-2)" aria-hidden>
+                {props.icon}
+              </Box>
             ) : null}
-            <Text className="inter-semibold" fontSize="lg" color="whiteAlpha.950">
+            <Text as="h2" fontSize="16px" fontWeight={600} lineHeight={1.3} color="var(--cc-text)">
               {props.title}
             </Text>
           </HStack>
           {props.subtitle ? (
-            <Text fontSize="xs" color="var(--color-text-secondary)" className="inter">
+            <Text fontSize="13px" color="var(--cc-text-2)">
               {props.subtitle}
             </Text>
           ) : null}
@@ -104,38 +114,29 @@ export function StatWidget(props: {
   accent?: "gold" | "green" | "red";
 }) {
   const { icon, label, value, sublabel, accent = "gold" } = props;
+  // Icons neutral; Grün/Rot nur, wo der Wert Bedeutung trägt (Revenue, Verlust).
   const iconColor =
-    accent === "green" ? "#34D399" : accent === "red" ? "#F87171" : "var(--color-accent-gold-light, #E8C547)";
+    accent === "green" ? "var(--cc-success)" : accent === "red" ? "var(--cc-danger)" : "var(--cc-text-2)";
   return (
-    <Box
-      bg="rgba(20, 21, 25, 0.82)"
-      backdropFilter="blur(20px) saturate(1.6)"
-      border="1px solid rgba(255,255,255,0.09)"
-      borderRadius="20px"
-      p="18px 20px"
-      boxShadow="0 8px 32px rgba(0,0,0,0.60), inset 0 1px 0 rgba(255,255,255,0.06)"
-      position="relative"
-      overflow="hidden"
-    >
+    <Box className={ADMIN_CARD_CLASS} p={adminCardPadding}>
       <Stack spacing={3}>
         <HStack spacing={2} color={iconColor}>
           {icon}
           <Text
-            fontSize="11px"
+            fontSize="12px"
             fontWeight={500}
-            letterSpacing="0.08em"
+            letterSpacing="0.06em"
             textTransform="uppercase"
-            color="#606068"
-            className="inter"
+            color="var(--cc-text-2)"
           >
             {label}
           </Text>
         </HStack>
-        <Text className="inter-semibold" fontSize="28px" fontWeight={700} lineHeight="1" color="#F0F0F2">
+        <Text className="cc-num" fontSize="26px" fontWeight={600} letterSpacing="-0.01em" lineHeight="1" color="var(--cc-text)">
           {value}
         </Text>
         {sublabel ? (
-          <Text fontSize="xs" color="var(--color-text-secondary)" className="inter">
+          <Text fontSize="12px" color="var(--cc-text-3)">
             {sublabel}
           </Text>
         ) : null}
@@ -146,23 +147,22 @@ export function StatWidget(props: {
 
 export function MiniStat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <Box bg="#0C0D10" border="1px solid rgba(255,255,255,0.07)" borderRadius="12px" p={4}>
+    <Box {...adminInsetProps} p={4}>
       <Text
         fontSize="11px"
         fontWeight={500}
-        letterSpacing="0.08em"
+        letterSpacing="0.06em"
         textTransform="uppercase"
-        color="#606068"
-        className="inter"
+        color="var(--cc-text-2)"
         mb={2}
       >
         {label}
       </Text>
-      <Text className="inter-semibold" fontSize="22px" fontWeight={700} color="#F0F0F2" lineHeight="1">
+      <Text className="cc-num" fontSize="20px" fontWeight={600} color="var(--cc-text)" lineHeight="1">
         {value}
       </Text>
       {sub ? (
-        <Text fontSize="xs" color="var(--color-text-secondary)" className="inter" mt={2}>
+        <Text fontSize="12px" color="var(--cc-text-3)" mt={2} className="cc-num">
           {sub}
         </Text>
       ) : null}
@@ -185,8 +185,8 @@ export function DistChart({
   const total = options.reduce((acc, o) => acc + o.count, 0);
   const max = Math.max(1, ...options.map((o) => o.count));
   return (
-    <Box bg="#0C0D10" border="1px solid rgba(255,255,255,0.07)" borderRadius="12px" p={4}>
-      <Text className="inter-semibold" fontSize="sm" color="var(--color-text-primary)" mb={3}>
+    <Box {...adminInsetProps} p={4}>
+      <Text fontSize="14px" fontWeight={500} color="var(--cc-text)" mb={3}>
         {title}
       </Text>
       <Stack spacing={3}>
@@ -195,31 +195,27 @@ export function DistChart({
           return (
             <Stack key={o.option} spacing={1}>
               <HStack justify="space-between" align="flex-start" gap={2}>
-                <Text fontSize="xs" color="var(--color-text-secondary)" className="inter" noOfLines={2}>
+                <Text fontSize="12px" color="var(--cc-text-2)" noOfLines={2}>
                   {o.option}
                 </Text>
-                <Text className="inter-semibold" fontSize="xs" color="var(--color-text-primary)" flexShrink={0}>
+                <Text className="cc-num" fontSize="12px" fontWeight={600} color="var(--cc-text)" flexShrink={0}>
                   {o.count}
                 </Text>
               </HStack>
-              <Box bg="#1A1B1F" borderRadius="9999px" overflow="hidden" h="6px">
+              <Box bg={ADMIN_CHART.track} borderRadius="full" overflow="hidden" h="6px">
                 <Box
                   h="full"
                   w={`${(pct * 100).toFixed(2)}%`}
-                  background={
-                    accent
-                      ? "linear-gradient(90deg, #34D399 0%, #10B981 100%)"
-                      : "linear-gradient(90deg, #A67C00 0%, #D4AF37 100%)"
-                  }
-                  borderRadius="9999px"
-                  transition="width 500ms ease"
+                  bg={accent ? ADMIN_CHART.success : ADMIN_CHART.gold}
+                  borderRadius="full"
+                  transition="width 500ms var(--cc-ease)"
                 />
               </Box>
             </Stack>
           );
         })}
         {total === 0 ? (
-          <Text fontSize="xs" color="#3A3A40" className="inter" fontStyle="italic">
+          <Text fontSize="12px" color="var(--cc-text-3)">
             Keine Daten im Zeitraum.
           </Text>
         ) : null}
@@ -228,9 +224,9 @@ export function DistChart({
   );
 }
 
-/* ── Donut chart (Gold-Palette) ───────────────────────────────────────────── */
+/* ── Donut chart (Champagner + Tinte) ─────────────────────────────────────── */
 
-const DONUT_PALETTE = ["#D4AF37", "#A67C00", "#E8C547", "#7A5C00", "#F0D77A"];
+const DONUT_PALETTE = ADMIN_CHART.series;
 
 export function DonutChart({
   title,
@@ -253,7 +249,7 @@ export function DonutChart({
   return (
     <Stack spacing={3} align="center">
       {title ? (
-        <Text className="inter-semibold" fontSize="xs" color="var(--color-text-secondary)" textAlign="center">
+        <Text fontSize="12px" fontWeight={500} color="var(--cc-text-2)" textAlign="center">
           {title}
         </Text>
       ) : null}
@@ -264,7 +260,7 @@ export function DonutChart({
             cy={center}
             r={radius}
             fill="none"
-            stroke="#1A1B1F"
+            stroke={ADMIN_CHART.track}
             strokeWidth={thickness}
           />
           {total > 0
@@ -302,10 +298,10 @@ export function DonutChart({
           spacing={0}
           pointerEvents="none"
         >
-          <Text className="inter-semibold" fontSize="lg" fontWeight={700} color="#F0F0F2" lineHeight="1">
+          <Text className="cc-num" fontSize="18px" fontWeight={600} color="var(--cc-text)" lineHeight="1">
             {total}
           </Text>
-          <Text fontSize="9px" color="#606068" className="inter" textTransform="uppercase" letterSpacing="0.08em">
+          <Text fontSize="10px" color="var(--cc-text-3)" textTransform="uppercase" letterSpacing="0.06em">
             gesamt
           </Text>
         </Stack>
@@ -317,17 +313,17 @@ export function DonutChart({
             <HStack key={seg.label} justify="space-between" spacing={2}>
               <HStack spacing={2} minW={0}>
                 <Box
-                  w="9px"
-                  h="9px"
+                  w="8px"
+                  h="8px"
                   borderRadius="2px"
                   bg={DONUT_PALETTE[i % DONUT_PALETTE.length]}
                   flexShrink={0}
                 />
-                <Text fontSize="11px" color="var(--color-text-secondary)" className="inter" noOfLines={1}>
+                <Text fontSize="12px" color="var(--cc-text-2)" noOfLines={1}>
                   {seg.label}
                 </Text>
               </HStack>
-              <Text className="inter-semibold" fontSize="11px" color="var(--color-text-primary)" flexShrink={0}>
+              <Text className="cc-num" fontSize="12px" fontWeight={500} color="var(--cc-text)" flexShrink={0}>
                 {seg.value} · {(frac * 100).toFixed(0)}%
               </Text>
             </HStack>
@@ -342,7 +338,7 @@ export function DonutChart({
 
 export function FieldLabel({ children }: { children: ReactNode }) {
   return (
-    <Text fontSize="11px" letterSpacing="0.06em" textTransform="uppercase" color="#606068" className="inter">
+    <Text fontSize="12px" fontWeight={500} letterSpacing="0.06em" textTransform="uppercase" color="var(--cc-text-2)">
       {children}
     </Text>
   );
@@ -351,10 +347,10 @@ export function FieldLabel({ children }: { children: ReactNode }) {
 export function MetaPill({ label, value }: { label: string; value: string }) {
   return (
     <Stack spacing={0} align="flex-end">
-      <Text fontSize="10px" color="#606068" className="inter" textTransform="uppercase" letterSpacing="0.06em">
+      <Text fontSize="10px" color="var(--cc-text-3)" textTransform="uppercase" letterSpacing="0.06em">
         {label}
       </Text>
-      <Text fontSize="xs" color="var(--color-text-primary)" className="inter-semibold">
+      <Text className="cc-num" fontSize="12px" fontWeight={500} color="var(--cc-text)">
         {value}
       </Text>
     </Stack>
@@ -365,7 +361,7 @@ export function MetaBlock({ label, value }: { label: string; value: string }) {
   return (
     <Stack spacing={1}>
       <FieldLabel>{label}</FieldLabel>
-      <Text fontSize="sm" color="var(--color-text-primary)" className="inter" noOfLines={1}>
+      <Text className="cc-num" fontSize="14px" color="var(--cc-text-soft)" noOfLines={1}>
         {value}
       </Text>
     </Stack>
@@ -373,52 +369,9 @@ export function MetaBlock({ label, value }: { label: string; value: string }) {
 }
 
 export function ClosedBadge({ closed }: { closed: ClosedValue | null }) {
-  if (closed === "closed_won") {
-    return (
-      <Badge
-        bg="rgba(52,211,153,0.14)"
-        color="#34D399"
-        border="1px solid rgba(52,211,153,0.4)"
-        borderRadius="full"
-        px={2}
-        py={0.5}
-        textTransform="none"
-        className="inter"
-      >
-        Won
-      </Badge>
-    );
-  }
-  if (closed === "closed_lost") {
-    return (
-      <Badge
-        bg="rgba(248,113,113,0.14)"
-        color="#F87171"
-        border="1px solid rgba(248,113,113,0.4)"
-        borderRadius="full"
-        px={2}
-        py={0.5}
-        textTransform="none"
-        className="inter"
-      >
-        Lost
-      </Badge>
-    );
-  }
-  return (
-    <Badge
-      bg="rgba(245,200,74,0.14)"
-      color="#F5C84A"
-      border="1px solid rgba(245,200,74,0.4)"
-      borderRadius="full"
-      px={2}
-      py={0.5}
-      textTransform="none"
-      className="inter"
-    >
-      Pending
-    </Badge>
-  );
+  if (closed === "closed_won") return <StatusPill tone="success">Won</StatusPill>;
+  if (closed === "closed_lost") return <StatusPill tone="danger">Lost</StatusPill>;
+  return <StatusPill tone="attention">Pending</StatusPill>;
 }
 
 /** Kleine neutrale Pill-Badge (z. B. utm_source, Herkunft, View-Count). */
@@ -429,20 +382,9 @@ export function TagBadge({
   children: ReactNode;
   tone?: "neutral" | "gold";
 }) {
-  const gold = tone === "gold";
   return (
-    <Badge
-      bg={gold ? "rgba(212,175,55,0.12)" : "rgba(255,255,255,0.06)"}
-      color={gold ? "var(--color-accent-gold-light, #E8C547)" : "#9A9AA4"}
-      border="1px solid"
-      borderColor={gold ? "rgba(212,175,55,0.30)" : "rgba(255,255,255,0.08)"}
-      borderRadius="6px"
-      fontSize="10px"
-      px={2}
-      textTransform="none"
-      className="inter"
-    >
+    <StatusPill tone={tone === "gold" ? "attention" : "neutral"} borderRadius="6px">
       {children}
-    </Badge>
+    </StatusPill>
   );
 }

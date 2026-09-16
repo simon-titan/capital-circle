@@ -21,29 +21,63 @@ export default async function WartungPage() {
   const message = typeof value.message === "string" && value.message.trim() ? value.message.trim() : null;
 
   return (
-    <Box minH="100vh" display="flex" alignItems="center" justifyContent="center" bg="#080808" px={6}>
-      <Stack maxW="480px" gap={5} textAlign="center" align="center">
+    <Box
+      position="relative"
+      minH="100vh"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      bg="var(--cc-bg)"
+      color="var(--cc-text)"
+      px={{ base: 4, md: 6 }}
+      py={10}
+      overflowX="clip"
+    >
+      {/* Graphitgrund mit Sternenfeld und Champagner-Licht (DESIGN.md v3.2) */}
+      <Box className="cc-stars" aria-hidden />
+      <Box className="cc-goldlight" aria-hidden />
+
+      <Stack
+        className="cc-card cc-card--still cc-rise"
+        zIndex={1}
+        w="full"
+        maxW="520px"
+        p={{ base: 6, md: 10 }}
+        gap={5}
+        textAlign="center"
+        align="center"
+      >
         <Text
-          fontSize="xs"
-          letterSpacing="0.14em"
+          fontSize="13px"
+          lineHeight="18px"
+          fontWeight={500}
+          letterSpacing="0.12em"
           textTransform="uppercase"
-          className="inter-semibold"
-          color="#D4AF37"
+          color="var(--cc-gold-light)"
         >
           Capital Circle Institut
         </Text>
-        <Box as="h1" className="radley-regular" fontSize="clamp(1.75rem, 4vw, 2.5rem)" color="#F0F0F2">
-          Wir sind kurz im Wartungsmodus
+        <Box
+          as="h1"
+          fontSize={{ base: "28px", md: "36px" }}
+          fontWeight={600}
+          lineHeight={1.15}
+          letterSpacing="-0.01em"
+          color="var(--cc-text)"
+        >
+          Wir sind kurz im{" "}
+          <Box as="span" color="var(--cc-gold-light)">
+            Wartungsmodus
+          </Box>
         </Box>
         <Box
-          h="2px"
-          w="min(240px, 100%)"
-          borderRadius="full"
-          bg="linear-gradient(90deg, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.95) 45%, rgba(212, 175, 55, 0.1) 100%)"
-          boxShadow="0 0 20px rgba(212, 175, 55, 0.15)"
+          aria-hidden
+          h="1px"
+          w="min(200px, 100%)"
+          bg="linear-gradient(90deg, transparent, rgba(232, 192, 148, 0.7), transparent)"
         />
-        <Text className="inter" fontSize="sm" color="rgba(240,240,242,0.65)">
-          {message ?? "Wir fuehren gerade kurz Wartungsarbeiten durch. Bitte schau in ein paar Minuten wieder vorbei."}
+        <Text fontSize="15px" lineHeight={1.6} color="var(--cc-text-2)">
+          {message ?? "Wir führen gerade kurz Wartungsarbeiten durch. Bitte schau in ein paar Minuten wieder vorbei."}
         </Text>
       </Stack>
     </Box>

@@ -1,23 +1,45 @@
 import { redirect } from "next/navigation";
-import { Box, Heading, HStack, Stack, Text } from "@chakra-ui/react";
+import type { ReactNode } from "react";
+import { Box, HStack, Stack, Text } from "@chakra-ui/react";
 import { createClient } from "@/lib/supabase/server";
 import { ApplicationReceivedPendingBody } from "@/components/platform/ApplicationReceivedPendingBody";
 import { PendingReviewStatusIcon } from "@/components/platform/PendingReviewStatusIcon";
 
-const TELEGRAM_BLUE = "#229ED9";
-
+/** Telegram-Logo neutral (Markenicons stehen hell, nicht in Markenfarbe). */
 function TelegramLogo() {
   return (
     <svg viewBox="0 0 240 240" width="28" height="28" fill="none" aria-hidden>
       <path
         d="M120 0C53.7 0 0 53.7 0 120s53.7 120 120 120 120-53.7 120-120S186.3 0 120 0z"
-        fill={TELEGRAM_BLUE}
+        fill="currentColor"
       />
       <path
         d="M49.9 118.5l82-37.7c3.6-1.5 15.8-6.6 15.8-6.6s5.6-2.2 5.2 3.1c-.2 2.2-1.5 9.7-2.9 18l-8.4 51.6s-.7 5.6-6.6 5.8c-5.8.2-9.7-4.2-10.8-5.1-1.1-.9-19.8-12.8-26.6-18.4-1.8-1.5-3.8-4.4.2-7.9 9-8.3 19.8-18.6 26.3-25.1 3.1-3.1 6.2-10.2-6.6-1.5l-35.2 23.7s-5.1 3.1-14.6.3l-20.7-6.4s-7.8-4.7 5.3-10z"
-        fill="#fff"
+        style={{ fill: "var(--cc-bg)" }}
       />
     </svg>
+  );
+}
+
+/** Runde Status-Kachel: Gold für „wartet auf dich“, sonst neutral mit Haarlinie. */
+function StatusTile({ gold = false, children }: { gold?: boolean; children: ReactNode }) {
+  return (
+    <Box
+      w="56px"
+      h="56px"
+      borderRadius="full"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      flexShrink={0}
+      bg={gold ? "var(--cc-gold-wash)" : "rgba(255, 255, 255, 0.02)"}
+      border="1px solid"
+      borderColor={gold ? "var(--cc-gold-line)" : "var(--cc-line-strong)"}
+      color="var(--cc-text-soft)"
+      boxShadow={gold ? "0 0 24px rgba(212, 176, 128, 0.18)" : "inset 0 1px 0 rgba(255, 255, 255, 0.05)"}
+    >
+      {children}
+    </Box>
   );
 }
 
@@ -54,94 +76,46 @@ export default async function PendingReviewPage() {
   const isRejected = status === "rejected";
 
   return (
-    <Box
-      minH="60vh"
-      display="flex"
-      alignItems="center"
-      justifyContent="center"
-      px={{ base: 4, md: 8 }}
-    >
-      <Box
-        maxW="580px"
-        w="full"
-        p={{ base: 6, md: 8 }}
-        sx={{
-          background: "rgba(255,255,255,0.05)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-          border: isRejected
-            ? "1px solid rgba(248,113,113,0.35)"
-            : `1px solid rgba(34,158,217,0.40)`,
-          borderRadius: "16px",
-          boxShadow: isRejected
-            ? "0 8px 32px rgba(0,0,0,0.60), inset 0 1px 0 rgba(255,255,255,0.07)"
-            : "0 8px 32px rgba(0,0,0,0.60), inset 0 1px 0 rgba(34,158,217,0.08)",
-        }}
-      >
+    <Box minH="60vh" display="flex" alignItems="center" justifyContent="center" px={{ base: 0, md: 8 }}>
+      <Box maxW="580px" w="full" className="cc-card cc-card--still cc-rise" p={{ base: 6, md: 8 }}>
         <Stack spacing={5} textAlign="center" align="center">
           {isRejected ? (
-            <Box
-              w="56px"
-              h="56px"
-              borderRadius="full"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              bg="rgba(248,113,113,0.16)"
-              border="1px solid rgba(248,113,113,0.5)"
-            >
+            <StatusTile>
               <PendingReviewStatusIcon rejected />
-            </Box>
+            </StatusTile>
           ) : (
             <HStack spacing={3}>
-              <Box
-                w="52px"
-                h="52px"
-                borderRadius="full"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                bg="rgba(212,175,55,0.18)"
-                border="1px solid rgba(212,175,55,0.5)"
-              >
+              <StatusTile gold>
                 <PendingReviewStatusIcon rejected={false} />
-              </Box>
-              <Text fontSize="xl" color="rgba(255,255,255,0.3)" fontWeight={300} userSelect="none">+</Text>
-              <Box
-                w="52px"
-                h="52px"
-                borderRadius="full"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                bg="rgba(34,158,217,0.14)"
-                border="1px solid rgba(34,158,217,0.45)"
-              >
+              </StatusTile>
+              <Text fontSize="20px" color="var(--cc-text-3)" fontWeight={300} userSelect="none" aria-hidden>
+                +
+              </Text>
+              <StatusTile>
                 <TelegramLogo />
-              </Box>
+              </StatusTile>
             </HStack>
           )}
 
-          <Heading
+          <Box
             as="h1"
-            className="radley-regular"
-            fontWeight={400}
-            fontSize={{ base: "2xl", md: "3xl" }}
-            lineHeight="1.2"
+            fontSize={{ base: "26px", md: "30px" }}
+            fontWeight={600}
+            letterSpacing="-0.01em"
+            lineHeight={1.2}
+            color="var(--cc-text)"
           >
-            {isRejected
-              ? "Update zu deiner Bewerbung"
-              : "Bewerbung eingegangen."}
-          </Heading>
+            {isRejected ? "Update zu deiner Bewerbung" : "Bewerbung eingegangen."}
+          </Box>
 
           {isRejected ? (
             <>
-              <Text fontSize="md" color="rgba(255,255,255,0.72)" className="inter">
+              <Text fontSize="16px" lineHeight={1.6} color="var(--cc-text-soft)">
                 Aktuell können wir dir leider keinen Platz anbieten. Wir nehmen pro Periode
                 nur eine sehr begrenzte Zahl an Trader:innen auf — danke, dass du dir die Zeit
                 genommen hast.
               </Text>
-              <Text fontSize="xs" color="rgba(255,255,255,0.4)" className="inter">
+              <Text fontSize="13px" color="var(--cc-text-3)">
                 Wir wünschen dir alles Gute auf deinem Weg an den Märkten.
               </Text>
             </>

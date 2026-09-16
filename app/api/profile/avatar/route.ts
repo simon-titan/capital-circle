@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getHetznerStorageMisconfiguration, putObjectBody } from "@/lib/storage";
+import { getStorageMisconfiguration, putObjectBody } from "@/lib/storage";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
-  const cfgErr = getHetznerStorageMisconfiguration();
+  const cfgErr = getStorageMisconfiguration();
   if (cfgErr) {
     return NextResponse.json({ ok: false, error: cfgErr }, { status: 503 });
   }

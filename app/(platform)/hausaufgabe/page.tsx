@@ -1,5 +1,6 @@
-import { Box, Heading, Stack, Text } from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
 import { redirect } from "next/navigation";
+import { PageHeader } from "@/components/journal/PageHeader";
 import { HomeworkFullView } from "@/components/platform/HomeworkFullView";
 import {
   getActiveHomework,
@@ -21,25 +22,11 @@ export default async function HausaufgabePage() {
   const homeworkState = await getHomeworkDashboardState(user.id, homework);
 
   return (
-    <Stack spacing={{ base: 6, md: 8 }}>
-      <Box>
-        <Text
-          className="inter-medium"
-          fontSize="xs"
-          letterSpacing="0.14em"
-          textTransform="uppercase"
-          color="rgba(255, 255, 255, 0.5)"
-          mb={2}
-        >
-          Arsenal · Lernroutine
-        </Text>
-        <Heading as="h1" size="xl" className="radley-regular" fontWeight={400} color="var(--color-text-primary)" mb={2}>
-          Hausaufgabe & Checkliste
-        </Heading>
-        <Text className="inter" fontSize="md" color="var(--color-text-muted)" maxW="720px" lineHeight="tall">
-          Hier siehst du die aktuelle Wochenaufgabe im Detail und verwaltest deine persönlichen Aufgaben.
-        </Text>
-      </Box>
+    <Box>
+      <PageHeader
+        title="Wochenaufgabe"
+        subtitle="Hier siehst du die aktuelle Wochenaufgabe im Detail und verwaltest deine persönlichen Aufgaben."
+      />
 
       <HomeworkFullView
         homework={homework}
@@ -47,6 +34,6 @@ export default async function HausaufgabePage() {
         initialCustomTasks={homeworkState.customTasks}
         pastHomework={pastHomework}
       />
-    </Stack>
+    </Box>
   );
 }

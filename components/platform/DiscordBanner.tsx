@@ -1,10 +1,10 @@
 "use client";
 
-import { Box, Button, Flex, HStack, Text, VStack } from "@chakra-ui/react";
+import { Box, Button, Flex, Heading, HStack, Text } from "@chakra-ui/react";
 import { CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { GlassCard } from "@/components/ui/GlassCard";
+import { IconTile } from "@/components/platform/dashboard/primitives";
 
 export function DiscordGlyph({ size = 22 }: { size?: number }) {
   return (
@@ -17,6 +17,24 @@ export function DiscordGlyph({ size = 22 }: { size?: number }) {
 type DiscordBannerProps = {
   discordUsername: string | null;
 };
+
+/** Kartentitel im Label-Schnitt (13px, versal, gesperrt) als `h2`. */
+function CardLabel({ id, children }: { id: string; children: string }) {
+  return (
+    <Heading
+      as="h2"
+      id={id}
+      fontSize="13px"
+      lineHeight="18px"
+      fontWeight={500}
+      letterSpacing="0.12em"
+      textTransform="uppercase"
+      color="var(--cc-text-soft)"
+    >
+      {children}
+    </Heading>
+  );
+}
 
 export function DiscordBanner({ discordUsername }: DiscordBannerProps) {
   const router = useRouter();
@@ -58,53 +76,34 @@ export function DiscordBanner({ discordUsername }: DiscordBannerProps) {
   if (connected) {
     const handle = discordUsername!.trim().startsWith("@") ? discordUsername!.trim() : `@${discordUsername!.trim()}`;
     return (
-      <GlassCard dashboard>
+      <Box as="section" aria-labelledby="discord-banner-title" className="cc-card" p={{ base: 5, md: 6 }}>
         <Flex
           direction={{ base: "column", sm: "row" }}
           align={{ base: "flex-start", sm: "center" }}
           justify="space-between"
           gap={4}
         >
-          <HStack spacing={4} align="center">
-            <Flex
-              align="center"
-              justify="center"
-              w="48px"
-              h="48px"
-              borderRadius="14px"
-              bg="rgba(34, 197, 94, 0.12)"
-              border="1px solid rgba(34, 197, 94, 0.35)"
-              color="rgb(34, 197, 94)"
-              flexShrink={0}
-            >
-              <CheckCircle2 size={26} strokeWidth={2} />
-            </Flex>
-            <VStack align="flex-start" spacing={1}>
-              <Text
-                className="inter-medium"
-                fontSize="xs"
-                letterSpacing="0.1em"
-                textTransform="uppercase"
-                color="rgba(255,255,255,0.5)"
-              >
-                Community
-              </Text>
-              <Text className="inter-semibold" fontSize={{ base: "lg", md: "xl" }} color="var(--color-text-primary)">
+          <HStack spacing={4} align="center" minW={0}>
+            <IconTile>
+              <Box color="var(--cc-success)">
+                <CheckCircle2 size={24} strokeWidth={1.75} />
+              </Box>
+            </IconTile>
+            <Box minW={0}>
+              <CardLabel id="discord-banner-title">Community</CardLabel>
+              <Text fontSize={{ base: "17px", md: "18px" }} fontWeight={600} lineHeight={1.3} color="var(--cc-text)" mt={2}>
                 Discord verbunden
               </Text>
-              <Text className="jetbrains-mono" fontSize="sm" color="rgba(34, 197, 94, 0.95)">
+              <Text fontSize="14px" color="var(--cc-text-2)" mt={0.5} overflowWrap="anywhere">
                 {handle}
               </Text>
-            </VStack>
+            </Box>
           </HStack>
           <Button
             type="button"
-            variant="outline"
+            variant="line"
             size="sm"
-            borderRadius="10px"
-            borderColor="rgba(255,255,255,0.2)"
-            color="var(--color-text-secondary)"
-            _hover={{ bg: "rgba(255,255,255,0.06)", borderColor: "rgba(212,175,55,0.4)" }}
+            flexShrink={0}
             onClick={() => void disconnect()}
             isLoading={disconnecting}
             isDisabled={disconnecting}
@@ -112,67 +111,42 @@ export function DiscordBanner({ discordUsername }: DiscordBannerProps) {
             Trennen
           </Button>
         </Flex>
-      </GlassCard>
+      </Box>
     );
   }
 
   return (
-    <GlassCard dashboard>
+    <Box as="section" aria-labelledby="discord-banner-title" className="cc-card" p={{ base: 5, md: 6 }}>
       <Flex
         direction={{ base: "column", md: "row" }}
         align={{ base: "flex-start", md: "center" }}
         justify="space-between"
         gap={5}
       >
-        <HStack spacing={4} align="flex-start">
-          <Flex
-            align="center"
-            justify="center"
-            w="48px"
-            h="48px"
-            borderRadius="14px"
-            bg="rgba(212, 175, 55, 0.12)"
-            border="1px solid rgba(212, 175, 55, 0.38)"
-            color="var(--color-accent-gold-light)"
-            flexShrink={0}
-          >
-            <DiscordGlyph size={26} />
-          </Flex>
-          <VStack align="flex-start" spacing={2} maxW={{ md: "520px" }}>
-            <Text
-              className="inter-medium"
-              fontSize="xs"
-              letterSpacing="0.1em"
-              textTransform="uppercase"
-              color="rgba(255,255,255,0.5)"
-            >
-              Community
-            </Text>
-            <Text className="inter-semibold" fontSize={{ base: "lg", md: "xl" }} color="var(--color-text-primary)">
+        <HStack spacing={4} align="flex-start" minW={0}>
+          <IconTile>
+            <DiscordGlyph size={24} />
+          </IconTile>
+          <Box maxW={{ md: "520px" }} minW={0}>
+            <CardLabel id="discord-banner-title">Community</CardLabel>
+            <Text fontSize={{ base: "17px", md: "18px" }} fontWeight={600} lineHeight={1.3} color="var(--cc-text)" mt={2}>
               Verbinde deinen Discord Account
             </Text>
-            <Text className="inter" fontSize="sm" color="rgba(245, 236, 210, 0.78)" lineHeight="tall">
+            <Text fontSize="14px" lineHeight={1.6} color="var(--cc-text-2)" mt={1}>
               Erhalte Zugang zum exklusiven Capital-Circle-Server und tausche dich mit der Community aus.
             </Text>
-          </VStack>
+          </Box>
         </HStack>
         <Button
           as="a"
           href="/api/discord/connect"
-          size="md"
-          borderRadius="10px"
-          bg="linear-gradient(135deg, var(--color-accent-gold-dark) 0%, var(--color-accent-gold-light) 100%)"
-          color="#0a0a0a"
-          _hover={{
-            filter: "brightness(1.06)",
-            boxShadow: "0 0 24px rgba(212, 175, 55, 0.35)",
-          }}
+          variant="gold"
           flexShrink={0}
           alignSelf={{ base: "stretch", md: "center" }}
         >
           Discord verbinden
         </Button>
       </Flex>
-    </GlassCard>
+    </Box>
   );
 }

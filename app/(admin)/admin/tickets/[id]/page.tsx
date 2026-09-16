@@ -17,18 +17,19 @@ export default async function AdminTicketDetailPage({ params }: { params: Promis
 
   return (
     <Stack gap={6} maxW="var(--adminMaxWidth, 1100px)" mx="auto">
-      <HStack
-        as={Link}
-        href="/admin/tickets"
-        spacing={2}
-        fontSize="xs"
-        color="gray.500"
-        className="inter"
-        _hover={{ color: "var(--color-accent-gold-light)" }}
-      >
-        <ArrowLeft size={14} />
-        <Text>Zurück zur Ticket-Übersicht</Text>
-      </HStack>
+      {/* Link aussen herum statt `as={Link}` — siehe app/(admin)/admin/page.tsx. */}
+      <Link href="/admin/tickets" style={{ textDecoration: "none", alignSelf: "flex-start" }}>
+        <HStack
+          spacing={2}
+          fontSize="14px"
+          color="var(--cc-text-2)"
+          transition="color 150ms var(--cc-ease)"
+          _hover={{ color: "var(--cc-gold-light)" }}
+        >
+          <ArrowLeft size={14} strokeWidth={1.75} aria-hidden />
+          <Text>Zurück zur Ticket-Übersicht</Text>
+        </HStack>
+      </Link>
 
       <AdminTicketDetail ticketId={id} />
     </Stack>

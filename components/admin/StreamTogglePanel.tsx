@@ -41,6 +41,59 @@ type Props = {
   initial: AdminStreamSettings;
 };
 
+/* v3.2 „Champagner auf Graphit“ (DESIGN.md) — Admin-Formular und Status */
+const fieldSx = {
+  bg: "rgba(255, 255, 255, 0.03)",
+  border: "1px solid",
+  borderColor: "var(--cc-line-strong)",
+  borderRadius: "8px",
+  color: "var(--cc-text)",
+  _placeholder: { color: "var(--cc-text-3)" },
+  _hover: { borderColor: "rgba(255, 255, 255, 0.22)" },
+  _focusVisible: { borderColor: "var(--cc-gold-line)", boxShadow: "0 0 0 1px var(--cc-gold-line)" },
+} as const;
+
+const switchSx = {
+  ".chakra-switch__track": { bg: "var(--cc-track)" },
+  ".chakra-switch__track[data-checked]": { bg: "var(--cc-gold)" },
+} as const;
+
+/** Kartentitel im Label-Schnitt (13px, versal, gesperrt). */
+const cardTitleSx = {
+  fontSize: "13px",
+  lineHeight: "18px",
+  fontWeight: 500,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+  color: "var(--cc-text-soft)",
+} as const;
+
+const pillSx = {
+  display: "inline-flex",
+  alignItems: "center",
+  px: 2.5,
+  py: 1,
+  borderRadius: "full",
+  fontSize: "11px",
+  fontWeight: 500,
+  textTransform: "none",
+  letterSpacing: "0.02em",
+} as const;
+
+const ghostIconSx = {
+  variant: "ghost",
+  color: "var(--cc-text-2)",
+  _hover: { bg: "rgba(255, 255, 255, 0.06)", color: "var(--cc-text)" },
+} as const;
+
+const codeSx = {
+  className: "cc-num",
+  bg: "rgba(255, 255, 255, 0.06)",
+  color: "var(--cc-text-soft)",
+  borderRadius: "6px",
+  px: 1.5,
+} as const;
+
 const RTMPS_URL = "rtmps://live.cloudflare.com:443/live/";
 
 /**
@@ -122,31 +175,22 @@ export function StreamTogglePanel({ initial }: Props) {
   }, []);
 
   const statusBadge = isLive ? (
-    <Badge
-      variant="subtle"
-      colorScheme="green"
-      px={3}
-      py={1}
-      borderRadius="full"
-      className="inter-semibold"
-      fontSize="xs"
-      textTransform="uppercase"
-      letterSpacing="0.08em"
-    >
+    <Badge {...pillSx} bg="rgba(212, 176, 128, 0.12)" color="var(--cc-gold-light)" className="cc-num">
+      <Box
+        as="span"
+        w="6px"
+        h="6px"
+        mr={1.5}
+        borderRadius="full"
+        bg="var(--cc-gold-light)"
+        boxShadow="0 0 8px rgba(232, 192, 148, 0.6)"
+        flexShrink={0}
+        aria-hidden
+      />
       Live{startedAt ? ` • seit ${formatSince(startedAt)}` : ""}
     </Badge>
   ) : (
-    <Badge
-      variant="subtle"
-      colorScheme="gray"
-      px={3}
-      py={1}
-      borderRadius="full"
-      className="inter-semibold"
-      fontSize="xs"
-      textTransform="uppercase"
-      letterSpacing="0.08em"
-    >
+    <Badge {...pillSx} bg="rgba(255, 255, 255, 0.06)" color="var(--cc-text-2)">
       Offline
     </Badge>
   );
@@ -154,18 +198,11 @@ export function StreamTogglePanel({ initial }: Props) {
   return (
     <Stack gap={6}>
       {/* Status-Karte */}
-      <Box
-        borderRadius="16px"
-        borderWidth="1px"
-        borderColor="var(--color-border-default)"
-        bg="rgba(15, 18, 24, 0.7)"
-        backdropFilter="blur(16px)"
-        p={{ base: 5, md: 6 }}
-      >
+      <Box className="cc-card cc-card--still" p={{ base: 5, md: 6 }}>
         <Stack gap={5}>
           <Flex justify="space-between" align="center" flexWrap="wrap" gap={3}>
             <HStack gap={3}>
-              <Text className="radley-regular" fontSize="lg" color="whiteAlpha.950">
+              <Text as="h2" {...cardTitleSx}>
                 Aktueller Status
               </Text>
               {statusBadge}
@@ -175,50 +212,47 @@ export function StreamTogglePanel({ initial }: Props) {
               href="/stream"
               target="_blank"
               rel="noopener noreferrer"
-              variant="outline"
+              variant="line"
               size="sm"
-              borderColor="rgba(255,255,255,0.18)"
-              color="whiteAlpha.800"
-              _hover={{ bg: "rgba(255,255,255,0.06)" }}
               leftIcon={<ExternalLink size={14} />}
             >
-              Free-Ansicht oeffnen
+              Free-Ansicht öffnen
             </Button>
           </Flex>
 
           {updatedAt ? (
-            <Text fontSize="xs" color="var(--color-text-tertiary)" className="inter">
-              Zuletzt geaendert: {new Date(updatedAt).toLocaleString("de-DE")}
+            <Text fontSize="xs" color="var(--cc-text-3)" className="cc-num">
+              Zuletzt geändert: {new Date(updatedAt).toLocaleString("de-DE")}
             </Text>
           ) : null}
 
           {feedback ? (
             <Alert
               status={feedback.kind === "success" ? "success" : "error"}
-              borderRadius="md"
-              variant="left-accent"
+              variant="subtle"
+              borderRadius="8px"
+              bg={feedback.kind === "success" ? "rgba(74, 222, 128, 0.1)" : "rgba(248, 113, 113, 0.1)"}
+              color="var(--cc-text)"
             >
-              <AlertIcon />
-              <Text fontSize="sm" className="inter">
-                {feedback.msg}
-              </Text>
+              <AlertIcon color={feedback.kind === "success" ? "var(--cc-success)" : "var(--cc-danger)"} />
+              <Text fontSize="sm">{feedback.msg}</Text>
             </Alert>
           ) : null}
 
           {/* Toggle */}
           <FormControl display="flex" alignItems="center" justifyContent="space-between" gap={4}>
             <Box>
-              <FormLabel htmlFor="stream-live-switch" mb={1} className="inter-semibold" color="whiteAlpha.900">
+              <FormLabel htmlFor="stream-live-switch" mb={1} fontSize="sm" fontWeight={600} color="var(--cc-text)">
                 Free-Streaming aktiv
               </FormLabel>
-              <Text fontSize="xs" color="var(--color-text-muted)" className="inter">
+              <Text fontSize="xs" color="var(--cc-text-2)">
                 Wenn aktiv: Free-Mitglieder sehen den Stream auf /stream (Polling-Delay bis 15 s).
               </Text>
             </Box>
             <Switch
               id="stream-live-switch"
               size="lg"
-              colorScheme="green"
+              sx={switchSx}
               isChecked={isLive}
               onChange={(e) => setIsLive(e.target.checked)}
             />
@@ -226,27 +260,23 @@ export function StreamTogglePanel({ initial }: Props) {
 
           {/* Titel */}
           <FormControl>
-            <FormLabel className="inter-semibold" color="whiteAlpha.900">
+            <FormLabel fontSize="sm" fontWeight={600} color="var(--cc-text)">
               Titel
             </FormLabel>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="z. B. Live: NFP-Reaktion"
-              className="inter"
-              bg="rgba(0,0,0,0.3)"
-              borderColor="var(--color-border-default)"
-              color="whiteAlpha.950"
-              _placeholder={{ color: "whiteAlpha.400" }}
+              {...fieldSx}
             />
-            <FormHelperText color="var(--color-text-muted)" className="inter" fontSize="xs">
-              Wird den Free-Usern als Chip ueber dem Player angezeigt.
+            <FormHelperText color="var(--cc-text-2)" fontSize="xs">
+              Wird den Free-Usern als Chip über dem Player angezeigt.
             </FormHelperText>
           </FormControl>
 
           {/* Video-UID */}
           <FormControl isInvalid={isLive && streamId.trim().length === 0}>
-            <FormLabel className="inter-semibold" color="whiteAlpha.900">
+            <FormLabel fontSize="sm" fontWeight={600} color="var(--cc-text)">
               Cloudflare Video-UID
             </FormLabel>
             <HStack gap={2}>
@@ -254,27 +284,24 @@ export function StreamTogglePanel({ initial }: Props) {
                 value={streamId}
                 onChange={(e) => setStreamId(e.target.value)}
                 placeholder="z. B. 31c9291ab41fac05471db4e73aa11717"
-                className="jetbrains-mono"
-                bg="rgba(0,0,0,0.3)"
-                borderColor="var(--color-border-default)"
-                color="whiteAlpha.950"
-                _placeholder={{ color: "whiteAlpha.400" }}
+                className="cc-num"
+                {...fieldSx}
+                _invalid={{ borderColor: "var(--cc-danger)", boxShadow: "0 0 0 1px var(--cc-danger)" }}
                 spellCheck={false}
                 autoCapitalize="off"
                 autoCorrect="off"
               />
-              <Tooltip label="UID kopieren" hasArrow>
+              <Tooltip label="UID kopieren" hasArrow bg="var(--cc-surface-2)" color="var(--cc-text)">
                 <IconButton
                   aria-label="UID kopieren"
                   icon={<Copy size={14} />}
-                  variant="ghost"
-                  color="whiteAlpha.800"
+                  {...ghostIconSx}
                   onClick={() => copyToClipboard(streamId.trim(), "Video-UID")}
                   isDisabled={streamId.trim().length === 0}
                 />
               </Tooltip>
             </HStack>
-            <FormHelperText color="var(--color-text-muted)" className="inter" fontSize="xs">
+            <FormHelperText color="var(--cc-text-2)" fontSize="xs">
               Das ist die <b>Output-Video-UID</b> des Cloudflare Live-Inputs (nicht der Stream-Key).
               Im Cloudflare-Dashboard zu finden unter <i>Stream → Live Inputs → [dein Input] → Video UID</i>.
             </FormHelperText>
@@ -283,7 +310,7 @@ export function StreamTogglePanel({ initial }: Props) {
           {/* Save */}
           <Flex justify="flex-end" gap={3}>
             {dirty ? (
-              <Text fontSize="xs" alignSelf="center" color="rgba(234, 179, 8, 0.9)" className="inter">
+              <Text fontSize="xs" alignSelf="center" color="var(--cc-gold-light)">
                 Ungespeicherte Aenderungen
               </Text>
             ) : null}
@@ -292,42 +319,39 @@ export function StreamTogglePanel({ initial }: Props) {
               isLoading={saving}
               loadingText="Speichert"
               leftIcon={<Save size={14} />}
-              colorScheme="green"
-              variant="solid"
+              variant="gold"
               isDisabled={isLive && streamId.trim().length === 0}
             >
-              Uebernehmen
+              Übernehmen
             </Button>
           </Flex>
         </Stack>
       </Box>
 
       {/* OBS-Setup Accordion */}
-      <Box
-        borderRadius="16px"
-        borderWidth="1px"
-        borderColor="var(--color-border-default)"
-        bg="rgba(15, 18, 24, 0.6)"
-        backdropFilter="blur(16px)"
-        overflow="hidden"
-      >
+      <Box className="cc-card cc-card--still">
         <Accordion allowToggle>
           <AccordionItem border="none">
             <h2>
-              <AccordionButton px={{ base: 5, md: 6 }} py={4} _hover={{ bg: "rgba(255,255,255,0.04)" }}>
+              <AccordionButton
+                px={{ base: 5, md: 6 }}
+                py={4}
+                borderRadius="12px"
+                _hover={{ bg: "rgba(255, 255, 255, 0.03)" }}
+              >
                 <Box flex="1" textAlign="left">
-                  <Text className="radley-regular" fontSize="md" color="whiteAlpha.950">
+                  <Text as="span" display="block" {...cardTitleSx}>
                     OBS / RTMPS einrichten
                   </Text>
-                  <Text fontSize="xs" color="var(--color-text-muted)" className="inter" mt={1}>
-                    Kurzanleitung fuer OBS Studio mit Cloudflare Stream.
+                  <Text as="span" display="block" fontSize="xs" color="var(--cc-text-2)" mt={1}>
+                    Kurzanleitung für OBS Studio mit Cloudflare Stream.
                   </Text>
                 </Box>
-                <AccordionIcon color="whiteAlpha.800" />
+                <AccordionIcon color="var(--cc-gold-light)" />
               </AccordionButton>
             </h2>
             <AccordionPanel px={{ base: 5, md: 6 }} pb={6}>
-              <Stack gap={5} className="inter" fontSize="sm" color="whiteAlpha.850">
+              <Stack gap={5} fontSize="sm" color="var(--cc-text-soft)">
                 <OrderedList spacing={3} pl={5}>
                   <ListItem>
                     <Text>
@@ -336,10 +360,10 @@ export function StreamTogglePanel({ initial }: Props) {
                     </Text>
                     <Stack gap={2} mt={3} pl={1}>
                       <LabelCopyRow label="RTMPS-URL" value={RTMPS_URL} onCopy={copyToClipboard} />
-                      <Text fontSize="xs" color="var(--color-text-muted)">
+                      <Text fontSize="xs" color="var(--cc-text-2)">
                         <b>Stream-Key</b> — geheimer Token (wird in OBS eingetragen). Niemals an Nutzer weitergeben.
                       </Text>
-                      <Text fontSize="xs" color="var(--color-text-muted)">
+                      <Text fontSize="xs" color="var(--cc-text-2)">
                         <b>Video-UID</b> — oeffentliche ID des Live-Outputs (wird oben im Panel eingetragen).
                       </Text>
                     </Stack>
@@ -351,32 +375,32 @@ export function StreamTogglePanel({ initial }: Props) {
                     </Text>
                     <Stack gap={1} mt={2} pl={1} fontSize="xs">
                       <Text>
-                        Dienst: <Code colorScheme="gray">Custom...</Code>
+                        Dienst: <Code {...codeSx}>Custom...</Code>
                       </Text>
                       <Text>
-                        Server: <Code colorScheme="gray">{RTMPS_URL}</Code>
+                        Server: <Code {...codeSx}>{RTMPS_URL}</Code>
                       </Text>
                       <Text>
                         Stream-Schluessel: der geheime Key aus Cloudflare (nicht die Video-UID).
                       </Text>
                     </Stack>
-                    <Text mt={2} fontSize="xs" color="var(--color-text-muted)">
+                    <Text mt={2} fontSize="xs" color="var(--cc-text-2)" className="cc-num">
                       Empfohlene Ausgabe: 1080p / 30 fps / 4500–6000 kbps (x264, keyframe interval 2 s).
                     </Text>
                   </ListItem>
 
                   <ListItem>
                     <Text>
-                      Zurueck im Panel oben:
+                      Zurück im Panel oben:
                     </Text>
                     <Stack gap={1} mt={2} pl={1} fontSize="xs">
                       <Text>• <b>Titel</b> eintragen (z. B. „Live: NFP-Reaktion“).</Text>
                       <Text>• <b>Video-UID</b> aus Cloudflare einfuegen.</Text>
                       <Text>• Schalter <b>„Free-Streaming aktiv“</b> auf EIN.</Text>
-                      <Text>• <b>Uebernehmen</b> klicken.</Text>
+                      <Text>• <b>Übernehmen</b> klicken.</Text>
                       <Text>• In OBS <b>„Streaming starten“</b>.</Text>
                     </Stack>
-                    <Text mt={2} fontSize="xs" color="var(--color-text-muted)">
+                    <Text mt={2} fontSize="xs" color="var(--cc-text-2)">
                       Free-User sehen den Stream innerhalb von 15 s automatisch (Polling-Intervall).
                     </Text>
                   </ListItem>
@@ -384,22 +408,29 @@ export function StreamTogglePanel({ initial }: Props) {
                   <ListItem>
                     <Text>
                       Nach dem Stream: Schalter AUS → Free-User sehen wieder den Offline-Zustand.
-                      Cloudflare speichert die Aufzeichnung automatisch (kann spaeter manuell ins Replay-Archiv
+                      Cloudflare speichert die Aufzeichnung automatisch (kann später manuell ins Replay-Archiv
                       importiert werden).
                     </Text>
                   </ListItem>
                 </OrderedList>
 
-                <Alert status="info" borderRadius="md" variant="left-accent" bg="rgba(59,130,246,0.12)">
-                  <AlertIcon />
+                <Alert
+                  status="info"
+                  variant="subtle"
+                  borderRadius="8px"
+                  bg="rgba(255, 255, 255, 0.03)"
+                  border="1px solid var(--cc-line)"
+                  color="var(--cc-text)"
+                >
+                  <AlertIcon color="var(--cc-text-2)" />
                   <Box>
-                    <Text fontSize="sm" className="inter-semibold" mb={1}>
+                    <Text fontSize="sm" fontWeight={600} mb={1}>
                       Env-Variable gesetzt?
                     </Text>
-                    <Text fontSize="xs" className="inter">
-                      Der Free-Player braucht <Code fontSize="xs">NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_SUBDOMAIN</Code>
+                    <Text fontSize="xs" color="var(--cc-text-2)">
+                      Der Free-Player braucht <Code {...codeSx} fontSize="xs">NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_SUBDOMAIN</Code>
                       {" "}
-                      (Format <Code fontSize="xs">customer-&lt;hash&gt;</Code>). Ohne diesen Wert erscheint statt
+                      (Format <Code {...codeSx} fontSize="xs">customer-&lt;hash&gt;</Code>). Ohne diesen Wert erscheint statt
                       des Players ein Hinweis an die Nutzer.
                     </Text>
                   </Box>
@@ -424,19 +455,18 @@ function LabelCopyRow({
 }) {
   return (
     <Flex align="center" gap={2} flexWrap="wrap">
-      <Text fontSize="xs" color="var(--color-text-muted)">
+      <Text fontSize="xs" color="var(--cc-text-2)">
         {label}:
       </Text>
-      <Code fontSize="xs" px={2} py={1} borderRadius="md">
+      <Code {...codeSx} fontSize="xs" px={2} py={1}>
         {value}
       </Code>
-      <Tooltip label={`${label} kopieren`} hasArrow>
+      <Tooltip label={`${label} kopieren`} hasArrow bg="var(--cc-surface-2)" color="var(--cc-text)">
         <IconButton
           aria-label={`${label} kopieren`}
           icon={<Copy size={12} />}
           size="xs"
-          variant="ghost"
-          color="whiteAlpha.800"
+          {...ghostIconSx}
           onClick={() => onCopy(value, label)}
         />
       </Tooltip>

@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, type ComponentType, type ReactNode } from "react";
-import { Box, SimpleGrid, Stack, Text } from "@chakra-ui/react";
-import { Lock, Video, TrendingUp, Users, BookOpen, Trophy } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { Box, Button, SimpleGrid, Stack, Text } from "@chakra-ui/react";
+import { Lock, Video, TrendingUp, Users, BookOpen, Trophy, type LucideIcon } from "lucide-react";
 import { GlassVideoPlayer } from "@/components/ui/GlassVideoPlayer";
+import { FunnelHeroGlow, FunnelVideoHeadline, FunnelVideoPlaceholder, GoldIconTile } from "./DiscordFunnelChrome";
 
 /**
- * Discord-gebrandete Kopie der /bewerbung-Hero (isBewerbungLanding-Variante).
- * Schwarzer BG + Cyan/Lila-Glows, Action-Grün #16cc9b, Cyan-Akzente. Texte 1:1 wie /bewerbung.
+ * Hero der Funnel-Seiten /discord/termin und /termin (Struktur wie die /bewerbung-Hero).
+ * Look nach DESIGN.md v3.2: Champagner-Schein, Gold-Verlauf für „Zugang beantragen“,
+ * Glas-Karten mit Gold-Icon-Kacheln. Texte 1:1 wie /bewerbung.
  */
 
 interface DiscordTerminHeroProps {
@@ -23,7 +25,7 @@ const SUBHEADLINE =
 const CTA_LABEL = "ZUGANG BEANTRAGEN";
 
 interface Feature {
-  icon: ComponentType<{ size?: number; strokeWidth?: number }>;
+  icon: LucideIcon;
   label: string;
 }
 const FEATURES: Feature[] = [
@@ -33,167 +35,47 @@ const FEATURES: Feature[] = [
   { icon: Video, label: "Wöchentliche Zoom Calls direkt mit Emre" },
 ];
 
-interface CardStyle {
-  border: string;
-  bg: string;
-  iconBg: string;
-  iconColor: string;
-  topLine: string;
-  shadow: string;
-}
-// Dezente Rotation: Weiß / Grau / minimal Blau
-const CARD_STYLES: CardStyle[] = [
-  {
-    border: "rgba(255,255,255,0.16)",
-    bg: "radial-gradient(circle at 50% 0%, rgba(255,255,255,0.06) 0%, rgba(8,8,10,0.66) 60%)",
-    iconBg: "rgba(255,255,255,0.07)",
-    iconColor: "rgba(255,255,255,0.92)",
-    topLine: "linear-gradient(90deg, transparent 12%, rgba(255,255,255,0.40) 50%, transparent 88%)",
-    shadow: "0 0 18px rgba(255,255,255,0.05), 0 3px 14px rgba(0,0,0,0.50)",
-  },
-  {
-    border: "rgba(255,255,255,0.10)",
-    bg: "radial-gradient(circle at 85% 15%, rgba(255,255,255,0.035) 0%, rgba(8,8,10,0.68) 60%)",
-    iconBg: "rgba(255,255,255,0.04)",
-    iconColor: "rgba(255,255,255,0.55)",
-    topLine: "linear-gradient(90deg, transparent 15%, rgba(255,255,255,0.20) 55%, transparent 90%)",
-    shadow: "0 2px 12px rgba(0,0,0,0.50)",
-  },
-  {
-    border: "rgba(150,175,220,0.22)",
-    bg: "radial-gradient(circle at 15% 85%, rgba(150,175,220,0.07) 0%, rgba(8,8,10,0.70) 60%)",
-    iconBg: "rgba(150,175,220,0.10)",
-    iconColor: "#A9C0E8",
-    topLine: "linear-gradient(90deg, transparent 12%, rgba(150,175,220,0.35) 52%, transparent 90%)",
-    shadow: "0 0 16px rgba(150,175,220,0.07), 0 2px 12px rgba(0,0,0,0.50)",
-  },
-];
-
-const accentBtnSx = {
-  background: "linear-gradient(135deg, #16cc9b 0%, #5FE6C6 100%)",
-  boxShadow:
-    "0 0 28px rgba(22,204,155,0.40), 0 4px 16px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.28)",
-  border: "none",
-  cursor: "pointer",
-  transition: "all 220ms cubic-bezier(0.16, 1, 0.3, 1)",
-  _hover: {
-    background: "linear-gradient(135deg, #1AE0AC 0%, #82EFD6 100%)",
-    boxShadow:
-      "0 0 48px rgba(22,204,155,0.55), 0 6px 22px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.36)",
-    transform: "translateY(-1px)",
-  },
-  _active: { transform: "translateY(0px)", boxShadow: "0 0 18px rgba(22,204,155,0.30)" },
-};
-
-// Animierter Cyan-Gradient-Shimmer für Headline-Highlights.
-const headlineHighlightSx = {
-  background: "linear-gradient(90deg, #8FFBEB 0%, #47F7DC 25%, #1FB9A6 50%, #47F7DC 75%, #8FFBEB 100%)",
-  backgroundSize: "200% auto",
-  WebkitBackgroundClip: "text",
-  backgroundClip: "text",
-  WebkitTextFillColor: "transparent",
-  color: "transparent",
-  filter: "drop-shadow(0 0 18px rgba(71,247,220,0.50))",
-  animation: "hlShimmer 4s linear infinite",
-  "@keyframes hlShimmer": {
-    "0%": { backgroundPosition: "0% center" },
-    "100%": { backgroundPosition: "200% center" },
-  },
-} as const;
-
-function FeatureCard({ feature, index }: { feature: Feature; index: number }) {
-  const Icon = feature.icon;
-  const style = CARD_STYLES[index % CARD_STYLES.length];
+function Strong({ children }: { children: ReactNode }) {
   return (
-    <Box
-      position="relative"
-      borderRadius="14px"
-      overflow="hidden"
-      px={3}
-      py={3}
-      textAlign="center"
-      sx={{
-        background: style.bg,
-        border: `1px solid ${style.border}`,
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        boxShadow: style.shadow,
-        transition: "all 250ms cubic-bezier(0.16, 1, 0.3, 1)",
-        _hover: { transform: "translateY(-3px) scale(1.015)" },
-        _before: {
-          content: '""',
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: "2px",
-          background: style.topLine,
-          zIndex: 1,
-        },
-      }}
-    >
-      <Box position="relative" zIndex={1} display="flex" flexDirection="column" alignItems="center" gap={2}>
-        <Box
-          w="36px"
-          h="36px"
-          borderRadius="10px"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          sx={{ background: style.iconBg, border: `1px solid ${style.border}` }}
-          color={style.iconColor}
-        >
+    <Box as="strong" color="var(--cc-text)" fontWeight={600}>
+      {children}
+    </Box>
+  );
+}
+
+function FeatureCard({ feature }: { feature: Feature }) {
+  const Icon = feature.icon;
+  return (
+    <Box className="cc-card" h="full" px={3} py={4} textAlign="center">
+      <Stack spacing={2.5} align="center">
+        <GoldIconTile size={36}>
           <Icon size={16} strokeWidth={1.75} />
-        </Box>
-        <Text fontSize="sm" fontWeight="500" color="var(--color-text-primary, #F0F0F2)" className="inter-medium" lineHeight="1.3">
+        </GoldIconTile>
+        <Text fontSize="14px" fontWeight={500} lineHeight="1.3" color="var(--cc-text)">
           {feature.label}
         </Text>
-      </Box>
+      </Stack>
     </Box>
   );
 }
 
 function StatementCard() {
   return (
-    <Box
-      w="full"
-      position="relative"
-      borderRadius="12px"
-      overflow="hidden"
-      px={{ base: 4, md: 5 }}
-      py={{ base: 3.5, md: 3.5 }}
-      sx={{
-        background: "rgba(255,255,255,0.05)",
-        border: "1px solid rgba(255,255,255,0.18)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-        boxShadow: "0 4px 18px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.10)",
-      }}
-    >
+    <Box className="cc-card cc-card--still" w="full" px={{ base: 4, md: 5 }} py={3.5}>
       <Box display="flex" alignItems="center" justifyContent="center" gap={3}>
-        <Box
-          w="34px"
-          h="34px"
-          borderRadius="10px"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          flexShrink={0}
-          bg="rgba(255,255,255,0.08)"
-          border="1px solid rgba(255,255,255,0.14)"
-          color="#FFFFFF"
-        >
-          <Trophy size={16} strokeWidth={2.2} />
-        </Box>
-        <Text as="div" fontSize="sm" color="rgba(255,255,255,0.92)" className="inter" fontWeight={500} lineHeight="1.4" textAlign="left">
-          <Box as="span" fontWeight={700} className="inter-bold">Capital Circle</Box>
+        <GoldIconTile size={34}>
+          <Trophy size={16} strokeWidth={1.75} />
+        </GoldIconTile>
+        <Text as="div" fontSize="14px" color="var(--cc-text-soft)" lineHeight="1.45" textAlign="left">
+          <Strong>Capital Circle</Strong>
           {" ist kein "}
-          <Box as="span" fontWeight={700} className="inter-bold">Kurs</Box>
+          <Strong>Kurs</Strong>
           {". Es ist das "}
-          <Box as="span" fontWeight={700} className="inter-bold">Umfeld</Box>
+          <Strong>Umfeld</Strong>
           {" das aus "}
-          <Box as="span" fontWeight={700} className="inter-bold">inkonsistenten Tradern</Box>{" "}
-          <Box as="span" fontWeight={700} className="inter-bold">profitable</Box>{" macht."}
+          <Strong>inkonsistenten Tradern</Strong>{" "}
+          <Strong>profitable</Strong>
+          {" macht."}
         </Text>
       </Box>
     </Box>
@@ -204,18 +86,7 @@ function parseSubheadline(text: string): ReactNode[] {
   const segments = text.split(/(\{[^}]+\})/g);
   return segments.map((seg, i) => {
     if (seg.startsWith("{") && seg.endsWith("}")) {
-      const word = seg.slice(1, -1);
-      return (
-        <Box
-          key={i}
-          as="span"
-          color="rgba(255,255,255,0.95)"
-          fontWeight="600"
-          sx={{ background: "rgba(255,255,255,0.07)", borderRadius: "4px", paddingInline: "4px" }}
-        >
-          {word}
-        </Box>
-      );
+      return <Strong key={i}>{seg.slice(1, -1)}</Strong>;
     }
     return seg;
   });
@@ -236,58 +107,15 @@ export function DiscordTerminHero({ onApply, videoSrc, videoPoster, onVideoProgr
       pb={{ base: 10, md: 14 }}
       px={{ base: 4, md: 8, lg: 12 }}
     >
-      {/* Cyan/Lila-Glows auf Schwarz */}
-      <Box
-        position="absolute"
-        inset={0}
-        zIndex={0}
-        pointerEvents="none"
-        sx={{
-          background:
-            "radial-gradient(ellipse 70% 60% at 50% 18%, rgba(71,247,220,0.12), transparent 60%), radial-gradient(circle at 86% 8%, rgba(88,101,242,0.14), transparent 52%), radial-gradient(circle at 10% 92%, rgba(71,247,220,0.07), transparent 55%)",
-        }}
-      />
-      {/* Aqua top accent */}
-      <Box
-        position="absolute"
-        top={0}
-        left={0}
-        right={0}
-        h="2px"
-        zIndex={1}
-        pointerEvents="none"
-        sx={{
-          background:
-            "linear-gradient(90deg, transparent 5%, rgba(71,247,220,0.55) 30%, rgba(71,247,220,0.55) 70%, transparent 95%)",
-        }}
-      />
+      <FunnelHeroGlow />
 
       <Box maxW="820px" mx="auto" position="relative" zIndex={2}>
-        <Stack spacing={{ base: 6, md: 6 }} align="center">
-          {/* Überschrift (ersetzt das Logo) */}
-          <Text
-            as="h1"
-            className="inter-bold"
-            textTransform="uppercase"
-            color="#FFFFFF"
-            fontSize={{ base: "lg", sm: "xl", md: "2xl", lg: "3xl" }}
-            lineHeight="1.2"
-            letterSpacing="0.005em"
-            textAlign="center"
-            maxW="760px"
-          >
-            Schau dieses Video — es zeigt warum{" "}
-            <Box as="span" className="inter-bold" sx={headlineHighlightSx}>
-              90% der Trader scheitern
-            </Box>{" "}
-            und wie das Capital Circle Framework{" "}
-            <Box as="span" className="inter-bold" sx={headlineHighlightSx}>
-              das ändert
-            </Box>
-            .
-          </Text>
+        <Stack spacing={6} align="center">
+          <Box className="cc-rise">
+            <FunnelVideoHeadline />
+          </Box>
 
-          {/* Video */}
+          {/* Video (Player-Akzent = Champagner, Standard des GlassVideoPlayer) */}
           <Box w="full" maxW={{ base: "100%", md: "720px" }} position="relative">
             {videoSrc ? (
               <>
@@ -295,10 +123,6 @@ export function DiscordTerminHero({ onApply, videoSrc, videoPoster, onVideoProgr
                   src={videoSrc}
                   poster={videoPoster}
                   autoPlay
-                  accent="#47F7DC"
-                  accentRgb="71, 247, 220"
-                  progressColor="#FFFFFF"
-                  progressRgb="255, 255, 255"
                   onProgress={onVideoProgress}
                   onEnded={() => {
                     setVideoEnded(true);
@@ -316,89 +140,62 @@ export function DiscordTerminHero({ onApply, videoSrc, videoPoster, onVideoProgr
                     justifyContent="center"
                     gap={4}
                     borderRadius="16px"
-                    sx={{
-                      background: "radial-gradient(circle, rgba(0,0,0,0.93) 0%, rgba(0,0,0,0.82) 100%)",
-                      backdropFilter: "blur(12px)",
-                      WebkitBackdropFilter: "blur(12px)",
-                    }}
+                    bg="rgba(8, 10, 12, 0.82)"
+                    backdropFilter="blur(12px)"
+                    sx={{ WebkitBackdropFilter: "blur(12px)" }}
                   >
-                    <Text className="inter-semibold" color="var(--color-text-primary, #F0F0F2)" fontSize={{ base: "lg", md: "xl" }} textAlign="center" px={4}>
+                    <Text
+                      fontSize={{ base: "18px", md: "20px" }}
+                      fontWeight={600}
+                      color="var(--cc-text)"
+                      textAlign="center"
+                      px={4}
+                    >
                       Bereit für den nächsten Schritt?
                     </Text>
-                    <Box
-                      as="button"
-                      onClick={() => { setVideoEnded(false); onApply(); }}
-                      minH="48px"
+                    <Button
+                      variant="gold"
+                      h="48px"
                       px={8}
-                      borderRadius="12px"
-                      fontWeight="600"
                       fontSize="15px"
                       letterSpacing="0.02em"
-                      color="#000000"
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="center"
-                      gap={2}
-                      className="inter-semibold"
-                      sx={accentBtnSx}
+                      leftIcon={<Lock size={14} strokeWidth={2.25} aria-hidden />}
+                      onClick={() => {
+                        setVideoEnded(false);
+                        onApply();
+                      }}
                     >
-                      <Lock size={14} strokeWidth={2.5} />
                       {CTA_LABEL}
-                    </Box>
-                    <Text fontSize="xs" color="rgba(255,255,255,0.35)" className="inter" textAlign="center" mt={-1}>
+                    </Button>
+                    <Text fontSize="12px" color="var(--cc-text-2)" textAlign="center" mt={-1}>
                       Klicke um das Video erneut abzuspielen
                     </Text>
                   </Box>
                 )}
               </>
             ) : (
-              <Box
-                borderRadius="16px"
-                overflow="hidden"
-                sx={{
-                  aspectRatio: "16 / 9",
-                  border: "1px solid rgba(71,247,220,0.22)",
-                  boxShadow: "0 16px 56px rgba(0,0,0,0.55), 0 0 0 1px rgba(71,247,220,0.08)",
-                  background: "rgba(0,0,0,0.60)",
-                }}
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-              >
-                <Text className="inter" color="rgba(255,255,255,0.35)" fontSize="sm">
-                  Vorstellungsvideo folgt in Kürze
-                </Text>
-              </Box>
+              <FunnelVideoPlaceholder />
             )}
           </Box>
 
           {/* Desktop CTA */}
-          <Stack spacing={2} align="center" w="full" maxW="700px" display={{ base: "none", md: "flex" }}>
-            <Box
-              as="button"
-              onClick={onApply}
+          <Box w="full" maxW="700px" display={{ base: "none", md: "block" }}>
+            <Button
+              variant="gold"
               w="full"
-              minH="52px"
-              borderRadius="12px"
-              fontWeight="600"
+              h="52px"
               fontSize="16px"
               letterSpacing="0.02em"
-              color="#000000"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              gap={2}
-              className="inter-semibold"
-              sx={accentBtnSx}
+              leftIcon={<Lock size={15} strokeWidth={2.25} aria-hidden />}
+              onClick={onApply}
             >
-              <Lock size={15} strokeWidth={2.5} />
               {CTA_LABEL}
-            </Box>
-          </Stack>
+            </Button>
+          </Box>
 
           {/* Subheadline */}
           <Box w="full" maxW="600px">
-            <Text fontSize={{ base: "md", md: "lg" }} color="rgba(255,255,255,0.52)" className="inter" lineHeight="1.75" textAlign="center">
+            <Text fontSize={{ base: "16px", md: "18px" }} color="var(--cc-text-2)" lineHeight="1.7" textAlign="center">
               {parseSubheadline(SUBHEADLINE)}
             </Text>
           </Box>
@@ -410,8 +207,8 @@ export function DiscordTerminHero({ onApply, videoSrc, videoPoster, onVideoProgr
 
           {/* Feature Cards */}
           <SimpleGrid columns={{ base: 2, md: 4 }} spacing={3} w="full">
-            {FEATURES.map((feature, i) => (
-              <FeatureCard key={feature.label} feature={feature} index={i} />
+            {FEATURES.map((feature) => (
+              <FeatureCard key={feature.label} feature={feature} />
             ))}
           </SimpleGrid>
         </Stack>

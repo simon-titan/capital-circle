@@ -3,6 +3,7 @@
 import {
   Box,
   Button,
+  Flex,
   Heading,
   Modal,
   ModalBody,
@@ -19,11 +20,11 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import { useMemo, useState } from "react";
-import { GlassCard } from "@/components/ui/GlassCard";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChakraLinkButton } from "@/components/platform/ChakraLinkButton";
 import { AppleBrandIcon, GoogleCalendarBrandIcon } from "@/components/platform/eventCalendarBrandIcons";
-import { CalendarDays, Radio } from "lucide-react";
+import { Radio } from "lucide-react";
+import { resolveEventColor } from "@/config/event-colors";
 import "./eventsCalendar.theme.css";
 
 type EventItem = {
@@ -45,50 +46,53 @@ type EventsCalendarProps = {
   isPaid?: boolean;
 };
 
+/** Kartentitel: Label-Schnitt (13px, versal, gesperrt). */
+const LABEL = {
+  fontSize: "13px",
+  lineHeight: "18px",
+  fontWeight: 500,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase" as const,
+  color: "var(--cc-text-soft)",
+};
+
+/** Sonntag in Berlin = Free Call (für Free-Mitglieder das einzige offene Event). */
+function isBerlinSunday(iso: string): boolean {
+  return (
+    new Intl.DateTimeFormat("de-DE", { weekday: "long", timeZone: "Europe/Berlin" }).format(new Date(iso)) === "Sonntag"
+  );
+}
+
 export function EventsCalendar({ events, isPaid = true }: EventsCalendarProps) {
   const [selected, setSelected] = useState<EventItem | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
 
+  /*
+   * Chip-Farbe = Admin-Farbe, abgebildet auf die Markenpalette (config/event-colors.ts,
+   * Klassen `ev-tone-*` in eventsCalendar.theme.css). Free-Mitglieder: Sonntags-Call
+   * hervorgehoben, alle übrigen Events gesperrt — das überschreibt den Ton.
+   */
   const calendarEvents = useMemo(
     () =>
       events.map((event) => {
-        const startDate = new Date(event.start_time);
-        const berlinWeekday = new Intl.DateTimeFormat("de-DE", { weekday: "long", timeZone: "Europe/Berlin" }).format(
-          startDate,
-        );
-        const isSunday = berlinWeekday === "Sonntag";
-        // Default colors from event
-        let bg = resolveEventColor(event.color);
-        let border = resolveEventColor(event.color);
-        let text = isLightColor(resolveEventColor(event.color)) ? "#0a0a0a" : "#f0f0f2";
-
-        if (!isPaid) {
-          if (isSunday) {
-            // Emphasize Sunday for free members
-            bg = "#D4AF37";
-            border = "#D4AF37";
-            text = "#0a0a0a";
-          } else {
-            // Greyed appearance for locked events
-            bg = "rgba(255,255,255,0.04)";
-            border = "rgba(255,255,255,0.06)";
-            text = "rgba(255,255,255,0.52)";
-          }
-        }
-
+        const isSunday = isBerlinSunday(event.start_time);
+        const tone = `ev-tone-${resolveEventColor(event.color).key}`;
         return {
           id: event.id,
           title: event.title,
           start: event.start_time,
           end: event.end_time ?? undefined,
-          backgroundColor: bg,
-          borderColor: border,
-          textColor: text,
-          className: !isPaid && !isSunday ? "fc-event--premium-locked" : isPaid || !isSunday ? undefined : "fc-event--free-call",
+          classNames: isPaid ? [tone] : [tone, isSunday ? "fc-event--free-call" : "fc-event--premium-locked"],
         };
       }),
     [events, isPaid],
   );
+
+  // Auf dem Handy startet der Kalender in der Liste — die sieben Wochenspalten sind dort zu schmal für Titel.
+  const calendarRef = useRef<FullCalendar>(null);
+  useEffect(() => {
+    if (window.matchMedia("(max-width: 767px)").matches) calendarRef.current?.getApi().changeView("listMonth");
+  }, []);
 
   const exportIcs = () => {
     if (!selected) return;
@@ -102,38 +106,30 @@ export function EventsCalendar({ events, isPaid = true }: EventsCalendarProps) {
     URL.revokeObjectURL(url);
   };
   const googleUrl = selected ? buildGoogleUrl(selected) : "#";
+  const discordUrl = process.env.NEXT_PUBLIC_DISCORD_COMMUNITY_URL;
 
   return (
-    <GlassCard p={{ base: 5, md: 8 }}>
-      <Box display="flex" alignItems="flex-start" gap={3} mb={6} flexWrap="wrap">
-        <Box color="var(--color-accent-gold)" mt={0.5}>
-          <CalendarDays size={28} strokeWidth={1.5} />
-        </Box>
-        <Box flex="1" minW={0}>
-          <Text
-            className="inter-medium"
-            fontSize="xs"
-            textTransform="uppercase"
-            letterSpacing="0.14em"
-            color="rgba(255, 255, 255, 0.5)"
-            mb={2}
-          >
-            Übersicht
-          </Text>
-          <Heading as="h2" size="lg" className="inter-semibold" fontWeight={600} mt={0.5}>
-            Kalender
-          </Heading>
-          <Text className="radley-regular-italic" fontSize={{ base: "sm", md: "md" }} color="rgba(245, 236, 210, 0.88)" lineHeight={1.35} mt={2}>
-            Termine im Blick — Woche, Monat oder Liste, mit einem Klick in deinen Kalender.
-          </Text>
-          <Text className="inter" fontSize="sm" color="var(--color-text-muted)" mt={2}>
-            Klick auf ein Event für Details, Links und Export.
-          </Text>
-        </Box>
-      </Box>
+    <Box
+      as="section"
+      aria-labelledby="events-calendar-title"
+      className="cc-card cc-card--still cc-rise"
+      style={{ animationDelay: "150ms" }}
+      p={{ base: 4, md: 6 }}
+      minW={0}
+    >
+      <Heading as="h2" id="events-calendar-title" {...LABEL}>
+        Kalender
+      </Heading>
+      <Text fontSize={{ base: "15px", md: "16px" }} lineHeight={1.5} color="var(--cc-text-soft)" mt={3}>
+        Termine im Blick — Woche, Monat oder Liste, mit einem Klick in deinen Kalender.
+      </Text>
+      <Text fontSize="14px" lineHeight={1.5} color="var(--cc-text-2)" mt={1}>
+        Klick auf ein Event für Details, Links und Export.
+      </Text>
 
-      <Box className="events-calendar-root">
+      <Box className="events-calendar-root" mt={6}>
         <FullCalendar
+          ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
           initialView="timeGridWeek"
           locale={deLocale}
@@ -169,13 +165,8 @@ export function EventsCalendar({ events, isPaid = true }: EventsCalendarProps) {
           eventClick={(info) => {
             const event = events.find((item) => item.id === info.event.id);
             if (!event) return;
-            const startDate = new Date(event.start_time);
-            const berlinWeekday = new Intl.DateTimeFormat("de-DE", { weekday: "long", timeZone: "Europe/Berlin" }).format(
-              startDate,
-            );
-            const isSunday = berlinWeekday === "Sonntag";
             // For free members, only allow opening the Sunday Free Call
-            if (!isPaid && !isSunday) return;
+            if (!isPaid && !isBerlinSunday(event.start_time)) return;
             setSelected(event);
             onOpen();
           }}
@@ -183,169 +174,137 @@ export function EventsCalendar({ events, isPaid = true }: EventsCalendarProps) {
       </Box>
 
       <Modal isOpen={isOpen} onClose={onClose} isCentered motionPreset="slideInBottom">
-        <ModalOverlay bg="rgba(7, 8, 10, 0.75)" backdropFilter="blur(8px)" />
+        <ModalOverlay bg="rgba(8, 10, 12, 0.72)" backdropFilter="blur(6px)" />
         <ModalContent
-          className="glass-card"
-          bg="rgba(12, 13, 16, 0.96)"
-          backdropFilter="blur(24px)"
-          borderWidth="1px"
-          borderColor="rgba(255, 255, 255, 0.1)"
-          borderRadius="16px"
-          boxShadow="0 8px 32px rgba(0, 0, 0, 0.5)"
-          color="var(--color-text-primary)"
+          position="relative"
+          bg="var(--cc-panel-solid)"
+          border="1px solid var(--cc-line)"
+          borderRadius="12px"
+          boxShadow="0 24px 60px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05)"
+          color="var(--cc-text)"
           mx={4}
         >
-          <ModalCloseButton
-            color="var(--color-text-muted)"
-            _hover={{ color: "var(--color-accent-gold-light)", bg: "rgba(255,255,255,0.06)" }}
+          {/* Gold-Lichtkante wie auf den Glas-Karten */}
+          <Box
+            aria-hidden
+            position="absolute"
+            top="-1px"
+            left="16%"
+            right="16%"
+            h="1px"
+            bg="linear-gradient(90deg, transparent, rgba(232, 192, 148, 0.7), transparent)"
+            pointerEvents="none"
           />
-          <ModalHeader
-            className="inter-semibold"
-            fontWeight={600}
-            fontSize="xl"
-            pr={10}
-            pb={3}
-            borderBottomWidth="1px"
-            borderBottomColor="rgba(255, 255, 255, 0.08)"
-            color="var(--color-text-primary)"
-          >
-            <Text className="inter-medium" fontSize="xs" textTransform="uppercase" letterSpacing="0.14em" color="rgba(255, 255, 255, 0.5)" mb={1}>
+          <ModalCloseButton
+            top={4}
+            right={4}
+            color="var(--cc-text-2)"
+            borderRadius="8px"
+            _hover={{ color: "var(--cc-gold-light)", bg: "rgba(255, 255, 255, 0.06)" }}
+          />
+          <ModalHeader pt={6} pb={4} pr={14} borderBottom="1px solid var(--cc-line)">
+            <Text {...LABEL} mb={1.5}>
               Termin
             </Text>
-            <Text as="span" display="block" color="var(--color-text-primary)">
+            <Text
+              as="span"
+              display="block"
+              fontSize={{ base: "18px", md: "20px" }}
+              fontWeight={600}
+              lineHeight={1.3}
+              letterSpacing="-0.01em"
+              color="var(--cc-text)"
+            >
               {selected?.title}
             </Text>
           </ModalHeader>
-          <ModalBody pb={6} pt={5} color="var(--color-text-primary)">
+          <ModalBody pt={5} pb={6}>
             {selected?.event_type ? (
-              <Text className="inter-medium" fontSize="xs" color="var(--color-accent-gold-light)" mb={3} textTransform="uppercase" letterSpacing="0.06em">
+              <Text
+                fontSize="12px"
+                fontWeight={500}
+                letterSpacing="0.12em"
+                textTransform="uppercase"
+                color="var(--cc-gold-light)"
+                mb={2}
+              >
                 {selected.event_type}
               </Text>
             ) : null}
-            <Text className="jetbrains-mono" fontSize="sm" color="var(--color-accent-gold-light)" mb={4}>
+            <Text className="cc-num" fontSize="14px" fontWeight={500} color="var(--cc-text-soft)" mb={4}>
               {selected ? formatEventDateRange(selected.start_time, selected.end_time) : ""}
             </Text>
-            <Text className="inter" fontSize="sm" color="rgba(240, 240, 242, 0.88)" mb={6} whiteSpace="pre-wrap" lineHeight="tall">
+            <Text fontSize="14px" lineHeight={1.7} color="var(--cc-text-2)" mb={6} whiteSpace="pre-wrap">
               {selected?.description || "Keine Beschreibung hinterlegt."}
             </Text>
+
             {selected?.live_session_id ? (
-              <Box
-                mb={4}
+              <Flex
+                mb={5}
                 p={3}
-                borderRadius="12px"
-                borderWidth="1px"
-                borderColor="rgba(100, 170, 240, 0.5)"
-                bg="rgba(74, 144, 217, 0.12)"
-                boxShadow="0 0 20px rgba(74, 144, 217, 0.1)"
+                gap={3}
+                direction={{ base: "column", sm: "row" }}
+                align={{ base: "stretch", sm: "center" }}
+                justify="space-between"
+                borderRadius="10px"
+                border="1px solid var(--cc-line)"
+                bg="rgba(255, 255, 255, 0.03)"
               >
-                <Text
-                  className="inter-semibold"
-                  fontSize="xs"
-                  textTransform="uppercase"
-                  letterSpacing="0.1em"
-                  color="rgba(147, 197, 253, 0.9)"
-                  mb={2}
-                >
+                <Text fontSize="12px" fontWeight={500} letterSpacing="0.12em" textTransform="uppercase" color="var(--cc-text-2)">
                   Aufzeichnung verfügbar
                 </Text>
                 <ChakraLinkButton
                   href={`/live-session/${selected.live_session_id}`}
                   onClick={onClose}
                   size="sm"
-                  colorScheme="blue"
-                  variant="solid"
-                  leftIcon={<Radio size={16} aria-hidden />}
+                  variant="line"
+                  leftIcon={<Radio size={15} strokeWidth={1.75} aria-hidden />}
                 >
                   Recap ansehen
                 </ChakraLinkButton>
-              </Box>
+              </Flex>
             ) : null}
-            {selected?.external_url ? (
-              <Button
-                as="a"
-                href={selected.external_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                variant="outline"
-                borderColor="rgba(255,255,255,0.3)"
-                color="var(--color-text-primary)"
-                size="sm"
-                mb={3}
-              >
-                Zum Event-Link
-              </Button>
+
+            {selected?.external_url || discordUrl ? (
+              <Flex wrap="wrap" gap={2} mb={5}>
+                {selected?.external_url ? (
+                  <Button as="a" href={selected.external_url} target="_blank" rel="noopener noreferrer" variant="line" size="sm">
+                    Zum Event-Link
+                  </Button>
+                ) : null}
+                {discordUrl ? (
+                  <Button as="a" href={discordUrl} target="_blank" rel="noopener noreferrer" variant="line" size="sm">
+                    Zum Discord-Server
+                  </Button>
+                ) : null}
+              </Flex>
             ) : null}
-            {process.env.NEXT_PUBLIC_DISCORD_COMMUNITY_URL ? (
-              <Button
-                as="a"
-                href={process.env.NEXT_PUBLIC_DISCORD_COMMUNITY_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                variant="outline"
-                borderColor="rgba(255,255,255,0.3)"
-                color="var(--color-text-primary)"
-                size="sm"
-                mb={4}
-                ml={selected?.external_url ? 2 : 0}
-              >
-                Zum Discord-Server
-              </Button>
-            ) : null}
-            <Box display="flex" gap={3} flexWrap="wrap" flexDir="column">
-              <Box display="flex" gap={3} flexWrap="wrap">
+
+            <Box pt={5} borderTop="1px solid var(--cc-line)">
+              <Flex wrap="wrap" gap={3}>
                 <Button
                   as="a"
                   href={googleUrl}
                   target="_blank"
                   rel="noreferrer"
-                  leftIcon={<GoogleCalendarBrandIcon />}
-                  bg="linear-gradient(135deg, var(--color-accent-gold-light), var(--color-accent-gold))"
-                  color="#0a0a0a"
-                  fontWeight={600}
-                  _hover={{ boxShadow: "0 0 24px var(--color-accent-glow)" }}
-                  size="md"
+                  variant="gold"
+                  leftIcon={<GoogleCalendarBrandIcon boxSize="15px" />}
                 >
                   Google Kalender
                 </Button>
-                <Button
-                  onClick={exportIcs}
-                  leftIcon={<AppleBrandIcon />}
-                  variant="outline"
-                  borderColor="rgba(255,255,255,0.3)"
-                  color="var(--color-text-primary)"
-                  _hover={{ bg: "rgba(255,255,255,0.08)" }}
-                  size="md"
-                >
+                <Button type="button" onClick={exportIcs} variant="line" leftIcon={<AppleBrandIcon boxSize="16px" />}>
                   Apple Kalender (.ics)
                 </Button>
-              </Box>
-              <Text className="inter" fontSize="xs" color="var(--color-text-muted)" lineHeight="1.5" maxW="md">
+              </Flex>
+              <Text fontSize="12px" lineHeight={1.5} color="var(--cc-text-3)" maxW="md" mt={3}>
                 Google öffnet eine vorausgefüllte Terminerstellung. Apple lädt eine .ics-Datei zum Import in den Apple Kalender herunter.
               </Text>
             </Box>
           </ModalBody>
         </ModalContent>
       </Modal>
-    </GlassCard>
+    </Box>
   );
-}
-
-const EVENT_COLORS = new Set(["#D4AF37", "#4A90D9", "#4ADE80", "#F87171", "#A78BFA"]);
-
-function resolveEventColor(color?: string | null): string {
-  if (!color) return "#D4AF37";
-  const normalized = color.trim().toUpperCase();
-  return EVENT_COLORS.has(normalized) ? normalized : "#D4AF37";
-}
-
-function isLightColor(hexColor: string): boolean {
-  const hex = hexColor.replace("#", "");
-  const num = Number.parseInt(hex, 16);
-  const r = (num >> 16) & 255;
-  const g = (num >> 8) & 255;
-  const b = num & 255;
-  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-  return luminance > 0.62;
 }
 
 function toCalendarStamp(isoDate: string): string {
@@ -391,5 +350,5 @@ function formatEventDateRange(startIso: string, endIso: string | null): string {
   const date = start.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" });
   const startTime = start.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
   const endTime = end ? end.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : null;
-  return `${date} ${startTime}${endTime ? ` - ${endTime}` : ""}`;
+  return `${date} · ${startTime}${endTime ? ` – ${endTime}` : ""} Uhr`;
 }

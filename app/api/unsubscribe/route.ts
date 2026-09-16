@@ -13,26 +13,81 @@ function htmlPage(opts: {
   body: string;
   ok: boolean;
 }): string {
-  const accent = opts.ok ? "#D4AF37" : "#E5484D";
+  // Werte aus DESIGN.md v3.2 „Champagner auf Graphit“ als Literale: diese Seite lädt globals.css nicht.
+  // Kein Webfont-Request (DSGVO) — Inter, falls lokal vorhanden, sonst Systemschrift.
+  const headingColor = opts.ok ? "#e8c094" : "#f87171";
   return `<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <meta name="color-scheme" content="dark" />
   <title>${opts.title}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 16px;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      color: #f2f3f5;
+      background:
+        radial-gradient(ellipse 55% 42% at 80% -6%, rgba(212, 176, 128, 0.17), transparent 70%),
+        radial-gradient(ellipse 38% 34% at 8% 108%, rgba(212, 176, 128, 0.07), transparent 70%),
+        #12171c;
+    }
+    .card {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      padding: 40px 28px;
+      text-align: center;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      background: linear-gradient(180deg, rgba(27, 32, 38, 0.94) 0%, rgba(24, 29, 34, 0.94) 100%);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+    .card::before {
+      content: "";
+      position: absolute;
+      top: -1px;
+      left: 16%;
+      right: 16%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(232, 192, 148, 0.7), transparent);
+    }
+    .wordmark {
+      margin: 0 0 24px;
+      font-size: 13px;
+      line-height: 1;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: #a3a9b0;
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: 26px;
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+    }
+    .body {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.6;
+      color: #a3a9b0;
+    }
+  </style>
 </head>
-<body style="margin:0;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;background:#07080A;color:#F0F0F2;">
-  <div style="max-width:520px;margin:0 auto;padding:80px 24px;text-align:center;">
-    <h1 style="font-family:Georgia,serif;color:${accent};font-weight:400;font-size:28px;letter-spacing:0.02em;margin:0 0 16px;">
-      ${opts.heading}
-    </h1>
-    <p style="color:#9A9AA4;font-size:15px;line-height:1.6;margin:0;">
-      ${opts.body}
-    </p>
-    <p style="margin:48px 0 0;font-size:11px;color:#606068;letter-spacing:0.04em;text-transform:uppercase;">
-      Capital Circle
-    </p>
-  </div>
+<body>
+  <main class="card">
+    <p class="wordmark">Capital Circle</p>
+    <h1 style="color:${headingColor};">${opts.heading}</h1>
+    <p class="body">${opts.body}</p>
+  </main>
 </body>
 </html>`;
 }

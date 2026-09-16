@@ -1,7 +1,7 @@
 "use client";
 
-import { Button, HStack, Stack, Text } from "@chakra-ui/react";
-import { FileDown } from "lucide-react";
+import { Button, Flex, HStack, Stack, Text } from "@chakra-ui/react";
+import { Download, FileText } from "lucide-react";
 import { useCallback, useState } from "react";
 
 export type VideoAttachmentItem = {
@@ -42,42 +42,50 @@ export function VideoAttachments({ attachments }: VideoAttachmentsProps) {
   if (!attachments.length) return null;
 
   return (
-    <Stack spacing={3} mt={6}>
-      <Text className="inter" fontSize="xs" textTransform="uppercase" letterSpacing="0.08em" color="var(--color-text-muted)">
-        Materialien
-      </Text>
-      <Stack spacing={2}>
-        {attachments.map((a) => (
-          <HStack
-            key={a.id}
-            as="div"
-            justify="space-between"
-            py={2}
-            px={3}
-            borderRadius="12px"
-            borderWidth="1px"
-            borderColor="rgba(255,255,255,0.1)"
-            bg="rgba(255,255,255,0.03)"
-          >
-            <HStack minW={0} spacing={2}>
-              <FileDown size={18} color="var(--color-accent-gold)" />
-              <Text className="inter" fontSize="sm" color="var(--color-text-primary)" noOfLines={1}>
-                {a.filename}
-              </Text>
-            </HStack>
-            <Button
-              size="sm"
-              variant="outline"
-              borderColor="rgba(212,175,55,0.45)"
-              color="var(--color-accent-gold)"
-              onClick={() => void download(a.id, a.filename)}
-              isLoading={loadingId === a.id}
+    <Stack spacing={2}>
+      {attachments.map((a) => (
+        <HStack
+          key={a.id}
+          justify="space-between"
+          gap={3}
+          py={3}
+          px={4}
+          borderRadius="10px"
+          border="1px solid var(--cc-line)"
+          bg="rgba(255, 255, 255, 0.03)"
+          transition="border-color 150ms var(--cc-ease)"
+          _hover={{ borderColor: "var(--cc-gold-line)" }}
+        >
+          <HStack minW={0} spacing={3}>
+            <Flex
+              w="36px"
+              h="36px"
+              flexShrink={0}
+              align="center"
+              justify="center"
+              borderRadius="8px"
+              border="1px solid rgba(212, 176, 128, 0.3)"
+              bg="rgba(212, 176, 128, 0.07)"
+              color="var(--cc-gold-light)"
             >
-              Download
-            </Button>
+              <FileText size={17} strokeWidth={1.75} />
+            </Flex>
+            <Text fontSize="14px" color="var(--cc-text)" isTruncated>
+              {a.filename}
+            </Text>
           </HStack>
-        ))}
-      </Stack>
+          <Button
+            size="sm"
+            variant="line"
+            leftIcon={<Download size={14} />}
+            onClick={() => void download(a.id, a.filename)}
+            isLoading={loadingId === a.id}
+            flexShrink={0}
+          >
+            Download
+          </Button>
+        </HStack>
+      ))}
     </Stack>
   );
 }

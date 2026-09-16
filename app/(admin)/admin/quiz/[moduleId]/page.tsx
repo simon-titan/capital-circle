@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Heading, Stack, Text } from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
 import { QuizEditor } from "@/components/admin/QuizEditor";
+import { AdminPageHeader } from "@/components/admin/adminUi";
 import { createClient } from "@/lib/supabase/server";
 import type { QuizMode, QuizQuestion } from "@/components/platform/QuizModal";
 
@@ -28,16 +29,22 @@ export default async function AdminQuizPage({ params }: PageProps) {
   };
 
   return (
-    <Stack gap={6}>
-      <Stack spacing={1}>
-        <Link href="/admin/quiz" className="inter" style={{ color: "var(--color-accent-gold-light)", fontSize: "0.875rem" }}>
+    <Box>
+      {/* Link aussen herum statt `as={Link}` — siehe app/(admin)/admin/page.tsx. */}
+      <Link href="/admin/quiz" style={{ textDecoration: "none" }}>
+        <Box
+          display="inline-block"
+          mb={3}
+          fontSize="14px"
+          color="var(--cc-text-2)"
+          transition="color 150ms var(--cc-ease)"
+          _hover={{ color: "var(--cc-gold-light)" }}
+        >
           ← Zur Quiz-Übersicht
-        </Link>
-        <Heading size="md" className="radley-regular" fontWeight={400}>
-          Quiz / {module?.title ?? moduleId}
-        </Heading>
-      </Stack>
+        </Box>
+      </Link>
+      <AdminPageHeader title={`Quiz / ${module?.title ?? moduleId}`} />
       <QuizEditor moduleId={moduleId} initialQuiz={initialQuiz} moduleTitle={module?.title ?? null} />
-    </Stack>
+    </Box>
   );
 }

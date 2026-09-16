@@ -30,6 +30,12 @@ import {
   type LeadRow,
 } from "./types";
 import { FilterBar } from "./FilterBar";
+import {
+  AdminPageHeader,
+  adminAlertIconColor,
+  adminAlertProps,
+  adminChipProps,
+} from "@/components/admin/adminUi";
 
 /* ── Context ──────────────────────────────────────────────────────────────── */
 
@@ -93,14 +99,7 @@ const TABS: { href: string; label: string; exact?: boolean }[] = [
 function SubNav() {
   const pathname = usePathname();
   return (
-    <HStack
-      spacing={1}
-      flexWrap="wrap"
-      bg="rgba(20, 21, 25, 0.55)"
-      border="1px solid rgba(255,255,255,0.07)"
-      borderRadius="14px"
-      p={1.5}
-    >
+    <HStack as="nav" aria-label="Discord-Funnel-Bereiche" spacing={2} flexWrap="wrap">
       {TABS.map((t) => {
         const active = t.exact ? pathname === t.href : pathname.startsWith(t.href);
         return (
@@ -108,15 +107,8 @@ function SubNav() {
             key={t.href}
             as={Link}
             href={t.href}
-            size="sm"
-            className="inter-semibold"
-            fontSize="sm"
-            bg={active ? "rgba(212,175,55,0.16)" : "transparent"}
-            color={active ? "var(--color-accent-gold-light, #E8C547)" : "var(--color-text-secondary)"}
-            border="1px solid"
-            borderColor={active ? "rgba(212,175,55,0.40)" : "transparent"}
-            _hover={{ bg: active ? "rgba(212,175,55,0.22)" : "rgba(255,255,255,0.06)", color: "var(--color-text-primary)" }}
-            borderRadius="10px"
+            aria-current={active ? "page" : undefined}
+            {...adminChipProps(active)}
           >
             {t.label}
           </Button>
@@ -259,25 +251,18 @@ export function DiscordFunnelShell({ children }: { children: ReactNode }) {
 
   return (
     <FunnelContext.Provider value={value}>
-      <Box maxW="1440px" mx="auto" px={{ base: 4, md: 6 }} py={8}>
-        <Stack spacing={6}>
-          {/* Header */}
-          <Stack spacing={1.5}>
-            <Text
-              as="h1"
-              className="inter-bold"
-              fontSize={{ base: "2xl", md: "3xl" }}
-              color="whiteAlpha.950"
-              letterSpacing="-0.01em"
-            >
-              Discord Funnel
-            </Text>
-            <Text fontSize="sm" color="var(--color-text-secondary)" className="inter">
+      <Box maxW="1440px" mx="auto">
+        {/* Header */}
+        <AdminPageHeader
+          title="Discord Funnel"
+          subtitle={
+            <>
               Cold-Traffic-Funnel (Instagram/TikTok/YouTube → Discord → Call). Übersicht,
               Closer-Performance, Video &amp; Traffic, Kanäle und Lead-Management.
-            </Text>
-          </Stack>
-
+            </>
+          }
+        />
+        <Stack spacing={6}>
           <SubNav />
 
           <FilterBar
@@ -289,13 +274,11 @@ export function DiscordFunnelShell({ children }: { children: ReactNode }) {
           />
 
           {error ? (
-            <Alert status="error" variant="subtle" bg="rgba(229,72,77,0.10)" borderRadius="12px">
-              <AlertIcon />
-              <Stack spacing={1}>
-                <Text fontSize="sm" className="inter">
-                  {error}
-                </Text>
-                <Button size="xs" variant="ghost" onClick={() => void load()} className="inter">
+            <Alert status="error" variant="subtle" {...adminAlertProps("error")}>
+              <AlertIcon color={adminAlertIconColor("error")} />
+              <Stack spacing={2} align="flex-start">
+                <Text fontSize="14px">{error}</Text>
+                <Button size="xs" variant="line" onClick={() => void load()}>
                   Erneut versuchen
                 </Button>
               </Stack>
@@ -305,7 +288,7 @@ export function DiscordFunnelShell({ children }: { children: ReactNode }) {
           {/* Content (Sub-Page). Erstes Laden zeigt einen Spinner. */}
           {loading && !analytics ? (
             <HStack py={20} justify="center">
-              <Spinner color="var(--color-accent-gold)" />
+              <Spinner color="var(--cc-gold)" />
             </HStack>
           ) : (
             children

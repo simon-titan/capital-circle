@@ -29,8 +29,12 @@ const OPTIONAL_ENV = [
   "RESEND_WEBHOOK_SECRET",
   "RESEND_FROM_EMAIL",
   "RESEND_FROM_NAME",
+  // Die drei verkauften Laufzeiten. `STRIPE_PRICE_LIFETIME` ist raus: der Plan
+  // wird nicht mehr verkauft und keine Stelle im Code liest die Variable noch.
+  // Bestandskunden behalten `membership_tier = 'lifetime'` samt Zugang.
   "STRIPE_PRICE_MONTHLY",
-  "STRIPE_PRICE_LIFETIME",
+  "STRIPE_PRICE_QUARTERLY",
+  "STRIPE_PRICE_YEARLY",
   "TURNSTILE_SECRET_KEY",
   "NEXT_PUBLIC_TURNSTILE_SITE_KEY",
   "NEXT_PUBLIC_APP_URL",
@@ -46,6 +50,29 @@ const OPTIONAL_ENV = [
    * ein neues (leeres) Segment an statt das bestehende weiterzuverwenden.
    */
   "RESEND_WHOP_SEGMENT_ID",
+  /**
+   * Plattform-Migrations-Kampagne (Whop → eigene Plattform): Resend-Segment-ID.
+   * Ohne sie legt der Admin-Trigger/Import-Skript beim nächsten Lauf ein neues an.
+   */
+  "RESEND_PLATFORM_MIGRATION_SEGMENT_ID",
+  /** Cloudflare Stream: Account-ID (Dashboard → Account Home, rechte Sidebar). */
+  "CLOUDFLARE_ACCOUNT_ID",
+  /** Cloudflare Stream: API-Token mit Account → Stream → Edit-Berechtigung. */
+  "CLOUDFLARE_STREAM_API_TOKEN",
+  /** Cloudflare Stream: Signing-Key-ID für signierte Wiedergabe-URLs (POST /stream/keys). */
+  "CLOUDFLARE_STREAM_SIGNING_KEY_ID",
+  /** Cloudflare Stream: privater RSA-Schlüssel (PEM) zum selben Signing-Key-Paar. */
+  "CLOUDFLARE_STREAM_SIGNING_PRIVATE_KEY",
+  /**
+   * Cloudflare R2 — Objektspeicher für Thumbnails, Anhänge, Arsenal-PDFs und
+   * Avatare. Ersetzt Hetzner Object Storage (`HETZNER_*`), dessen Bucket am
+   * 16.09.2026 in keiner Region mehr erreichbar war. Endpunkt bei einem Bucket
+   * in der EU-Jurisdiktion mit `.eu.` im Host.
+   */
+  "R2_ENDPOINT",
+  "R2_BUCKET_NAME",
+  "R2_ACCESS_KEY_ID",
+  "R2_SECRET_ACCESS_KEY",
 ] as const;
 
 let _checked = false;

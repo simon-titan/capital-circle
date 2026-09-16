@@ -67,9 +67,9 @@ const ICON_OPTIONS: string[] = [
   "Award",
 ];
 
-// Auswählbare Akzentfarben
+// Auswählbare Akzentfarben — gespeicherte Kursdaten, keine UI-Akzente.
 const COLOR_OPTIONS = [
-  { label: "Gold",   value: "rgba(212,175,55,1)",   preview: "#D4AF37" },
+  { label: "Gold",   value: "rgba(212,176,128,1)",   preview: "#d4b080" },
   { label: "Blau",   value: "rgba(99,179,237,1)",    preview: "#63B3ED" },
   { label: "Lila",   value: "rgba(154,117,255,1)",   preview: "#9A75FF" },
   { label: "Grün",   value: "rgba(74,222,128,1)",    preview: "#4ADE80" },
@@ -78,6 +78,52 @@ const COLOR_OPTIONS = [
   { label: "Cyan",   value: "rgba(34,211,238,1)",    preview: "#22D3EE" },
   { label: "Rot",    value: "rgba(248,113,113,1)",   preview: "#F87171" },
 ];
+
+const fieldSx = {
+  bg: "rgba(255, 255, 255, 0.03)",
+  border: "1px solid",
+  borderColor: "var(--cc-line-strong)",
+  borderRadius: "8px",
+  color: "var(--cc-text)",
+  _placeholder: { color: "var(--cc-text-3)" },
+  _hover: { borderColor: "rgba(255, 255, 255, 0.22)" },
+  _focusVisible: { borderColor: "var(--cc-gold-line)", boxShadow: "0 0 0 1px var(--cc-gold-line)" },
+} as const;
+
+const labelSx = { fontSize: "13px", fontWeight: 500, color: "var(--cc-text-2)" } as const;
+
+const switchLabelSx = { mb: 0, fontSize: "14px", color: "var(--cc-text-soft)" } as const;
+
+const switchSx = {
+  ".chakra-switch__track": { bg: "var(--cc-track)", boxShadow: "inset 0 0 0 1px var(--cc-line-strong)" },
+  ".chakra-switch__track[data-checked]": { bg: "var(--cc-gold)", boxShadow: "none" },
+} as const;
+
+const pillBase = {
+  borderRadius: "full",
+  px: 2,
+  py: 0.5,
+  fontSize: "11px",
+  fontWeight: 500,
+  textTransform: "none",
+  letterSpacing: "normal",
+} as const;
+
+const headCellSx = {
+  fontSize: "12px",
+  fontWeight: 500,
+  letterSpacing: "0.06em",
+  textTransform: "uppercase",
+  color: "var(--cc-text-2)",
+} as const;
+
+const tooltipSx = { bg: "var(--cc-surface-2)", color: "var(--cc-text)", fontSize: "12px" } as const;
+
+const dangerButton = {
+  variant: "line",
+  color: "var(--cc-danger)",
+  _hover: { bg: "rgba(248, 113, 113, 0.08)", borderColor: "rgba(248, 113, 113, 0.45)", boxShadow: "none" },
+} as const;
 
 function getLucideIcon(name: string | null | undefined): LucideIcon | null {
   if (!name) return null;
@@ -99,25 +145,27 @@ function IconPicker({
         if (!Icon) return null;
         const selected = value === name;
         return (
-          <Tooltip key={name} label={name} placement="top" hasArrow openDelay={400}>
+          <Tooltip key={name} label={name} placement="top" hasArrow openDelay={400} {...tooltipSx}>
             <Box
               as="button"
               type="button"
+              aria-label={name}
+              aria-pressed={selected}
               w="36px"
               h="36px"
               borderRadius="8px"
               display="flex"
               alignItems="center"
               justifyContent="center"
-              bg={selected ? "rgba(212,175,55,0.18)" : "rgba(255,255,255,0.04)"}
+              bg={selected ? "rgba(212, 176, 128, 0.12)" : "rgba(255, 255, 255, 0.02)"}
               borderWidth="1px"
-              borderColor={selected ? "rgba(212,175,55,0.7)" : "rgba(255,255,255,0.1)"}
-              color={selected ? "var(--color-accent-gold)" : "rgba(240,240,242,0.55)"}
-              transition="all 0.15s ease"
-              _hover={{ bg: "rgba(212,175,55,0.1)", borderColor: "rgba(212,175,55,0.4)", color: "var(--color-accent-gold)" }}
+              borderColor={selected ? "var(--cc-gold-line)" : "var(--cc-line-strong)"}
+              color={selected ? "var(--cc-gold-light)" : "var(--cc-text-2)"}
+              transition="background-color 150ms var(--cc-ease), border-color 150ms var(--cc-ease), color 150ms var(--cc-ease)"
+              _hover={{ bg: "rgba(212, 176, 128, 0.06)", borderColor: "var(--cc-gold-line)", color: "var(--cc-text)" }}
               onClick={() => onChange(selected ? null : name)}
             >
-              <Icon size={16} aria-hidden />
+              <Icon size={16} strokeWidth={1.75} aria-hidden />
             </Box>
           </Tooltip>
         );
@@ -134,23 +182,24 @@ function ColorPicker({
   onChange: (v: string | null) => void;
 }) {
   return (
-    <HStack spacing={2} flexWrap="wrap">
+    <HStack spacing={3} flexWrap="wrap">
       {COLOR_OPTIONS.map((c) => {
         const selected = value === c.value;
         return (
-          <Tooltip key={c.value} label={c.label} placement="top" hasArrow openDelay={400}>
+          <Tooltip key={c.value} label={c.label} placement="top" hasArrow openDelay={400} {...tooltipSx}>
             <Box
               as="button"
               type="button"
+              aria-label={c.label}
+              aria-pressed={selected}
               w="28px"
               h="28px"
               borderRadius="full"
               bg={c.preview}
-              borderWidth="2px"
-              borderColor={selected ? "white" : "transparent"}
-              boxShadow={selected ? `0 0 0 2px ${c.preview}` : "none"}
-              transition="all 0.15s ease"
-              _hover={{ transform: "scale(1.15)" }}
+              border="1px solid var(--cc-line-strong)"
+              boxShadow={selected ? "0 0 0 2px var(--cc-panel-solid), 0 0 0 4px var(--cc-gold-line)" : "none"}
+              transition="transform 150ms var(--cc-ease), box-shadow 150ms var(--cc-ease)"
+              _hover={{ transform: "scale(1.1)" }}
               onClick={() => onChange(selected ? null : c.value)}
               position="relative"
             >
@@ -161,8 +210,9 @@ function ColorPicker({
                   display="flex"
                   alignItems="center"
                   justifyContent="center"
+                  color="var(--cc-bg)"
                 >
-                  <Check size={12} color="white" strokeWidth={3} />
+                  <Check size={12} strokeWidth={3} />
                 </Box>
               )}
             </Box>
@@ -291,98 +341,70 @@ export function AdminCoursesManager({ initialCourses }: { initialCourses: Course
 
   return (
     <Stack spacing={10}>
-      <Stack
-        spacing={4}
-        p={{ base: 4, md: 6 }}
-        borderRadius="16px"
-        border="1px solid rgba(255,255,255,0.08)"
-        bg="rgba(255,255,255,0.04)"
-        boxShadow="var(--shadow-card, 0 4px 16px rgba(0,0,0,0.6))"
-      >
-        <Text className="radley-regular" fontSize="2xl" color="whiteAlpha.900">
+      <Stack spacing={4} className="cc-card cc-card--still" p={{ base: 4, md: 6 }}>
+        <Text fontSize="18px" fontWeight={600} color="var(--cc-text)">
           Neuen Kurs anlegen
         </Text>
         <FormControl>
-          <FormLabel className="inter" fontSize="xs" textTransform="uppercase" letterSpacing="0.08em" color="gray.500">
-            Titel
-          </FormLabel>
-          <Input
-            placeholder="Titel"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            borderColor="whiteAlpha.200"
-            _focus={{ borderColor: "blue.500", boxShadow: "0 0 0 3px rgba(59,130,246,0.12)" }}
-          />
+          <FormLabel {...labelSx}>Titel</FormLabel>
+          <Input placeholder="Titel" value={title} onChange={(e) => setTitle(e.target.value)} {...fieldSx} />
         </FormControl>
         <FormControl>
-          <FormLabel className="inter" fontSize="xs" textTransform="uppercase" letterSpacing="0.08em" color="gray.500">
-            Slug
-          </FormLabel>
+          <FormLabel {...labelSx}>Slug</FormLabel>
           <Input
             placeholder="z. B. capital-circle-grundlagen"
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
-            borderColor="whiteAlpha.200"
+            {...fieldSx}
           />
         </FormControl>
         <FormControl>
-          <FormLabel className="inter" fontSize="xs" textTransform="uppercase" letterSpacing="0.08em" color="gray.500">
-            Beschreibung
-          </FormLabel>
+          <FormLabel {...labelSx}>Beschreibung</FormLabel>
           <Textarea
             placeholder="Kurzbeschreibung"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            borderColor="whiteAlpha.200"
+            {...fieldSx}
           />
         </FormControl>
         <FormControl>
-          <FormLabel className="inter" fontSize="xs" textTransform="uppercase" letterSpacing="0.08em" color="gray.500">
-            Icon
-          </FormLabel>
+          <FormLabel {...labelSx}>Icon</FormLabel>
           <IconPicker value={icon} onChange={setIcon} />
         </FormControl>
         <FormControl>
-          <FormLabel className="inter" fontSize="xs" textTransform="uppercase" letterSpacing="0.08em" color="gray.500">
-            Akzentfarbe
-          </FormLabel>
+          <FormLabel {...labelSx}>Akzentfarbe</FormLabel>
           <ColorPicker value={accentColor} onChange={setAccentColor} />
         </FormControl>
         <FormControl display="flex" alignItems="center">
-          <FormLabel mb={0} className="inter" fontSize="sm" color="gray.300">
-            Kostenlos
-          </FormLabel>
-          <Switch ml={3} isChecked={isFree} onChange={(e) => setIsFree(e.target.checked)} colorScheme="blue" />
+          <FormLabel {...switchLabelSx}>Kostenlos</FormLabel>
+          <Switch ml={3} isChecked={isFree} onChange={(e) => setIsFree(e.target.checked)} sx={switchSx} />
         </FormControl>
         <FormControl>
-          <FormLabel className="inter" fontSize="xs" textTransform="uppercase" letterSpacing="0.08em" color="gray.500">
-            Reihenfolge (sort_order)
-          </FormLabel>
+          <FormLabel {...labelSx}>Reihenfolge (sort_order)</FormLabel>
           <Input
             type="number"
             value={sortOrder}
             onChange={(e) => setSortOrder(Number.parseInt(e.target.value, 10) || 0)}
-            borderColor="whiteAlpha.200"
+            {...fieldSx}
+            className="cc-num"
             maxW="120px"
           />
-          <Text fontSize="xs" className="inter" color="gray.600" mt={1}>
+          <Text fontSize="12px" color="var(--cc-text-3)" mt={1.5}>
             Kleinere Zahl = früher in der Akademie-Kette. Bestimmt die sequenzielle Kursfreischaltung.
           </Text>
         </FormControl>
         <FormControl display="flex" alignItems="center">
-          <FormLabel mb={0} className="inter" fontSize="sm" color="gray.300">
-            Von Kurs-Reihenfolge ausnehmen
-          </FormLabel>
+          <FormLabel {...switchLabelSx}>Von Kurs-Reihenfolge ausnehmen</FormLabel>
           <Switch
             ml={3}
             isChecked={sequentialExempt}
             onChange={(e) => setSequentialExempt(e.target.checked)}
-            colorScheme="blue"
+            sx={switchSx}
           />
         </FormControl>
         <Button
           alignSelf="flex-start"
-          colorScheme="blue"
+          variant="gold"
           onClick={() => void createCourse()}
           isLoading={loading}
           isDisabled={!title.trim() || !slug.trim()}
@@ -390,40 +412,34 @@ export function AdminCoursesManager({ initialCourses }: { initialCourses: Course
           Kurs erstellen
         </Button>
         {status ? (
-          <Text fontSize="sm" className="inter" color="gray.400">
+          <Text fontSize="14px" color="var(--cc-text-2)">
             {status}
           </Text>
         ) : null}
       </Stack>
 
       <Box>
-        <Text className="radley-regular" fontSize="xl" mb={4} color="whiteAlpha.900">
+        <Text fontSize="18px" fontWeight={600} mb={4} color="var(--cc-text)">
           Vorhandene Kurse
         </Text>
-        <Box
-          borderRadius="12px"
-          border="1px solid rgba(255,255,255,0.07)"
-          overflow="hidden"
-          bg="#0C0D10"
-        >
+        <Box className="cc-card cc-card--still">
           <HStack
             px={4}
             py={3}
-            borderBottom="1px solid rgba(255,255,255,0.07)"
-            bg="rgba(255,255,255,0.02)"
+            borderBottom="1px solid var(--cc-line)"
             spacing={4}
             display={{ base: "none", md: "flex" }}
           >
-            <Text flex={1} fontSize="11px" className="inter" fontWeight={500} letterSpacing="0.08em" textTransform="uppercase" color="gray.600">
+            <Text flex={1} {...headCellSx}>
               Titel
             </Text>
-            <Text w="56px" fontSize="11px" className="inter" fontWeight={500} letterSpacing="0.08em" textTransform="uppercase" color="gray.600">
+            <Text w="56px" {...headCellSx}>
               #
             </Text>
-            <Text w="140px" fontSize="11px" className="inter" fontWeight={500} letterSpacing="0.08em" textTransform="uppercase" color="gray.600">
+            <Text w="140px" {...headCellSx}>
               Slug
             </Text>
-            <Text w="120px" textAlign="right" fontSize="11px" className="inter" fontWeight={500} letterSpacing="0.08em" textTransform="uppercase" color="gray.600">
+            <Text w="120px" textAlign="right" {...headCellSx}>
               Aktionen
             </Text>
           </HStack>
@@ -434,12 +450,13 @@ export function AdminCoursesManager({ initialCourses }: { initialCourses: Course
               <HStack
                 key={course.id}
                 px={4}
-                py={4}
-                borderBottom="1px solid rgba(255,255,255,0.05)"
+                py={3.5}
+                borderBottom="1px solid var(--cc-line)"
+                _last={{ borderBottom: "none" }}
                 spacing={4}
                 align="center"
-                transition="background 150ms ease"
-                _hover={{ bg: "rgba(255,255,255,0.04)" }}
+                transition="background-color 150ms var(--cc-ease)"
+                _hover={{ bg: "rgba(212, 176, 128, 0.05)" }}
                 flexDir={{ base: "column", md: "row" }}
               >
                 <Stack flex={1} spacing={1} align="flex-start" minW={0}>
@@ -449,42 +466,43 @@ export function AdminCoursesManager({ initialCourses }: { initialCourses: Course
                         w="22px"
                         h="22px"
                         borderRadius="6px"
-                        bg={accentPreview ? `${accentPreview}22` : "rgba(255,255,255,0.06)"}
+                        bg={accentPreview ? `${accentPreview}22` : "rgba(255, 255, 255, 0.06)"}
+                        color={accentPreview ?? "var(--cc-text-2)"}
                         display="flex"
                         alignItems="center"
                         justifyContent="center"
                         flexShrink={0}
                       >
-                        <CourseIcon size={13} style={{ color: accentPreview ?? "rgba(240,240,242,0.55)" }} aria-hidden />
+                        <CourseIcon size={13} aria-hidden />
                       </Box>
                     )}
                     {accentPreview && (
                       <Box w="10px" h="10px" borderRadius="full" bg={accentPreview} flexShrink={0} />
                     )}
-                    <Text className="inter" fontSize="sm" fontWeight={500} color="gray.100">
+                    <Text fontSize="14px" fontWeight={500} color="var(--cc-text)">
                       {course.title}
                     </Text>
                     {course.is_free && (
-                      <Badge colorScheme="green" variant="subtle" fontSize="10px" className="inter">
+                      <Badge {...pillBase} bg="rgba(212, 176, 128, 0.12)" color="var(--cc-gold-light)">
                         Kostenlos
                       </Badge>
                     )}
                     {course.is_sequential_exempt && (
-                      <Badge colorScheme="purple" variant="subtle" fontSize="10px" className="inter">
+                      <Badge {...pillBase} bg="rgba(255, 255, 255, 0.06)" color="var(--cc-text-2)">
                         Keine Ketten-Sperre
                       </Badge>
                     )}
                   </HStack>
                   {course.description ? (
-                    <Text fontSize="xs" className="inter" color="gray.500" noOfLines={1}>
+                    <Text fontSize="12px" color="var(--cc-text-3)" noOfLines={1}>
                       {course.description}
                     </Text>
                   ) : null}
-                  <Text fontSize="xs" className="jetbrains-mono" color="gray.600">
+                  <Text fontSize="12px" className="cc-num" color="var(--cc-text-3)">
                     /{course.slug}
                   </Text>
                 </Stack>
-                <Text w="56px" fontSize="xs" className="jetbrains-mono" color="gray.500" flexShrink={0}>
+                <Text w="56px" fontSize="13px" className="cc-num" color="var(--cc-text-2)" flexShrink={0}>
                   {typeof course.sort_order === "number" ? course.sort_order : 0}
                 </Text>
                 <HStack
@@ -493,31 +511,15 @@ export function AdminCoursesManager({ initialCourses }: { initialCourses: Course
                   spacing={2}
                   flexShrink={0}
                 >
-                  <Button
-                    as={Link}
-                    href={`/admin/kurse/${course.id}`}
-                    size="sm"
-                    colorScheme="blue"
-                    variant="solid"
-                  >
+                  <Button as={Link} href={`/admin/kurse/${course.id}`} size="sm" variant="line">
                     Module verwalten
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    borderColor="whiteAlpha.300"
-                    color="gray.200"
-                    leftIcon={<Pencil size={14} />}
-                    onClick={() => openEdit(course)}
-                  >
+                  <Button size="sm" variant="line" leftIcon={<Pencil size={14} />} onClick={() => openEdit(course)}>
                     Bearbeiten
                   </Button>
                   <Button
                     size="sm"
-                    variant="outline"
-                    colorScheme="red"
-                    borderColor="red.400"
-                    color="red.200"
+                    {...dangerButton}
                     leftIcon={<Trash2 size={14} />}
                     onClick={() => void deleteCourse(course)}
                   >
@@ -531,84 +533,70 @@ export function AdminCoursesManager({ initialCourses }: { initialCourses: Course
       </Box>
 
       <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
-        <ModalOverlay bg="blackAlpha.800" backdropFilter="blur(4px)" />
+        <ModalOverlay bg="rgba(8, 10, 12, 0.72)" backdropFilter="blur(6px)" />
         <ModalContent
-          bg="rgba(10, 11, 14, 0.96)"
-          border="1px solid rgba(255,255,255,0.09)"
-          borderRadius="24px"
+          bg="var(--cc-panel-solid)"
+          border="1px solid rgba(212, 176, 128, 0.28)"
+          borderRadius="12px"
+          boxShadow="0 24px 60px rgba(0, 0, 0, 0.6)"
           mx={4}
         >
-          <ModalHeader className="radley-regular" fontWeight={400}>
+          <ModalHeader fontSize="17px" fontWeight={600} color="var(--cc-text)">
             Kurs bearbeiten
           </ModalHeader>
           <ModalBody>
             <Stack spacing={4}>
               <FormControl>
-                <FormLabel fontSize="xs" className="inter" color="gray.500">
-                  Titel
-                </FormLabel>
-                <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} borderColor="whiteAlpha.200" />
+                <FormLabel {...labelSx}>Titel</FormLabel>
+                <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} {...fieldSx} />
               </FormControl>
               <FormControl>
-                <FormLabel fontSize="xs" className="inter" color="gray.500">
-                  Slug
-                </FormLabel>
-                <Input value={editSlug} onChange={(e) => setEditSlug(e.target.value)} borderColor="whiteAlpha.200" />
+                <FormLabel {...labelSx}>Slug</FormLabel>
+                <Input value={editSlug} onChange={(e) => setEditSlug(e.target.value)} {...fieldSx} />
               </FormControl>
               <FormControl>
-                <FormLabel fontSize="xs" className="inter" color="gray.500">
-                  Beschreibung
-                </FormLabel>
-                <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} borderColor="whiteAlpha.200" />
+                <FormLabel {...labelSx}>Beschreibung</FormLabel>
+                <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} {...fieldSx} />
               </FormControl>
               <FormControl>
-                <FormLabel fontSize="xs" className="inter" color="gray.500">
-                  Icon
-                </FormLabel>
+                <FormLabel {...labelSx}>Icon</FormLabel>
                 <IconPicker value={editIcon} onChange={setEditIcon} />
               </FormControl>
               <FormControl>
-                <FormLabel fontSize="xs" className="inter" color="gray.500">
-                  Akzentfarbe
-                </FormLabel>
+                <FormLabel {...labelSx}>Akzentfarbe</FormLabel>
                 <ColorPicker value={editAccentColor} onChange={setEditAccentColor} />
               </FormControl>
               <FormControl display="flex" alignItems="center">
-                <FormLabel mb={0} className="inter" fontSize="sm">
-                  Kostenlos
-                </FormLabel>
-                <Switch ml={3} isChecked={editFree} onChange={(e) => setEditFree(e.target.checked)} colorScheme="blue" />
+                <FormLabel {...switchLabelSx}>Kostenlos</FormLabel>
+                <Switch ml={3} isChecked={editFree} onChange={(e) => setEditFree(e.target.checked)} sx={switchSx} />
               </FormControl>
               <FormControl>
-                <FormLabel fontSize="xs" className="inter" color="gray.500">
-                  Reihenfolge (sort_order)
-                </FormLabel>
+                <FormLabel {...labelSx}>Reihenfolge (sort_order)</FormLabel>
                 <Input
                   type="number"
                   value={editSortOrder}
                   onChange={(e) => setEditSortOrder(Number.parseInt(e.target.value, 10) || 0)}
-                  borderColor="whiteAlpha.200"
+                  {...fieldSx}
+                  className="cc-num"
                   maxW="120px"
                 />
               </FormControl>
               <FormControl display="flex" alignItems="center">
-                <FormLabel mb={0} className="inter" fontSize="sm">
-                  Von Kurs-Reihenfolge ausnehmen
-                </FormLabel>
+                <FormLabel {...switchLabelSx}>Von Kurs-Reihenfolge ausnehmen</FormLabel>
                 <Switch
                   ml={3}
                   isChecked={editSequentialExempt}
                   onChange={(e) => setEditSequentialExempt(e.target.checked)}
-                  colorScheme="blue"
+                  sx={switchSx}
                 />
               </FormControl>
             </Stack>
           </ModalBody>
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onClose}>
+            <Button variant="line" mr={3} onClick={onClose}>
               Abbrechen
             </Button>
-            <Button colorScheme="blue" onClick={() => void saveEdit()} isLoading={loading}>
+            <Button variant="gold" onClick={() => void saveEdit()} isLoading={loading}>
               Speichern
             </Button>
           </ModalFooter>

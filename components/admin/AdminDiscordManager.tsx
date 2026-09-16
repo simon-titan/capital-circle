@@ -1,8 +1,15 @@
 "use client";
 
-import { Badge, Box, Button, HStack, Input, Stack, Text, useToast } from "@chakra-ui/react";
+import { Box, Button, HStack, Input, Stack, Text, useToast } from "@chakra-ui/react";
 import { RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import {
+  ADMIN_CARD_CLASS,
+  adminInputProps,
+  adminRowProps,
+  StatusPill,
+  type AdminTone,
+} from "@/components/admin/adminUi";
 
 type DiscordRoleStatus = "regular" | "waiting_room" | "none" | null;
 
@@ -30,26 +37,21 @@ function roleStatusLabel(status: DiscordRoleStatus): string {
   }
 }
 
-function roleStatusColors(status: DiscordRoleStatus): { bg: string; color: string } {
+/** ok = regulär, offen = Warteraum, Fehler = keine Rolle, sonst neutral. */
+function roleStatusTone(status: DiscordRoleStatus): AdminTone {
   switch (status) {
     case "regular":
-      return { bg: "rgba(212,175,55,0.15)", color: "var(--color-accent-gold)" };
+      return "success";
     case "waiting_room":
-      return { bg: "rgba(255,255,255,0.08)", color: "gray.300" };
+      return "attention";
     case "none":
-      return { bg: "rgba(229,72,77,0.10)", color: "rgba(248,113,113,0.85)" };
+      return "danger";
     default:
-      return { bg: "transparent", color: "gray.600" };
+      return "neutral";
   }
 }
 
-const fieldStyles = {
-  bg: "rgba(255,255,255,0.06)",
-  borderColor: "whiteAlpha.300",
-  color: "gray.100",
-  _placeholder: { color: "gray.500" },
-  _focus: { borderColor: "blue.400", boxShadow: "0 0 0 1px rgba(59,130,246,0.45)" },
-} as const;
+const COLUMN_HEADS = ["Name", "E-Mail", "Discord", "Discord ID", "Verbunden seit", "Status", "Rollen-Status"];
 
 export function AdminDiscordManager() {
   const [rows, setRows] = useState<AdminDiscordRow[]>([]);
@@ -130,14 +132,10 @@ export function AdminDiscordManager() {
   return (
     <Stack spacing={4}>
       <HStack justify="space-between" flexWrap="wrap" gap={3}>
-        <Box>
-          <Text className="radley-regular" fontSize="xl" color="whiteAlpha.950">
-            Discord Übersicht
-          </Text>
-          <Text fontSize="sm" className="inter" color="gray.400" mt={0.5}>
-            {loading ? "Wird geladen…" : `${rows.length} Nutzer gesamt`}
-          </Text>
-        </Box>
+        {/* Seitentitel „Discord Übersicht“ kommt aus app/(admin)/admin/discord/page.tsx */}
+        <Text fontSize="14px" color="var(--cc-text-2)" className="cc-num">
+          {loading ? "Wird geladen…" : `${rows.length} Nutzer gesamt`}
+        </Text>
         <HStack spacing={3}>
           <Input
             placeholder="Suche nach Name, E-Mail, Discord…"
@@ -145,43 +143,32 @@ export function AdminDiscordManager() {
             onChange={(e) => setSearch(e.target.value)}
             maxW="340px"
             size="sm"
-            {...fieldStyles}
+            {...adminInputProps}
           />
           <Button
+            variant="line"
+            size="sm"
             leftIcon={<RefreshCw size={14} />}
             onClick={handleSync}
             isLoading={syncing}
             loadingText="Gleicht ab…"
-            size="sm"
-            borderRadius="10px"
-            className="inter-semibold"
-            bg="rgba(212,175,55,0.15)"
-            color="var(--color-accent-gold)"
-            border="1px solid rgba(212,175,55,0.35)"
-            _hover={{ bg: "rgba(212,175,55,0.25)", borderColor: "rgba(212,175,55,0.60)" }}
+            flexShrink={0}
           >
             Bestand abgleichen
           </Button>
         </HStack>
       </HStack>
 
-      <Box
-        borderRadius="16px"
-        borderWidth="1px"
-        borderColor="whiteAlpha.150"
-        overflow="hidden"
-        bg="rgba(0,0,0,0.2)"
-      >
+      <Box className={ADMIN_CARD_CLASS}>
         <HStack
           px={4}
-          py={3}
-          borderBottom="1px solid rgba(255,255,255,0.07)"
-          bg="rgba(255,255,255,0.03)"
+          py={2.5}
+          borderBottom="1px solid var(--cc-line-strong)"
           spacing={3}
           display={{ base: "none", xl: "flex" }}
           flexWrap="wrap"
         >
-          {["Name", "E-Mail", "Discord", "Discord ID", "Verbunden seit", "Status", "Rollen-Status"].map((h) => (
+          {COLUMN_HEADS.map((h) => (
             <Text
               key={h}
               flex={h === "E-Mail" ? 1.2 : h === "Name" ? 1 : undefined}
@@ -199,12 +186,11 @@ export function AdminDiscordManager() {
                           : undefined
               }
               minW={h === "E-Mail" ? "160px" : undefined}
-              fontSize="11px"
-              className="inter"
+              fontSize="12px"
               fontWeight={500}
-              letterSpacing="0.08em"
+              letterSpacing="0.06em"
               textTransform="uppercase"
-              color="gray.600"
+              color="var(--cc-text-2)"
             >
               {h}
             </Text>
@@ -212,11 +198,11 @@ export function AdminDiscordManager() {
         </HStack>
 
         {loading ? (
-          <Text px={4} py={6} fontSize="sm" color="gray.400" className="inter">
+          <Text px={4} py={6} fontSize="14px" color="var(--cc-text-2)">
             Daten werden geladen…
           </Text>
         ) : filtered.length === 0 ? (
-          <Text px={4} py={6} fontSize="sm" color="gray.400" className="inter">
+          <Text px={4} py={6} fontSize="14px" color="var(--cc-text-2)">
             Keine Einträge.
           </Text>
         ) : (
@@ -224,21 +210,19 @@ export function AdminDiscordManager() {
             <HStack
               key={r.userId}
               px={4}
-              py={3.5}
-              borderBottom="1px solid rgba(255,255,255,0.05)"
+              py={3}
               spacing={3}
-              align="flex-start"
+              align={{ base: "flex-start", xl: "center" }}
               flexDir={{ base: "column", xl: "row" }}
-              transition="background 150ms"
-              _hover={{ bg: "rgba(255,255,255,0.03)" }}
+              {...adminRowProps}
+              sx={{ "&:last-of-type": { borderBottomRadius: "12px" } }}
             >
-              <Text className="inter" fontSize="sm" fontWeight={500} color="gray.100" flex={1} minW={0} noOfLines={2}>
+              <Text fontSize="14px" fontWeight={500} color="var(--cc-text)" flex={1} minW={0} noOfLines={2}>
                 {r.name}
               </Text>
               <Text
-                className="inter"
-                fontSize="sm"
-                color="gray.300"
+                fontSize="14px"
+                color="var(--cc-text-soft)"
                 flex={1.2}
                 minW={{ xl: "160px" }}
                 noOfLines={2}
@@ -246,35 +230,28 @@ export function AdminDiscordManager() {
               >
                 {r.email}
               </Text>
-              <Text w={{ base: "100%", xl: "120px" }} fontSize="sm" className="inter" color="gray.400" noOfLines={1}>
+              <Text w={{ base: "100%", xl: "120px" }} fontSize="14px" color="var(--cc-text-2)" noOfLines={1}>
                 {r.discordUsername ?? "—"}
               </Text>
               <Text
                 w={{ base: "100%", xl: "140px" }}
-                fontSize="xs"
-                className="jetbrains-mono"
-                color="gray.500"
+                fontSize="12px"
+                className="cc-num"
+                color="var(--cc-text-3)"
                 noOfLines={1}
               >
                 {r.discordUserId ?? "—"}
               </Text>
-              <Text w={{ base: "100%", xl: "130px" }} fontSize="xs" className="inter" color="gray.500">
+              <Text w={{ base: "100%", xl: "130px" }} fontSize="12px" className="cc-num" color="var(--cc-text-2)">
                 {formatConnected(r.connectedAt)}
               </Text>
-              <Text w={{ base: "100%", xl: "120px" }} fontSize="sm" className="inter" color="gray.200">
-                {r.connected ? "✅ Verbunden" : "⚠️ Nicht verbunden"}
-              </Text>
               <Box w={{ base: "100%", xl: "120px" }}>
-                <Badge
-                  fontSize="xs"
-                  px={2}
-                  py={0.5}
-                  borderRadius="6px"
-                  border="none"
-                  {...roleStatusColors(r.roleStatus)}
-                >
-                  {roleStatusLabel(r.roleStatus)}
-                </Badge>
+                <StatusPill tone={r.connected ? "success" : "attention"}>
+                  {r.connected ? "Verbunden" : "Nicht verbunden"}
+                </StatusPill>
+              </Box>
+              <Box w={{ base: "100%", xl: "120px" }}>
+                <StatusPill tone={roleStatusTone(r.roleStatus)}>{roleStatusLabel(r.roleStatus)}</StatusPill>
               </Box>
             </HStack>
           ))

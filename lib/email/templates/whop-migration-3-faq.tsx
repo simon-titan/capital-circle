@@ -27,10 +27,8 @@ export default function WhopMigrationMail3({
   return (
     <BaseEmail
       previewText="Die 3 Fragen, die mir zu Capital Circle am häufigsten gestellt werden."
-      accentGradient={`linear-gradient(90deg, transparent, ${T.brandRed} 30%, ${T.brandRedSoft} 70%, transparent)`}
       hideFooter={false}
       unsubscribeUrl={unsubscribeUrl}
-      footerLinkColor={T.accent}
       bodyFontFamily={T.fontBody}
       headFontLinkHref={T.fontLinkHref}
     >

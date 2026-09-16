@@ -29,6 +29,26 @@ type Props = {
   onUpdated: () => void;
 };
 
+const inputSx = {
+  bg: "rgba(255, 255, 255, 0.03)",
+  borderColor: "var(--cc-line-strong)",
+  borderRadius: "8px",
+  _hover: { borderColor: "var(--cc-gold-line)" },
+  _focusVisible: { borderColor: "var(--cc-gold)", boxShadow: "0 0 0 1px var(--cc-gold)" },
+};
+
+/** Destruktive Aktion: Line-Button in Rot statt Gold-Kante. */
+const dangerLineSx = {
+  variant: "line" as const,
+  color: "var(--cc-danger)",
+  borderColor: "rgba(248, 113, 113, 0.35)",
+  _hover: { bg: "rgba(248, 113, 113, 0.08)", borderColor: "rgba(248, 113, 113, 0.6)", boxShadow: "none" },
+  _active: { bg: "rgba(248, 113, 113, 0.12)" },
+};
+
+/** Buttons, die auf dem Screenshot liegen, brauchen einen deckenden Grund. */
+const overlayBtnBg = "rgba(14, 18, 23, 0.88)";
+
 export function TradeDetailModal({ isOpen, onClose, trade, journalId, onUpdated }: Props) {
   const supabase = createClient();
   const toast = useToast();
@@ -36,6 +56,7 @@ export function TradeDetailModal({ isOpen, onClose, trade, journalId, onUpdated 
   const [notes, setNotes] = useState("");
   const [resultTicks, setResultTicks] = useState("");
 
+  /* eslint-disable react-hooks/set-state-in-effect -- Formular beim Trade-Wechsel auf dessen Werte zurücksetzen */
   useEffect(() => {
     if (trade) {
       setNotes(trade.notes || "");
@@ -43,6 +64,7 @@ export function TradeDetailModal({ isOpen, onClose, trade, journalId, onUpdated 
       setEditMode(false);
     }
   }, [trade]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   if (!trade) return null;
 
@@ -119,11 +141,11 @@ export function TradeDetailModal({ isOpen, onClose, trade, journalId, onUpdated 
     : null;
 
   const detail = (label: string, value: ReactNode) => (
-    <Box bg="rgba(255,255,255,0.04)" borderRadius="md" p={3}>
-      <Text fontSize="10px" color="var(--color-text-tertiary)" textTransform="uppercase" letterSpacing="0.06em" mb={1}>
+    <Box bg="rgba(255, 255, 255, 0.03)" border="1px solid var(--cc-line)" borderRadius="10px" p={3}>
+      <Text fontSize="11px" fontWeight={500} color="var(--cc-text-2)" textTransform="uppercase" letterSpacing="0.08em" mb={1}>
         {label}
       </Text>
-      <Box fontSize="sm" fontWeight={700} className="jetbrains-mono">
+      <Box fontSize="sm" fontWeight={600} color="var(--cc-text)" className="cc-num">
         {value}
       </Box>
     </Box>
@@ -134,30 +156,60 @@ export function TradeDetailModal({ isOpen, onClose, trade, journalId, onUpdated 
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="4xl" scrollBehavior="inside">
-      <ModalOverlay bg="rgba(0,0,0,0.75)" backdropFilter="blur(4px)" />
-      <ModalContent bg="rgba(10, 11, 14, 0.96)" border="1px solid rgba(255,255,255,0.09)" borderRadius="xl">
-        <ModalHeader display="flex" flexDirection={{ base: "column", sm: "row" }} alignItems="flex-start" gap={3} pr={10}>
-          <Text fontSize="md" className="inter-semibold" flex="1">
+      <ModalOverlay bg="rgba(5, 7, 10, 0.7)" backdropFilter="blur(6px)" />
+      <ModalContent
+        bg="var(--cc-panel-solid)"
+        border="1px solid var(--cc-gold-line)"
+        borderRadius="14px"
+        boxShadow="0 24px 64px rgba(0, 0, 0, 0.6), 0 0 32px rgba(212, 176, 128, 0.08)"
+        color="var(--cc-text)"
+      >
+        <ModalHeader
+          display="flex"
+          flexDirection={{ base: "column", sm: "row" }}
+          alignItems="flex-start"
+          gap={3}
+          pr={10}
+          borderBottom="1px solid var(--cc-line)"
+        >
+          <Text fontSize="16px" fontWeight={600} color="var(--cc-text)" flex="1" className="cc-num">
             Trade — {trade.trade_date} {trade.asset} {trade.direction === "long" ? "Long" : "Short"}
           </Text>
-          <Button size="sm" variant={editMode ? "solid" : "outline"} mr={2} onClick={() => (editMode ? void saveEdit() : setEditMode(true))}>
+          <Button
+            size="sm"
+            variant={editMode ? "gold" : "line"}
+            mr={2}
+            onClick={() => (editMode ? void saveEdit() : setEditMode(true))}
+          >
             {editMode ? "Speichern" : "Bearbeiten"}
           </Button>
-          <Button size="sm" colorScheme="red" variant="outline" onClick={() => void deleteTrade()}>
+          <Button size="sm" {...dangerLineSx} onClick={() => void deleteTrade()}>
             Löschen
           </Button>
-          <ModalCloseButton />
+          <ModalCloseButton color="var(--cc-text-2)" _hover={{ color: "var(--cc-text)", bg: "rgba(255, 255, 255, 0.05)" }} />
         </ModalHeader>
-        <ModalBody pb={8}>
+        <ModalBody pt={5} pb={8}>
           {imgSrc ? (
             <Box position="relative" mb={6}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={imgSrc} alt="Screenshot" style={{ maxWidth: "100%", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)" }} />
-              <Button size="xs" position="absolute" top={2} right={2} onClick={() => void deleteScreenshot()}>
+              <img
+                src={imgSrc}
+                alt="Screenshot"
+                style={{ maxWidth: "100%", borderRadius: 10, border: "1px solid var(--cc-line-strong)" }}
+              />
+              <Button
+                size="xs"
+                {...dangerLineSx}
+                bg={overlayBtnBg}
+                position="absolute"
+                top={2}
+                right={2}
+                onClick={() => void deleteScreenshot()}
+              >
                 Screenshot löschen
               </Button>
               <label style={{ position: "absolute", top: 8, right: 120 }}>
-                <Button as="span" size="xs">
+                <Button as="span" size="xs" variant="line" bg={overlayBtnBg} cursor="pointer">
                   Ändern
                 </Button>
                 <input
@@ -172,9 +224,18 @@ export function TradeDetailModal({ isOpen, onClose, trade, journalId, onUpdated 
               </label>
             </Box>
           ) : (
-            <Box mb={6} p={8} border="1px dashed rgba(255,255,255,0.12)" borderRadius="md" textAlign="center">
+            <Box
+              mb={6}
+              p={8}
+              border="1px dashed var(--cc-line-strong)"
+              borderRadius="10px"
+              bg="rgba(255, 255, 255, 0.02)"
+              textAlign="center"
+              color="var(--cc-text-2)"
+              fontSize="sm"
+            >
               <label>
-                <Text fontSize="sm" color="var(--color-text-tertiary)" mb={2}>
+                <Text fontSize="sm" color="var(--cc-text-2)" mb={2}>
                   Screenshot hinzufügen
                 </Text>
                 <input
@@ -189,7 +250,7 @@ export function TradeDetailModal({ isOpen, onClose, trade, journalId, onUpdated 
             </Box>
           )}
 
-          <Grid templateColumns={{ base: "1fr", md: "repeat(4, 1fr)" }} gap={3} mb={4}>
+          <Grid templateColumns={{ base: "1fr", md: "repeat(4, 1fr)" }} gap={3} mb={5}>
             {detail("Datum & Zeit", `${trade.trade_date} ${trade.trade_time?.slice(0, 5) ?? ""}`)}
             {detail("Wochentag", trade.weekday || "—")}
             {detail("Strategie", strategyLabel(trade.strategy))}
@@ -210,7 +271,8 @@ export function TradeDetailModal({ isOpen, onClose, trade, journalId, onUpdated 
                   onChange={(e) => setResultTicks(e.target.value)}
                   size="sm"
                   maxW="120px"
-                  className="jetbrains-mono"
+                  className="cc-num"
+                  {...inputSx}
                 />
               ) : (
                 `${trade.result_ticks >= 0 ? "+" : ""}${trade.result_ticks}`
@@ -230,13 +292,21 @@ export function TradeDetailModal({ isOpen, onClose, trade, journalId, onUpdated 
             {detail("News Timing", trade.news_timing || "—")}
           </Grid>
 
-          <Text fontSize="xs" color="var(--color-text-tertiary)" mb={1}>
+          <Text
+            fontSize="13px"
+            lineHeight="18px"
+            fontWeight={500}
+            letterSpacing="0.12em"
+            textTransform="uppercase"
+            color="var(--cc-text-soft)"
+            mb={2}
+          >
             Notizen
           </Text>
           {editMode ? (
-            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} bg="rgba(255,255,255,0.04)" borderColor="rgba(255,255,255,0.09)" />
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} {...inputSx} />
           ) : (
-            <Text fontSize="sm" color="var(--color-text-secondary)" whiteSpace="pre-wrap">
+            <Text fontSize="sm" color="var(--cc-text-soft)" lineHeight={1.6} whiteSpace="pre-wrap">
               {trade.notes || "—"}
             </Text>
           )}

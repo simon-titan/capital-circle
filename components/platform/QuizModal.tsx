@@ -3,7 +3,7 @@
 import { DndContext, type DragEndEvent, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Box, Button, Flex, Heading, Progress, Stack, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, Stack, Text, type BoxProps, type TextProps } from "@chakra-ui/react";
 import { CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -47,6 +47,64 @@ type QuizModalProps = {
 };
 
 type QuestionAnswer = string | boolean | number[] | null;
+
+/* ── Stil (v3.2 „Champagner auf Graphit“) ─────────────────────────────────── */
+
+/** Abgedunkelter Grund hinter den Test-Ebenen (DESIGN.md › Overlay). */
+const OVERLAY_PROPS: BoxProps = {
+  position: "fixed",
+  inset: 0,
+  bg: "rgba(8, 10, 12, 0.82)",
+  backdropFilter: "blur(6px)",
+  px: { base: 4, md: 8 },
+  py: { base: 6, md: 10 },
+  overflowY: "auto",
+  display: "flex",
+  justifyContent: "center",
+  minH: "100dvh",
+};
+
+/** Panel: Graphit massiv mit Champagner-Kante — wie die übrigen Modals der Plattform. */
+const PANEL_PROPS: BoxProps = {
+  maxW: "760px",
+  w: "100%",
+  mx: "auto",
+  borderRadius: "12px",
+  p: { base: 5, md: 8 },
+  bg: "var(--cc-panel-solid)",
+  border: "1px solid var(--cc-gold-line)",
+  boxShadow: "0 24px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(212, 176, 128, 0.08)",
+};
+
+/** Eingelassene Fläche für einzelne Fragen (keine Karte in der Karte). */
+const INSET_PROPS: BoxProps = {
+  p: 4,
+  borderRadius: "10px",
+  border: "1px solid var(--cc-line)",
+  bg: "rgba(255, 255, 255, 0.02)",
+};
+
+const QUESTION_TEXT: TextProps = {
+  fontSize: { base: "16px", md: "17px" },
+  fontWeight: 600,
+  lineHeight: 1.4,
+  color: "var(--cc-text)",
+};
+
+const META_TEXT: TextProps = {
+  fontSize: "14px",
+  lineHeight: 1.5,
+  color: "var(--cc-text-2)",
+};
+
+const SMALL_LABEL: TextProps = {
+  fontSize: "12px",
+  fontWeight: 500,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+  color: "var(--cc-text-3)",
+  mb: 1,
+};
 
 function normalizeQuestion(question: QuizQuestion): QuizQuestion {
   if ("type" in question && question.type) return question;
@@ -134,27 +192,34 @@ function SortableOrderItem({
       align="center"
       gap={3}
       p={3}
-      borderRadius="lg"
-      borderWidth="1px"
-      borderColor={isDragging ? "var(--color-accent-gold)" : "var(--color-border)"}
-      bg={isDragging ? "rgba(212,175,55,0.1)" : "var(--color-surface)"}
+      borderRadius="8px"
+      border="1px solid"
+      borderColor={isDragging ? "var(--cc-gold-line)" : "var(--cc-line-strong)"}
+      bg={isDragging ? "var(--cc-gold-wash)" : "rgba(255, 255, 255, 0.02)"}
+      boxShadow={isDragging ? "0 8px 24px rgba(0, 0, 0, 0.4), 0 0 18px rgba(212, 176, 128, 0.14)" : undefined}
       cursor="grab"
       {...attributes}
       {...listeners}
     >
-      <Box
+      <Flex
         w="28px"
         h="28px"
+        flexShrink={0}
         borderRadius="full"
-        bg="rgba(255,255,255,0.12)"
-        display="grid"
-        placeItems="center"
-        className="inter-semibold"
-        fontSize="sm"
+        align="center"
+        justify="center"
+        border="1px solid var(--cc-line-strong)"
+        bg="rgba(255, 255, 255, 0.04)"
+        className="cc-num"
+        fontSize="13px"
+        fontWeight={600}
+        color="var(--cc-text-soft)"
       >
         {rank + 1}
-      </Box>
-      <Text className="inter">{text}</Text>
+      </Flex>
+      <Text fontSize="15px" lineHeight={1.45} color="var(--cc-text)">
+        {text}
+      </Text>
     </Flex>
   );
 }
@@ -179,19 +244,20 @@ function QuestionRenderer({
           return (
             <Button
               key={`${question.id}-${idx}`}
-              variant="outline"
+              variant="line"
               justifyContent="flex-start"
               whiteSpace="normal"
               h="auto"
+              minH="48px"
               py={3}
               px={4}
-              borderColor={selected ? "var(--color-accent-gold)" : "rgba(255,255,255,0.16)"}
-              bg={selected ? "rgba(212,175,55,0.14)" : "transparent"}
-              color="var(--color-text-primary)"
-              _hover={{ bg: "rgba(255,255,255,0.07)", borderColor: "rgba(255,255,255,0.2)" }}
+              aria-pressed={selected}
+              borderColor={selected ? "var(--cc-gold-line)" : undefined}
+              bg={selected ? "rgba(212, 176, 128, 0.1)" : undefined}
+              boxShadow={selected ? "0 0 18px rgba(212, 176, 128, 0.12)" : undefined}
               onClick={() => onChange(String(idx))}
             >
-              <Text className="inter" textAlign="left">
+              <Text as="span" textAlign="left" fontSize="15px" lineHeight={1.45}>
                 {option}
               </Text>
             </Button>
@@ -207,10 +273,8 @@ function QuestionRenderer({
         <Button
           flex={1}
           h="56px"
-          variant={value === true ? "solid" : "outline"}
-          borderColor="rgba(212,175,55,0.45)"
-          color={value === true ? "var(--color-white)" : "var(--color-accent-gold-light)"}
-          bg={value === true ? "linear-gradient(135deg, var(--color-accent-gold) 0%, var(--color-accent-gold-dark) 100%)" : "transparent"}
+          variant={value === true ? "gold" : "line"}
+          aria-pressed={value === true}
           onClick={() => onChange(true)}
         >
           Wahr
@@ -218,10 +282,8 @@ function QuestionRenderer({
         <Button
           flex={1}
           h="56px"
-          variant={value === false ? "solid" : "outline"}
-          borderColor="rgba(212,175,55,0.45)"
-          color={value === false ? "var(--color-white)" : "var(--color-accent-gold-light)"}
-          bg={value === false ? "linear-gradient(135deg, var(--color-accent-gold) 0%, var(--color-accent-gold-dark) 100%)" : "transparent"}
+          variant={value === false ? "gold" : "line"}
+          aria-pressed={value === false}
           onClick={() => onChange(false)}
         >
           Falsch
@@ -254,6 +316,34 @@ function QuestionRenderer({
         </Stack>
       </SortableContext>
     </DndContext>
+  );
+}
+
+/** Fortschritt im Test: Gold-Balken, wächst mit jeder beantworteten Frage. */
+function QuizProgress({ value }: { value: number }) {
+  const v = Math.max(0, Math.min(100, Math.round(value)));
+  return (
+    <Box
+      role="progressbar"
+      aria-label="Fortschritt im Test"
+      aria-valuenow={v}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      h="8px"
+      w="100%"
+      borderRadius="full"
+      bg="rgba(255, 255, 255, 0.07)"
+      overflow="hidden"
+    >
+      <Box
+        h="100%"
+        w={`${v}%`}
+        bg="var(--cc-gold-bar)"
+        borderRadius="full"
+        boxShadow={v > 0 ? "0 0 12px rgba(212, 176, 128, 0.45)" : undefined}
+        transition="width 300ms var(--cc-ease)"
+      />
+    </Box>
   );
 }
 
@@ -344,69 +434,60 @@ export function QuizModal({
 
   return (
     <>
-      <Box
-        position="fixed"
-        inset={0}
-        zIndex={1400}
-        bg="rgba(7,8,10,0.88)"
-        backdropFilter="blur(12px)"
-        px={{ base: 4, md: 8 }}
-        py={{ base: 6, md: 10 }}
-        overflowY="auto"
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minH="100dvh"
-      >
-        <Box
-          maxW="760px"
-          mx="auto"
-          borderRadius="24px"
-          p={{ base: 5, md: 8 }}
-          bg="rgba(10,11,14,0.94)"
-          border="2px solid rgba(212,175,55,0.42)"
-          boxShadow="0 32px 80px rgba(0,0,0,0.9)"
-        >
+      <Box {...OVERLAY_PROPS} zIndex={1400} alignItems="center">
+        <Box {...PANEL_PROPS} data-platform role="dialog" aria-modal="true" aria-labelledby="quiz-modal-title">
           {result ? (
             <Stack gap={5} textAlign="center">
               {result.passed ? (
+                // Bestanden bleibt grün (semantisch) — Ring und Haken aus globals.css.
                 <Box className="quiz-success-wrap" mx="auto">
                   <Box className="quiz-success-ring" />
                   <Box className="quiz-success-icon">
-                    <CheckCircle2 size={56} />
+                    <CheckCircle2 size={56} aria-hidden />
                   </Box>
                 </Box>
               ) : (
-                <Box
+                <Flex
                   w="84px"
                   h="84px"
                   mx="auto"
                   borderRadius="full"
-                  display="grid"
-                  placeItems="center"
-                  bg="rgba(234,179,8,0.12)"
-                  border="1px solid rgba(234,179,8,0.38)"
-                  color="#FDE047"
-                  className="inter-bold"
-                  fontSize="2xl"
+                  align="center"
+                  justify="center"
+                  bg="var(--cc-gold-wash)"
+                  border="1px solid var(--cc-gold-line)"
+                  color="var(--cc-gold-light)"
+                  boxShadow="0 0 28px rgba(212, 176, 128, 0.16)"
+                  fontSize="28px"
+                  fontWeight={600}
+                  aria-hidden
                 >
                   !
-                </Box>
+                </Flex>
               )}
-              <Heading size="lg" className="radley-regular" fontWeight={400}>
+              <Text
+                as="h2"
+                id="quiz-modal-title"
+                fontSize={{ base: "24px", md: "28px" }}
+                fontWeight={600}
+                letterSpacing="-0.01em"
+                lineHeight={1.2}
+                color="var(--cc-text)"
+              >
                 {result.passed ? "Stark gemacht!" : "Fast geschafft"}
-              </Heading>
+              </Text>
               <Box
                 p={3}
-                borderRadius="12px"
-                bg={result.passed ? "rgba(34,197,94,0.1)" : "rgba(234,179,8,0.1)"}
-                border={result.passed ? "1px solid rgba(34,197,94,0.3)" : "1px solid rgba(234,179,8,0.3)"}
+                borderRadius="10px"
+                border="1px solid"
+                bg={result.passed ? "rgba(74, 222, 128, 0.08)" : "var(--cc-gold-wash)"}
+                borderColor={result.passed ? "rgba(74, 222, 128, 0.3)" : "rgba(212, 176, 128, 0.3)"}
               >
-                <Text className="inter" color={result.passed ? "#4ADE80" : "#FDE047"}>
+                <Text className="cc-num" fontWeight={500} color={result.passed ? "var(--cc-success)" : "var(--cc-gold-light)"}>
                   Dein Ergebnis: {result.score}% (benötigt: {passThreshold}%)
                 </Text>
               </Box>
-              <Text className="inter" color="var(--color-text-muted)" fontSize="sm">
+              <Text {...META_TEXT} lineHeight={1.6}>
                 {result.passed
                   ? "Du wirst in Kürze automatisch zum nächsten Modul weitergeleitet — oder tippe unten auf die Schaltfläche."
                   : "Du bist nah dran - prüfe die Antworten und versuche es erneut."}
@@ -414,46 +495,33 @@ export function QuizModal({
               {!result.passed ? (
                 <Stack gap={3} w="100%">
                   <Button
+                    variant="gold"
                     onClick={() => setShowReview(true)}
                     isDisabled={result.wrongQuestions.length === 0}
-                    color="var(--color-white)"
-                    bg="linear-gradient(135deg, var(--color-accent-gold) 0%, var(--color-accent-gold-dark) 100%)"
-                    _hover={{ bg: "linear-gradient(135deg, var(--color-accent-gold-light) 0%, var(--color-accent-gold) 100%)" }}
                   >
                     Falsche Antworten prüfen
                   </Button>
                   <Button
+                    variant="line"
                     onClick={() => {
                       setResult(null);
                       setAnswers({});
                       setRetryQuestions(null);
                       setCurrentIndex(0);
                     }}
-                    variant="outline"
-                    borderColor="rgba(212,175,55,0.45)"
-                    color="var(--color-accent-gold-light)"
-                    _hover={{ bg: "rgba(212,175,55,0.08)" }}
                   >
                     Erneut versuchen
                   </Button>
                 </Stack>
               ) : (
                 <Button
+                  variant="gold"
+                  size="lg"
                   onClick={() => {
                     if (navigatedRef.current) return;
                     navigatedRef.current = true;
                     onClose();
                     router.push(nextModuleHref?.trim() || "/ausbildung");
-                  }}
-                  className="quiz-success-cta"
-                  color="var(--color-white)"
-                  bg="linear-gradient(135deg, #22C55E 0%, #15803D 100%)"
-                  border="1px solid rgba(74, 222, 128, 0.65)"
-                  boxShadow="0 0 22px rgba(34,197,94,0.25), inset 0 1px 0 rgba(255,255,255,0.18)"
-                  _hover={{
-                    bg: "linear-gradient(135deg, #4ADE80 0%, #22C55E 100%)",
-                    transform: "translateY(-1px)",
-                    boxShadow: "0 0 30px rgba(34,197,94,0.36), inset 0 1px 0 rgba(255,255,255,0.2)",
                   }}
                 >
                   ZUM NÄCHSTEN MODUL
@@ -462,37 +530,35 @@ export function QuizModal({
             </Stack>
           ) : (
             <Stack gap={6}>
-              <Stack gap={2}>
+              <Stack gap={3}>
                 <Flex justify="space-between" align="center" flexWrap="wrap" gap={2}>
-                  <Heading size="md" className="inter-semibold" fontWeight={600}>
+                  <Text
+                    as="h2"
+                    id="quiz-modal-title"
+                    fontSize="18px"
+                    fontWeight={600}
+                    letterSpacing="-0.01em"
+                    color="var(--cc-text)"
+                  >
                     Modul-Test
-                  </Heading>
-                  <Text className="inter" fontSize="sm" color="var(--color-text-muted)">
+                  </Text>
+                  <Text {...META_TEXT} className="cc-num">
                     {answeredCount}/{total} beantwortet
                   </Text>
                 </Flex>
                 {retryQuestions != null && retryQuestions.length > 0 ? (
-                  <Text className="inter" fontSize="xs" color="var(--color-text-muted)" textAlign="left">
+                  <Text fontSize="13px" color="var(--cc-text-2)" textAlign="left">
                     Nur falsch beantwortete Fragen
                   </Text>
                 ) : null}
-                <Progress
-                  value={progressPercent}
-                  borderRadius="full"
-                  bg="rgba(255,255,255,0.14)"
-                  sx={{
-                    "& > div": {
-                      background: "linear-gradient(90deg, var(--color-accent-gold-dark) 0%, var(--color-accent-gold) 100%)",
-                    },
-                  }}
-                />
+                <QuizProgress value={progressPercent} />
               </Stack>
 
               {quizMode === "single_page" ? (
                 <Stack gap={6}>
                   {activeQuestions.map((question, idx) => (
-                    <Box key={question.id} p={4} borderRadius="xl" borderWidth="1px" borderColor="var(--color-border)" bg="var(--color-surface)">
-                      <Text className="inter-semibold" mb={3}>
+                    <Box key={question.id} {...INSET_PROPS}>
+                      <Text {...QUESTION_TEXT} mb={3}>
                         Frage {idx + 1}: {question.question}
                       </Text>
                       <QuestionRenderer
@@ -503,13 +569,7 @@ export function QuizModal({
                       />
                     </Box>
                   ))}
-                  <Button
-                    onClick={submitQuiz}
-                    isDisabled={answeredCount < total}
-                    color="var(--color-white)"
-                    bg="linear-gradient(135deg, var(--color-accent-gold) 0%, var(--color-accent-gold-dark) 100%)"
-                    _hover={{ bg: "linear-gradient(135deg, var(--color-accent-gold-light) 0%, var(--color-accent-gold) 100%)" }}
-                  >
+                  <Button variant="gold" onClick={submitQuiz} isDisabled={answeredCount < total}>
                     Test abschließen
                   </Button>
                 </Stack>
@@ -517,33 +577,25 @@ export function QuizModal({
                 <Stack gap={4}>
                   {current ? (
                     <>
-                      <Text className="inter" color="var(--color-text-muted)" fontSize="sm">
+                      <Text {...META_TEXT} className="cc-num">
                         Frage {currentIndex + 1} von {total}
                       </Text>
-                      <Text className="inter-semibold">{current.question}</Text>
+                      <Text {...QUESTION_TEXT}>{current.question}</Text>
                       <QuestionRenderer
                         question={current}
                         value={answers[current.id] ?? null}
                         onChange={(value) => setAnswers((prev) => ({ ...prev, [current.id]: value }))}
                         index={currentIndex}
                       />
-                      <Flex justify="space-between" gap={3}>
+                      <Flex justify="space-between" gap={3} pt={1}>
                         <Button
-                          variant="ghost"
+                          variant="line"
                           onClick={() => setCurrentIndex((idx) => Math.max(0, idx - 1))}
                           isDisabled={currentIndex === 0}
-                          color="var(--color-text-secondary)"
-                          _hover={{ bg: "rgba(255,255,255,0.06)", color: "var(--color-text-primary)" }}
                         >
                           Zurück
                         </Button>
-                        <Button
-                          onClick={onNext}
-                          isDisabled={!canMoveNext}
-                          color="var(--color-white)"
-                          bg="linear-gradient(135deg, var(--color-accent-gold) 0%, var(--color-accent-gold-dark) 100%)"
-                          _hover={{ bg: "linear-gradient(135deg, var(--color-accent-gold-light) 0%, var(--color-accent-gold) 100%)" }}
-                        >
+                        <Button variant="gold" onClick={onNext} isDisabled={!canMoveNext}>
                           {currentIndex + 1 >= total ? "Auswerten" : "Weiter"}
                         </Button>
                       </Flex>
@@ -557,72 +609,50 @@ export function QuizModal({
       </Box>
 
       {showReview && result && !result.passed && reviewWrong.length > 0 ? (
-        <Box
-          position="fixed"
-          inset={0}
-          zIndex={1500}
-          bg="rgba(7,8,10,0.92)"
-          backdropFilter="blur(14px)"
-          px={{ base: 4, md: 8 }}
-          py={{ base: 6, md: 10 }}
-          overflowY="auto"
-          display="flex"
-          justifyContent="center"
-          alignItems="flex-start"
-          minH="100dvh"
-        >
+        <Box {...OVERLAY_PROPS} zIndex={1500} alignItems="flex-start">
           <Box
-            maxW="760px"
-            w="100%"
+            {...PANEL_PROPS}
             my={{ base: 4, md: 8 }}
-            mx="auto"
-            borderRadius="24px"
-            p={{ base: 5, md: 8 }}
-            bg="rgba(10,11,14,0.96)"
-            border="2px solid rgba(212,175,55,0.42)"
-            boxShadow="0 32px 80px rgba(0,0,0,0.9)"
+            data-platform
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="quiz-review-title"
           >
             <Stack gap={5} textAlign="left">
-              <Heading size="lg" className="radley-regular" fontWeight={400} textAlign="center">
+              <Text
+                as="h2"
+                id="quiz-review-title"
+                fontSize={{ base: "24px", md: "28px" }}
+                fontWeight={600}
+                letterSpacing="-0.01em"
+                lineHeight={1.2}
+                color="var(--cc-text)"
+                textAlign="center"
+              >
                 Falsche Antworten
-              </Heading>
-              <Text className="inter" color="var(--color-text-muted)" fontSize="sm" textAlign="center">
+              </Text>
+              <Text {...META_TEXT} className="cc-num" textAlign="center">
                 {reviewWrong.length} von {result.attemptTotal} falsch
               </Text>
               <Stack gap={4}>
                 {reviewWrong.map((q, idx) => {
                   const saved = result.answers[q.id] ?? null;
                   return (
-                    <Box
-                      key={q.id}
-                      p={4}
-                      borderRadius="xl"
-                      borderWidth="1px"
-                      borderColor="var(--color-border)"
-                      bg="var(--color-surface)"
-                    >
-                      <Text className="inter-semibold" mb={3}>
+                    <Box key={q.id} {...INSET_PROPS}>
+                      <Text {...QUESTION_TEXT} mb={3}>
                         Frage {idx + 1}: {q.question}
                       </Text>
-                      <Stack gap={2} fontSize="sm">
+                      <Stack gap={3} fontSize="15px">
                         <Box>
-                          <Text className="inter" color="var(--color-text-muted)" fontSize="xs" mb={1}>
-                            Deine Antwort
-                          </Text>
-                          <Text className="inter" color="#F87171">
-                            {formatUserAnswer(q, saved)}
-                          </Text>
+                          <Text {...SMALL_LABEL}>Deine Antwort</Text>
+                          <Text color="var(--cc-danger)">{formatUserAnswer(q, saved)}</Text>
                         </Box>
                         <Box>
-                          <Text className="inter" color="var(--color-text-muted)" fontSize="xs" mb={1}>
-                            Richtige Antwort
-                          </Text>
-                          <Text className="inter" color="#4ADE80">
-                            {formatCorrectAnswer(q)}
-                          </Text>
+                          <Text {...SMALL_LABEL}>Richtige Antwort</Text>
+                          <Text color="var(--cc-success)">{formatCorrectAnswer(q)}</Text>
                         </Box>
                         {q.explanation ? (
-                          <Text className="inter" color="var(--color-text-muted)" fontSize="sm" fontStyle="italic" mt={1}>
+                          <Text {...META_TEXT} fontStyle="italic">
                             {q.explanation}
                           </Text>
                         ) : null}
@@ -632,19 +662,11 @@ export function QuizModal({
                 })}
               </Stack>
               <Flex gap={3} flexWrap="wrap" justify="center" pt={2}>
-                <Button
-                  variant="outline"
-                  borderColor="rgba(212,175,55,0.45)"
-                  color="var(--color-accent-gold-light)"
-                  _hover={{ bg: "rgba(212,175,55,0.08)" }}
-                  onClick={() => setShowReview(false)}
-                >
+                <Button variant="line" onClick={() => setShowReview(false)}>
                   Schließen
                 </Button>
                 <Button
-                  color="var(--color-white)"
-                  bg="linear-gradient(135deg, var(--color-accent-gold) 0%, var(--color-accent-gold-dark) 100%)"
-                  _hover={{ bg: "linear-gradient(135deg, var(--color-accent-gold-light) 0%, var(--color-accent-gold) 100%)" }}
+                  variant="gold"
                   onClick={() => {
                     const wrong = result.wrongQuestions.map(normalizeQuestion);
                     setRetryQuestions(wrong);

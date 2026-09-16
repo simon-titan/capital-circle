@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { resolveEventColor } from "@/config/event-colors";
+import { toAbsoluteUrl } from "@/lib/external-url";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -44,8 +46,12 @@ export async function POST(request: Request) {
     title: body.title,
     description: body.description ?? null,
     event_type: body.event_type ?? "Q&A",
-    color: body.color ?? "#D4AF37",
-    external_url: body.external_url ?? null,
+    // Nur Markentöne speichern (Palette in config/event-colors.ts)
+    color: resolveEventColor(body.color).value,
+    // Im Formular wird der Link oft ohne Protokoll eingetippt („zoom.us/j/123“).
+    // Ohne das Ergaenzen waere das im Browser ein relativer Pfad und der
+    // „Beitreten"-Knopf im Dashboard bliebe innerhalb der Plattform haengen.
+    external_url: toAbsoluteUrl(body.external_url),
     created_by: userId,
   };
 

@@ -11,11 +11,12 @@ export const STATUS_LABELS: Record<TicketStatus, string> = {
   closed: "Geschlossen",
 };
 
+// v3.2: Champagner = braucht Aufmerksamkeit, Grau = neutral, Grün = erledigt (keine weiteren Akzentfarben).
 export const STATUS_COLORS: Record<TicketStatus, string> = {
-  open: "#D4AF37",
-  in_progress: "#4FA3E3",
-  waiting_on_user: "#E8A23D",
-  resolved: "#4ADE80",
+  open: "#e8c094",
+  in_progress: "#d1d0d4",
+  waiting_on_user: "#b8935f",
+  resolved: "#4ade80",
   closed: "rgba(255,255,255,0.45)",
 };
 
@@ -27,7 +28,7 @@ export const PRIORITY_LABELS: Record<TicketPriority, string> = {
 
 export const PRIORITY_COLORS: Record<TicketPriority, string> = {
   low: "rgba(255,255,255,0.45)",
-  normal: "#D4AF37",
+  normal: "#d4b080",
   high: "#F87171",
 };
 

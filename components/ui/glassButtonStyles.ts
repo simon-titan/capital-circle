@@ -1,4 +1,4 @@
-/** Gemeinsame Styles für primäre Glass-CTAs (Login, Onboarding). */
+/** Gemeinsame Styles für primäre CTAs (Login, Onboarding) — wie Button-Variante `gold` (DESIGN.md v3.2). */
 export const glassPrimaryButtonProps = {
   variant: "unstyled" as const,
   display: "flex" as const,
@@ -8,26 +8,29 @@ export const glassPrimaryButtonProps = {
   w: "full",
   fontWeight: "600",
   fontSize: "md",
-  borderRadius: "12px",
-  color: "#0a0a0a",
-  bg: "rgba(212, 175, 55, 0.28)",
-  borderWidth: "1px",
-  borderColor: "rgba(212, 175, 55, 0.5)",
-  backdropFilter: "blur(16px)",
-  sx: { WebkitBackdropFilter: "blur(16px)" },
-  boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.12)",
+  borderRadius: "8px",
+  color: "var(--cc-on-gold)",
+  bg: "var(--cc-gold)",
+  bgImage: "var(--cc-gold-grad)",
+  boxShadow: "0 6px 18px rgba(212, 176, 128, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.35)",
+  transition: "transform 180ms var(--cc-ease), box-shadow 180ms var(--cc-ease), filter 180ms var(--cc-ease)",
   _hover: {
-    bg: "rgba(212, 175, 55, 0.42)",
-    borderColor: "rgba(232, 197, 71, 0.65)",
+    filter: "brightness(1.06)",
+    transform: "translateY(-1px)",
+    boxShadow: "0 0 26px rgba(212, 176, 128, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.4)",
   },
   _active: {
-    bg: "rgba(166, 124, 0, 0.45)",
+    transform: "translateY(0)",
+    filter: "brightness(0.96)",
   },
   _disabled: {
     opacity: 1,
     bg: "rgba(255, 255, 255, 0.06)",
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    bgImage: "none",
+    boxShadow: "none",
     color: "rgba(255, 255, 255, 0.35)",
     cursor: "not-allowed",
+    transform: "none",
+    filter: "none",
   },
 };

@@ -3,13 +3,11 @@
 import {
   Alert,
   AlertIcon,
-  Badge,
   Box,
   Button,
   FormControl,
   FormLabel,
   HStack,
-  Heading,
   IconButton,
   Input,
   Select,
@@ -21,6 +19,20 @@ import {
 import { Pencil, Plus, Star, Trash2, Upload } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { uploadSmallFilePresigned } from "@/lib/admin-upload-presigned";
+import {
+  ADMIN_CARD_CLASS,
+  AdminCardTitle,
+  StatusPill,
+  adminAlertIconColor,
+  adminAlertProps,
+  adminCardPadding,
+  adminEmptyProps,
+  adminFormLabelProps,
+  adminInputProps,
+  adminOptionStyle,
+  adminRowProps,
+  adminSwitchSx,
+} from "@/components/admin/adminUi";
 
 interface Review {
   id: string;
@@ -46,13 +58,6 @@ const EMPTY_REVIEW: Omit<Review, "id" | "created_at"> = {
   landing_slug: "bewerbung",
   visible: true,
   sort_order: 0,
-};
-
-const inputSx = {
-  bg: "rgba(255,255,255,0.04)",
-  borderColor: "rgba(255,255,255,0.12)",
-  _hover: { borderColor: "rgba(212,175,55,0.4)" },
-  _focus: { borderColor: "rgba(212,175,55,0.6)", boxShadow: "0 0 0 1px rgba(212,175,55,0.4)" },
 };
 
 export function AdminReviewsManager() {
@@ -148,78 +153,68 @@ export function AdminReviewsManager() {
             w="180px"
             value={filterSlug}
             onChange={(e) => setFilterSlug(e.target.value)}
-            sx={inputSx}
+            {...adminInputProps}
           >
-            <option value="bewerbung">Bewerbung</option>
-            <option value="insight">Insight</option>
-            <option value="global">Global</option>
+            <option value="bewerbung" style={adminOptionStyle}>Bewerbung</option>
+            <option value="insight" style={adminOptionStyle}>Insight</option>
+            <option value="global" style={adminOptionStyle}>Global</option>
           </Select>
-          <Text fontSize="sm" color="var(--color-text-secondary)" className="inter">
+          <Text className="cc-num" fontSize="sm" color="var(--cc-text-2)">
             {reviews.length} Reviews
           </Text>
         </HStack>
         <Button
           size="sm"
+          variant="gold"
           leftIcon={<Plus size={14} />}
           onClick={() => setEditing({ ...EMPTY_REVIEW, landing_slug: filterSlug })}
-          bg="rgba(212,175,55,0.15)"
-          color="var(--color-accent-gold)"
-          borderColor="rgba(212,175,55,0.3)"
-          borderWidth="1px"
-          _hover={{ bg: "rgba(212,175,55,0.25)" }}
-          className="inter-semibold"
         >
           Neues Review
         </Button>
       </HStack>
 
       {error && (
-        <Alert status="error" variant="subtle" bg="rgba(229,72,77,0.10)" borderRadius="12px">
-          <AlertIcon />
-          <Text fontSize="sm" className="inter">{error}</Text>
+        <Alert status="error" {...adminAlertProps("error")}>
+          <AlertIcon color={adminAlertIconColor("error")} />
+          <Text fontSize="sm">{error}</Text>
         </Alert>
       )}
 
       {editing && (
-        <Box
-          p={5}
-          borderRadius="16px"
-          bg="rgba(255,255,255,0.04)"
-          border="1px solid rgba(212,175,55,0.25)"
-        >
+        <Box className={ADMIN_CARD_CLASS} p={adminCardPadding}>
           <Stack spacing={4}>
-            <Heading as="h3" size="sm" className="inter-semibold" color="var(--color-text-primary)">
+            <AdminCardTitle as="h3">
               {editing.id ? "Review bearbeiten" : "Neues Review"}
-            </Heading>
+            </AdminCardTitle>
 
             <HStack spacing={4} align="flex-start" flexWrap="wrap">
               <FormControl flex={1} minW="200px">
-                <FormLabel fontSize="xs" className="inter-semibold" color="rgba(255,255,255,0.6)">Name</FormLabel>
+                <FormLabel {...adminFormLabelProps}>Name</FormLabel>
                 <Input
                   size="sm"
-                  sx={inputSx}
+                  {...adminInputProps}
                   value={editing.name}
                   onChange={(e) => setEditing({ ...editing, name: e.target.value })}
                 />
               </FormControl>
               <FormControl w="100px">
-                <FormLabel fontSize="xs" className="inter-semibold" color="rgba(255,255,255,0.6)">Rating</FormLabel>
+                <FormLabel {...adminFormLabelProps}>Rating</FormLabel>
                 <Select
                   size="sm"
-                  sx={inputSx}
+                  {...adminInputProps}
                   value={editing.rating}
                   onChange={(e) => setEditing({ ...editing, rating: Number(e.target.value) })}
                 >
                   {[5, 4, 3, 2, 1].map((r) => (
-                    <option key={r} value={r}>{r} ★</option>
+                    <option key={r} value={r} style={adminOptionStyle}>{r} ★</option>
                   ))}
                 </Select>
               </FormControl>
               <FormControl w="140px">
-                <FormLabel fontSize="xs" className="inter-semibold" color="rgba(255,255,255,0.6)">Datum</FormLabel>
+                <FormLabel {...adminFormLabelProps}>Datum</FormLabel>
                 <Input
                   size="sm"
-                  sx={inputSx}
+                  {...adminInputProps}
                   value={editing.date_label}
                   onChange={(e) => setEditing({ ...editing, date_label: e.target.value })}
                   placeholder="z. B. März 2026"
@@ -228,20 +223,20 @@ export function AdminReviewsManager() {
             </HStack>
 
             <FormControl>
-              <FormLabel fontSize="xs" className="inter-semibold" color="rgba(255,255,255,0.6)">Titel</FormLabel>
+              <FormLabel {...adminFormLabelProps}>Titel</FormLabel>
               <Input
                 size="sm"
-                sx={inputSx}
+                {...adminInputProps}
                 value={editing.title}
                 onChange={(e) => setEditing({ ...editing, title: e.target.value })}
               />
             </FormControl>
 
             <FormControl>
-              <FormLabel fontSize="xs" className="inter-semibold" color="rgba(255,255,255,0.6)">Text</FormLabel>
+              <FormLabel {...adminFormLabelProps}>Text</FormLabel>
               <Textarea
                 size="sm"
-                sx={inputSx}
+                {...adminInputProps}
                 value={editing.body}
                 onChange={(e) => setEditing({ ...editing, body: e.target.value })}
                 minH="100px"
@@ -250,13 +245,13 @@ export function AdminReviewsManager() {
 
             <HStack spacing={4} align="flex-end" flexWrap="wrap">
               <FormControl flex={1} minW="200px">
-                <FormLabel fontSize="xs" className="inter-semibold" color="rgba(255,255,255,0.6)">
+                <FormLabel {...adminFormLabelProps}>
                   Avatar URL
                 </FormLabel>
                 <HStack>
                   <Input
                     size="sm"
-                    sx={inputSx}
+                    {...adminInputProps}
                     value={editing.avatar_url ?? ""}
                     onChange={(e) => setEditing({ ...editing, avatar_url: e.target.value || null })}
                     placeholder="/client-pb/... oder Hetzner-URL"
@@ -275,12 +270,9 @@ export function AdminReviewsManager() {
                     aria-label="Avatar hochladen"
                     icon={<Upload size={14} />}
                     size="sm"
+                    variant="line"
                     isLoading={uploadingAvatar}
                     onClick={() => fileInputRef.current?.click()}
-                    bg="rgba(255,255,255,0.06)"
-                    borderWidth="1px"
-                    borderColor="rgba(255,255,255,0.12)"
-                    _hover={{ bg: "rgba(255,255,255,0.10)" }}
                   />
                 </HStack>
               </FormControl>
@@ -294,34 +286,35 @@ export function AdminReviewsManager() {
                   h="40px"
                   borderRadius="full"
                   objectFit="cover"
-                  border="1px solid rgba(212,175,55,0.3)"
+                  border="1px solid var(--cc-line-strong)"
                 />
               )}
             </HStack>
 
             <HStack spacing={4} align="flex-end" flexWrap="wrap">
               <FormControl w="180px">
-                <FormLabel fontSize="xs" className="inter-semibold" color="rgba(255,255,255,0.6)">
+                <FormLabel {...adminFormLabelProps}>
                   Landing
                 </FormLabel>
                 <Select
                   size="sm"
-                  sx={inputSx}
+                  {...adminInputProps}
                   value={editing.landing_slug}
                   onChange={(e) => setEditing({ ...editing, landing_slug: e.target.value })}
                 >
-                  <option value="bewerbung">Bewerbung</option>
-                  <option value="insight">Insight</option>
-                  <option value="global">Global</option>
+                  <option value="bewerbung" style={adminOptionStyle}>Bewerbung</option>
+                  <option value="insight" style={adminOptionStyle}>Insight</option>
+                  <option value="global" style={adminOptionStyle}>Global</option>
                 </Select>
               </FormControl>
               <FormControl w="100px">
-                <FormLabel fontSize="xs" className="inter-semibold" color="rgba(255,255,255,0.6)">
+                <FormLabel {...adminFormLabelProps}>
                   Sortierung
                 </FormLabel>
                 <Input
                   size="sm"
-                  sx={inputSx}
+                  className="cc-num"
+                  {...adminInputProps}
                   type="number"
                   value={editing.sort_order}
                   onChange={(e) => setEditing({ ...editing, sort_order: Number(e.target.value) })}
@@ -331,36 +324,25 @@ export function AdminReviewsManager() {
                 <Switch
                   isChecked={editing.visible}
                   onChange={(e) => setEditing({ ...editing, visible: e.target.checked })}
-                  colorScheme="yellow"
+                  sx={adminSwitchSx}
                   size="sm"
                 />
-                <FormLabel fontSize="xs" className="inter" color="rgba(255,255,255,0.5)" mb={0}>
+                <FormLabel fontSize="sm" color="var(--cc-text-2)" mb={0}>
                   Sichtbar
                 </FormLabel>
               </FormControl>
             </HStack>
 
             <HStack spacing={3} pt={2}>
-              <Button
-                size="sm"
-                onClick={handleSave}
-                isLoading={saving}
-                bg="rgba(212,175,55,0.2)"
-                color="var(--color-accent-gold)"
-                borderColor="rgba(212,175,55,0.4)"
-                borderWidth="1px"
-                _hover={{ bg: "rgba(212,175,55,0.35)" }}
-                className="inter-semibold"
-              >
+              <Button size="sm" variant="gold" onClick={handleSave} isLoading={saving}>
                 Speichern
               </Button>
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() => setEditing(null)}
-                color="rgba(255,255,255,0.5)"
-                _hover={{ bg: "rgba(255,255,255,0.06)" }}
-                className="inter"
+                color="var(--cc-text-2)"
+                _hover={{ bg: "rgba(255, 255, 255, 0.04)", color: "var(--cc-text)" }}
               >
                 Abbrechen
               </Button>
@@ -370,94 +352,86 @@ export function AdminReviewsManager() {
       )}
 
       {loading ? (
-        <Text fontSize="sm" color="var(--color-text-secondary)" className="inter">Lade Reviews…</Text>
+        <Text fontSize="sm" color="var(--cc-text-2)">Lade Reviews…</Text>
       ) : reviews.length === 0 ? (
-        <Text fontSize="sm" color="var(--color-text-secondary)" className="inter">Keine Reviews vorhanden.</Text>
+        <Box {...adminEmptyProps}>Keine Reviews vorhanden.</Box>
       ) : (
-        <Stack spacing={0}>
-          {reviews.map((review) => (
-            <HStack
-              key={review.id}
-              px={4}
-              py={3}
-              borderBottom="1px solid rgba(255,255,255,0.06)"
-              _hover={{ bg: "rgba(255,255,255,0.02)" }}
-              spacing={3}
-              align="center"
-            >
-              {review.avatar_url ? (
-                <Box
-                  as="img"
-                  src={review.avatar_url}
-                  alt={review.name}
-                  w="36px"
-                  h="36px"
-                  borderRadius="full"
-                  objectFit="cover"
-                  flexShrink={0}
-                  border="1px solid rgba(212,175,55,0.25)"
-                />
-              ) : (
-                <Box
-                  w="36px"
-                  h="36px"
-                  borderRadius="full"
-                  flexShrink={0}
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  bg="rgba(212,175,55,0.12)"
-                  border="1px solid rgba(212,175,55,0.25)"
-                  color="var(--color-accent-gold)"
-                  fontSize="12px"
-                  className="inter-semibold"
-                >
-                  {review.name.charAt(0)}
-                </Box>
-              )}
+        <Box className={ADMIN_CARD_CLASS} py={1}>
+          <Stack spacing={0}>
+            {reviews.map((review) => (
+              <HStack key={review.id} px={4} py={3} spacing={3} align="center" {...adminRowProps}>
+                {review.avatar_url ? (
+                  <Box
+                    as="img"
+                    src={review.avatar_url}
+                    alt={review.name}
+                    w="36px"
+                    h="36px"
+                    borderRadius="full"
+                    objectFit="cover"
+                    flexShrink={0}
+                    border="1px solid var(--cc-line-strong)"
+                  />
+                ) : (
+                  <Box
+                    w="36px"
+                    h="36px"
+                    borderRadius="full"
+                    flexShrink={0}
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    bg="rgba(255, 255, 255, 0.04)"
+                    border="1px solid var(--cc-line-strong)"
+                    color="var(--cc-text-soft)"
+                    fontSize="12px"
+                    fontWeight={600}
+                  >
+                    {review.name.charAt(0)}
+                  </Box>
+                )}
 
-              <Stack spacing={0} flex={1} minW={0}>
-                <HStack spacing={2}>
-                  <Text fontSize="sm" className="inter-semibold" color="var(--color-text-primary)" noOfLines={1}>
-                    {review.name}
-                  </Text>
-                  <HStack spacing={0.5}>
-                    {Array.from({ length: review.rating }).map((_, i) => (
-                      <Star key={i} size={10} fill="#D4AF37" color="#D4AF37" />
-                    ))}
+                <Stack spacing={0} flex={1} minW={0}>
+                  <HStack spacing={2}>
+                    <Text fontSize="sm" fontWeight={600} color="var(--cc-text)" noOfLines={1}>
+                      {review.name}
+                    </Text>
+                    <HStack spacing={0.5} color="var(--cc-gold-light)">
+                      {Array.from({ length: review.rating }).map((_, i) => (
+                        <Star key={i} size={10} fill="currentColor" />
+                      ))}
+                    </HStack>
+                    {!review.visible && <StatusPill tone="neutral">Verborgen</StatusPill>}
                   </HStack>
-                  {!review.visible && (
-                    <Badge fontSize="9px" colorScheme="red" variant="subtle">Verborgen</Badge>
-                  )}
-                </HStack>
-                <Text fontSize="xs" color="rgba(255,255,255,0.45)" className="inter" noOfLines={1}>
-                  {review.title} — {review.date_label}
-                </Text>
-              </Stack>
+                  <Text fontSize="xs" color="var(--cc-text-2)" noOfLines={1}>
+                    {review.title} — {review.date_label}
+                  </Text>
+                </Stack>
 
-              <HStack spacing={1} flexShrink={0}>
-                <IconButton
-                  aria-label="Bearbeiten"
-                  icon={<Pencil size={14} />}
-                  size="xs"
-                  variant="ghost"
-                  color="rgba(255,255,255,0.5)"
-                  _hover={{ color: "var(--color-accent-gold)", bg: "rgba(255,255,255,0.06)" }}
-                  onClick={() => setEditing({ ...review })}
-                />
-                <IconButton
-                  aria-label="Löschen"
-                  icon={<Trash2 size={14} />}
-                  size="xs"
-                  variant="ghost"
-                  color="rgba(255,255,255,0.35)"
-                  _hover={{ color: "red.300", bg: "rgba(229,72,77,0.10)" }}
-                  onClick={() => handleDelete(review.id)}
-                />
+                <HStack spacing={1} flexShrink={0}>
+                  <IconButton
+                    aria-label="Bearbeiten"
+                    icon={<Pencil size={14} />}
+                    size="xs"
+                    variant="ghost"
+                    color="var(--cc-text-2)"
+                    _hover={{ color: "var(--cc-gold-light)", bg: "rgba(255, 255, 255, 0.04)" }}
+                    onClick={() => setEditing({ ...review })}
+                  />
+                  <IconButton
+                    aria-label="Löschen"
+                    icon={<Trash2 size={14} />}
+                    size="xs"
+                    variant="ghost"
+                    color="var(--cc-text-3)"
+                    _hover={{ color: "var(--cc-danger)", bg: "rgba(248, 113, 113, 0.08)" }}
+                    onClick={() => handleDelete(review.id)}
+                  />
+                </HStack>
               </HStack>
-            </HStack>
-          ))}
-        </Stack>
+            ))}
+          </Stack>
+        </Box>
       )}
     </Stack>
   );

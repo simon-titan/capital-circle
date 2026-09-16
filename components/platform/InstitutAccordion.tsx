@@ -1,24 +1,21 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
-  Accordion,
-  AccordionButton,
-  AccordionIcon,
-  AccordionItem,
-  AccordionPanel,
-  Badge,
   Box,
-  Divider,
   Grid,
   HStack,
+  SimpleGrid,
   Text,
   VStack,
 } from "@chakra-ui/react";
 import Image from "next/image";
 import Link from "next/link";
 import {
+  ArrowRight,
   BookOpen,
+  CheckCircle2,
+  Clock,
   Lock,
   TrendingUp,
   BarChart2,
@@ -32,15 +29,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import type { AcademyModuleRow } from "@/lib/server-data";
 import { moduleHref } from "@/lib/module-route";
-
-// Fallback-Farben (rotierend wenn kein DB-Wert gesetzt)
-const FALLBACK_COLORS = [
-  "rgba(212,175,55,1)",
-  "rgba(99,179,237,1)",
-  "rgba(154,117,255,1)",
-  "rgba(74,222,128,1)",
-  "rgba(251,146,60,1)",
-];
+import { IconTile, clampLines } from "@/components/platform/dashboard/primitives";
 
 // Fallback-Icons (rotierend wenn kein DB-Wert gesetzt)
 const FALLBACK_ICONS = [TrendingUp, BarChart2, Layers, Target, Compass, Lightbulb, Shield, Star];
@@ -51,12 +40,17 @@ const LUCIDE_MAP: Record<string, LucideIcon> = {
   BookOpen, Lock,
 };
 
-function resolveAccent(color: string) {
-  return {
-    border: color.replace(",1)", ",0.35)"),
-    borderExpanded: color.replace(",1)", ",0.6)"),
-    bg: color.replace(",1)", ",0.06)"),
-  };
+/** Kleine Versal-Labels (Status, Trenner). */
+const LABEL_STYLE = {
+  fontSize: "12px",
+  fontWeight: 500,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+} as const;
+
+/** Gestaffelter Einstieg (80ms + 70ms je Schritt), gedeckelt, damit lange Listen nicht nachhinken. */
+function riseDelay(i: number) {
+  return { animationDelay: `${80 + Math.min(i, 10) * 70}ms` };
 }
 
 function resolveIcon(iconName: string | null | undefined, idx: number): LucideIcon {
@@ -94,12 +88,95 @@ function groupModulesByCourse(modules: AcademyModuleRow[]) {
       courseSlug: first?.courseSlug ?? null,
       courseTitle: first?.courseTitle ?? "Kurs",
       courseIcon: first?.courseIcon ?? null,
-      courseAccentColor: first?.courseAccentColor ?? null,
       courseUnlocked: first?.courseUnlocked ?? true,
       coursePremiumLocked,
       modules: mods,
     };
   });
+}
+
+type PillTone = "gold" | "neutral" | "muted" | "success";
+
+const PILL_TONES: Record<PillTone, { color: string; borderColor: string; bg: string }> = {
+  gold: { color: "var(--cc-gold-light)", borderColor: "rgba(212, 176, 128, 0.3)", bg: "rgba(212, 176, 128, 0.07)" },
+  neutral: { color: "var(--cc-text-2)", borderColor: "var(--cc-line)", bg: "rgba(255, 255, 255, 0.03)" },
+  muted: { color: "var(--cc-text-3)", borderColor: "var(--cc-line)", bg: "transparent" },
+  success: { color: "var(--cc-success)", borderColor: "rgba(74, 222, 128, 0.3)", bg: "rgba(74, 222, 128, 0.07)" },
+};
+
+/** Kleine Pille für Meta (Videos, Dauer) und Status. */
+function Pill({
+  tone,
+  icon,
+  upper = false,
+  className,
+  children,
+}: {
+  tone: PillTone;
+  icon?: ReactNode;
+  upper?: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <HStack
+      as="span"
+      display="inline-flex"
+      spacing={1.5}
+      px={2.5}
+      py={1}
+      borderRadius="full"
+      borderWidth="1px"
+      borderStyle="solid"
+      fontSize="12px"
+      lineHeight="16px"
+      fontWeight={500}
+      whiteSpace="nowrap"
+      className={className}
+      {...PILL_TONES[tone]}
+      {...(upper ? { letterSpacing: "0.12em", textTransform: "uppercase" as const } : null)}
+    >
+      {icon}
+      <span>{children}</span>
+    </HStack>
+  );
+}
+
+/** Fortschritt: Gold-Balken, füllt sich einmal beim Laden. Ohne Schein — siehe Dashboard. */
+function GoldBar({ value, label, h = "6px" }: { value: number; label: string; h?: string }) {
+  const v = Math.max(0, Math.min(100, Math.round(value)));
+  return (
+    <Box
+      role="progressbar"
+      aria-label={label}
+      aria-valuenow={v}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      flex={1}
+      minW={0}
+      h={h}
+      borderRadius="full"
+      bg="rgba(255, 255, 255, 0.07)"
+    >
+      {v > 0 ? (
+        <Box
+          className="cc-fill"
+          h="100%"
+          w={`${v}%`}
+          bg="var(--cc-gold-bar)"
+          borderRadius="full"
+        />
+      ) : null}
+    </Box>
+  );
+}
+
+function CourseIcon({ icon: Icon }: { icon: LucideIcon }) {
+  return (
+    <IconTile>
+      <Icon size={26} strokeWidth={1.75} />
+    </IconTile>
+  );
 }
 
 function FreeModuleCard({ m }: { m: AcademyModuleRow }) {
@@ -108,25 +185,15 @@ function FreeModuleCard({ m }: { m: AcademyModuleRow }) {
   const hasProgress = pct > 0;
 
   return (
-    <Link href={href} style={{ textDecoration: "none" }}>
-      <Box
-        borderRadius="16px"
-        overflow="hidden"
-        bg="rgba(255,255,255,0.06)"
-        borderWidth="1px"
-        borderColor="rgba(255,255,255,0.08)"
-        transition="border-color 0.2s ease, box-shadow 0.2s ease"
-        _hover={{
-          borderColor: "rgba(212,175,55,0.35)",
-          boxShadow: "0 4px 24px rgba(0,0,0,0.25)",
-        }}
-        cursor="pointer"
-      >
+    <Link href={href} style={{ textDecoration: "none", display: "block", height: "100%" }}>
+      <Box className="cc-card cc-card--still" h="100%" cursor="pointer">
         <Box
           position="relative"
           w="100%"
           aspectRatio="16 / 9"
-          bg="#0a0a0a"
+          borderTopRadius="11px"
+          borderBottom="1px solid var(--cc-line)"
+          bg="radial-gradient(ellipse 70% 65% at 50% 38%, rgba(212, 176, 128, 0.16), transparent 72%), var(--cc-surface-2)"
           display="flex"
           alignItems="center"
           justifyContent="center"
@@ -146,49 +213,48 @@ function FreeModuleCard({ m }: { m: AcademyModuleRow }) {
             }}
           />
         </Box>
-        <Box px={4} pt={3} pb={4}>
-          <Text
-            className="inter-semibold"
-            fontSize="sm"
-            color="var(--color-text-primary)"
-            noOfLines={1}
-            mb={3}
-          >
+        <Box px={{ base: 4, md: 5 }} pt={4} pb={{ base: 4, md: 5 }}>
+          <Text fontSize="17px" fontWeight={600} lineHeight={1.3} color="var(--cc-text)" sx={clampLines(1)} mb={3}>
             {m.title}
           </Text>
-          <Box position="relative">
-            <Box
-              h="6px"
-              borderRadius="full"
-              bg="rgba(255,255,255,0.08)"
-              overflow="hidden"
-            >
-              <Box
-                h="full"
-                w={`${pct}%`}
-                borderRadius="full"
-                bg={hasProgress ? "#22c55e" : "rgba(255,255,255,0.12)"}
-                transition="width 0.3s ease"
-              />
-            </Box>
+          <HStack spacing={3} align="center">
+            <GoldBar value={pct} label={`Fortschritt ${m.title}`} />
             <Text
-              className="jetbrains-mono"
-              fontSize="10px"
-              color={hasProgress ? "#22c55e" : "var(--color-text-muted)"}
-              mt={1.5}
+              className="cc-num"
+              fontSize="12px"
+              fontWeight={500}
+              color={hasProgress ? "var(--cc-gold-light)" : "var(--cc-text-3)"}
+              minW="3ch"
+              textAlign="right"
             >
               {pct}%
             </Text>
-          </Box>
+          </HStack>
         </Box>
       </Box>
     </Link>
   );
 }
 
-function ModuleListRow({ m }: { m: AcademyModuleRow }) {
+/**
+ * Modulkachel im Raster. Die Untermodule stehen immer offen — es gibt nichts
+ * aufzuklappen, ein Klick auf die Karte führt direkt ins Modul.
+ *
+ * Feste Höhe, damit alle Kacheln im Raster gleich hoch sind; hat ein Modul
+ * ungewöhnlich viele Untermodule, scrollt die Liste innen, statt die Karte
+ * (und damit ihre ganze Rasterreihe) zu strecken.
+ */
+function ModuleTile({ m, mitCoverSpur }: { m: AcademyModuleRow; mitCoverSpur: boolean }) {
   const href = moduleHref({ id: m.id, slug: m.slug });
-  // Progression-/Admin-Sperre: kein Klick moeglich.
+  /**
+   * Ein Cover-Key kann auf eine Datei zeigen, die es nicht (mehr) gibt — die
+   * alten Bilder lagen auf dem verschwundenen Hetzner-Bucket. Statt einen
+   * kaputten Bildrahmen zu zeigen, fällt die Karte dann auf die normale
+   * Ansicht zurück.
+   */
+  const [coverKaputt, setCoverKaputt] = useState(false);
+  const coverUrl = !coverKaputt ? m.thumbnailSignedUrl : null;
+  // Progression-/Admin-Sperre: kein Zugang moeglich.
   const progressionLocked = !m.courseUnlocked || !m.unlocked || m.isLocked;
   // Premium-Sperre: Klick fuehrt zur Modul-Seite mit PaywallOverlay (kein harter Block hier).
   const premiumLocked = !progressionLocked && !m.hasAccess;
@@ -202,100 +268,188 @@ function ModuleListRow({ m }: { m: AcademyModuleRow }) {
         : m.progressPercent > 0
           ? "In Arbeit"
           : "Neu";
-  const statusColor = progressionLocked
-    ? "rgba(240,240,242,0.45)"
+  const statusTone: PillTone = progressionLocked
+    ? "muted"
     : premiumLocked
-      ? "var(--color-accent-gold)"
+      ? "gold"
       : m.completed
-        ? "rgba(74, 222, 128, 0.9)"
+        ? "success"
         : m.progressPercent > 0
-          ? "var(--color-accent-gold)"
-          : "rgba(240,240,242,0.65)";
+          ? "gold"
+          : "neutral";
 
-  const inner = (
-    <HStack
-      align="flex-start"
-      spacing={4}
-      py={3}
-      px={{ base: 3, md: 4 }}
-      borderRadius="12px"
-      borderWidth="1px"
-      borderColor={premiumLocked ? "rgba(212,175,55,0.22)" : "rgba(255,255,255,0.08)"}
-      bg={premiumLocked ? "rgba(212,175,55,0.04)" : "rgba(255,255,255,0.03)"}
-      opacity={progressionLocked ? 0.72 : premiumLocked ? 0.9 : 1}
-      transition="background 0.2s ease"
+  const inhalt = (
+    <Box
+      h="100%"
+      /**
+       * Die Höhe richtet sich danach, ob im Raster überhaupt Cover vorkommen —
+       * nicht danach, ob *diese* Karte eines hat. Sonst stünden Karten mit und
+       * ohne Bild unterschiedlich hoch nebeneinander.
+       */
+      minH={{ base: "auto", md: mitCoverSpur ? "440px" : "300px" }}
+      display="flex"
+      flexDirection="column"
+      borderRadius="10px"
+      // Neutrale Kante wie im Dashboard: kein Gold, kein Schein — nur der
+      // Hover hebt die Karte leicht hervor (Nutzerwunsch 16.09.2026).
+      bg="rgba(255, 255, 255, 0.03)"
+      border="1px solid var(--cc-line)"
+      opacity={progressionLocked ? 0.7 : 1}
+      overflow="hidden"
+      transition="background-color 180ms var(--cc-ease), border-color 180ms var(--cc-ease)"
       _hover={
         progressionLocked
           ? undefined
-          : { bg: "rgba(212,175,55,0.06)", borderColor: "rgba(212,175,55,0.25)" }
+          : { bg: "rgba(255, 255, 255, 0.05)", borderColor: "rgba(255, 255, 255, 0.24)" }
       }
-      cursor={progressionLocked ? "not-allowed" : "pointer"}
     >
-      <Box flex={1} minW={0}>
-        <Text className="inter-semibold" fontSize="sm" color="var(--color-text-primary)" noOfLines={2}>
+      {coverUrl ? (
+        <Box
+          flexShrink={0}
+          position="relative"
+          w="100%"
+          // Volle Breite im 16:9-Format — dasselbe Verhältnis, das der Admin
+          // beim Hochladen als Vorgabe angezeigt bekommt.
+          aspectRatio="16 / 9"
+          /**
+           * Deckel gegen die feste Kartenhöhe: Auf breiten Schirmen wird eine
+           * Spalte über 420 px breit, und 16:9 wäre dann höher als der Platz,
+           * der für Titel, Kennzahlen und Knopf übrig bleibt. Das Bild wird
+           * dann oben/unten stärker beschnitten statt die Karte zu sprengen.
+           */
+          maxH="240px"
+          overflow="hidden"
+          borderBottom="1px solid var(--cc-line)"
+          bg="var(--cc-surface-2)"
+        >
+          {/* Kein next/image: Die signierte R2-URL ist kein in next.config.ts
+              erlaubter Remote-Host, und ein Signatur-Token macht den
+              Optimizer-Cache ohnehin wertlos. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={coverUrl}
+            alt=""
+            onError={() => setCoverKaputt(true)}
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              display: "block",
+            }}
+          />
+        </Box>
+      ) : null}
+
+      <Box flexShrink={0} py={3} px={{ base: 3, md: 4 }}>
+        <Text
+          fontSize="15px"
+          fontWeight={600}
+          lineHeight={1.35}
+          color={progressionLocked ? "var(--cc-text-2)" : "var(--cc-text)"}
+          sx={clampLines(2)}
+        >
           {m.title}
         </Text>
-        <HStack spacing={2} flexWrap="wrap" mt={2}>
-          <Badge
-            borderRadius="md"
-            px={2}
-            py={0.5}
-            bg="rgba(255,255,255,0.06)"
-            color="rgba(240,240,242,0.75)"
-            fontWeight={500}
-            className="inter"
-            fontSize="xs"
-          >
-            <HStack spacing={1}>
-              <BookOpen size={12} aria-hidden />
-              <span>
-                {m.videoCount} {m.videoCount === 1 ? "Video" : "Videos"}
-              </span>
-            </HStack>
-          </Badge>
-          <Badge
-            borderRadius="md"
-            px={2}
-            py={0.5}
-            bg="rgba(212,175,55,0.12)"
-            color="var(--color-accent-gold)"
-            fontWeight={500}
-            className="jetbrains-mono"
-            fontSize="xs"
-          >
+
+        <HStack spacing={2} flexWrap="wrap" mt={2.5}>
+          <Pill tone="neutral" icon={<BookOpen size={12} aria-hidden />}>
+            {m.videoCount} {m.videoCount === 1 ? "Video" : "Videos"}
+          </Pill>
+          <Pill tone="neutral" icon={<Clock size={12} aria-hidden />} className="cc-num">
             {formatTotalDuration(m.totalDurationSeconds)}
-          </Badge>
-          <HStack spacing={1} color={statusColor}>
-            {locked ? <Lock size={12} aria-hidden /> : null}
-            <Text className="inter-medium" fontSize="10px" textTransform="uppercase" letterSpacing="0.06em">
-              {statusLabel}
+          </Pill>
+          <Pill tone={statusTone} upper icon={locked ? <Lock size={12} aria-hidden /> : undefined}>
+            {statusLabel}
+          </Pill>
+        </HStack>
+
+        {!locked && !m.completed && m.progressPercent > 0 ? (
+          <HStack mt={3} spacing={3} align="center">
+            <GoldBar value={m.progressPercent} label={`Fortschritt ${m.title}`} h="4px" />
+            <Text className="cc-num" fontSize="12px" fontWeight={500} color="var(--cc-gold-light)">
+              {m.progressPercent}%
             </Text>
           </HStack>
-        </HStack>
-        {!locked && !m.completed && m.progressPercent > 0 ? (
-          <Box mt={2} h="3px" borderRadius="full" bg="rgba(255,255,255,0.08)" overflow="hidden">
-            <Box
-              h="full"
-              w={`${m.progressPercent}%`}
-              borderRadius="full"
-              bg="linear-gradient(90deg, var(--color-accent-gold-dark), var(--color-accent-gold-light))"
-              transition="width 0.3s ease"
-            />
-          </Box>
         ) : null}
       </Box>
-    </HStack>
+
+      {/*
+        Untermodule nur ohne Cover. Mit Bild trägt die Karte schon genug —
+        Titel, Kennzahlen und Vorschau reichen, die Inhaltsliste würde sie
+        überladen (Nutzerwunsch 16.09.2026).
+        `minH={0}` ist in einer Flex-Spalte nötig, sonst ignoriert das Kind sein
+        `overflow` und die Karte wächst doch über die feste Höhe hinaus.
+      */}
+      <Box flex="1" minH={0} overflowY="auto" px={{ base: 3, md: 4 }} pt={coverUrl ? 0 : 3} borderTop={coverUrl ? undefined : "1px solid var(--cc-line)"}>
+        {coverUrl ? null : m.submodules.length > 0 ? (
+          <VStack align="stretch" spacing={2}>
+            {m.submodules.map((s, i) => {
+              const fertig = s.videoCount > 0 && s.completedCount >= s.videoCount;
+              return (
+                <HStack key={s.id ?? `direkt-${i}`} spacing={2.5} align="center">
+                  <Box
+                    as={fertig ? CheckCircle2 : Layers}
+                    boxSize="14px"
+                    flexShrink={0}
+                    aria-hidden
+                    color={fertig ? "var(--cc-success)" : "var(--cc-text-3)"}
+                  />
+                  <Text fontSize="13px" color="var(--cc-text)" flex={1} minW={0} sx={clampLines(1)}>
+                    {s.title}
+                  </Text>
+                  <Text fontSize="12px" color="var(--cc-text-3)" className="cc-num" flexShrink={0}>
+                    {s.completedCount}/{s.videoCount}
+                  </Text>
+                </HStack>
+              );
+            })}
+          </VStack>
+        ) : (
+          <Text fontSize="13px" color="var(--cc-text-3)">
+            Alle Videos liegen direkt im Modul.
+          </Text>
+        )}
+      </Box>
+
+      {/*
+        Sieht aus wie ein Knopf, ist aber nur Beschriftung: Die ganze Karte ist
+        der Link. Ein echter Knopf darin wäre ein zweites klickbares Element im
+        selben `<a>` — ungültiges Markup und für die Tastatur verwirrend.
+      */}
+      {!progressionLocked ? (
+        <HStack
+          as="span"
+          flexShrink={0}
+          mx={{ base: 3, md: 4 }}
+          my={3}
+          h="32px"
+          px={3}
+          spacing={1.5}
+          justify="center"
+          borderRadius="8px"
+          bg="var(--cc-gold)"
+          bgImage="var(--cc-gold-grad)"
+          color="var(--cc-on-gold)"
+          fontSize="14px"
+          fontWeight={600}
+        >
+          <Box as="span">
+            {premiumLocked ? "Modul ansehen" : m.progressPercent > 0 ? "Weiterlernen" : "Modul starten"}
+          </Box>
+          <ArrowRight size={14} aria-hidden />
+        </HStack>
+      ) : null}
+    </Box>
   );
 
-  // Progression-Sperre: komplett nicht klickbar.
-  if (progressionLocked) {
-    return <Box pointerEvents="none">{inner}</Box>;
-  }
+  // Gesperrt: sichtbar, aber nicht anklickbar.
+  if (progressionLocked) return <Box h="100%">{inhalt}</Box>;
 
-  // Premium-Sperre: klickbar, landet auf Modul-Seite mit PaywallOverlay.
   return (
-    <Link href={href} style={{ textDecoration: "none" }}>
-      {inner}
+    <Link href={href} style={{ textDecoration: "none", display: "block", height: "100%" }}>
+      {inhalt}
     </Link>
   );
 }
@@ -307,62 +461,23 @@ function LockedCourseHeader({
   g: ReturnType<typeof groupModulesByCourse>[number];
   idx: number;
 }) {
-  const rawColor = g.courseAccentColor ?? FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
-  const accent = resolveAccent(rawColor);
-  const CourseIcon = resolveIcon(g.courseIcon, idx);
+  const Icon = resolveIcon(g.courseIcon, idx);
   const moduleCount = g.modules.length;
 
   return (
-    <Box
-      borderRadius={{ base: "18px", md: "20px" }}
-      px={{ base: 5, md: 6 }}
-      py={{ base: 5, md: 6 }}
-      minH={{ base: "76px", md: "88px" }}
-      bg="rgba(255,255,255,0.04)"
-      borderWidth="1px"
-      borderColor={accent.border}
-      borderLeftWidth="4px"
-      mb={4}
-      opacity={0.85}
-    >
+    <Box className="cc-card cc-card--still" px={{ base: 4, md: 5 }} py={{ base: 4, md: 5 }}>
       <HStack textAlign="left" spacing={{ base: 4, md: 5 }}>
-        <Box
-          flexShrink={0}
-          w={{ base: "48px", md: "56px" }}
-          h={{ base: "48px", md: "56px" }}
-          borderRadius="14px"
-          bg="rgba(255,255,255,0.05)"
-          borderWidth="1px"
-          borderColor={accent.border}
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-        >
-          <CourseIcon
-            size={28}
-            strokeWidth={1.75}
-            style={{ color: "rgba(240,240,242,0.55)" }}
-            aria-hidden
-          />
-        </Box>
+        <CourseIcon icon={Icon} />
         <Box flex={1} minW={0}>
-          <HStack spacing={2} align="center" flexWrap="wrap">
-            <Text
-              className="inter-semibold"
-              fontSize={{ base: "lg", md: "xl" }}
-              lineHeight="1.25"
-              color="var(--color-text-primary)"
-            >
+          <HStack spacing={3} align="center" flexWrap="wrap" rowGap={1.5}>
+            <Text fontSize={{ base: "17px", md: "18px" }} fontWeight={600} lineHeight={1.3} color="var(--cc-text)">
               {g.courseTitle}
             </Text>
-            <HStack spacing={1.5} color="var(--color-accent-gold)">
-              <Lock size={16} aria-hidden />
-              <Text className="inter-medium" fontSize="11px" textTransform="uppercase" letterSpacing="0.06em">
-                Nur für vollwertige Member
-              </Text>
-            </HStack>
+            <Pill tone="gold" upper icon={<Lock size={12} aria-hidden />}>
+              Nur für vollwertige Member
+            </Pill>
           </HStack>
-          <Text className="inter" fontSize={{ base: "sm", md: "md" }} color="var(--color-text-muted)" mt={1}>
+          <Text className="cc-num" fontSize="14px" color="var(--cc-text-2)" mt={1}>
             {moduleCount} {moduleCount === 1 ? "Modul" : "Module"}
           </Text>
         </Box>
@@ -371,123 +486,44 @@ function LockedCourseHeader({
   );
 }
 
-function CourseAccordionGroup({
-  groups,
-}: {
-  groups: ReturnType<typeof groupModulesByCourse>;
-}) {
-  const defaultIndex = useMemo(() => {
-    if (typeof window === "undefined") return [0];
-    const hash = window.location.hash.replace(/^#/, "").trim();
-    if (!hash) return [0];
-    const idx = groups.findIndex((g) => g.courseSlug === hash);
-    return idx >= 0 ? [idx] : [0];
-  }, [groups]);
+/**
+ * Alle Module am Stück, drei pro Reihe, ohne Kurs-Überschriften.
+ *
+ * Vorher lagen sie in aufklappbaren Kurs-Gruppen („Market Foundations“,
+ * „Capital Circle Framework“ …). Auf Nutzerwunsch (16.09.2026) fällt diese
+ * Ebene weg: Wer im Institut ist, will das nächste Modul sehen, nicht erst
+ * einen Kurs aufklappen. Die Reihenfolge bleibt die der Kurskette — erst alle
+ * Module des ersten Kurses, dann die des nächsten.
+ *
+ * `cc-neutral` nimmt Gold-Kante und Glow zurück, wie im Dashboard.
+ */
+function ModulRaster({ modules }: { modules: AcademyModuleRow[] }) {
+  /**
+   * Module ohne veröffentlichte Videos werden nicht gezeigt — dahinter liegt
+   * nichts, was man ansehen könnte. Betrifft aktuell die Module, deren Dateien
+   * mit dem Hetzner-Bucket verloren gegangen sind, sowie noch leere Neuanlagen.
+   */
+  const sichtbar = useMemo(() => modules.filter((m) => m.videoCount > 0), [modules]);
 
-  if (groups.length === 0) return null;
+  /**
+   * Hat irgendein Modul ein Cover? Dann bekommen **alle** Karten die größere
+   * Höhe, damit die Reihen bündig bleiben. Ohne Cover im Bestand bleibt das
+   * Raster kompakt.
+   */
+  const mitCoverSpur = useMemo(() => sichtbar.some((m) => Boolean(m.thumbnailSignedUrl)), [sichtbar]);
+
+  if (sichtbar.length === 0) return null;
 
   return (
-    <Accordion allowToggle defaultIndex={defaultIndex}>
-      {groups.map((g, idx) => {
-        const rawColor = g.courseAccentColor ?? FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
-        const accent = resolveAccent(rawColor);
-        const CourseIcon = resolveIcon(g.courseIcon, idx);
-        const courseLocked = !g.courseUnlocked;
-        return (
-          <AccordionItem key={g.courseId} id={g.courseSlug ?? undefined} border="none" mb={4} scrollMarginTop="96px">
-            {({ isExpanded }: { isExpanded: boolean }) => (
-              <>
-                <AccordionButton
-                  borderRadius={{ base: "18px", md: "20px" }}
-                  px={{ base: 5, md: 6 }}
-                  py={{ base: 5, md: 6 }}
-                  minH={{ base: "76px", md: "88px" }}
-                  bg="rgba(255,255,255,0.04)"
-                  borderWidth="1px"
-                  borderColor={isExpanded ? accent.borderExpanded : accent.border}
-                  borderLeftWidth="4px"
-                  _expanded={{ bg: accent.bg }}
-                  _hover={{ bg: accent.bg }}
-                  transition="border-color 0.2s ease, background 0.2s ease"
-                  opacity={courseLocked ? 0.78 : 1}
-                  cursor={courseLocked ? "not-allowed" : "pointer"}
-                >
-                  <HStack flex="1" textAlign="left" spacing={{ base: 4, md: 5 }}>
-                    <Box
-                      flexShrink={0}
-                      w={{ base: "48px", md: "56px" }}
-                      h={{ base: "48px", md: "56px" }}
-                      borderRadius="14px"
-                      bg={isExpanded ? accent.bg : "rgba(255,255,255,0.05)"}
-                      borderWidth="1px"
-                      borderColor={isExpanded ? accent.borderExpanded : accent.border}
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="center"
-                      transition="all 0.2s ease"
-                    >
-                      <CourseIcon
-                        size={28}
-                        strokeWidth={1.75}
-                        style={{ color: isExpanded ? accent.borderExpanded : "rgba(240,240,242,0.55)" }}
-                        aria-hidden
-                      />
-                    </Box>
-                    <Box flex={1} minW={0}>
-                      <HStack spacing={2} align="center" flexWrap="wrap">
-                        <Text
-                          className="inter-semibold"
-                          fontSize={{ base: "lg", md: "xl" }}
-                          lineHeight="1.25"
-                          color="var(--color-text-primary)"
-                        >
-                          {g.courseTitle}
-                        </Text>
-                        {courseLocked ? (
-                          <HStack spacing={1.5} color="rgba(240,240,242,0.45)">
-                            <Lock size={16} aria-hidden />
-                            <Text className="inter-medium" fontSize="11px" textTransform="uppercase" letterSpacing="0.06em">
-                              Kurs gesperrt
-                            </Text>
-                          </HStack>
-                        ) : g.coursePremiumLocked ? (
-                          <HStack spacing={1.5} color="var(--color-accent-gold)">
-                            <Lock size={16} aria-hidden />
-                            <Text className="inter-medium" fontSize="11px" textTransform="uppercase" letterSpacing="0.06em">
-                              Nur für vollwertige Member
-                            </Text>
-                          </HStack>
-                        ) : null}
-                      </HStack>
-                      <Text className="inter" fontSize={{ base: "sm", md: "md" }} color="var(--color-text-muted)" mt={1}>
-                        {`${g.modules.length} ${g.modules.length === 1 ? "Modul" : "Module"}`}
-                      </Text>
-                    </Box>
-                  </HStack>
-                  <AccordionIcon
-                    boxSize={{ base: "22px", md: "24px" }}
-                    color={isExpanded ? accent.borderExpanded : "rgba(240,240,242,0.45)"}
-                  />
-                </AccordionButton>
-                <AccordionPanel px={0} pt={3} pb={1}>
-                  {courseLocked ? (
-                    <Text className="inter" fontSize="sm" color="var(--color-text-muted)" px={{ base: 1, md: 2 }} py={2}>
-                      Dieser Kurs wird freigeschaltet, sobald du den vorherigen Kurs vollständig abgeschlossen hast.
-                    </Text>
-                  ) : (
-                    <VStack align="stretch" spacing={2}>
-                      {g.modules.map((m) => (
-                        <ModuleListRow key={m.id} m={m} />
-                      ))}
-                    </VStack>
-                  )}
-                </AccordionPanel>
-              </>
-            )}
-          </AccordionItem>
-        );
-      })}
-    </Accordion>
+    <Box className="cc-neutral">
+      <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} spacing={{ base: 4, md: 5 }} alignItems="stretch">
+        {sichtbar.map((m, i) => (
+          <Box key={m.id} className="cc-rise" style={riseDelay(i)} minW={0}>
+            <ModuleTile m={m} mitCoverSpur={mitCoverSpur} />
+          </Box>
+        ))}
+      </SimpleGrid>
+    </Box>
   );
 }
 
@@ -503,7 +539,7 @@ export function InstitutAccordion({
   if (groups.length === 0) return null;
 
   if (isPaid) {
-    return <CourseAccordionGroup groups={groups} />;
+    return <ModulRaster modules={modules} />;
   }
 
   const freeModules = modules.filter((m) => m.courseIsFree);
@@ -516,30 +552,38 @@ export function InstitutAccordion({
           templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }}
           gap={{ base: 4, md: 5 }}
         >
-          {freeModules.map((m) => (
-            <FreeModuleCard key={m.id} m={m} />
+          {freeModules.map((m, i) => (
+            <Box key={m.id} className="cc-rise" style={riseDelay(i)} minW={0}>
+              <FreeModuleCard m={m} />
+            </Box>
           ))}
         </Grid>
       )}
 
       {paidGroups.length > 0 && (
         <>
-          <HStack my={8} align="center" spacing={4}>
-            <Divider borderColor="rgba(212,175,55,0.3)" />
-            <Text
-              whiteSpace="nowrap"
-              px={4}
-              className="inter-semibold"
-              color="var(--color-accent-gold)"
-              fontSize="sm"
-            >
+          <HStack my={{ base: 8, md: 10 }} align="center" spacing={4}>
+            <Box
+              flex={1}
+              h="1px"
+              bg="linear-gradient(90deg, transparent 0%, rgba(212, 176, 128, 0.55) 100%)"
+              aria-hidden
+            />
+            <Text as="h2" {...LABEL_STYLE} color="var(--cc-gold-light)" whiteSpace="nowrap">
               Capital Circle Member
             </Text>
-            <Divider borderColor="rgba(212,175,55,0.3)" />
+            <Box
+              flex={1}
+              h="1px"
+              bg="linear-gradient(90deg, rgba(212, 176, 128, 0.55) 0%, transparent 100%)"
+              aria-hidden
+            />
           </HStack>
-          <VStack align="stretch" spacing={0}>
+          <VStack align="stretch" spacing={4}>
             {paidGroups.map((g, idx) => (
-              <LockedCourseHeader key={g.courseId} g={g} idx={idx} />
+              <Box key={g.courseId} className="cc-rise" style={riseDelay(freeModules.length + idx)}>
+                <LockedCourseHeader g={g} idx={idx} />
+              </Box>
             ))}
           </VStack>
         </>

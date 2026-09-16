@@ -10,30 +10,75 @@
   --tv-widget-focus-outline-color: light-dark(#2962ff, rgba(255, 255, 255, 1));
   --tv-widget-map-hover-stroke-color: light-dark(#2962ff, rgba(255, 255, 255, 1));
 
-  --color-bg: #080808;
-  --color-bg-secondary: #0f0f0f;
-  --color-surface: rgba(255, 255, 255, 0.04);
-  --color-border: rgba(255, 255, 255, 0.08);
-  --color-text-primary: #f0f0f0;
+  /* Legacy-Namen, Werte seit v3.2 auf Graphit/Champagner (= --cc-*) gezogen */
+  --color-bg: #12171c;
+  --color-bg-primary: #12171c;
+  --color-bg-secondary: #151a1e;
+  --color-surface: rgba(25, 30, 35, 0.9);
+  --color-border: rgba(255, 255, 255, 0.07);
+  --color-text-primary: #f2f3f5;
+  --color-text-secondary: #a3a9b0;
+  --color-text-tertiary: #80868d;
   --color-text-muted: rgba(255, 255, 255, 0.4);
+  /* Semantik: Gewinn/Verlust (DESIGN.json colors.semantic.profit/loss) */
+  --color-profit: #22c55e;
+  --color-loss: #ef4444;
   /* Gold-Highlights (Plattform; Name accent-blue = Legacy-Kompatibilität für var(--color-accent-blue)) */
-  --color-accent-blue: #d4af37;
-  --color-accent-gold: #d4af37;
-  --color-accent-gold-light: #e8c547;
-  --color-accent-gold-dark: #a67c00;
-  --color-accent-glow: rgba(212, 175, 55, 0.28);
+  --color-accent-blue: #d4b080;
+  --color-accent-gold: #d4b080;
+  --color-accent-gold-light: #e8c094;
+  --color-accent-gold-dark: #b8935f;
+  --color-accent-glow: rgba(212, 176, 128, 0.28);
   --color-white: #ffffff;
   /* Design System: DESIGN.json — Typografie */
-  --font-heading: "Radley", serif;
+  /* v3.2: Inter für alles — Überschriften und Zahlen eingeschlossen */
+  --font-heading: "Inter", system-ui, sans-serif;
   --font-body: "Inter", sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
+  --font-mono: "Inter", system-ui, sans-serif;
 }
 
-/* TradingView Ticker-Streifen: Vollton/Blur entfernt — Widget-Hintergrund transparent (Token + Vorfahr) */
-.tv-ticker-strip {
-  --tv-widget-background-color: transparent;
-  background: transparent;
+/*
+ * ═══ Capital Circle — Design-Schema v3.2 „Champagner auf Graphit“ (2026-09), Quelle: DESIGN.md ═══
+ * Farben 1:1 aus dem Kunden-Mockup (01-dashboard): Graphit-Grund, graphitgraue Karten,
+ * Champagner-Gold als Akzent, Daten (Balken, Segmente, Haken) in hellem Grau.
+ * Sternenfeld, Gold-Licht, Hero-Glow und Flamme bleiben als Hervorhebung.
+ * Die --color-*-Tokens oben bleiben für noch nicht migrierte Bereiche.
+ */
+:root {
+  --cc-bg: #12171c;
+  --cc-bg-raised: rgba(22, 26, 32, 0.92);
+  --cc-panel-solid: #151a1e;
+  --cc-surface: #191e23;
+  --cc-surface-2: #222427;
+  --cc-line: rgba(255, 255, 255, 0.07);
+  --cc-line-strong: rgba(255, 255, 255, 0.15);
+  --cc-text: #f2f3f5;
+  --cc-text-soft: #d4d7db;
+  --cc-text-2: #a3a9b0;
+  --cc-text-3: #80868d;
+  --cc-ink: #d1d0d4;
+  --cc-track: #292c32;
+  --cc-gold: #d4b080;
+  --cc-gold-hover: #ddbd90;
+  --cc-gold-press: #c7a26f;
+  --cc-gold-line: rgba(232, 192, 148, 0.6);
+  --cc-gold-wash: rgba(212, 176, 128, 0.08);
+  --cc-on-gold: #1a140c;
+  --cc-gold-light: #e8c094;
+  --cc-gold-dark: #b8935f;
+  --cc-gold-grad: linear-gradient(135deg, #ecc99c 0%, #d4b080 50%, #b8935f 100%);
+  --cc-gold-bar: linear-gradient(90deg, #b8935f 0%, #d4b080 55%, #e8c094 100%);
+  --cc-success: #4ade80;
+  --cc-danger: #f87171;
+  --cc-radius-sm: 6px;
+  --cc-radius: 8px;
+  --cc-radius-lg: 10px;
+  --cc-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  /* = Höhe eines kompakten TradingView-Ticker-Eintrags */
+  --cc-strip-h: 48px;
+  --cc-sidebar-w: 264px;
 }
+
 
 * {
   box-sizing: border-box;
@@ -93,6 +138,43 @@ h6 {
   font-optical-sizing: auto;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Trading Journal — Gold auf Nacht (seit 2026-09-13)
+ *
+ * Das Journal folgt dem Plattform-Look: Glas-Karten (`.cc-card`), Brand-Gold als
+ * Akzent, Sternenfeld im Hintergrund. Die `--j-*`-Tokens bleiben als Brücke, damit
+ * die Journal-Komponenten Farben nicht einzeln tragen. Alles hängt an
+ * `[data-journal-wide]`, das `JournalChrome` setzt.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+/*
+ * Mehr Breite als der 1280-px-Container des Mitgliederbereichs: das Journal
+ * trägt eine 228-px-Sidebar plus mehrspaltige Diagramme. `:has()` hebt die
+ * Grenze nur hier an; höhere Spezifität als Chakras Emotion-Klasse, deshalb
+ * ohne `!important`. Ohne `:has()`-Support bleiben es 1280 px — kosmetisch.
+ */
+[data-platform] .cc-main-inner:has([data-journal-wide]),
+[data-platform] .cc-main-inner:has([data-learning-wide]) {
+  max-width: 1600px;
+}
+
+[data-journal-wide] {
+  /* Innenflächen (Eingaben, Kacheln auf Karten); die Karten selbst sind `.cc-card`. */
+  --j-panel: rgba(255, 255, 255, 0.03);
+  --j-panel-raised: rgba(255, 255, 255, 0.045);
+  --j-line: rgba(255, 255, 255, 0.08);
+  /* Hover-/Heute-Kante in Gold */
+  --j-line-strong: rgba(212, 176, 128, 0.4);
+
+  /* Akzent: Brand-Gold. Trägt Buttons, aktive Zustände und neutrale Diagrammreihen. */
+  --j-accent: var(--cc-gold);
+  --j-accent-soft: rgba(212, 176, 128, 0.1);
+  --j-on-accent: var(--cc-on-gold);
+
+  /* Markenpunkt/-kante (früher Rot) */
+  --j-brand: var(--cc-gold-light);
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -110,334 +192,20 @@ a {
   }
 }
 
-.glass-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-}
-
-/* Dashboard: höhere Deckkraft + Gold-Akzentlinie */
-.glass-card-highlight {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(212, 175, 55, 0.5);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-radius: 16px;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.45),
-    0 0 0 1px rgba(212, 175, 55, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.07);
-}
-
-/* Hausaufgabe / Events: extra betont */
-.glass-card-spotlight {
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(212, 175, 55, 0.62);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-radius: 16px;
-  box-shadow:
-    0 12px 40px rgba(0, 0, 0, 0.5),
-    0 0 28px rgba(212, 175, 55, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.09);
-}
-
-@keyframes event-next-spotlight-pulse {
-  0%,
-  100% {
-    box-shadow:
-      0 0 0 1px rgba(212, 175, 55, 0.42),
-      0 0 28px rgba(212, 175, 55, 0.2);
-  }
-  50% {
-    box-shadow:
-      0 0 0 2px rgba(232, 197, 71, 0.55),
-      0 0 44px rgba(212, 175, 55, 0.32);
-  }
-}
-
-.event-next-spotlight-ring {
-  border-radius: 18px;
-  padding: 2px;
-  background: linear-gradient(135deg, rgba(232, 197, 71, 0.55), rgba(212, 175, 55, 0.12));
-  animation: event-next-spotlight-pulse 2.8s ease-in-out infinite;
-}
-
-.event-next-spotlight-ring--embedded {
-  border-radius: 14px;
-}
-
-/* Dashboard: gleiche Familie wie Institut-Rings / Lernzeit-Woche (docs/design/hero-glass.md) */
-.glass-card-dashboard {
-  background:
-    radial-gradient(circle at 100% 0%, rgba(212, 175, 55, 0.16), transparent 46%),
-    radial-gradient(circle at 0% 12%, rgba(232, 197, 71, 0.09), transparent 50%),
-    linear-gradient(165deg, rgba(212, 175, 55, 0.1) 0%, rgba(8, 8, 8, 0.55) 55%);
-  border: 1px solid rgba(212, 175, 55, 0.38);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-radius: 14px;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.45),
-    0 0 24px rgba(212, 175, 55, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  position: relative;
-  overflow: hidden;
-}
-
-.glass-card-dashboard::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(
-    90deg,
-    rgba(212, 175, 55, 0) 0%,
-    rgba(232, 197, 71, 0.85) 42%,
-    rgba(212, 175, 55, 0.45) 100%
-  );
-  z-index: 0;
-  pointer-events: none;
-}
-
-/* Arsenal: leere Karten — subtiler Gold-Puls (HERO-Familie) */
-@keyframes arsenal-empty-glow {
-  0%,
-  100% {
-    box-shadow:
-      0 8px 28px rgba(0, 0, 0, 0.4),
-      0 0 20px rgba(212, 175, 55, 0.1);
-    border-color: rgba(212, 175, 55, 0.28);
-  }
-  50% {
-    box-shadow:
-      0 10px 36px rgba(0, 0, 0, 0.48),
-      0 0 32px rgba(232, 197, 71, 0.22);
-    border-color: rgba(212, 175, 55, 0.48);
-  }
-}
-
-.arsenal-cards-empty-pulse {
-  animation: arsenal-empty-glow 3.5s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .arsenal-cards-empty-pulse {
-    animation: none;
-  }
-}
-
-@keyframes glass-card-hero-breathe {
-  0%,
-  100% {
-    box-shadow:
-      0 14px 46px rgba(0, 0, 0, 0.5),
-      0 0 34px rgba(212, 175, 55, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  }
-  50% {
-    box-shadow:
-      0 16px 52px rgba(0, 0, 0, 0.55),
-      0 0 48px rgba(232, 197, 71, 0.34),
-      inset 0 1px 0 rgba(255, 255, 255, 0.14);
-  }
-}
-
-@keyframes glass-card-hero-shimmer {
-  0%,
-  100% {
-    background-position: 0% 50%;
-    opacity: 0.46;
-  }
-  50% {
-    background-position: 100% 50%;
-    opacity: 0.92;
-  }
-}
-
-.glass-card-hero {
-  background:
-    radial-gradient(circle at top right, rgba(212, 175, 55, 0.28), transparent 48%),
-    radial-gradient(circle at 18% 18%, rgba(232, 197, 71, 0.12), transparent 52%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.08) 100%);
-  border: 1px solid rgba(212, 175, 55, 0.56);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-radius: 18px;
-  box-shadow:
-    0 14px 46px rgba(0, 0, 0, 0.5),
-    0 0 34px rgba(212, 175, 55, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  position: relative;
-  overflow: hidden;
-  animation: glass-card-hero-breathe 5.6s ease-in-out infinite;
-}
-
-.glass-card-hero::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(
-    90deg,
-    rgba(212, 175, 55, 0) 0%,
-    rgba(232, 197, 71, 0.95) 42%,
-    rgba(212, 175, 55, 0.55) 100%
-  );
-  z-index: 0;
-}
-
-.glass-card-hero::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(
-    115deg,
-    transparent 0%,
-    rgba(232, 197, 71, 0.18) 38%,
-    transparent 62%,
-    rgba(212, 175, 55, 0.12) 100%
-  );
-  background-size: 220% 220%;
-  animation: glass-card-hero-shimmer 7.2s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .glass-card-hero {
-    animation: none;
-  }
-  .glass-card-hero::after {
-    animation: none;
-    opacity: 0.45;
-  }
-}
-
-@keyframes welcome-streak-glow {
-  0%,
-  100% {
-    box-shadow:
-      0 0 40px rgba(255, 130, 60, 0.22),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  }
-  50% {
-    box-shadow:
-      0 0 56px rgba(255, 170, 80, 0.42),
-      inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  }
-}
-
-@keyframes welcome-streak-flame-pulse {
-  0%,
-  100% {
-    transform: scale(1);
-    filter: drop-shadow(0 0 10px rgba(255, 150, 60, 0.45));
-  }
-  50% {
-    transform: scale(1.04);
-    filter: drop-shadow(0 0 18px rgba(255, 190, 90, 0.65));
-  }
-}
-
-.welcome-streak-hot {
-  background:
-    radial-gradient(ellipse 90% 80% at 20% 30%, rgba(255, 120, 50, 0.2), transparent 55%),
-    radial-gradient(ellipse 70% 60% at 90% 80%, rgba(212, 175, 55, 0.14), transparent 50%),
-    linear-gradient(165deg, rgba(18, 12, 8, 0.95) 0%, rgba(6, 6, 8, 0.98) 100%);
-  border: 1px solid rgba(255, 150, 80, 0.35);
-  animation: welcome-streak-glow 4s ease-in-out infinite;
-}
-
-.welcome-streak-flame {
-  animation: welcome-streak-flame-pulse 2.4s ease-in-out infinite;
-}
-
-.appointment-card-glow {
-  background:
-    radial-gradient(ellipse 80% 70% at 15% 40%, rgba(212, 175, 55, 0.18), transparent 55%),
-    radial-gradient(ellipse 60% 60% at 85% 20%, rgba(255, 140, 50, 0.12), transparent 50%),
-    linear-gradient(155deg, rgba(16, 12, 8, 0.97) 0%, rgba(6, 6, 9, 0.99) 100%);
-  border: 1px solid rgba(212, 175, 55, 0.32);
-  animation: appointment-card-pulse 5s ease-in-out infinite;
-}
-
-.appointment-card-glow-booked {
-  background:
-    radial-gradient(ellipse 80% 70% at 15% 40%, rgba(52, 211, 153, 0.12), transparent 55%),
-    radial-gradient(ellipse 60% 60% at 85% 20%, rgba(212, 175, 55, 0.08), transparent 50%),
-    linear-gradient(155deg, rgba(10, 18, 14, 0.97) 0%, rgba(6, 6, 9, 0.99) 100%);
-  border: 1px solid rgba(52, 211, 153, 0.28);
-  animation: appointment-card-pulse-green 5s ease-in-out infinite;
-}
-
-@keyframes appointment-card-pulse {
-  0%, 100% {
-    box-shadow:
-      0 0 36px rgba(212, 175, 55, 0.14),
-      inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  }
-  50% {
-    box-shadow:
-      0 0 52px rgba(212, 175, 55, 0.26),
-      inset 0 1px 0 rgba(255, 255, 255, 0.10);
-  }
-}
-
-@keyframes appointment-card-pulse-green {
-  0%, 100% {
-    box-shadow:
-      0 0 36px rgba(52, 211, 153, 0.10),
-      inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  }
-  50% {
-    box-shadow:
-      0 0 48px rgba(52, 211, 153, 0.20),
-      inset 0 1px 0 rgba(255, 255, 255, 0.09);
-  }
-}
-
-/* Institut-Karte (Dashboard): Medienkopf, warm wie Streak-Block */
-.institut-card-media {
-  background:
-    radial-gradient(ellipse 90% 80% at 18% 28%, rgba(255, 120, 50, 0.2), transparent 54%),
-    radial-gradient(ellipse 72% 58% at 88% 78%, rgba(212, 175, 55, 0.14), transparent 50%),
-    linear-gradient(165deg, rgba(16, 12, 10, 0.98) 0%, rgba(6, 6, 9, 1) 100%);
-  border-bottom: 1px solid rgba(255, 150, 80, 0.22);
-}
-
-.institut-card-body {
-  background: linear-gradient(180deg, rgba(22, 22, 26, 0.96) 0%, rgba(12, 12, 14, 0.98) 100%);
-  border-top: 1px solid rgba(212, 175, 55, 0.12);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .welcome-streak-hot {
-    animation: none;
-  }
-  .welcome-streak-flame {
-    animation: none;
-  }
-}
-
+/* Legacy-Klassen: früher Radley, seit v3.2 Inter-Überschrift (Inter für alles) */
 .radley-regular {
-  font-family: "Radley", serif;
-  font-weight: 400;
+  font-family: var(--font-body);
+  font-weight: 600;
   font-style: normal;
+  letter-spacing: -0.01em;
 }
 
 .radley-regular-italic {
-  font-family: "Radley", serif;
-  font-weight: 400;
-  font-style: italic;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-style: normal;
+  letter-spacing: -0.01em;
+  color: var(--cc-gold-light);
 }
 
 /* Inter: variable — Gewicht 100–900 nach Bedarf */
@@ -477,8 +245,10 @@ a {
   font-style: normal;
 }
 
+/* Legacy-Klasse: Zahlen in Inter mit festen Ziffernbreiten (wie .cc-num) */
 .jetbrains-mono {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Tiptap (ModuleNotes) */
@@ -498,8 +268,8 @@ a {
 }
 .module-notes-editor.ProseMirror h2,
 .module-notes-editor.ProseMirror h3 {
-  font-family: var(--font-heading);
-  font-weight: 400;
+  font-family: var(--font-body);
+  font-weight: 600;
   margin: 0.75em 0 0.35em;
 }
 .module-notes-editor.ProseMirror h2 {
@@ -572,26 +342,11 @@ a {
   animation: quiz-success-pop 450ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes quiz-success-cta-pulse {
-  0%,
-  100% {
-    transform: scale(1);
-    box-shadow:
-      0 0 14px rgba(34, 197, 94, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.16);
+@media (prefers-reduced-motion: reduce) {
+  .quiz-success-ring,
+  .quiz-success-icon {
+    animation: none;
   }
-  50% {
-    transform: scale(1.018);
-    box-shadow:
-      0 0 24px rgba(34, 197, 94, 0.32),
-      0 0 10px rgba(74, 222, 128, 0.22),
-      inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  }
-}
-
-.quiz-success-cta {
-  animation: quiz-success-cta-pulse 2.2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
-  will-change: transform, box-shadow;
 }
 
 /* —— Analysis-Artikel (TipTap), Leseansicht —— */
@@ -603,8 +358,8 @@ a {
 .article-body h1,
 .article-body h2,
 .article-body h3 {
-  font-family: var(--font-heading);
-  font-weight: 400;
+  font-family: var(--font-body);
+  font-weight: 600;
   color: var(--color-text-primary);
   line-height: 1.25;
   margin-top: 1.25em;
@@ -645,9 +400,9 @@ a {
 .article-body blockquote {
   margin: 1rem 0;
   padding: 0.75rem 1rem;
-  border-left: 3px solid rgba(212, 175, 55, 0.65);
-  background: rgba(212, 175, 55, 0.06);
-  border-radius: 0 10px 10px 0;
+  border: 1px solid rgba(212, 176, 128, 0.22);
+  background: rgba(212, 176, 128, 0.06);
+  border-radius: 10px;
   color: var(--color-text-muted);
 }
 
@@ -665,7 +420,7 @@ a {
   border: none;
   height: 1px;
   margin: 1.5rem 0;
-  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.35), transparent);
+  background: linear-gradient(90deg, transparent, rgba(212, 176, 128, 0.35), transparent);
 }
 
 .article-body code {
@@ -718,7 +473,7 @@ a {
 }
 
 .article-body th {
-  background: rgba(212, 175, 55, 0.08);
+  background: rgba(212, 176, 128, 0.08);
   font-family: var(--font-body);
   font-weight: 600;
   color: var(--color-text-primary);
@@ -802,4 +557,395 @@ a {
 }
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* ═══ Capital Circle Minimal — Plattform-Oberflächen ═══ */
+body:has([data-platform]) {
+  background: var(--cc-bg);
+}
+
+html:has([data-platform]) {
+  scrollbar-color: #292c32 transparent;
+  scrollbar-width: thin;
+}
+
+[data-platform] {
+  color: var(--cc-text);
+  caret-color: var(--cc-gold);
+}
+
+/* Chakras Tabellenköpfe nutzen die Heading-Schrift (Radley) — im Schema gilt Inter für alles. */
+[data-platform] th {
+  font-family: var(--font-body), system-ui, sans-serif !important;
+}
+
+[data-platform] ::selection {
+  background: rgba(212, 176, 128, 0.3);
+  color: #ffffff;
+}
+
+/* Tastatur-Fokus in Brand-Gold statt Browser-Standard (gilt auch für Links ohne Chakra-Fokusstil) */
+[data-platform] a:focus-visible,
+[data-platform] button:focus-visible,
+[data-platform] [tabindex]:focus-visible {
+  outline: 2px solid var(--cc-gold-line);
+  outline-offset: 2px;
+}
+
+/*
+ * Titel · Meta in einer Zeile. Jedes Element trägt links seinen Trennpunkt;
+ * die Zeile ist um dessen Breite nach links versetzt und der Wrapper clippt —
+ * so verschwindet der Punkt, sobald ein Element eine Zeile beginnt.
+ */
+.cc-meta-row {
+  margin-left: -18px;
+}
+
+.cc-meta-item {
+  position: relative;
+  margin-left: 18px;
+}
+
+.cc-meta-item::before {
+  content: "·";
+  position: absolute;
+  left: -18px;
+  width: 18px;
+  text-align: center;
+  font-weight: 400;
+  color: var(--cc-text-3);
+}
+
+/* Zahlen in Inter mit festen Ziffernbreiten (kein Mono-Font mehr) */
+.cc-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Einziger „Moment“: Fortschritt füllt sich einmal beim Laden */
+@keyframes cc-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.cc-fill {
+  transform-origin: left center;
+  animation: cc-fill 900ms var(--cc-ease) both;
+}
+
+/* Live-Punkt atmet nur, solange eine Session läuft */
+@keyframes cc-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.cc-breathe {
+  animation: cc-breathe 2.4s ease-in-out infinite;
+}
+
+/* Promo-Laufband (nur mobil) */
+@keyframes cc-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.cc-marquee {
+  animation: cc-marquee 32s linear infinite;
+}
+
+.cc-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Laufrichtung nach rechts */
+@keyframes cc-marquee-right {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.cc-marquee--right {
+  animation-name: cc-marquee-right;
+}
+
+/* ═══ Gold auf Nacht — Hintergrund, Glas-Karten, Effekte ═══ */
+
+/* Sternenfeld wie in den Marketing-Mockups: zwei Kacheln, die zweite funkelt langsam */
+.cc-stars,
+.cc-stars::after {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.cc-stars {
+  z-index: 0;
+  background-repeat: repeat;
+  background-size: 1100px 820px;
+  background-image:
+    radial-gradient(1px 1px at 6% 12%, rgba(255, 255, 255, 0.55) 50%, transparent 100%),
+    radial-gradient(1px 1px at 18% 64%, rgba(255, 255, 255, 0.35) 50%, transparent 100%),
+    radial-gradient(1px 1px at 27% 31%, rgba(255, 255, 255, 0.45) 50%, transparent 100%),
+    radial-gradient(1px 1px at 36% 86%, rgba(255, 255, 255, 0.3) 50%, transparent 100%),
+    radial-gradient(1px 1px at 44% 9%, rgba(255, 255, 255, 0.4) 50%, transparent 100%),
+    radial-gradient(1px 1px at 52% 47%, rgba(255, 255, 255, 0.28) 50%, transparent 100%),
+    radial-gradient(1px 1px at 61% 73%, rgba(255, 255, 255, 0.5) 50%, transparent 100%),
+    radial-gradient(1px 1px at 69% 22%, rgba(255, 255, 255, 0.32) 50%, transparent 100%),
+    radial-gradient(1px 1px at 77% 58%, rgba(255, 255, 255, 0.42) 50%, transparent 100%),
+    radial-gradient(1px 1px at 85% 91%, rgba(255, 255, 255, 0.3) 50%, transparent 100%),
+    radial-gradient(1px 1px at 92% 36%, rgba(255, 255, 255, 0.5) 50%, transparent 100%),
+    radial-gradient(1px 1px at 12% 94%, rgba(255, 255, 255, 0.26) 50%, transparent 100%);
+}
+
+.cc-stars::after {
+  content: "";
+  background-repeat: repeat;
+  background-size: 1500px 1100px;
+  background-image:
+    radial-gradient(1.5px 1.5px at 14% 28%, rgba(255, 250, 230, 0.85) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 39% 70%, rgba(255, 255, 255, 0.7) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 58% 16%, rgba(255, 244, 214, 0.8) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 81% 44%, rgba(255, 255, 255, 0.65) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 93% 82%, rgba(255, 244, 214, 0.75) 50%, transparent 100%);
+  animation: cc-twinkle 7s ease-in-out infinite alternate;
+}
+
+@keyframes cc-twinkle {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Gold-Licht: weicher Schein oben rechts, Gegenlicht unten links */
+.cc-goldlight {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 55% 42% at 80% -6%, rgba(212, 176, 128, 0.17), transparent 70%),
+    radial-gradient(ellipse 38% 34% at 8% 108%, rgba(212, 176, 128, 0.07), transparent 70%);
+}
+
+/* Glas-Karte mit Gold-Kante oben */
+.cc-card {
+  position: relative;
+  background: linear-gradient(180deg, rgba(27, 32, 38, 0.94) 0%, rgba(24, 29, 34, 0.94) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition:
+    border-color 220ms var(--cc-ease),
+    box-shadow 220ms var(--cc-ease),
+    transform 220ms var(--cc-ease);
+}
+
+.cc-card::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 16%;
+  right: 16%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(232, 192, 148, 0.7), transparent);
+  pointer-events: none;
+}
+
+.cc-card:hover {
+  border-color: rgba(212, 176, 128, 0.3);
+  transform: translateY(-2px);
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.42),
+    0 0 28px rgba(212, 176, 128, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Hero-Karte („Weiter wo du warst“): Gold-Rahmen, Gold-Schein, atmender Glow */
+.cc-card--hero {
+  border-color: rgba(212, 176, 128, 0.4);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(212, 176, 128, 0.17), transparent 46%),
+    radial-gradient(circle at 0% 100%, rgba(232, 192, 148, 0.06), transparent 50%),
+    linear-gradient(180deg, rgba(29, 34, 40, 0.94) 0%, rgba(24, 29, 34, 0.94) 100%);
+  animation: cc-hero-breathe 6s ease-in-out infinite;
+}
+
+.cc-card--hero::before {
+  left: 0;
+  right: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(232, 192, 148, 0.95) 45%, rgba(212, 176, 128, 0.35) 100%);
+}
+
+.cc-card--hero:hover {
+  border-color: rgba(232, 192, 148, 0.62);
+}
+
+/* Karten mit Diagrammen/Tabellen: Glow beim Hover ja, Anheben nein */
+.cc-card--still:hover {
+  transform: none;
+}
+
+@keyframes cc-hero-breathe {
+  0%,
+  100% {
+    box-shadow:
+      0 14px 40px rgba(0, 0, 0, 0.45),
+      0 0 26px rgba(212, 176, 128, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+  50% {
+    box-shadow:
+      0 16px 46px rgba(0, 0, 0, 0.5),
+      0 0 46px rgba(212, 176, 128, 0.24),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* ── Ruhige Variante: kein Gold-Glow, neutrale graue Kanten ────────────────────
+ *
+ * Auf Nutzerwunsch (16.09.2026) fuer das Dashboard. Gilt nur innerhalb eines
+ * Elements mit `.cc-neutral`, der Rest der Plattform behaelt den Gold-Look aus
+ * DESIGN.md v3.2 unveraendert.
+ *
+ * Absichtlich als Ueberschreibung statt als Aenderung an `.cc-card`: So bleibt
+ * das Schema an einer Stelle definiert, und der Unterschied ist als Ausnahme
+ * lesbar statt im Grundstil versteckt.
+ */
+.cc-neutral .cc-card,
+.cc-neutral .cc-card--hero {
+  border-color: var(--cc-line-strong);
+  background: linear-gradient(180deg, rgba(27, 32, 38, 0.94) 0%, rgba(24, 29, 34, 0.94) 100%);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  /* Der atmende Gold-Schein der Hero-Karte. */
+  animation: none;
+}
+
+/* Die Gold-Haarlinie an der Oberkante. */
+.cc-neutral .cc-card::before,
+.cc-neutral .cc-card--hero::before {
+  display: none;
+}
+
+.cc-neutral .cc-card:hover,
+.cc-neutral .cc-card--hero:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Karten steigen beim Laden nacheinander auf (nur Einstieg, danach keine Transform-Reste) */
+@keyframes cc-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.cc-rise {
+  animation: cc-rise 700ms var(--cc-ease) backwards;
+}
+
+/* Live: Ring breitet sich vom Punkt aus */
+@keyframes cc-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  80%,
+  100% {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+
+.cc-ping {
+  animation: cc-ping 1.8s var(--cc-ease) infinite;
+}
+
+/* Streak-Flamme pulsiert warm */
+@keyframes cc-flame {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 8px rgba(255, 150, 60, 0.45));
+  }
+  50% {
+    transform: scale(1.06);
+    filter: drop-shadow(0 0 16px rgba(255, 190, 90, 0.7));
+  }
+}
+
+.cc-flame {
+  animation: cc-flame 2.6s ease-in-out infinite;
+}
+
+/* Lichtfunke wandert an der Sidebar-Kante entlang */
+@keyframes cc-spark {
+  0% {
+    top: 6%;
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    top: 94%;
+    opacity: 0;
+  }
+}
+
+.cc-spark {
+  top: 30%;
+  animation: cc-spark 14s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cc-fill,
+  .cc-breathe,
+  .cc-marquee,
+  .cc-stars::after,
+  .cc-card--hero,
+  .cc-rise,
+  .cc-ping,
+  .cc-flame,
+  .cc-spark {
+    animation: none;
+  }
+
+  .cc-card:hover {
+    transform: none;
+  }
 }

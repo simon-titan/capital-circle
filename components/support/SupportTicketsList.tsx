@@ -1,13 +1,13 @@
 "use client";
 
-import { Box, Flex, HStack, Stack, Text } from "@chakra-ui/react";
+import { Box, Flex, Stack, Text } from "@chakra-ui/react";
 import { MessageCircle } from "lucide-react";
 import Link from "next/link";
-import { GlassCard } from "@/components/ui/GlassCard";
+import { IconTile, Meta } from "@/components/platform/dashboard/primitives";
 import { NewTicketModal } from "@/components/support/NewTicketModal";
+import { TicketStatusDot } from "@/components/support/TicketStatusDot";
 import {
   CATEGORY_LABELS,
-  STATUS_COLORS,
   STATUS_LABELS,
   formatDateTime,
   formatResponseTime,
@@ -27,73 +27,87 @@ export interface SupportTicketRow {
   updated_at: string;
 }
 
+/** Gestaffelter Einstieg (80ms + 70ms je Schritt), gedeckelt, damit lange Listen nicht nachhinken. */
+function riseDelay(i: number) {
+  return { animationDelay: `${80 + Math.min(i, 10) * 70}ms` };
+}
+
 export function SupportTicketsList({ tickets }: { tickets: SupportTicketRow[] }) {
   return (
-    <Stack spacing={6}>
+    <Stack spacing={5}>
       <Flex justify="space-between" align="center" flexWrap="wrap" gap={3}>
-        <Text className="inter" fontSize="sm" color="var(--color-text-secondary)">
+        <Meta className="cc-num">
           {tickets.length === 0
             ? "Du hast noch keine Support-Anfragen gestellt."
             : `${tickets.length} Ticket${tickets.length === 1 ? "" : "s"}`}
-        </Text>
+        </Meta>
         <NewTicketModal />
       </Flex>
 
       {tickets.length === 0 ? (
-        <GlassCard>
-          <Stack spacing={2} align="center" py={8}>
-            <MessageCircle size={28} color="var(--color-accent-gold-light)" />
-            <Text className="inter" color="var(--color-text-secondary)" textAlign="center">
+        <Box className="cc-card cc-card--still cc-rise" style={riseDelay(0)} p={{ base: 6, md: 8 }}>
+          <Stack spacing={4} align="center" textAlign="center">
+            <IconTile>
+              <MessageCircle size={24} strokeWidth={1.75} />
+            </IconTile>
+            <Text fontSize="16px" lineHeight={1.6} color="var(--cc-text-soft)" maxW="30rem">
               Hast du eine Frage oder ein Problem? Erstelle ein Ticket — unser Team antwortet direkt hier.
             </Text>
           </Stack>
-        </GlassCard>
+        </Box>
       ) : (
-        <Stack spacing={3}>
-          {tickets.map((t) => {
+        <Stack as="ul" spacing={3} listStyleType="none">
+          {tickets.map((t, i) => {
             const response = formatResponseTime(t.created_at, t.first_response_at);
             return (
-              <Box
-                key={t.id}
-                as={Link}
-                href={`/support/${t.id}`}
-                display="block"
-                p={5}
-                borderRadius="14px"
-                border="1px solid rgba(255,255,255,0.09)"
-                bg="rgba(255,255,255,0.03)"
-                transition="all 150ms ease"
-                _hover={{ borderColor: "rgba(212,175,55,0.45)", bg: "rgba(255,255,255,0.05)" }}
-              >
-                <Flex justify="space-between" align="flex-start" gap={4} flexWrap="wrap">
-                  <Stack spacing={1.5} minW={0} flex={1}>
-                    <HStack spacing={2}>
-                      <Box w="8px" h="8px" borderRadius="full" bg={STATUS_COLORS[t.status]} flexShrink={0} />
-                      <Text className="inter-semibold" color="var(--color-text-primary)" fontSize="md" isTruncated>
-                        {t.subject}
-                      </Text>
-                    </HStack>
-                    <HStack spacing={2} fontSize="xs" color="var(--color-text-tertiary)" className="inter">
-                      <Text>{STATUS_LABELS[t.status]}</Text>
-                      {t.category ? (
-                        <>
-                          <Text>·</Text>
-                          <Text>{CATEGORY_LABELS[t.category as TicketCategory] ?? t.category}</Text>
-                        </>
-                      ) : null}
-                      <Text>·</Text>
-                      <Text>Erstellt {formatDateTime(t.created_at)}</Text>
-                    </HStack>
-                  </Stack>
-                  <Text
-                    fontFamily="var(--font-mono)"
-                    fontSize="xs"
-                    color={response.isPending ? "var(--color-accent-gold-light)" : "var(--color-text-secondary)"}
-                    whiteSpace="nowrap"
+              <Box as="li" key={t.id} className="cc-rise" style={riseDelay(i)}>
+                <Box
+                  as={Link}
+                  href={`/support/${t.id}`}
+                  display="block"
+                  className="cc-card"
+                  p={{ base: 4, md: 5 }}
+                  _focusVisible={{ outline: "2px solid var(--cc-gold-line)", outlineOffset: "2px" }}
+                >
+                  <Flex
+                    direction={{ base: "column", sm: "row" }}
+                    justify="space-between"
+                    align={{ base: "flex-start", sm: "center" }}
+                    gap={{ base: 2, sm: 4 }}
                   >
-                    {response.isPending ? response.label : `Antwort nach ${response.label}`}
-                  </Text>
-                </Flex>
+                    <Stack spacing={1.5} minW={0} flex={1} w="100%">
+                      <Flex align="center" gap={2} minW={0}>
+                        <TicketStatusDot status={t.status} />
+                        <Text fontSize="16px" fontWeight={600} lineHeight={1.35} color="var(--cc-text)" isTruncated>
+                          {t.subject}
+                        </Text>
+                      </Flex>
+                      <Box overflow="hidden">
+                        <Flex className="cc-meta-row" wrap="wrap" rowGap={0.5} fontSize="13px" color="var(--cc-text-2)">
+                          <Box as="span" className="cc-meta-item">
+                            {STATUS_LABELS[t.status]}
+                          </Box>
+                          {t.category ? (
+                            <Box as="span" className="cc-meta-item">
+                              {CATEGORY_LABELS[t.category as TicketCategory] ?? t.category}
+                            </Box>
+                          ) : null}
+                          <Box as="span" className="cc-meta-item cc-num">
+                            Erstellt {formatDateTime(t.created_at)}
+                          </Box>
+                        </Flex>
+                      </Box>
+                    </Stack>
+                    <Text
+                      className="cc-num"
+                      fontSize="13px"
+                      color={response.isPending ? "var(--cc-gold-light)" : "var(--cc-text-2)"}
+                      whiteSpace="nowrap"
+                    >
+                      {response.isPending ? response.label : `Antwort nach ${response.label}`}
+                    </Text>
+                  </Flex>
+                </Box>
               </Box>
             );
           })}

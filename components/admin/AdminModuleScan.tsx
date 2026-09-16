@@ -49,38 +49,31 @@ export function AdminModuleScan() {
   }, []);
 
   return (
-    <Stack
-      spacing={4}
-      p={{ base: 4, md: 6 }}
-      borderRadius="16px"
-      borderWidth="1px"
-      borderColor="whiteAlpha.200"
-      bg="whiteAlpha.50"
-    >
-      <Text className="inter-semibold" fontSize="sm" color="gray.200">
+    <Stack spacing={4} className="cc-card cc-card--still" p={{ base: 4, md: 5 }}>
+      <Text fontSize="15px" fontWeight={600} color="var(--cc-text)">
         Hetzner-Bucket synchronisieren (Prefix{" "}
-        <Text as="span" className="jetbrains-mono" color="gray.400">
+        <Text as="span" fontWeight={500} color="var(--cc-text-2)">
           modules/
         </Text>
         )
       </Text>
-      <Text className="inter" fontSize="xs" color="gray.500">
+      <Text fontSize="13px" lineHeight={1.5} color="var(--cc-text-2)">
         Scannt alle Ordner im Bucket. Ordner = Modul, optional Unterordner = Subkategorie, Dateien{" "}
-        <Text as="span" className="jetbrains-mono">
+        <Text as="span" color="var(--cc-text-soft)">
           .mp4 / .webm / .mov
         </Text>
         , Thumbnail{" "}
-        <Text as="span" className="jetbrains-mono">
+        <Text as="span" color="var(--cc-text-soft)">
           thumbnail.jpg|png
         </Text>
-        . Neue Module landen in „Nicht zugeordnet" und können dort einem Kurs zugewiesen werden.
+        . Neue Module landen in „Nicht zugeordnet&quot; und können dort einem Kurs zugewiesen werden.
         Bereits zugeordnete Module werden nicht verschoben.
       </Text>
-      <Button colorScheme="yellow" size="sm" w="fit-content" onClick={() => void onScan()} isLoading={loading}>
+      <Button variant="gold" size="sm" w="fit-content" onClick={() => void onScan()} isLoading={loading}>
         Bucket scannen & synchronisieren
       </Button>
       {message ? (
-        <Text className="inter" fontSize="sm" color="gray.400" whiteSpace="pre-wrap">
+        <Text fontSize="13px" className="cc-num" color="var(--cc-text-2)" whiteSpace="pre-wrap">
           {message}
         </Text>
       ) : null}

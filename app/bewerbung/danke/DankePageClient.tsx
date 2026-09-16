@@ -1,10 +1,18 @@
 "use client";
 
-import { Box, HStack, Stack, Text } from "@chakra-ui/react";
+import { Box, Stack, Text } from "@chakra-ui/react";
 import { Calendar } from "lucide-react";
 import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import {
+  FunnelEyebrow,
+  FunnelFinePrint,
+  FunnelHeadline,
+  FunnelLead,
+  GoldWord,
+  rise,
+} from "@/components/marketing/funnel-ui";
 
 interface Props {
   calendlyUrl: string;
@@ -46,27 +54,15 @@ export function DankePageClient({ calendlyUrl }: Props) {
         body {
           padding-top: 0 !important;
           margin-top: 0 !important;
-          background: #07080A !important;
+          background: var(--cc-bg) !important;
         }
       `}</style>
 
-      <Box
-        minH="100vh"
-        w="full"
-        bg="#07080A"
-        color="var(--color-text-primary, #F0F0F2)"
-        position="relative"
-        overflowX="hidden"
-        _before={{
-          content: '""',
-          position: "fixed",
-          inset: 0,
-          background:
-            "radial-gradient(ellipse 80% 60% at 80% -10%, rgba(212,175,55,0.10), transparent 60%), radial-gradient(ellipse 60% 50% at 10% 100%, rgba(212,175,55,0.05), transparent 65%)",
-          pointerEvents: "none",
-          zIndex: 0,
-        }}
-      >
+      {/* Graphitgrund mit Sternenfeld und Champagner-Licht (wie Plattform und Marketing) */}
+      <Box minH="100vh" w="full" bg="var(--cc-bg)" color="var(--cc-text)" position="relative" overflowX="clip">
+        <Box className="cc-stars" aria-hidden />
+        <Box className="cc-goldlight" aria-hidden />
+
         <Box position="relative" zIndex={1} px={{ base: 4, md: 8, lg: 12 }}>
           {/* Header section */}
           <Stack
@@ -76,95 +72,60 @@ export function DankePageClient({ calendlyUrl }: Props) {
             pb={{ base: 8, md: 10 }}
             maxW="680px"
             mx="auto"
-            gap={5}
+            spacing={5}
+            {...rise(0)}
           >
             {/* Icon badge */}
             <Box
               w="56px"
               h="56px"
-              borderRadius="16px"
+              borderRadius="12px"
               display="flex"
               alignItems="center"
               justifyContent="center"
-              sx={{
-                background: "linear-gradient(145deg, rgba(212,175,55,0.25) 0%, rgba(212,175,55,0.08) 100%)",
-                border: "1px solid rgba(212,175,55,0.40)",
-                boxShadow: "0 0 24px rgba(212,175,55,0.15), inset 0 1px 0 rgba(255,255,255,0.10)",
-              }}
+              color="var(--cc-gold-light)"
+              bg="radial-gradient(circle at 50% 30%, rgba(232, 192, 148, 0.22), rgba(212, 176, 128, 0.05) 75%)"
+              border="1px solid rgba(232, 192, 148, 0.4)"
+              boxShadow="0 0 26px rgba(212, 176, 128, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)"
+              aria-hidden
             >
-              <Calendar size={24} color="#D4AF37" strokeWidth={1.75} />
+              <Calendar size={24} strokeWidth={1.75} />
             </Box>
 
-            {/* Section label */}
-            <HStack gap={3}>
-              <Box w="28px" h="1px" bg="linear-gradient(90deg, transparent, rgba(212,175,55,0.70))" />
-              <Text
-                fontSize="xs"
-                letterSpacing="0.22em"
-                textTransform="uppercase"
-                color="var(--color-accent-gold, #D4AF37)"
-                className="inter-semibold"
-              >
-                Bewerbung eingegangen
-              </Text>
-              <Box w="28px" h="1px" bg="linear-gradient(90deg, rgba(212,175,55,0.70), transparent)" />
-            </HStack>
+            <FunnelEyebrow>Bewerbung eingegangen</FunnelEyebrow>
 
-            {/* Headline */}
-            <Text
-              as="h1"
-              className="inter-bold"
-              fontSize={{ base: "2xl", md: "3xl", lg: "4xl" }}
-              lineHeight="1.15"
-            >
-              Dein Termin.{" "}
-              <Box
-                as="span"
-                sx={{
-                  color: "var(--color-accent-gold, #D4AF37)",
-                  textShadow: "0 0 16px rgba(212,175,55,0.30)",
-                }}
-              >
-                Deine Chance.
-              </Box>
-            </Text>
+            <FunnelHeadline scale="lg">
+              Dein Termin. <GoldWord>Deine Chance.</GoldWord>
+            </FunnelHeadline>
 
-            {/* Subtitle */}
-            <Text
-              className="inter"
-              fontSize={{ base: "sm", md: "md" }}
-              color="rgba(255,255,255,0.50)"
-              maxW="520px"
-              lineHeight="1.7"
-            >
+            <FunnelLead fontSize={{ base: "15px", md: "17px" }} maxW="520px" lineHeight={1.7}>
               Buche jetzt deinen persönlichen Gesprächstermin.
               Das ist dein nächster Schritt in den Capital Circle.
-            </Text>
+            </FunnelLead>
           </Stack>
 
-          {/* Calendly embed container */}
+          {/* Calendly embed container — Panel massiv mit Champagner-Rand und Gold-Lichtkante */}
           <Box
             maxW="900px"
             mx="auto"
             mb={{ base: 10, md: 16 }}
-            borderRadius="16px"
+            borderRadius="12px"
             overflow="hidden"
             position="relative"
-            sx={{
-              border: "1px solid rgba(212,175,55,0.20)",
-              boxShadow: "0 8px 48px rgba(0,0,0,0.60), 0 0 24px rgba(212,175,55,0.08)",
-              background: "linear-gradient(135deg, rgba(212,175,55,0.04) 0%, rgba(8,8,8,0.70) 100%)",
-            }}
+            bg="var(--cc-panel-solid)"
+            border="1px solid rgba(232, 192, 148, 0.28)"
+            boxShadow="0 16px 48px rgba(0, 0, 0, 0.5), 0 0 40px rgba(212, 176, 128, 0.1)"
+            {...rise(1)}
           >
-            {/* Gold light line top */}
             <Box
               position="absolute"
               top={0}
               left={0}
               right={0}
-              h="2px"
+              h="1px"
               zIndex={2}
-              background="linear-gradient(90deg, transparent, rgba(212,175,55,0.65), transparent)"
+              bgImage="linear-gradient(90deg, transparent 0%, rgba(232, 192, 148, 0.9) 45%, rgba(212, 176, 128, 0.3) 100%)"
+              aria-hidden
             />
 
             {/* Loading overlay */}
@@ -178,15 +139,17 @@ export function DankePageClient({ calendlyUrl }: Props) {
                 alignItems="center"
                 justifyContent="center"
                 gap={5}
-                bg="#07080A"
+                bg="var(--cc-panel-solid)"
+                role="status"
               >
                 {/* Gold spinner */}
                 <Box
                   w="40px"
                   h="40px"
                   borderRadius="full"
-                  border="3px solid rgba(212,175,55,0.15)"
-                  borderTopColor="var(--color-accent-gold, #D4AF37)"
+                  border="3px solid rgba(212, 176, 128, 0.15)"
+                  borderTopColor="var(--cc-gold-light)"
+                  boxShadow="0 0 18px rgba(212, 176, 128, 0.2)"
                   sx={{
                     animation: "calSpin 0.8s linear infinite",
                     "@keyframes calSpin": {
@@ -195,11 +158,7 @@ export function DankePageClient({ calendlyUrl }: Props) {
                     },
                   }}
                 />
-                <Text
-                  className="inter"
-                  fontSize="sm"
-                  color="rgba(255,255,255,0.40)"
-                >
+                <Text fontSize="14px" color="var(--cc-text-2)">
                   Termine werden geladen…
                 </Text>
               </Box>
@@ -218,17 +177,10 @@ export function DankePageClient({ calendlyUrl }: Props) {
 
           {/* Footer */}
           <Box pb={10} textAlign="center">
-            <Text
-              fontSize="xs"
-              color="rgba(255,255,255,0.18)"
-              className="inter"
-              maxW="480px"
-              mx="auto"
-              lineHeight="1.7"
-            >
+            <FunnelFinePrint maxW="480px" mx="auto">
               Der Termin ist verbindlich. Bitte erscheine pünktlich und
               bereite dich auf das Gespräch vor.
-            </Text>
+            </FunnelFinePrint>
           </Box>
         </Box>
       </Box>

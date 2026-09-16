@@ -10,6 +10,7 @@ interface MobileCTAFooterProps {
   trustLine?: string | null;
 }
 
+/** Fester CTA-Balken (nur mobil): Glas-Leiste mit Gold-Kante, Gold-Button. */
 export function MobileCTAFooter({ onApply, ctaPrimary: ctaPrimaryOverride, trustLine }: MobileCTAFooterProps) {
   const { cta } = landingConfig;
   const resolvedPrimary = ctaPrimaryOverride ?? cta.primary;
@@ -29,67 +30,48 @@ export function MobileCTAFooter({ onApply, ctaPrimary: ctaPrimaryOverride, trust
       right={0}
       zIndex={1000}
       display={{ base: "block", md: "none" }}
-      sx={{
-        background: "rgba(7, 8, 10, 0.97)",
-        backdropFilter: "blur(24px)",
-        WebkitBackdropFilter: "blur(24px)",
-        borderTop: "1px solid rgba(212,175,55,0.20)",
-        boxShadow: "0 -4px 32px rgba(0,0,0,0.50), 0 -1px 0 rgba(212,175,55,0.12)",
-      }}
+      bg="var(--cc-bg-raised)"
+      backdropFilter="blur(18px)"
+      borderTop="1px solid rgba(212, 176, 128, 0.18)"
+      boxShadow="0 -12px 32px rgba(0, 0, 0, 0.45)"
       px={4}
       pt={3}
-      pb="env(safe-area-inset-bottom, 12px)"
       style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
     >
+      {/* Gold-Lichtkante */}
+      <Box
+        aria-hidden
+        position="absolute"
+        top="-1px"
+        left="16%"
+        right="16%"
+        h="1px"
+        bg="linear-gradient(90deg, transparent, rgba(232, 192, 148, 0.7), transparent)"
+      />
       <Stack spacing={2.5}>
-        {/* CTA button */}
         <Button
-          variant="unstyled"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          gap={2}
+          variant="gold"
           w="full"
-          minH="52px"
-          borderRadius="12px"
-          fontWeight="600"
-          fontSize="md"
-          letterSpacing="0.03em"
-          color="#07080A"
+          h="52px"
+          fontSize="16px"
+          letterSpacing="0.02em"
+          leftIcon={<Lock size={15} strokeWidth={2.25} />}
           onClick={onApply}
-          sx={{
-            background: "linear-gradient(135deg, #E8C547 0%, #D4AF37 50%, #A67C00 100%)",
-            boxShadow:
-              "0 0 28px rgba(212,175,55,0.30), 0 4px 16px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.22)",
-            transition: "all 220ms cubic-bezier(0.16, 1, 0.3, 1)",
-            _hover: {
-              background: "linear-gradient(135deg, #F0DC82 0%, #E8C547 50%, #D4AF37 100%)",
-              boxShadow: "0 0 40px rgba(212,175,55,0.45), 0 4px 20px rgba(0,0,0,0.40)",
-              transform: "translateY(-1px)",
-            },
-            _active: {
-              transform: "translateY(0)",
-              boxShadow: "0 0 16px rgba(212,175,55,0.20)",
-            },
-          }}
-          className="inter-semibold"
         >
-          <Lock size={15} strokeWidth={2.5} style={{ marginRight: 2 }} />
           {resolvedPrimary}
         </Button>
 
-        {/* Trust row */}
         {!hideTrust && (
           <HStack justify="center" spacing={4}>
             {trustLineFirst ? (
               <>
-                <Text fontSize="10px" color="rgba(255,255,255,0.32)" className="inter" letterSpacing="0.03em">
+                <Text fontSize="12px" color="var(--cc-text-3)">
                   {trustLineFirst}
                 </Text>
-                <Box w="1px" h="10px" bg="rgba(255,255,255,0.12)" />
+                <Box aria-hidden w="1px" h="10px" bg="var(--cc-line-strong)" />
               </>
             ) : null}
-            <Text fontSize="10px" color="rgba(255,255,255,0.32)" className="inter" letterSpacing="0.03em">
+            <Text fontSize="12px" color="var(--cc-text-3)" className="cc-num">
               Bewerbung &lt; 5 Min.
             </Text>
           </HStack>

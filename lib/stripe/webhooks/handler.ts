@@ -1,6 +1,6 @@
 import type Stripe from "stripe";
 import type { WebhookSupabase } from "./_helpers";
-import { handleCheckoutCompleted } from "./checkout-completed";
+import { handleCheckoutCompleted, handleCheckoutExpired } from "./checkout-completed";
 import { handleSubscriptionUpdated } from "./subscription-updated";
 import { handleSubscriptionDeleted } from "./subscription-deleted";
 import { handleSubscriptionPaused } from "./subscription-paused";
@@ -21,9 +21,46 @@ export async function handleStripeEvent(
   event: Stripe.Event,
   supabase: WebhookSupabase,
 ): Promise<void> {
+  /*
+    ── Testmodus kommt im Live-Betrieb hier nicht herein ──────────────────────
+
+    Zeigt die Anwendung mit einem Live-Schlüssel auf die Produktionsdatenbank,
+    darf ein lokaler Testkauf dort nichts hinterlassen. Im Schwesterprojekt hat
+    genau das einmal zwei Zeilen erzeugt — eine Kasse über 149 € auf
+    `completed` und eine Abo-Zeile auf `active` —, beide zählten in MRR und
+    Umsatz mit, und der Abgleich meldete die Abo-Zeile bei jedem Lauf als „bei
+    Stripe nicht auffindbar", weil es sie im Livemodus nie gab.
+
+    **Geprüft wird `event.livemode`, nicht der ID-Präfix.** Eine
+    Testmodus-Abo-ID sieht aus wie jede andere; nur Kassen tragen `cs_test_`.
+    Wer über den Präfix filtert, erwischt die Hälfte.
+
+    **Und der Riegel greift nur, wenn wir selbst live sind.** Capital Circle
+    läuft derzeit mit einem `sk_test_`-Schlüssel — würde der Riegel
+    bedingungslos zuschlagen, käme kein einziges Ereignis mehr durch und der
+    gesamte Kaufweg wäre tot. Die Bedingung ist deshalb: Live-Schlüssel plus
+    Testmodus-Ereignis. Läuft die App im Testmodus, sind Testereignisse genau
+    das, was erwartet wird.
+  */
+  if (event.livemode === false && process.env.STRIPE_SECRET_KEY?.trim().startsWith("sk_live_")) {
+    console.warn(
+      `[stripe-webhook] Testmodus-Ereignis ${event.type} (${event.id}) verworfen — ` +
+        "es wuerde sonst in denselben Zahlen landen wie echte Kaeufe.",
+    );
+    return;
+  }
+
   switch (event.type) {
     case "checkout.session.completed":
       return handleCheckoutCompleted(
+        event.data.object as Stripe.Checkout.Session,
+        supabase,
+      );
+
+    // Läuft eine Kasse ab, ohne dass gezahlt wurde. Ohne diesen Fall bliebe
+    // die Trichterzeile für immer auf „started" stehen.
+    case "checkout.session.expired":
+      return handleCheckoutExpired(
         event.data.object as Stripe.Checkout.Session,
         supabase,
       );

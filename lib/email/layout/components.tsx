@@ -2,18 +2,38 @@ import * as React from "react";
 import { EMAIL_TOKENS as T } from "./styles";
 
 /**
- * Wiederverwendbare Bausteine für alle Templates.
+ * Wiederverwendbare Bausteine für alle Templates — v3.2 „Champagner auf Graphit“.
  *
  * Hinweis: Wir verwenden BEWUSST kein `@react-email/components` — das Paket ist
  * laut `docs/implementation-notes.md` deprecated. Stattdessen pure HTML-Tags
  * in JSX, die `@react-email/render` zu Mail-tauglichem HTML rendert.
  *
  * Tabellen-Layout für Cards, weil viele Mail-Clients (Outlook!) `flex`/`grid`
- * nicht zuverlässig rendern.
+ * nicht zuverlässig rendern. Verläufe immer mit Vollton-Fallback.
  */
 
 interface ChildrenProps {
   children: React.ReactNode;
+}
+
+/** Versal-Label über der Headline, Champagner (wie die Karten-Labels der Plattform). */
+export function EmailEyebrow({ children }: ChildrenProps) {
+  return (
+    <p
+      style={{
+        margin: "0 0 10px",
+        fontFamily: T.fontBody,
+        fontSize: "12px",
+        fontWeight: 600,
+        lineHeight: 1.4,
+        letterSpacing: "0.14em",
+        textTransform: "uppercase",
+        color: T.goldLight,
+      }}
+    >
+      {children}
+    </p>
+  );
 }
 
 export function EmailHeading({ children }: ChildrenProps) {
@@ -24,9 +44,9 @@ export function EmailHeading({ children }: ChildrenProps) {
         fontFamily: T.fontHeading,
         fontSize: "26px",
         lineHeight: 1.25,
-        fontWeight: 400,
+        fontWeight: 600,
         color: T.text,
-        letterSpacing: "-0.01em",
+        letterSpacing: "-0.02em",
       }}
     >
       {children}
@@ -40,10 +60,11 @@ export function EmailSubheading({ children }: ChildrenProps) {
       style={{
         margin: "32px 0 12px",
         fontFamily: T.fontHeading,
-        fontSize: "19px",
+        fontSize: "18px",
         lineHeight: 1.3,
-        fontWeight: 400,
-        color: T.gold,
+        fontWeight: 600,
+        letterSpacing: "-0.01em",
+        color: T.goldLight,
       }}
     >
       {children}
@@ -62,7 +83,7 @@ export function EmailText({
         fontFamily: T.fontBody,
         fontSize: "15px",
         lineHeight: 1.65,
-        color: muted ? T.textMuted : T.text,
+        color: muted ? T.textMuted : T.textSoft,
       }}
     >
       {children}
@@ -86,6 +107,7 @@ export function EmailSmall({ children }: ChildrenProps) {
   );
 }
 
+/** Hauptaktion: Champagner-Verlauf (Vollton-Fallback), dunkle Schrift — wie Button-Variante `gold`. */
 export function EmailButton({
   href,
   children,
@@ -102,9 +124,10 @@ export function EmailButton({
           <td
             align="center"
             style={{
-              borderRadius: "10px",
-              background: `linear-gradient(135deg, ${T.gold} 0%, ${T.goldDark} 100%)`,
-              boxShadow: "0 4px 14px rgba(212,175,55,0.25)",
+              borderRadius: "8px",
+              backgroundColor: T.gold,
+              backgroundImage: T.goldGrad,
+              boxShadow: "0 6px 18px rgba(212,176,128,0.22)",
             }}
           >
             <a
@@ -115,7 +138,7 @@ export function EmailButton({
                 fontFamily: T.fontBody,
                 fontSize: "15px",
                 fontWeight: 600,
-                color: T.bgPage,
+                color: T.onGold,
                 textDecoration: "none",
                 letterSpacing: "0.01em",
               }}
@@ -129,6 +152,7 @@ export function EmailButton({
   );
 }
 
+/** Graphit-Karte mit Haarlinie, 12px — wie `.cc-card`. */
 export function EmailCard({ children }: ChildrenProps) {
   return (
     <table
@@ -139,7 +163,8 @@ export function EmailCard({ children }: ChildrenProps) {
       style={{
         backgroundColor: T.bgCard,
         border: `1px solid ${T.border}`,
-        borderRadius: "16px",
+        borderTop: `1px solid ${T.borderGold}`,
+        borderRadius: "12px",
         margin: "0 0 16px",
       }}
     >
@@ -152,6 +177,7 @@ export function EmailCard({ children }: ChildrenProps) {
   );
 }
 
+/** Hinweis-Box: Panel-Fläche mit Champagner-Haarlinie rundum. */
 export function EmailHighlight({ children }: ChildrenProps) {
   return (
     <table
@@ -160,7 +186,7 @@ export function EmailHighlight({ children }: ChildrenProps) {
       cellSpacing={0}
       cellPadding={0}
       style={{
-        backgroundColor: T.bgPage,
+        backgroundColor: T.bg,
         border: `1px solid ${T.borderGold}`,
         borderRadius: "10px",
         margin: "16px 0",
@@ -190,10 +216,14 @@ export function EmailDivider() {
     <div
       style={{
         height: "1px",
+        lineHeight: "1px",
+        fontSize: "1px",
         margin: "24px 0",
-        background: `linear-gradient(90deg, transparent, ${T.border}, transparent)`,
+        backgroundColor: T.border,
       }}
-    />
+    >
+      &nbsp;
+    </div>
   );
 }
 
@@ -205,7 +235,7 @@ export function EmailLink({
     <a
       href={href}
       style={{
-        color: T.gold,
+        color: T.goldLight,
         textDecoration: "underline",
         textDecorationColor: T.borderGold,
         fontFamily: T.fontBody,

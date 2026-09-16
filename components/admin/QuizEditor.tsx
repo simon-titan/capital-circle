@@ -31,6 +31,51 @@ type InitialQuiz = {
   questions: QuizQuestion[];
 };
 
+/** Eingabefelder im Admin (DESIGN.md v3.2): Haarlinie, Fokus in Champagner. */
+const fieldSx = {
+  bg: "rgba(255, 255, 255, 0.03)",
+  border: "1px solid",
+  borderColor: "var(--cc-line-strong)",
+  borderRadius: "8px",
+  color: "var(--cc-text)",
+  _placeholder: { color: "var(--cc-text-3)" },
+  _hover: { borderColor: "rgba(255, 255, 255, 0.22)" },
+  _focusVisible: { borderColor: "var(--cc-gold-line)", boxShadow: "0 0 0 1px var(--cc-gold-line)" },
+} as const;
+
+const optionSx = { "& option": { background: "var(--cc-panel-solid)", color: "var(--cc-text)" } };
+
+const labelProps = { fontSize: "13px", fontWeight: 500, color: "var(--cc-text-soft)" } as const;
+
+const pillBase = {
+  borderRadius: "full",
+  textTransform: "none",
+  fontSize: "11px",
+  fontWeight: 500,
+  px: 2,
+  py: 0.5,
+} as const;
+
+const champagnePill = { ...pillBase, bg: "rgba(212, 176, 128, 0.12)", color: "var(--cc-gold-light)" } as const;
+const neutralPill = { ...pillBase, bg: "rgba(255, 255, 255, 0.06)", color: "var(--cc-text-2)" } as const;
+
+/** Markierung der richtigen Antwort: semantisch grün, nicht Gold. */
+const correctChoice = {
+  bg: "rgba(74, 222, 128, 0.1)",
+  borderColor: "rgba(74, 222, 128, 0.35)",
+  color: "var(--cc-success)",
+  _hover: { bg: "rgba(74, 222, 128, 0.14)", borderColor: "rgba(74, 222, 128, 0.5)", boxShadow: "none" },
+} as const;
+
+const idleChoice = { color: "var(--cc-text-2)" } as const;
+
+const iconBtn = {
+  size: "sm",
+  variant: "ghost",
+  color: "var(--cc-text-2)",
+  _hover: { bg: "rgba(255, 255, 255, 0.06)", color: "var(--cc-text)" },
+} as const;
+
 function defaultMcQuestion(id: string): QuizQuestion {
   return {
     type: "multiple_choice",
@@ -38,7 +83,7 @@ function defaultMcQuestion(id: string): QuizQuestion {
     question: "",
     options: ["", "", "", ""],
     correct_index: 0,
-    explanation: "Bitte erneut pruefen.",
+    explanation: "Bitte erneut prüfen.",
   };
 }
 
@@ -53,84 +98,104 @@ function PreviewPanel({
 }) {
   const previewQuestion = questions[0] ?? defaultMcQuestion("preview");
   return (
-    <Stack
-      spacing={4}
-      p={5}
-      borderRadius="16px"
-      border="1px solid var(--color-border)"
-      bg="var(--color-surface)"
-      position={{ md: "sticky" }}
-      top={{ md: "20px" }}
-    >
-      <HStack justify="space-between">
-        <Text className="radley-regular" fontSize="xl" color="var(--color-text-primary)">
-          Vorschau
-        </Text>
-        <Badge borderRadius="full" px={2} py={0.5} bg="rgba(212,175,55,0.14)" color="var(--color-accent-gold-light)">
-          {quizMode === "multi_page" ? "Multi Page" : "Single Page"}
-        </Badge>
-      </HStack>
-      <Text className="inter" fontSize="sm" color="var(--color-text-secondary)">
-        So wirkt der Test für Nutzer. Bestehen ab <b>{passThreshold}%</b>.
-      </Text>
-      <Box borderRadius="12px" border="1px solid var(--color-border)" p={4} bg="var(--color-bg-secondary)">
-        <HStack justify="space-between" mb={3}>
-          <Text className="inter-semibold">Modul-Test</Text>
-          <Text className="inter" fontSize="sm" color="var(--color-text-secondary)">
-            {Math.max(questions.length, 1)} Fragen
+    // Sticky sitzt am Wrapper: `.cc-card` setzt selbst `position: relative`.
+    <Box position={{ md: "sticky" }} top={{ md: "20px" }}>
+      <Stack spacing={4} p={5} className="cc-card cc-card--still">
+        <HStack justify="space-between">
+          <Text fontSize="15px" fontWeight={600} color="var(--cc-text)">
+            Vorschau
           </Text>
+          <Badge {...champagnePill}>{quizMode === "multi_page" ? "Multi Page" : "Single Page"}</Badge>
         </HStack>
-        <Box h="8px" borderRadius="full" bg="rgba(255,255,255,0.12)" mb={4}>
-          <Box w="35%" h="100%" borderRadius="full" bg="linear-gradient(90deg, #A67C00 0%, #D4AF37 100%)" />
-        </Box>
-        <Text className="inter" color="var(--color-text-secondary)" fontSize="sm" mb={2}>
-          Frage 1 von {Math.max(questions.length, 1)}
+        <Text fontSize="sm" color="var(--cc-text-2)">
+          So wirkt der Test für Nutzer. Bestehen ab{" "}
+          <Box as="b" className="cc-num" color="var(--cc-text)">
+            {passThreshold}%
+          </Box>
+          .
         </Text>
-        <Text className="inter-semibold" mb={3}>
-          {previewQuestion.question || "Hier erscheint die erste Frage aus deinem Test."}
-        </Text>
-        <Stack spacing={2}>
-          {previewQuestion.type === "multiple_choice"
-            ? previewQuestion.options.map((option, idx) => (
+        <Box borderRadius="10px" border="1px solid var(--cc-line)" p={4} bg="rgba(255, 255, 255, 0.02)">
+          <HStack justify="space-between" mb={3}>
+            <Text fontWeight={600} color="var(--cc-text)">
+              Modul-Test
+            </Text>
+            <Text fontSize="sm" color="var(--cc-text-2)" className="cc-num">
+              {Math.max(questions.length, 1)} Fragen
+            </Text>
+          </HStack>
+          <Box h="8px" borderRadius="full" bg="rgba(255, 255, 255, 0.07)" mb={4}>
+            <Box w="35%" h="100%" borderRadius="full" bg="var(--cc-gold-bar)" />
+          </Box>
+          <Text color="var(--cc-text-2)" fontSize="sm" mb={2} className="cc-num">
+            Frage 1 von {Math.max(questions.length, 1)}
+          </Text>
+          <Text fontWeight={600} color="var(--cc-text)" mb={3}>
+            {previewQuestion.question || "Hier erscheint die erste Frage aus deinem Test."}
+          </Text>
+          <Stack spacing={2}>
+            {previewQuestion.type === "multiple_choice"
+              ? previewQuestion.options.map((option, idx) => (
+                  <Box
+                    key={`p-${idx}`}
+                    p={2.5}
+                    borderRadius="8px"
+                    border="1px solid var(--cc-line-strong)"
+                    bg="rgba(255, 255, 255, 0.03)"
+                    fontSize="sm"
+                    color="var(--cc-text-soft)"
+                  >
+                    {option || `Option ${idx + 1}`}
+                  </Box>
+                ))
+              : null}
+            {previewQuestion.type === "true_false" ? (
+              <HStack>
                 <Box
-                  key={`p-${idx}`}
+                  flex={1}
                   p={2.5}
-                  borderRadius="10px"
-                  border="1px solid rgba(255,255,255,0.15)"
-                  bg="rgba(255,255,255,0.03)"
-                  className="inter"
-                  fontSize="sm"
+                  borderRadius="8px"
+                  border="1px solid var(--cc-line-strong)"
+                  color="var(--cc-text-soft)"
+                  textAlign="center"
                 >
-                  {option || `Option ${idx + 1}`}
+                  Wahr
                 </Box>
-              ))
-            : null}
-          {previewQuestion.type === "true_false" ? (
-            <HStack>
-              <Box flex={1} p={2.5} borderRadius="10px" border="1px solid rgba(255,255,255,0.15)" className="inter" textAlign="center">
-                Wahr
-              </Box>
-              <Box flex={1} p={2.5} borderRadius="10px" border="1px solid rgba(255,255,255,0.15)" className="inter" textAlign="center">
-                Falsch
-              </Box>
-            </HStack>
-          ) : null}
-          {previewQuestion.type === "ordering"
-            ? previewQuestion.items.map((item, idx) => (
-                <HStack key={`o-${idx}`} p={2.5} borderRadius="10px" border="1px solid rgba(255,255,255,0.15)">
-                  <Badge borderRadius="full">{idx + 1}</Badge>
-                  <Text className="inter" fontSize="sm">
-                    {item || `Reihenfolge-Item ${idx + 1}`}
-                  </Text>
-                </HStack>
-              ))
-            : null}
-        </Stack>
-      </Box>
-      <Button leftIcon={<Eye size={16} />} variant="outline" borderColor="rgba(212,175,55,0.45)" color="var(--color-accent-gold-light)">
-        Vorschau aktualisiert sich live
-      </Button>
-    </Stack>
+                <Box
+                  flex={1}
+                  p={2.5}
+                  borderRadius="8px"
+                  border="1px solid var(--cc-line-strong)"
+                  color="var(--cc-text-soft)"
+                  textAlign="center"
+                >
+                  Falsch
+                </Box>
+              </HStack>
+            ) : null}
+            {previewQuestion.type === "ordering"
+              ? previewQuestion.items.map((item, idx) => (
+                  <HStack key={`o-${idx}`} p={2.5} borderRadius="8px" border="1px solid var(--cc-line-strong)">
+                    <Badge {...neutralPill} className="cc-num">
+                      {idx + 1}
+                    </Badge>
+                    <Text fontSize="sm" color="var(--cc-text-soft)">
+                      {item || `Reihenfolge-Item ${idx + 1}`}
+                    </Text>
+                  </HStack>
+                ))
+              : null}
+          </Stack>
+        </Box>
+        <Button
+          leftIcon={<Eye size={16} />}
+          variant="line"
+          borderColor="var(--cc-gold-line)"
+          color="var(--cc-gold-light)"
+        >
+          Vorschau aktualisiert sich live
+        </Button>
+      </Stack>
+    </Box>
   );
 }
 
@@ -196,72 +261,78 @@ export function QuizEditor({
     <Grid templateColumns={{ base: "1fr", xl: "minmax(0,1.2fr) minmax(380px,0.8fr)" }} gap={6}>
       <GridItem>
         <Stack spacing={6}>
-          <Stack spacing={2}>
-            <Text className="radley-regular" fontSize="2xl">
+          <Stack spacing={1}>
+            <Text fontSize="20px" fontWeight={600} lineHeight={1.3} color="var(--cc-text)">
               Quiz-Setup
             </Text>
-            <Text className="inter" color="var(--color-text-secondary)">
+            <Text fontSize="14px" color="var(--cc-text-2)" className={moduleTitle ? undefined : "cc-num"}>
               {moduleTitle ? `Modul: ${moduleTitle}` : `Modul-ID: ${moduleId}`}
             </Text>
           </Stack>
 
-          <Stack spacing={4} p={5} borderRadius="16px" border="1px solid var(--color-border)" bg="var(--color-surface)">
+          <Stack spacing={4} p={5} className="cc-card cc-card--still">
             <FormControl>
-              <FormLabel className="inter-semibold">Quiz-Titel</FormLabel>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+              <FormLabel {...labelProps}>Quiz-Titel</FormLabel>
+              <Input {...fieldSx} value={title} onChange={(e) => setTitle(e.target.value)} />
             </FormControl>
 
             <FormControl>
-              <FormLabel className="inter-semibold">Anzeigemodus</FormLabel>
-              <Select value={quizMode} onChange={(e) => setQuizMode(e.target.value as QuizMode)}>
+              <FormLabel {...labelProps}>Anzeigemodus</FormLabel>
+              <Select {...fieldSx} sx={optionSx} value={quizMode} onChange={(e) => setQuizMode(e.target.value as QuizMode)}>
                 <option value="multi_page">Multi Page - eine Frage pro Seite</option>
                 <option value="single_page">Single Page - alle Fragen auf einer Seite</option>
               </Select>
             </FormControl>
 
             <FormControl>
-              <FormLabel className="inter-semibold">Pass-Schwelle</FormLabel>
-              <Stack spacing={2}>
+              <FormLabel {...labelProps}>Pass-Schwelle</FormLabel>
+              <Stack spacing={3}>
                 <HStack justify="space-between">
-                  <Badge borderRadius="full" px={3} py={1} bg="rgba(212,175,55,0.14)" color="var(--color-accent-gold-light)">
+                  <Badge {...champagnePill} px={3} py={1} className="cc-num">
                     Mindestens {passThreshold}% richtig zum Bestehen
                   </Badge>
                   <Input
+                    {...fieldSx}
                     w="88px"
                     type="number"
+                    className="cc-num"
                     min={1}
                     max={100}
                     value={passThreshold}
                     onChange={(e) => setPassThreshold(Math.min(100, Math.max(1, Number(e.target.value) || 1)))}
                   />
                 </HStack>
-                <Slider min={1} max={100} value={passThreshold} onChange={(v) => setPassThreshold(v)}>
-                  <SliderTrack bg="rgba(255,255,255,0.15)">
-                    <SliderFilledTrack bg="linear-gradient(90deg, #A67C00 0%, #D4AF37 100%)" />
+                <Slider
+                  min={1}
+                  max={100}
+                  value={passThreshold}
+                  onChange={(v) => setPassThreshold(v)}
+                  aria-label="Pass-Schwelle in Prozent"
+                >
+                  <SliderTrack bg="rgba(255, 255, 255, 0.07)">
+                    <SliderFilledTrack bg="var(--cc-gold-bar)" />
                   </SliderTrack>
-                  <SliderThumb />
+                  <SliderThumb bg="var(--cc-gold-light)" boxShadow="0 0 10px rgba(212, 176, 128, 0.45)" />
                 </Slider>
               </Stack>
             </FormControl>
           </Stack>
 
           {questions.map((question, idx) => (
-            <Stack key={question.id} p={5} borderWidth="1px" borderColor="var(--color-border)" borderRadius="lg" gap={4} bg="var(--color-surface)">
+            <Stack key={question.id} p={5} gap={4} className="cc-card cc-card--still">
               <Flex justify="space-between" align="center" wrap="wrap" gap={2}>
                 <HStack>
-                  <Text className="inter-semibold">Frage {idx + 1}</Text>
-                  <Badge
-                    borderRadius="full"
-                    bg={question.type === "multiple_choice" ? "rgba(212,175,55,0.15)" : "rgba(255,255,255,0.10)"}
-                          color={question.type === "multiple_choice" ? "var(--color-accent-gold-light)" : "var(--color-text-secondary)"}
-                  >
+                  <Text fontWeight={600} color="var(--cc-text)" className="cc-num">
+                    Frage {idx + 1}
+                  </Text>
+                  <Badge {...(question.type === "multiple_choice" ? champagnePill : neutralPill)}>
                     {question.type === "multiple_choice" ? "MC" : question.type === "true_false" ? "W/F" : "Reihenfolge"}
                   </Badge>
                 </HStack>
-                <HStack>
+                <HStack spacing={1}>
                   <Button
-                    size="sm"
-                    variant="ghost"
+                    {...iconBtn}
+                    aria-label="Frage nach oben verschieben"
                     onClick={() => {
                       if (idx === 0) return;
                       setQuestions((prev) => {
@@ -276,8 +347,8 @@ export function QuizEditor({
                     <ArrowUp size={14} />
                   </Button>
                   <Button
-                    size="sm"
-                    variant="ghost"
+                    {...iconBtn}
+                    aria-label="Frage nach unten verschieben"
                     onClick={() => {
                       if (idx >= questions.length - 1) return;
                       setQuestions((prev) => {
@@ -292,10 +363,10 @@ export function QuizEditor({
                     <ArrowDown size={14} />
                   </Button>
                   <Button
-                    size="sm"
-                    variant="ghost"
-                    color="var(--color-text-muted)"
-                    _hover={{ color: "#F87171", bg: "rgba(239,68,68,0.08)" }}
+                    {...iconBtn}
+                    aria-label="Frage löschen"
+                    color="var(--cc-text-3)"
+                    _hover={{ color: "var(--cc-danger)", bg: "rgba(248, 113, 113, 0.08)" }}
                     onClick={() => setQuestions((prev) => prev.filter((_, i) => i !== idx))}
                     isDisabled={questions.length <= 1}
                   >
@@ -305,10 +376,10 @@ export function QuizEditor({
               </Flex>
 
               <FormControl>
-                <FormLabel className="inter-semibold" fontSize="sm">
-                  Fragetyp
-                </FormLabel>
+                <FormLabel {...labelProps}>Fragetyp</FormLabel>
                 <Select
+                  {...fieldSx}
+                  sx={optionSx}
                   value={question.type}
                   onChange={(e) => {
                     const type = e.target.value as QuizQuestion["type"];
@@ -350,47 +421,46 @@ export function QuizEditor({
               </FormControl>
 
               <FormControl>
-                <FormLabel className="inter-semibold" fontSize="sm">
-                  Fragetext
-                </FormLabel>
-                <Textarea value={question.question} onChange={(e) => updateQuestion(idx, { ...question, question: e.target.value })} />
+                <FormLabel {...labelProps}>Fragetext</FormLabel>
+                <Textarea
+                  {...fieldSx}
+                  value={question.question}
+                  onChange={(e) => updateQuestion(idx, { ...question, question: e.target.value })}
+                />
               </FormControl>
 
               {question.type === "multiple_choice" ? (
                 <Stack spacing={2}>
-                  <Text className="inter-semibold" fontSize="sm">
-                    Antwortoptionen und richtige Lösung
-                  </Text>
-                  {question.options.map((option, optionIdx) => (
-                    <HStack key={`${question.id}-${optionIdx}`}>
-                      <Button
-                        size="sm"
-                        minW="44px"
-                        variant={question.correct_index === optionIdx ? "solid" : "outline"}
-                        color={question.correct_index === optionIdx ? "var(--color-white)" : "var(--color-accent-gold-light)"}
-                        bg={
-                          question.correct_index === optionIdx
-                            ? "linear-gradient(135deg, var(--color-accent-gold) 0%, var(--color-accent-gold-dark) 100%)"
-                            : "transparent"
-                        }
-                        borderColor="rgba(212,175,55,0.45)"
-                        onClick={() => updateQuestion(idx, { ...question, correct_index: optionIdx })}
-                      >
-                        {String.fromCharCode(65 + optionIdx)}
-                      </Button>
-                      <Input
-                        placeholder={`Option ${String.fromCharCode(65 + optionIdx)}`}
-                        value={option}
-                        onChange={(e) =>
-                          updateQuestion(idx, {
-                            ...question,
-                            options: question.options.map((op, i) => (i === optionIdx ? e.target.value : op)),
-                          })
-                        }
-                      />
-                    </HStack>
-                  ))}
-                  <Text className="inter" fontSize="xs" color="var(--color-text-tertiary)">
+                  <Text {...labelProps}>Antwortoptionen und richtige Lösung</Text>
+                  {question.options.map((option, optionIdx) => {
+                    const isCorrect = question.correct_index === optionIdx;
+                    return (
+                      <HStack key={`${question.id}-${optionIdx}`}>
+                        <Button
+                          size="sm"
+                          minW="44px"
+                          variant="line"
+                          aria-pressed={isCorrect}
+                          {...(isCorrect ? correctChoice : idleChoice)}
+                          onClick={() => updateQuestion(idx, { ...question, correct_index: optionIdx })}
+                        >
+                          {String.fromCharCode(65 + optionIdx)}
+                        </Button>
+                        <Input
+                          {...fieldSx}
+                          placeholder={`Option ${String.fromCharCode(65 + optionIdx)}`}
+                          value={option}
+                          onChange={(e) =>
+                            updateQuestion(idx, {
+                              ...question,
+                              options: question.options.map((op, i) => (i === optionIdx ? e.target.value : op)),
+                            })
+                          }
+                        />
+                      </HStack>
+                    );
+                  })}
+                  <Text fontSize="xs" color="var(--cc-text-3)">
                     Klicke auf A/B/C/D, um die richtige Antwort zu markieren.
                   </Text>
                 </Stack>
@@ -398,26 +468,22 @@ export function QuizEditor({
 
               {question.type === "true_false" ? (
                 <FormControl>
-                  <FormLabel className="inter-semibold" fontSize="sm">
-                    Richtige Antwort
-                  </FormLabel>
+                  <FormLabel {...labelProps}>Richtige Antwort</FormLabel>
                   <HStack>
                     <Button
                       flex={1}
-                      variant={question.correct ? "solid" : "outline"}
-                      color={question.correct ? "var(--color-white)" : "var(--color-accent-gold-light)"}
-                      bg={question.correct ? "linear-gradient(135deg, var(--color-accent-gold) 0%, var(--color-accent-gold-dark) 100%)" : "transparent"}
-                      borderColor="rgba(212,175,55,0.45)"
+                      variant="line"
+                      aria-pressed={question.correct}
+                      {...(question.correct ? correctChoice : idleChoice)}
                       onClick={() => updateQuestion(idx, { ...question, correct: true })}
                     >
                       Wahr
                     </Button>
                     <Button
                       flex={1}
-                      variant={!question.correct ? "solid" : "outline"}
-                      color={!question.correct ? "var(--color-white)" : "var(--color-accent-gold-light)"}
-                      bg={!question.correct ? "linear-gradient(135deg, var(--color-accent-gold) 0%, var(--color-accent-gold-dark) 100%)" : "transparent"}
-                      borderColor="rgba(212,175,55,0.45)"
+                      variant="line"
+                      aria-pressed={!question.correct}
+                      {...(!question.correct ? correctChoice : idleChoice)}
                       onClick={() => updateQuestion(idx, { ...question, correct: false })}
                     >
                       Falsch
@@ -429,10 +495,9 @@ export function QuizEditor({
               {question.type === "ordering" ? (
                 <Stack spacing={2}>
                   <FormControl>
-                    <FormLabel className="inter-semibold" fontSize="sm">
-                      Items (eine Zeile pro Item)
-                    </FormLabel>
+                    <FormLabel {...labelProps}>Items (eine Zeile pro Item)</FormLabel>
                     <Textarea
+                      {...fieldSx}
                       value={question.items.join("\n")}
                       onChange={(e) =>
                         updateQuestion(idx, {
@@ -443,10 +508,10 @@ export function QuizEditor({
                     />
                   </FormControl>
                   <FormControl>
-                    <FormLabel className="inter-semibold" fontSize="sm">
-                      Korrekte Reihenfolge (Indices)
-                    </FormLabel>
+                    <FormLabel {...labelProps}>Korrekte Reihenfolge (Indices)</FormLabel>
                     <Input
+                      {...fieldSx}
+                      className="cc-num"
                       placeholder="z.B. 0,2,1"
                       value={question.correct_order.join(",")}
                       onChange={(e) =>
@@ -464,10 +529,9 @@ export function QuizEditor({
               ) : null}
 
               <FormControl>
-                <FormLabel className="inter-semibold" fontSize="sm">
-                  Erklärung bei falscher Antwort
-                </FormLabel>
+                <FormLabel {...labelProps}>Erklärung bei falscher Antwort</FormLabel>
                 <Textarea
+                  {...fieldSx}
                   placeholder="Wird dem Nutzer bei falscher Antwort angezeigt."
                   value={question.explanation ?? ""}
                   onChange={(e) => updateQuestion(idx, { ...question, explanation: e.target.value })}
@@ -480,10 +544,10 @@ export function QuizEditor({
             position={{ base: "static", md: "sticky" }}
             bottom={0}
             zIndex={1}
-            bg="rgba(12,13,16,0.94)"
-            backdropFilter="blur(10px)"
-            border="1px solid rgba(255,255,255,0.08)"
-            borderRadius="14px"
+            bg="var(--cc-panel-solid)"
+            border="1px solid var(--cc-line-strong)"
+            borderRadius="12px"
+            boxShadow="0 -8px 24px rgba(0, 0, 0, 0.35)"
             p={3}
             justify="space-between"
             align="center"
@@ -491,20 +555,18 @@ export function QuizEditor({
             wrap="wrap"
           >
             <HStack>
-              <Button leftIcon={<Plus size={14} />} variant="outline" borderColor="rgba(212,175,55,0.45)" color="var(--color-accent-gold-light)" onClick={addQuestion}>
+              <Button leftIcon={<Plus size={14} />} variant="line" onClick={addQuestion}>
                 Frage hinzufügen
               </Button>
-              <Button
-                isLoading={saving}
-                onClick={save}
-                color="var(--color-white)"
-                bg="linear-gradient(135deg, var(--color-accent-gold) 0%, var(--color-accent-gold-dark) 100%)"
-                _hover={{ bg: "linear-gradient(135deg, var(--color-accent-gold-light) 0%, var(--color-accent-gold) 100%)" }}
-              >
+              <Button variant="gold" isLoading={saving} onClick={save}>
                 Quiz speichern
               </Button>
             </HStack>
-            {status ? <Text className="inter" fontSize="sm">{status}</Text> : null}
+            {status ? (
+              <Text fontSize="sm" color={status.startsWith("Fehler") ? "var(--cc-danger)" : "var(--cc-success)"} role="status">
+                {status}
+              </Text>
+            ) : null}
           </Flex>
         </Stack>
       </GridItem>

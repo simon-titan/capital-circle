@@ -1,28 +1,43 @@
 "use client";
 
-import { Box, Button, ButtonGroup, HStack, Text } from "@chakra-ui/react";
+import { Box, Button, HStack, IconButton, Text } from "@chakra-ui/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { Bold, Heading2, Italic, List, ListOrdered } from "lucide-react";
-import { useCallback, useEffect, useRef } from "react";
+import { Bold, Clock3, Heading2, Italic, List, ListOrdered } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type ModuleNotesProps = {
   moduleId: string;
   initialContent: string;
+  /** Aktuelle Wiedergabeposition (Sekunden) — aktiviert den Zeitstempel-Button. */
+  getTimestamp?: () => number;
 };
 
 const SAVE_DEBOUNCE_MS = 1500;
 
-export function ModuleNotes({ moduleId, initialContent }: ModuleNotesProps) {
+function formatStamp(seconds: number) {
+  const s = Math.max(0, Math.floor(seconds));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
+export function ModuleNotes({ moduleId, initialContent, getTimestamp }: ModuleNotesProps) {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedRef = useRef<string>(initialContent);
   const htmlRef = useRef<string>(initialContent);
+  const [stamp, setStamp] = useState(0);
 
   useEffect(() => {
     htmlRef.current = initialContent;
     lastSavedRef.current = initialContent;
   }, [moduleId, initialContent]);
+
+  // Nur die Notizen rendern sekündlich neu, nicht das ganze Modul-Layout.
+  useEffect(() => {
+    if (!getTimestamp) return;
+    const id = window.setInterval(() => setStamp(Math.floor(getTimestamp())), 1000);
+    return () => window.clearInterval(id);
+  }, [getTimestamp]);
 
   const save = useCallback(async (html: string) => {
     if (html === lastSavedRef.current) return;
@@ -58,7 +73,7 @@ export function ModuleNotes({ moduleId, initialContent }: ModuleNotesProps) {
           heading: { levels: [2, 3] },
         }),
         Placeholder.configure({
-          placeholder: "Deine Notizen zu diesem Modul…",
+          placeholder: "Schreibe deine Gedanken hier…",
         }),
       ],
       content: initialContent || "",
@@ -86,75 +101,66 @@ export function ModuleNotes({ moduleId, initialContent }: ModuleNotesProps) {
     };
   }, [save]);
 
+  const toolButton = (label: string, icon: React.ReactElement, active: boolean, onClick: () => void) => (
+    <IconButton
+      aria-label={label}
+      icon={icon}
+      size="sm"
+      variant="ghost"
+      onClick={onClick}
+      color={active ? "var(--cc-gold-light)" : "var(--cc-text-2)"}
+      bg={active ? "rgba(212, 176, 128, 0.12)" : "transparent"}
+      _hover={{ bg: "rgba(255, 255, 255, 0.06)", color: "var(--cc-text)" }}
+    />
+  );
+
   return (
-    <Box mt={8}>
-      <Text className="inter" fontSize="xs" textTransform="uppercase" letterSpacing="0.08em" color="var(--color-text-muted)" mb={2}>
-        Meine Notizen
-      </Text>
-      <Text className="inter" fontSize="xs" color="var(--color-text-muted)" mb={3}>
-        Wird automatisch gespeichert.
-      </Text>
+    <Box>
+      <HStack justify="space-between" align="flex-start" gap={3} mb={3} flexWrap="wrap">
+        <Box>
+          <Text fontSize="15px" fontWeight={600} color="var(--cc-text)">
+            Neue Notiz erstellen
+          </Text>
+          <Text fontSize="12px" color="var(--cc-text-3)" mt={0.5}>
+            Wird automatisch gespeichert.
+          </Text>
+        </Box>
+        {getTimestamp && editor ? (
+          <Button
+            size="xs"
+            variant="line"
+            leftIcon={<Clock3 size={13} strokeWidth={2} />}
+            color="var(--cc-gold-light)"
+            borderColor="var(--cc-gold-line)"
+            className="cc-num"
+            onClick={() => editor.chain().focus().insertContent(`[${formatStamp(stamp)}] `).run()}
+            title="Aktuelle Videoposition in die Notiz einfügen"
+          >
+            Zeitstempel: {formatStamp(stamp)}
+          </Button>
+        ) : null}
+      </HStack>
       {editor ? (
         <Box
-          borderRadius="16px"
-          borderWidth="1px"
-          borderColor="rgba(255,255,255,0.1)"
-          bg="rgba(0,0,0,0.25)"
+          borderRadius="12px"
+          border="1px solid var(--cc-line-strong)"
+          bg="rgba(255, 255, 255, 0.03)"
           overflow="hidden"
+          transition="border-color 150ms var(--cc-ease), box-shadow 150ms var(--cc-ease)"
+          _focusWithin={{ borderColor: "var(--cc-gold-line)", boxShadow: "0 0 0 1px var(--cc-gold-line)" }}
         >
-          <HStack
-            flexWrap="wrap"
-            gap={1}
-            px={2}
-            py={2}
-            borderBottomWidth="1px"
-            borderColor="rgba(255,255,255,0.08)"
-            bg="rgba(255,255,255,0.03)"
-          >
-            <ButtonGroup size="sm" variant="ghost" spacing={0}>
-              <Button
-                aria-label="Fett"
-                onClick={() => editor.chain().focus().toggleBold().run()}
-                variant={editor.isActive("bold") ? "solid" : "ghost"}
-                colorScheme="yellow"
-              >
-                <Bold size={16} />
-              </Button>
-              <Button
-                aria-label="Kursiv"
-                onClick={() => editor.chain().focus().toggleItalic().run()}
-                variant={editor.isActive("italic") ? "solid" : "ghost"}
-                colorScheme="yellow"
-              >
-                <Italic size={16} />
-              </Button>
-              <Button
-                aria-label="Überschrift"
-                onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-                variant={editor.isActive("heading", { level: 2 }) ? "solid" : "ghost"}
-                colorScheme="yellow"
-              >
-                <Heading2 size={16} />
-              </Button>
-              <Button
-                aria-label="Liste"
-                onClick={() => editor.chain().focus().toggleBulletList().run()}
-                variant={editor.isActive("bulletList") ? "solid" : "ghost"}
-                colorScheme="yellow"
-              >
-                <List size={16} />
-              </Button>
-              <Button
-                aria-label="Nummerierung"
-                onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                variant={editor.isActive("orderedList") ? "solid" : "ghost"}
-                colorScheme="yellow"
-              >
-                <ListOrdered size={16} />
-              </Button>
-            </ButtonGroup>
+          <HStack flexWrap="wrap" gap={1} px={2} py={1.5} borderBottom="1px solid var(--cc-line)">
+            {toolButton("Fett", <Bold size={16} />, editor.isActive("bold"), () => editor.chain().focus().toggleBold().run())}
+            {toolButton("Kursiv", <Italic size={16} />, editor.isActive("italic"), () => editor.chain().focus().toggleItalic().run())}
+            {toolButton("Überschrift", <Heading2 size={16} />, editor.isActive("heading", { level: 2 }), () =>
+              editor.chain().focus().toggleHeading({ level: 2 }).run(),
+            )}
+            {toolButton("Liste", <List size={16} />, editor.isActive("bulletList"), () => editor.chain().focus().toggleBulletList().run())}
+            {toolButton("Nummerierung", <ListOrdered size={16} />, editor.isActive("orderedList"), () =>
+              editor.chain().focus().toggleOrderedList().run(),
+            )}
           </HStack>
-          <Box px={3} py={3} className="inter" fontSize="sm" color="var(--color-text-primary)">
+          <Box px={4} py={3} fontSize="14px" color="var(--cc-text)">
             <EditorContent editor={editor} />
           </Box>
         </Box>

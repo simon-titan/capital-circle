@@ -1,7 +1,12 @@
 import Link from "next/link";
-import { Box, Button, HStack, Stack, Text } from "@chakra-ui/react";
+import { Box, Button } from "@chakra-ui/react";
 import { createClient } from "@/lib/supabase/server";
-import { CourseModulesDraggable } from "@/components/admin/CourseModulesDraggable";
+import { AdminPageHeader } from "@/components/admin/adminUi";
+import {
+  CourseModulesDraggable,
+  type ModuleVideoRow,
+  type SubcategoryRow,
+} from "@/components/admin/CourseModulesDraggable";
 import { UNASSIGNED_COURSE_ID } from "@/lib/scan-modules";
 import { redirect } from "next/navigation";
 
@@ -27,38 +32,73 @@ export default async function CoursePage({ params }: PageProps) {
     .order("order_index");
   const moduleItems = (modules ?? []) as Array<{ id: string; title: string; order_index: number }>;
 
-  return (
-    <Stack gap={8} maxW="var(--adminMaxWidth, 1440px)" mx="auto" px={{ base: 4, md: 6 }} py={{ base: 6, md: 8 }}>
-      <Stack spacing={2}>
-        <Text as="h1" className="radley-regular" fontSize={{ base: "xl", md: "2xl" }} color="whiteAlpha.900">
-          {course?.title ?? "Kurs"}
-        </Text>
-        <Text className="inter" fontSize="sm" color="gray.500">
-          Module per Drag & Drop sortieren. Slug:{" "}
-          <Box as="span" className="jetbrains-mono" color="gray.400">
-            {course?.slug}
-          </Box>
-        </Text>
-      </Stack>
+  // Untermodule + Videos für die aufklappbaren Modulkacheln. Zwei Sammelabfragen
+  // statt einer je Modul — bei 14 Modulen wären das sonst 28 Roundtrips.
+  const moduleIds = moduleItems.map((m) => m.id);
 
-      <HStack spacing={3} flexWrap="wrap">
-        <Link href={`/admin/kurse/${courseId}/module/new`} style={{ textDecoration: "none" }}>
-          <Button colorScheme="blue" size="md" as="span">
-            + Neues Modul anlegen
-          </Button>
-        </Link>
-        <Link href="/admin/kurse" style={{ textDecoration: "none" }}>
-          <Button variant="outline" size="md" as="span" borderColor="whiteAlpha.300" color="gray.200">
-            ← Zurück zu allen Kursen
-          </Button>
-        </Link>
-      </HStack>
+  const { data: subRows } =
+    moduleIds.length > 0
+      ? await supabase
+          .from("subcategories")
+          .select("id,title,position,module_id")
+          .in("module_id", moduleIds)
+          .order("position")
+      : { data: [] };
+
+  const subIds = (subRows ?? []).map((s) => s.id as string);
+
+  // Direkte Modul-Videos und Subkategorie-Videos in einem Rutsch.
+  const { data: videoRows } =
+    moduleIds.length > 0 || subIds.length > 0
+      ? await supabase
+          .from("videos")
+          .select("id,title,position,is_published,duration_seconds,module_id,subcategory_id")
+          .or(
+            [
+              moduleIds.length > 0 ? `module_id.in.(${moduleIds.join(",")})` : null,
+              subIds.length > 0 ? `subcategory_id.in.(${subIds.join(",")})` : null,
+            ]
+              .filter(Boolean)
+              .join(","),
+          )
+          .order("position")
+      : { data: [] };
+
+  return (
+    <Box w="full">
+      <AdminPageHeader
+        title={course?.title ?? "Kurs"}
+        subtitle={
+          <>
+            Module per Drag &amp; Drop sortieren, zum Aufklappen der Untermodule anklicken. Slug:{" "}
+            <Box as="span" color="var(--cc-text-soft)">
+              {course?.slug}
+            </Box>
+          </>
+        }
+        actions={
+          <>
+            <Link href="/admin/kurse" style={{ textDecoration: "none" }}>
+              <Button variant="line" size="sm" as="span">
+                ← Zurück zu allen Kursen
+              </Button>
+            </Link>
+            <Link href={`/admin/kurse/${courseId}/module/new`} style={{ textDecoration: "none" }}>
+              <Button variant="gold" size="sm" as="span">
+                + Neues Modul anlegen
+              </Button>
+            </Link>
+          </>
+        }
+      />
 
       <CourseModulesDraggable
         courseId={courseId}
         initialModules={moduleItems}
         allCourses={(allCoursesRows ?? []) as Array<{ id: string; title: string }>}
+        subcategories={(subRows ?? []) as SubcategoryRow[]}
+        videos={(videoRows ?? []) as ModuleVideoRow[]}
       />
-    </Stack>
+    </Box>
   );
 }

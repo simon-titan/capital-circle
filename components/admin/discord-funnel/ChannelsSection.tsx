@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Badge,
   Box,
   Button,
   HStack,
@@ -12,27 +11,27 @@ import {
 } from "@chakra-ui/react";
 import { Copy, Plus, Share2, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  AdminLabel,
+  adminDangerButtonProps,
+  adminInputProps,
+  adminInsetProps,
+} from "@/components/admin/adminUi";
 import { SOURCE_ORIGIN_LABELS, type ChannelRow, type PerChannelRow } from "./types";
-import { eurFromCents, FieldLabel, SectionCard } from "./primitives";
+import { eurFromCents, FieldLabel, SectionCard, TagBadge } from "./primitives";
 
 function ChannelStat({ label, value }: { label: string; value: string | number }) {
   return (
     <Stack spacing={0} align="center" minW="52px">
-      <Text className="inter-semibold" fontSize="sm" color="var(--color-text-primary)" fontWeight={700}>
+      <Text className="cc-num" fontSize="14px" fontWeight={600} color="var(--cc-text)">
         {value}
       </Text>
-      <Text fontSize="10px" color="#606068" className="inter" textTransform="uppercase" letterSpacing="0.06em">
+      <Text fontSize="10px" color="var(--cc-text-3)" textTransform="uppercase" letterSpacing="0.06em">
         {label}
       </Text>
     </Stack>
   );
 }
-
-const inputSx = {
-  bg: "rgba(255,255,255,0.04)",
-  borderColor: "rgba(255,255,255,0.12)",
-  color: "var(--color-text-primary)",
-} as const;
 
 export function ChannelsSection({ channels }: { channels: PerChannelRow[] }) {
   const [managed, setManaged] = useState<ChannelRow[]>([]);
@@ -128,8 +127,8 @@ export function ChannelsSection({ channels }: { channels: PerChannelRow[] }) {
     <SectionCard title="Kanäle & Tracking-Links" icon={<Share2 size={16} />}>
       <Stack spacing={5}>
         {/* Anlegen */}
-        <Stack spacing={3} bg="#0C0D10" border="1px solid rgba(255,255,255,0.07)" borderRadius="12px" p={4}>
-          <Text className="inter-semibold" fontSize="sm" color="var(--color-text-primary)">
+        <Stack spacing={3} {...adminInsetProps} p={4}>
+          <Text fontSize="14px" fontWeight={600} color="var(--cc-text)">
             Neuen Kanal anlegen
           </Text>
           <HStack spacing={3} flexWrap="wrap" align="flex-end">
@@ -140,8 +139,7 @@ export function ChannelsSection({ channels }: { channels: PerChannelRow[] }) {
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
                 placeholder="z. B. YouTube"
-                className="inter"
-                {...inputSx}
+                {...adminInputProps}
               />
             </Stack>
             <Stack spacing={1} flex="1" minW="140px">
@@ -151,8 +149,8 @@ export function ChannelsSection({ channels }: { channels: PerChannelRow[] }) {
                 value={utmSource}
                 onChange={(e) => setUtmSource(e.target.value)}
                 placeholder="z. B. youtube"
-                className="inter inter-semibold"
-                {...inputSx}
+                fontWeight={500}
+                {...adminInputProps}
               />
             </Stack>
             <Stack spacing={1} flex="1" minW="140px">
@@ -162,26 +160,22 @@ export function ChannelsSection({ channels }: { channels: PerChannelRow[] }) {
                 value={utmCampaign}
                 onChange={(e) => setUtmCampaign(e.target.value)}
                 placeholder="z. B. launch-juni"
-                className="inter inter-semibold"
-                {...inputSx}
+                fontWeight={500}
+                {...adminInputProps}
               />
             </Stack>
             <Button
               size="sm"
+              variant="gold"
               onClick={() => void addChannel()}
               isLoading={busy}
               leftIcon={<Plus size={14} />}
-              bg="rgba(212,175,55,0.16)"
-              color="var(--color-accent-gold-light, #E8C547)"
-              border="1px solid rgba(212,175,55,0.45)"
-              _hover={{ bg: "rgba(212,175,55,0.24)" }}
-              className="inter"
             >
               Anlegen
             </Button>
           </HStack>
           {err ? (
-            <Text fontSize="xs" color="#FCA5A5" className="inter">
+            <Text fontSize="12px" color="var(--cc-danger)">
               {err}
             </Text>
           ) : null}
@@ -189,7 +183,7 @@ export function ChannelsSection({ channels }: { channels: PerChannelRow[] }) {
 
         {/* Verwaltete Kanäle */}
         {managed.length === 0 ? (
-          <Text fontSize="sm" color="var(--color-text-secondary)" className="inter" fontStyle="italic">
+          <Text fontSize="14px" color="var(--cc-text-2)">
             Noch keine Kanäle angelegt. Lege oben deine Quellen (YouTube, Instagram, TikTok …) an.
           </Text>
         ) : (
@@ -198,64 +192,36 @@ export function ChannelsSection({ channels }: { channels: PerChannelRow[] }) {
               const stats = statsBySource.get(ch.utm_source);
               const link = buildLink(ch.utm_source, ch.utm_campaign);
               return (
-                <Box key={ch.id} bg="#0C0D10" border="1px solid rgba(255,255,255,0.07)" borderRadius="12px" p={4}>
+                <Box key={ch.id} {...adminInsetProps} p={4}>
                   <HStack justify="space-between" align="flex-start" flexWrap="wrap" gap={3}>
-                    <Stack spacing={1} flex="1" minW="200px">
-                      <HStack spacing={2}>
-                        <Text className="inter-semibold" color="var(--color-text-primary)">
+                    <Stack spacing={1.5} flex="1" minW="200px">
+                      <HStack spacing={2} flexWrap="wrap">
+                        <Text fontSize="14px" fontWeight={600} color="var(--cc-text)">
                           {ch.label}
                         </Text>
-                        <Badge
-                          bg="rgba(255,255,255,0.06)"
-                          color="#9A9AA4"
-                          border="1px solid rgba(255,255,255,0.08)"
-                          borderRadius="6px"
-                          fontSize="10px"
-                          px={2}
-                          className="inter-semibold"
-                        >
-                          {ch.utm_source}
-                        </Badge>
+                        <TagBadge>{ch.utm_source}</TagBadge>
                         {stats?.source_origin ? (
-                          <Badge
-                            bg="rgba(212,175,55,0.12)"
-                            color="var(--color-accent-gold-light, #E8C547)"
-                            border="1px solid rgba(212,175,55,0.30)"
-                            borderRadius="6px"
-                            fontSize="10px"
-                            px={2}
-                            textTransform="none"
-                            className="inter"
-                          >
-                            {SOURCE_ORIGIN_LABELS[stats.source_origin]}
-                          </Badge>
+                          <TagBadge tone="gold">{SOURCE_ORIGIN_LABELS[stats.source_origin]}</TagBadge>
                         ) : null}
                       </HStack>
                       <HStack
                         spacing={2}
-                        bg="rgba(255,255,255,0.03)"
-                        border="1px solid rgba(255,255,255,0.08)"
+                        bg="rgba(255, 255, 255, 0.03)"
+                        border="1px solid var(--cc-line)"
                         borderRadius="8px"
-                        px={3}
-                        py={1.5}
+                        pl={3}
+                        pr={1}
+                        py={1}
                         maxW="full"
                       >
-                        <Text
-                          fontSize="xs"
-                          color="var(--color-text-secondary)"
-                          className="inter-semibold"
-                          noOfLines={1}
-                          flex="1"
-                        >
+                        <Text fontSize="12px" fontWeight={500} color="var(--cc-text-2)" noOfLines={1} flex="1">
                           {link}
                         </Text>
                         <Button
                           size="xs"
-                          variant="ghost"
+                          variant="line"
                           leftIcon={<Copy size={12} />}
                           onClick={() => void copyLink(link, ch.id)}
-                          color="var(--color-accent-gold-light, #E8C547)"
-                          className="inter"
                         >
                           {copied === ch.id ? "Kopiert" : "Kopieren"}
                         </Button>
@@ -270,10 +236,8 @@ export function ChannelsSection({ channels }: { channels: PerChannelRow[] }) {
                       <ChannelStat label="Revenue" value={eurFromCents(stats?.revenueCents)} />
                       <Button
                         size="xs"
-                        variant="ghost"
+                        {...adminDangerButtonProps}
                         onClick={() => void deleteChannel(ch.id)}
-                        color="#FCA5A5"
-                        _hover={{ bg: "rgba(229,72,77,0.12)" }}
                         aria-label="Kanal löschen"
                       >
                         <Trash2 size={14} />
@@ -289,27 +253,11 @@ export function ChannelsSection({ channels }: { channels: PerChannelRow[] }) {
         {/* Beobachtete, nicht definierte Quellen */}
         {unmanaged.length > 0 ? (
           <Stack spacing={2}>
-            <Text
-              fontSize="xs"
-              letterSpacing="0.12em"
-              textTransform="uppercase"
-              color="#606068"
-              className="inter"
-            >
-              Weitere beobachtete Quellen
-            </Text>
+            <AdminLabel>Weitere beobachtete Quellen</AdminLabel>
             <SimpleGrid columns={{ base: 1, md: 2 }} spacing={2}>
               {unmanaged.map((c) => (
-                <HStack
-                  key={c.utm_source}
-                  justify="space-between"
-                  bg="#0C0D10"
-                  border="1px solid rgba(255,255,255,0.07)"
-                  borderRadius="10px"
-                  px={3}
-                  py={2}
-                >
-                  <Text fontSize="xs" color="var(--color-text-secondary)" className="inter-semibold" noOfLines={1}>
+                <HStack key={c.utm_source} justify="space-between" {...adminInsetProps} px={3} py={2}>
+                  <Text fontSize="12px" fontWeight={500} color="var(--cc-text-2)" noOfLines={1}>
                     {c.utm_source}
                   </Text>
                   <HStack spacing={3}>

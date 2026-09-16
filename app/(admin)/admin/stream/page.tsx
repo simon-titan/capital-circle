@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
-import { Box, Heading, Stack, Text } from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
 import { requireAdmin } from "@/lib/supabase/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
+import { AdminPageHeader } from "@/components/admin/adminUi";
 import { StreamTogglePanel, type AdminStreamSettings } from "@/components/admin/StreamTogglePanel";
 
 export const dynamic = "force-dynamic";
@@ -40,24 +41,12 @@ export default async function AdminStreamPage() {
   };
 
   return (
-    <Box maxW="960px" mx="auto" px={{ base: 4, md: 6 }} py={8}>
-      <Stack spacing={6}>
-        <Stack spacing={1}>
-          <Heading
-            as="h1"
-            className="radley-regular"
-            fontWeight={400}
-            fontSize={{ base: "2xl", md: "3xl" }}
-            color="whiteAlpha.950"
-          >
-            Live Stream
-          </Heading>
-          <Text fontSize="sm" color="var(--color-text-secondary)" className="inter">
-            Steuerung des Free-User-Streams. Schalte hier an/aus und hinterlege die Cloudflare Video-UID.
-          </Text>
-        </Stack>
-        <StreamTogglePanel initial={initial} />
-      </Stack>
+    <Box maxW="960px" mx="auto">
+      <AdminPageHeader
+        title="Live Stream"
+        subtitle="Steuerung des Free-User-Streams. Schalte hier an/aus und hinterlege die Cloudflare Video-UID."
+      />
+      <StreamTogglePanel initial={initial} />
     </Box>
   );
 }

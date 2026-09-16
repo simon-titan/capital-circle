@@ -3,7 +3,6 @@
 import {
   Alert,
   AlertIcon,
-  Badge,
   Box,
   Button,
   Divider,
@@ -25,6 +24,23 @@ import {
 } from "@chakra-ui/react";
 import { ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import {
+  ADMIN_CARD_CLASS,
+  AdminCardTitle,
+  StatusPill,
+  adminAlertIconColor,
+  adminAlertProps,
+  adminCardPadding,
+  adminDangerButtonProps,
+  adminFormLabelProps,
+  adminInputProps,
+  adminModalHeaderProps,
+  adminModalProps,
+  adminOptionStyle,
+  adminOverlayProps,
+  adminRowProps,
+  type AdminTone,
+} from "@/components/admin/adminUi";
 
 type AdminRole = "owner" | "admin" | "support" | "editor";
 
@@ -44,25 +60,20 @@ const ROLE_LABELS: Record<AdminRole, string> = {
   editor: "Editor",
 };
 
-const ROLE_BADGE: Record<AdminRole, { bg: string; color: string; border: string }> = {
-  owner: { bg: "rgba(212,175,55,0.18)", color: "#FFD66B", border: "rgba(212,175,55,0.40)" },
-  admin: { bg: "rgba(59,130,246,0.14)", color: "#93C5FD", border: "rgba(59,130,246,0.35)" },
-  support: { bg: "rgba(132,82,255,0.14)", color: "#C4B5FD", border: "rgba(132,82,255,0.35)" },
-  editor: { bg: "rgba(255,255,255,0.06)", color: "#9A9AA4", border: "rgba(255,255,255,0.12)" },
+/** Owner/Admin in Champagner, übrige Rollen neutral. */
+const ROLE_TONE: Record<AdminRole, AdminTone> = {
+  owner: "attention",
+  admin: "attention",
+  support: "neutral",
+  editor: "neutral",
 };
 
-const fieldStyles = {
-  bg: "rgba(255,255,255,0.06)",
-  borderColor: "whiteAlpha.300",
-  color: "gray.100",
-  _placeholder: { color: "gray.500" },
-  _focus: { borderColor: "blue.400", boxShadow: "0 0 0 1px rgba(59,130,246,0.45)" },
-} as const;
-
-const goldButtonSx = {
-  bg: "linear-gradient(135deg, #D4AF37 0%, #A67C00 100%)",
-  color: "#0a0a0a",
-  _hover: { filter: "brightness(1.06)" },
+const headerCellProps = {
+  fontSize: "12px",
+  fontWeight: 500,
+  letterSpacing: "0.06em",
+  textTransform: "uppercase",
+  color: "var(--cc-text-2)",
 } as const;
 
 type LoadStatus = "loading" | "ready" | "forbidden";
@@ -156,14 +167,9 @@ export function AdminTeamManager() {
 
   if (forbidden) {
     return (
-      <Alert
-        status="warning"
-        bg="rgba(212,175,55,0.08)"
-        border="1px solid rgba(212,175,55,0.25)"
-        borderRadius="14px"
-      >
-        <AlertIcon color="#E8C547" />
-        <Text fontSize="sm" className="inter" color="gray.200">
+      <Alert status="warning" {...adminAlertProps("warning")}>
+        <AlertIcon color={adminAlertIconColor("warning")} />
+        <Text fontSize="sm" color="var(--cc-text-soft)">
           Nur Owner haben Zugriff auf die Team-Verwaltung. Falls noch niemand die Rolle
           &bdquo;Owner&ldquo; hat, sollte jeder bestehende Admin automatisch Zugriff bekommen — bitte
           Datenbank-Status von <b>profiles.admin_role</b> prüfen.
@@ -173,55 +179,40 @@ export function AdminTeamManager() {
   }
 
   return (
-    <Stack spacing={8}>
+    <Stack spacing={6}>
       {/* ── Admin hinzufügen ── */}
-      <Stack
-        spacing={5}
-        p={{ base: 4, md: 6 }}
-        borderRadius="20px"
-        borderWidth="1px"
-        borderColor="whiteAlpha.200"
-        bg="rgba(255,255,255,0.04)"
-      >
+      <Stack spacing={5} className={ADMIN_CARD_CLASS} p={adminCardPadding}>
         <Box>
-          <HStack spacing={3} mb={1}>
-            <UserPlus size={20} color="#E8C547" />
-            <Text className="radley-regular" fontSize="xl" color="whiteAlpha.950">
-              Admin hinzufügen
-            </Text>
+          <HStack spacing={2.5} mb={1.5}>
+            <Box color="var(--cc-text-2)">
+              <UserPlus size={16} strokeWidth={1.75} aria-hidden />
+            </Box>
+            <AdminCardTitle>Admin hinzufügen</AdminCardTitle>
           </HStack>
-          <Text fontSize="sm" className="inter" color="gray.400">
+          <Text fontSize="sm" color="var(--cc-text-2)">
             Der Nutzer muss bereits existieren (z.B. über die Mitglieder-Seite angelegt worden sein).
           </Text>
         </Box>
 
-        <Divider borderColor="whiteAlpha.150" />
+        <Divider borderColor="var(--cc-line)" />
 
         <Stack spacing={4} direction={{ base: "column", md: "row" }} flexWrap="wrap">
           <FormControl flex={1} minW="240px">
-            <FormLabel className="inter" fontSize="xs" textTransform="uppercase" letterSpacing="0.07em" color="gray.300">
-              E-Mail-Adresse
-            </FormLabel>
+            <FormLabel {...adminFormLabelProps}>E-Mail-Adresse</FormLabel>
             <Input
               type="email"
               placeholder="admin@beispiel.de"
               value={addEmail}
               onChange={(e) => setAddEmail(e.target.value)}
-              {...fieldStyles}
+              {...adminInputProps}
             />
           </FormControl>
 
           <FormControl flex={1} minW="200px">
-            <FormLabel className="inter" fontSize="xs" textTransform="uppercase" letterSpacing="0.07em" color="gray.300">
-              Rolle
-            </FormLabel>
-            <Select
-              value={addRole}
-              onChange={(e) => setAddRole(e.target.value as AdminRole)}
-              {...fieldStyles}
-            >
+            <FormLabel {...adminFormLabelProps}>Rolle</FormLabel>
+            <Select value={addRole} onChange={(e) => setAddRole(e.target.value as AdminRole)} {...adminInputProps}>
               {(Object.keys(ROLE_LABELS) as AdminRole[]).map((r) => (
-                <option key={r} value={r} style={{ background: "#0c0d10" }}>
+                <option key={r} value={r} style={adminOptionStyle}>
                   {ROLE_LABELS[r]}
                 </option>
               ))}
@@ -232,47 +223,37 @@ export function AdminTeamManager() {
         <HStack>
           <Button
             size="md"
+            variant="gold"
             leftIcon={<UserPlus size={18} />}
             onClick={() => void addAdmin()}
             isLoading={adding}
             isDisabled={!addEmail.trim()}
-            className="inter-semibold"
-            sx={goldButtonSx}
           >
             Admin hinzufügen
           </Button>
         </HStack>
 
         {formStatus && (
-          <Text fontSize="sm" className="inter" color={formStatus.ok ? "green.300" : "red.300"}>
+          <Text fontSize="sm" color={formStatus.ok ? "var(--cc-success)" : "var(--cc-danger)"}>
             {formStatus.msg}
           </Text>
         )}
       </Stack>
 
       {/* ── Team-Tabelle ── */}
-      <Stack spacing={4}>
+      <Stack spacing={4} className={ADMIN_CARD_CLASS} p={adminCardPadding}>
         <Box>
-          <Text className="radley-regular" fontSize="xl" color="whiteAlpha.950">
-            Team
-          </Text>
-          <Text fontSize="sm" className="inter" color="gray.400" mt={0.5}>
+          <AdminCardTitle>Team</AdminCardTitle>
+          <Text fontSize="sm" color="var(--cc-text-2)" mt={1} className="cc-num">
             {loading ? "Wird geladen…" : `${admins.length} Admin${admins.length === 1 ? "" : "s"}`}
           </Text>
         </Box>
 
-        <Box
-          borderRadius="16px"
-          borderWidth="1px"
-          borderColor="whiteAlpha.150"
-          overflow="hidden"
-          bg="rgba(0,0,0,0.2)"
-        >
+        <Box mx={{ base: -2, md: -3 }}>
           <HStack
-            px={4}
-            py={3}
-            borderBottom="1px solid rgba(255,255,255,0.07)"
-            bg="rgba(255,255,255,0.03)"
+            px={3}
+            py={2.5}
+            borderBottom="1px solid var(--cc-line-strong)"
             spacing={4}
             display={{ base: "none", lg: "flex" }}
           >
@@ -281,12 +262,7 @@ export function AdminTeamManager() {
                 key={h}
                 flex={h === "E-Mail / Name" ? 1 : undefined}
                 w={h === "" ? "48px" : h === "Seit" ? "110px" : "160px"}
-                fontSize="11px"
-                className="inter"
-                fontWeight={500}
-                letterSpacing="0.08em"
-                textTransform="uppercase"
-                color="gray.600"
+                {...headerCellProps}
                 textAlign={h === "" ? "right" : "left"}
               >
                 {h}
@@ -295,35 +271,32 @@ export function AdminTeamManager() {
           </HStack>
 
           {loading ? (
-            <Text px={4} py={6} fontSize="sm" color="gray.400" className="inter">
+            <Text px={3} py={6} fontSize="sm" color="var(--cc-text-2)">
               Team wird geladen…
             </Text>
           ) : admins.length === 0 ? (
-            <Text px={4} py={6} fontSize="sm" color="gray.400" className="inter">
+            <Text px={3} py={6} fontSize="sm" color="var(--cc-text-2)">
               Keine Admins gefunden.
             </Text>
           ) : (
             admins.map((admin) => {
               const role = admin.adminRole ?? "admin";
-              const badge = ROLE_BADGE[role];
               return (
                 <HStack
                   key={admin.id}
-                  px={4}
-                  py={3.5}
-                  borderBottom="1px solid rgba(255,255,255,0.05)"
+                  px={3}
+                  py={3}
                   spacing={4}
                   align="center"
-                  transition="background 150ms"
-                  _hover={{ bg: "rgba(255,255,255,0.03)" }}
                   flexDir={{ base: "column", lg: "row" }}
+                  {...adminRowProps}
                 >
                   <Stack flex={1} spacing={0.5} align="flex-start" minW={0}>
-                    <Text className="inter" fontSize="sm" fontWeight={500} color="gray.100" noOfLines={1}>
+                    <Text fontSize="sm" fontWeight={500} color="var(--cc-text)" noOfLines={1}>
                       {admin.email}
                     </Text>
                     {admin.fullName || admin.username ? (
-                      <Text fontSize="xs" className="inter" color="gray.500" noOfLines={1}>
+                      <Text fontSize="xs" color="var(--cc-text-2)" noOfLines={1}>
                         {admin.fullName ?? admin.username}
                       </Text>
                     ) : null}
@@ -331,36 +304,23 @@ export function AdminTeamManager() {
 
                   <Box w={{ base: "auto", lg: "160px" }}>
                     <HStack spacing={2}>
-                      <Badge
-                        bg={badge.bg}
-                        color={badge.color}
-                        border={`1px solid ${badge.border}`}
-                        borderRadius="6px"
-                        fontSize="10px"
-                        px={2}
-                        py={0.5}
-                        className="inter"
-                        textTransform="none"
-                        flexShrink={0}
-                      >
-                        <HStack spacing={1}>
-                          <ShieldCheck size={11} />
+                      <StatusPill tone={ROLE_TONE[role]} flexShrink={0}>
+                        <HStack spacing={1} as="span">
+                          <ShieldCheck size={11} aria-hidden />
                           <Text as="span">{ROLE_LABELS[role]}</Text>
                         </HStack>
-                      </Badge>
+                      </StatusPill>
                       <Select
                         size="xs"
                         value={role}
                         isDisabled={savingId === admin.id}
                         onChange={(e) => void changeRole(admin, e.target.value as AdminRole)}
-                        bg="rgba(255,255,255,0.04)"
-                        borderColor="whiteAlpha.200"
-                        color="gray.200"
-                        className="inter"
+                        {...adminInputProps}
+                        borderRadius="6px"
                         w="110px"
                       >
                         {(Object.keys(ROLE_LABELS) as AdminRole[]).map((r) => (
-                          <option key={r} value={r} style={{ background: "#0c0d10" }}>
+                          <option key={r} value={r} style={adminOptionStyle}>
                             {ROLE_LABELS[r]}
                           </option>
                         ))}
@@ -371,8 +331,8 @@ export function AdminTeamManager() {
                   <Text
                     w={{ base: "auto", lg: "110px" }}
                     fontSize="xs"
-                    className="jetbrains-mono"
-                    color="gray.500"
+                    className="cc-num"
+                    color="var(--cc-text-2)"
                     flexShrink={0}
                   >
                     {new Date(admin.createdAt).toLocaleDateString("de-DE")}
@@ -383,7 +343,8 @@ export function AdminTeamManager() {
                       aria-label="Admin entfernen"
                       size="sm"
                       variant="ghost"
-                      colorScheme="red"
+                      color="var(--cc-text-3)"
+                      _hover={{ bg: "rgba(248, 113, 113, 0.08)", color: "var(--cc-danger)" }}
                       icon={<Trash2 size={16} />}
                       onClick={() => confirmRemove(admin)}
                     />
@@ -397,25 +358,23 @@ export function AdminTeamManager() {
 
       {/* ── Entfernen-Bestätigung ── */}
       <Modal isOpen={isRemoveOpen} onClose={onRemoveClose} isCentered>
-        <ModalOverlay bg="blackAlpha.800" backdropFilter="blur(4px)" />
-        <ModalContent bg="rgba(10,11,14,0.97)" border="1px solid rgba(255,255,255,0.09)" borderRadius="24px" mx={4}>
-          <ModalHeader className="radley-regular" fontWeight={400} color="red.300">
-            Admin entfernen
-          </ModalHeader>
+        <ModalOverlay {...adminOverlayProps} />
+        <ModalContent {...adminModalProps} mx={4}>
+          <ModalHeader {...adminModalHeaderProps}>Admin entfernen</ModalHeader>
           <ModalBody>
-            <Text className="inter" fontSize="sm" color="gray.300">
+            <Text fontSize="sm" color="var(--cc-text-2)">
               Soll{" "}
-              <Text as="span" fontWeight={600} color="gray.100">
+              <Text as="span" fontWeight={600} color="var(--cc-text)">
                 {removeTarget?.email}
               </Text>{" "}
               wirklich als Admin entfernt werden? Die Person verliert sofort alle Admin-Rechte.
             </Text>
           </ModalBody>
           <ModalFooter gap={3}>
-            <Button variant="ghost" onClick={onRemoveClose}>
+            <Button variant="ghost" color="var(--cc-text-2)" onClick={onRemoveClose}>
               Abbrechen
             </Button>
-            <Button colorScheme="red" variant="solid" onClick={() => void doRemove()} isLoading={removing}>
+            <Button {...adminDangerButtonProps} onClick={() => void doRemove()} isLoading={removing}>
               Endgültig entfernen
             </Button>
           </ModalFooter>

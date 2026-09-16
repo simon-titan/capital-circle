@@ -27,6 +27,23 @@ type Props = {
   onSelect: (id: string) => void;
 };
 
+const inputSx = {
+  bg: "rgba(255, 255, 255, 0.03)",
+  borderColor: "var(--cc-line-strong)",
+  borderRadius: "8px",
+  _hover: { borderColor: "var(--cc-gold-line)" },
+  _focusVisible: { borderColor: "var(--cc-gold)", boxShadow: "0 0 0 1px var(--cc-gold)" },
+};
+
+/** Destruktive Aktion: Line-Button in Rot statt Gold-Kante. */
+const dangerLineSx = {
+  variant: "line" as const,
+  color: "var(--cc-danger)",
+  borderColor: "rgba(248, 113, 113, 0.35)",
+  _hover: { bg: "rgba(248, 113, 113, 0.08)", borderColor: "rgba(248, 113, 113, 0.6)", boxShadow: "none" },
+  _active: { bg: "rgba(248, 113, 113, 0.12)" },
+};
+
 export function JournalManager({ isOpen, onClose, journals, currentId, onChanged, onSelect }: Props) {
   const supabase = createClient();
   const toast = useToast();
@@ -87,62 +104,72 @@ export function JournalManager({ isOpen, onClose, journals, currentId, onChanged
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} isCentered size="md">
-      <ModalOverlay bg="rgba(0,0,0,0.75)" backdropFilter="blur(4px)" />
+      <ModalOverlay bg="rgba(5, 7, 10, 0.7)" backdropFilter="blur(6px)" />
       <ModalContent
-        bg="rgba(10, 11, 14, 0.96)"
-        border="1px solid rgba(255,255,255,0.09)"
-        borderRadius="24px"
-        boxShadow="0 32px 80px rgba(0,0,0,0.9)"
+        bg="var(--cc-panel-solid)"
+        border="1px solid var(--cc-gold-line)"
+        borderRadius="14px"
+        boxShadow="0 24px 64px rgba(0, 0, 0, 0.6), 0 0 32px rgba(212, 176, 128, 0.08)"
+        color="var(--cc-text)"
       >
-        <ModalHeader className="inter-semibold" fontSize="md">
+        <ModalHeader fontSize="17px" fontWeight={600} color="var(--cc-text)">
           Journale verwalten
         </ModalHeader>
-        <ModalCloseButton />
+        <ModalCloseButton color="var(--cc-text-2)" _hover={{ color: "var(--cc-text)", bg: "rgba(255, 255, 255, 0.05)" }} />
         <ModalBody pb={6}>
           <Stack gap={3}>
-            {journals.map((j) => (
-              <Stack key={j.id} direction="row" justify="space-between" align="center" py={2} borderBottom="1px solid rgba(255,255,255,0.06)">
-                <Text
-                  as="button"
-                  type="button"
-                  fontWeight={600}
-                  fontSize="sm"
-                  color={j.id === currentId ? "var(--color-accent-gold)" : "var(--color-text-primary)"}
-                  className="inter-medium"
-                  onClick={() => {
-                    onSelect(j.id);
-                  }}
-                  textAlign="left"
+            {journals.map((j) => {
+              const active = j.id === currentId;
+              return (
+                <Stack
+                  key={j.id}
+                  direction="row"
+                  justify="space-between"
+                  align="center"
+                  py={2}
+                  borderBottom="1px solid var(--cc-line)"
                 >
-                  {j.name}
-                </Text>
-                <Stack direction="row" gap={2}>
-                  <Button size="xs" variant="ghost" onClick={() => void renameJournal(j.id, j.name)} isDisabled={busy}>
-                    Umbenennen
-                  </Button>
-                  {journals.length > 1 ? (
-                    <Button size="xs" variant="outline" colorScheme="red" onClick={() => void deleteJournal(j.id)} isDisabled={busy}>
-                      Löschen
+                  <Text
+                    as="button"
+                    type="button"
+                    fontWeight={active ? 600 : 500}
+                    fontSize="sm"
+                    color={active ? "var(--cc-gold-light)" : "var(--cc-text)"}
+                    _hover={{ color: "var(--cc-gold-light)" }}
+                    transition="color 150ms var(--cc-ease)"
+                    onClick={() => {
+                      onSelect(j.id);
+                    }}
+                    textAlign="left"
+                  >
+                    {j.name}
+                  </Text>
+                  <Stack direction="row" gap={2}>
+                    <Button size="xs" variant="line" onClick={() => void renameJournal(j.id, j.name)} isDisabled={busy}>
+                      Umbenennen
                     </Button>
-                  ) : null}
+                    {journals.length > 1 ? (
+                      <Button size="xs" {...dangerLineSx} onClick={() => void deleteJournal(j.id)} isDisabled={busy}>
+                        Löschen
+                      </Button>
+                    ) : null}
+                  </Stack>
                 </Stack>
-              </Stack>
-            ))}
+              );
+            })}
             <Stack direction="row" gap={2} pt={2}>
               <Input
                 placeholder="Neues Journal..."
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && void addJournal()}
-                bg="rgba(255,255,255,0.04)"
-                borderColor="rgba(255,255,255,0.09)"
-                _focus={{ borderColor: "rgba(212, 175, 55, 0.55)" }}
+                {...inputSx}
               />
-              <Button size="md" onClick={() => void addJournal()} isLoading={busy} colorScheme="yellow">
+              <Button size="md" variant="gold" flexShrink={0} onClick={() => void addJournal()} isLoading={busy}>
                 + Hinzufügen
               </Button>
             </Stack>
-            <Button variant="outline" borderColor="rgba(255,255,255,0.12)" onClick={onClose}>
+            <Button variant="line" onClick={onClose}>
               Schließen
             </Button>
           </Stack>

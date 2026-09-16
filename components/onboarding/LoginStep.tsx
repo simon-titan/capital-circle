@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Button, HStack, Icon, Input, Link, Stack, Text } from "@chakra-ui/react";
-import { type ReactNode, useMemo, useState } from "react";
+import { type FormEvent, type ReactNode, useMemo, useState } from "react";
 import { SiInstagram, SiTiktok } from "react-icons/si";
 import { createClient } from "@/lib/supabase/client";
 import { Logo } from "@/components/brand/Logo";
@@ -11,6 +11,44 @@ const SOCIAL = {
   instagram: "https://www.instagram.com/",
   tiktok: "https://www.tiktok.com/",
 } as const;
+
+/** Eingabe nach DESIGN.md: 3 % Weiß, kräftige Haarlinie, Radius 8, Fokus mit Gold-Haarlinie. */
+const inputStyle = {
+  h: "44px",
+  bg: "rgba(255, 255, 255, 0.03)",
+  borderWidth: "1px",
+  borderColor: "var(--cc-line-strong)",
+  borderRadius: "8px",
+  color: "var(--cc-text)",
+  fontSize: "15px",
+  _placeholder: { color: "var(--cc-text-3)" },
+  _hover: { borderColor: "rgba(255, 255, 255, 0.24)" },
+  _focusVisible: {
+    borderColor: "var(--cc-gold-line)",
+    boxShadow: "0 0 0 1px var(--cc-gold-line)",
+  },
+};
+
+/** Social-Links als runde Line-Buttons; Marken-Icons neutral, beim Hover Gold-Kante. */
+const socialLinkStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  w: "44px",
+  h: "44px",
+  borderRadius: "full",
+  border: "1px solid var(--cc-line-strong)",
+  bg: "rgba(255, 255, 255, 0.02)",
+  color: "var(--cc-text-2)",
+  transition:
+    "color 180ms var(--cc-ease), border-color 180ms var(--cc-ease), background-color 180ms var(--cc-ease)",
+  _hover: {
+    color: "var(--cc-text)",
+    borderColor: "var(--cc-gold-line)",
+    bg: "rgba(212, 176, 128, 0.06)",
+    textDecoration: "none",
+  },
+};
 
 type LoginStepProps = {
   onAuthenticated: () => void | Promise<void>;
@@ -24,7 +62,9 @@ export function LoginStep({ onAuthenticated, footer }: LoginStepProps) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const onSubmit = async () => {
+  const onSubmit = async (event?: FormEvent) => {
+    event?.preventDefault();
+    if (!email || !password || loading) return;
     setError(null);
     setLoading(true);
     try {
@@ -59,68 +99,58 @@ export function LoginStep({ onAuthenticated, footer }: LoginStepProps) {
       spacing={0}
     >
       <Box
-        className="glass-card"
-        p={{ base: 6, md: 7 }}
+        as="form"
+        onSubmit={onSubmit}
+        noValidate
+        aria-labelledby="login-title"
+        className="cc-card cc-card--hero cc-card--still"
         w="full"
-        maxW="360px"
-        borderWidth="1px"
-        borderStyle="solid"
-        borderColor="rgba(212, 175, 55, 0.55)"
-        boxShadow="
-          0 8px 40px rgba(0, 0, 0, 0.55),
-          0 0 0 1px rgba(212, 175, 55, 0.2),
-          0 0 28px rgba(212, 175, 55, 0.12),
-          inset 0 1px 0 rgba(255, 255, 255, 0.06)
-        "
+        maxW="380px"
+        p={{ base: 6, md: 8 }}
       >
-        <Box display="flex" justifyContent="center" mb={5}>
-          <Logo variant="onDark" priority width={268} height={76} />
-        </Box>
-        <Text textAlign="center" fontSize="sm" className="inter" color="rgba(240, 240, 242, 0.55)">
-          Melde dich an, um zur Plattform zu gelangen.
-        </Text>
+        <Stack spacing={4} align="center" textAlign="center">
+          <Box as="h1" id="login-title" m={0} lineHeight={1}>
+            <Logo variant="onDark" width={240} />
+          </Box>
+          <Box
+            aria-hidden
+            h="1px"
+            w="120px"
+            bg="linear-gradient(90deg, transparent, rgba(232, 192, 148, 0.7), transparent)"
+          />
+          <Text fontSize="14px" lineHeight={1.5} color="var(--cc-text-2)">
+            Melde dich an, um zur Plattform zu gelangen.
+          </Text>
+        </Stack>
+
         <Stack mt={6} spacing={3}>
           <Input
+            aria-label="E-Mail"
             placeholder="E-Mail"
             type="email"
+            autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            size="md"
-            bg="rgba(0, 0, 0, 0.35)"
-            borderColor="rgba(255, 255, 255, 0.1)"
-            color="var(--color-text-primary)"
-            _placeholder={{ color: "rgba(240, 240, 242, 0.35)" }}
-            _hover={{ borderColor: "rgba(255, 255, 255, 0.14)" }}
-            _focusVisible={{
-              borderColor: "#D4AF37",
-              boxShadow: "0 0 0 1px rgba(212, 175, 55, 0.5)",
-            }}
+            {...inputStyle}
           />
           <Input
+            aria-label="Passwort"
             placeholder="Passwort"
             type="password"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            size="md"
-            bg="rgba(0, 0, 0, 0.35)"
-            borderColor="rgba(255, 255, 255, 0.1)"
-            color="var(--color-text-primary)"
-            _placeholder={{ color: "rgba(240, 240, 242, 0.35)" }}
-            _hover={{ borderColor: "rgba(255, 255, 255, 0.14)" }}
-            _focusVisible={{
-              borderColor: "#D4AF37",
-              boxShadow: "0 0 0 1px rgba(212, 175, 55, 0.5)",
-            }}
+            {...inputStyle}
           />
           {error ? (
-            <Text fontSize="sm" color="red.300">
+            <Text role="alert" fontSize="14px" lineHeight={1.5} color="var(--cc-danger)">
               {error}
             </Text>
           ) : null}
           <Button
             {...glassPrimaryButtonProps}
+            type="submit"
             mt={1}
-            onClick={onSubmit}
             isLoading={loading}
             isDisabled={!email || !password}
           >
@@ -129,32 +159,12 @@ export function LoginStep({ onAuthenticated, footer }: LoginStepProps) {
         </Stack>
       </Box>
 
-      <HStack mt={10} spacing={10}>
-        <Link
-          href={SOCIAL.tiktok}
-          isExternal
-          aria-label="Capital Circle auf TikTok"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          color="var(--color-accent-gold)"
-          _hover={{ color: "var(--color-accent-gold-light)", transform: "translateY(-2px)" }}
-          transition="color 0.2s ease, transform 0.2s ease"
-        >
-          <Icon as={SiTiktok} boxSize={8} />
+      <HStack mt={8} spacing={3}>
+        <Link href={SOCIAL.tiktok} isExternal aria-label="Capital Circle auf TikTok" {...socialLinkStyle}>
+          <Icon as={SiTiktok} boxSize={5} />
         </Link>
-        <Link
-          href={SOCIAL.instagram}
-          isExternal
-          aria-label="Capital Circle auf Instagram"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          color="var(--color-accent-gold)"
-          _hover={{ color: "var(--color-accent-gold-light)", transform: "translateY(-2px)" }}
-          transition="color 0.2s ease, transform 0.2s ease"
-        >
-          <Icon as={SiInstagram} boxSize={8} />
+        <Link href={SOCIAL.instagram} isExternal aria-label="Capital Circle auf Instagram" {...socialLinkStyle}>
+          <Icon as={SiInstagram} boxSize={5} />
         </Link>
       </HStack>
 

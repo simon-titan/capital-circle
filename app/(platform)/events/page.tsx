@@ -1,13 +1,14 @@
-import { Stack } from "@chakra-ui/react";
+import { Box, Stack } from "@chakra-ui/react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { PageHeader } from "@/components/journal/PageHeader";
 import { EventsPageCalendar } from "@/components/platform/EventsPageCards";
 import { EventsUpcomingShowcase } from "@/components/platform/EventsUpcomingShowcase";
 import { getCurrentUserAndProfile } from "@/lib/server-data";
 
 export default async function EventsPage() {
   const { user, profile } = await getCurrentUserAndProfile();
-  if (!user || !profile) redirect("/einstieg");
+  if (!user || !profile) redirect("/einsteig");
 
   const isPaid = Boolean((profile as { is_paid?: boolean }).is_paid);
 
@@ -44,14 +45,15 @@ export default async function EventsPage() {
     live_session_id: sessionByEvent.get(ev.id) ?? null,
   }));
 
-  const content = (
-    <Stack spacing={{ base: 8, md: 10 }}>
-      <EventsUpcomingShowcase events={upcoming ?? []} isPaid={isPaid} />
-      <EventsPageCalendar events={allEvents} isPaid={isPaid} />
-    </Stack>
-  );
-
   // Always render the events content. For Free Members we handle highlighting and
   // the greyed/locked states inside the event components instead of showing a full-page paywall.
-  return content;
+  return (
+    <Box>
+      <PageHeader title="Events" subtitle="Deine nächsten Termine im Blick." />
+      <Stack spacing={{ base: 8, md: 10 }}>
+        <EventsUpcomingShowcase events={upcoming ?? []} isPaid={isPaid} />
+        <EventsPageCalendar events={allEvents} isPaid={isPaid} />
+      </Stack>
+    </Box>
+  );
 }

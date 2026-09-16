@@ -2,6 +2,7 @@
 
 import { Box, HStack, SimpleGrid, Stack, Text } from "@chakra-ui/react";
 import { Swords } from "lucide-react";
+import { ADMIN_CHART, adminInsetProps } from "@/components/admin/adminUi";
 import {
   CLOSER_LABELS,
   CLOSERS,
@@ -9,6 +10,10 @@ import {
   type PerCloserStats,
 } from "./types";
 import { DonutChart, eurFromCents, MiniStat, pctFmt, SectionCard } from "./primitives";
+
+/** Closer-Farben im Direktvergleich: links Champagner (Kevin), rechts Tinte (Simon). */
+const LEFT_COLOR = ADMIN_CHART.gold;
+const RIGHT_COLOR = ADMIN_CHART.ink;
 
 /** Gegenüberliegender Vergleichsbalken (links = Kevin, rechts = Simon). */
 function VersusBar({
@@ -28,39 +33,33 @@ function VersusBar({
   return (
     <Stack spacing={1.5}>
       <HStack justify="space-between">
-        <Text className="inter-semibold" fontSize="xs" color="#E8C547">
+        <Text className="cc-num" fontSize="12px" fontWeight={600} color="var(--cc-text)">
           {format(leftValue)}
         </Text>
-        <Text
-          fontSize="11px"
-          letterSpacing="0.08em"
-          textTransform="uppercase"
-          color="#606068"
-          className="inter"
-        >
+        <Text fontSize="11px" letterSpacing="0.06em" textTransform="uppercase" color="var(--cc-text-2)">
           {label}
         </Text>
-        <Text className="inter-semibold" fontSize="xs" color="#E8C547">
+        <Text className="cc-num" fontSize="12px" fontWeight={600} color="var(--cc-text)">
           {format(rightValue)}
         </Text>
       </HStack>
       <HStack spacing={1} h="8px">
-        <Box flex="1" display="flex" justifyContent="flex-end" bg="#1A1B1F" borderRadius="9999px" overflow="hidden">
+        <Box flex="1" display="flex" justifyContent="flex-end" bg={ADMIN_CHART.track} borderRadius="full" overflow="hidden">
           <Box
             h="full"
             w={`${leftPct.toFixed(1)}%`}
-            background="linear-gradient(90deg, #7A5C00 0%, #D4AF37 100%)"
-            borderRadius="9999px"
-            transition="width 500ms ease"
+            bg={LEFT_COLOR}
+            borderRadius="full"
+            transition="width 500ms var(--cc-ease)"
           />
         </Box>
-        <Box flex="1" bg="#1A1B1F" borderRadius="9999px" overflow="hidden">
+        <Box flex="1" bg={ADMIN_CHART.track} borderRadius="full" overflow="hidden">
           <Box
             h="full"
             w={`${rightPct.toFixed(1)}%`}
-            background="linear-gradient(90deg, #D4AF37 0%, #7A5C00 100%)"
-            borderRadius="9999px"
-            transition="width 500ms ease"
+            bg={RIGHT_COLOR}
+            borderRadius="full"
+            transition="width 500ms var(--cc-ease)"
           />
         </Box>
       </HStack>
@@ -68,10 +67,21 @@ function VersusBar({
   );
 }
 
+function CloserName({ closer, color }: { closer: CloserId; color: string }) {
+  return (
+    <HStack spacing={2}>
+      <Box w="8px" h="8px" borderRadius="2px" bg={color} flexShrink={0} aria-hidden />
+      <Text fontSize="14px" fontWeight={600} color="var(--cc-text)">
+        {CLOSER_LABELS[closer]}
+      </Text>
+    </HStack>
+  );
+}
+
 function CloserCard({ stats }: { stats: PerCloserStats }) {
   return (
-    <Box bg="#0C0D10" border="1px solid rgba(255,255,255,0.07)" borderRadius="16px" p={5}>
-      <Text className="inter-semibold" fontSize="md" color="var(--color-accent-gold-light, #E8C547)" mb={4}>
+    <Box {...adminInsetProps} p={5}>
+      <Text fontSize="15px" fontWeight={600} color="var(--cc-text)" mb={4}>
         {CLOSER_LABELS[stats.closer]}
       </Text>
       <SimpleGrid columns={2} spacing={3} mb={5}>
@@ -103,16 +113,16 @@ function CloserCard({ stats }: { stats: PerCloserStats }) {
       </SimpleGrid>
       <HStack
         justify="space-between"
-        bg="rgba(255,255,255,0.03)"
-        border="1px solid rgba(255,255,255,0.07)"
-        borderRadius="10px"
+        bg="rgba(255, 255, 255, 0.03)"
+        border="1px solid var(--cc-line)"
+        borderRadius="8px"
         px={3}
         py={2}
       >
-        <Text fontSize="xs" color="var(--color-text-secondary)" className="inter">
+        <Text fontSize="12px" color="var(--cc-text-2)">
           Ø Zeit bis Abschluss
         </Text>
-        <Text className="inter-semibold" fontSize="sm" color="var(--color-text-primary)">
+        <Text className="cc-num" fontSize="14px" fontWeight={600} color="var(--cc-text)">
           {stats.timeToCloseAvgDays != null ? `${stats.timeToCloseAvgDays.toFixed(1)} Tage` : "—"}
         </Text>
       </HStack>
@@ -156,23 +166,13 @@ export function PerCloserSection({ perCloser }: { perCloser?: PerCloserStats[] }
           ))}
         </SimpleGrid>
 
-        <Box bg="#0C0D10" border="1px solid rgba(255,255,255,0.07)" borderRadius="16px" p={5}>
+        <Box {...adminInsetProps} p={5}>
           <HStack justify="space-between" mb={4}>
-            <Text className="inter-semibold" fontSize="sm" color="var(--color-accent-gold-light, #E8C547)">
-              {CLOSER_LABELS.kevin}
-            </Text>
-            <Text
-              fontSize="11px"
-              letterSpacing="0.1em"
-              textTransform="uppercase"
-              color="#606068"
-              className="inter"
-            >
+            <CloserName closer="kevin" color={LEFT_COLOR} />
+            <Text fontSize="11px" letterSpacing="0.06em" textTransform="uppercase" color="var(--cc-text-2)">
               Direktvergleich
             </Text>
-            <Text className="inter-semibold" fontSize="sm" color="var(--color-accent-gold-light, #E8C547)">
-              {CLOSER_LABELS.simon}
-            </Text>
+            <CloserName closer="simon" color={RIGHT_COLOR} />
           </HStack>
           <Stack spacing={4}>
             <VersusBar

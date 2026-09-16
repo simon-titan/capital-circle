@@ -2,6 +2,7 @@
 
 import { Box, HStack, SimpleGrid, Stack, Text } from "@chakra-ui/react";
 import { GitCompareArrows } from "lucide-react";
+import { adminInsetProps } from "@/components/admin/adminUi";
 import {
   SOURCE_ORIGIN_LABELS,
   type FunnelByOrigin,
@@ -71,11 +72,11 @@ function computeMetrics(
 
 function MetricRow({ label, value }: { label: string; value: string }) {
   return (
-    <HStack justify="space-between" py={1.5} borderBottom="1px solid rgba(255,255,255,0.05)">
-      <Text fontSize="xs" color="var(--color-text-secondary)" className="inter">
+    <HStack justify="space-between" py={1.5} borderBottom="1px solid var(--cc-line)">
+      <Text fontSize="12px" color="var(--cc-text-2)">
         {label}
       </Text>
-      <Text className="inter-semibold" fontSize="sm" color="var(--color-text-primary)">
+      <Text className="cc-num" fontSize="14px" fontWeight={600} color="var(--cc-text)">
         {value}
       </Text>
     </HStack>
@@ -84,8 +85,8 @@ function MetricRow({ label, value }: { label: string; value: string }) {
 
 function OriginCard({ origin, metrics }: { origin: SourceOrigin; metrics: OriginMetrics }) {
   return (
-    <Box bg="#0C0D10" border="1px solid rgba(255,255,255,0.07)" borderRadius="16px" p={5}>
-      <Text className="inter-semibold" fontSize="md" color="var(--color-accent-gold-light, #E8C547)" mb={3}>
+    <Box {...adminInsetProps} p={5}>
+      <Text fontSize="15px" fontWeight={600} color="var(--cc-text)" mb={3}>
         {SOURCE_ORIGIN_LABELS[origin]}
       </Text>
       <Stack spacing={0}>
@@ -95,10 +96,10 @@ function OriginCard({ origin, metrics }: { origin: SourceOrigin; metrics: Origin
         <MetricRow label="Closed Won" value={String(metrics.closedWon)} />
         <MetricRow label="Close-Rate" value={pctFmt(metrics.closeRatePct)} />
         <HStack justify="space-between" pt={2}>
-          <Text fontSize="xs" color="var(--color-text-secondary)" className="inter">
+          <Text fontSize="12px" color="var(--cc-text-2)">
             Revenue
           </Text>
-          <Text className="inter-semibold" fontSize="sm" color="#34D399" fontWeight={700}>
+          <Text className="cc-num" fontSize="14px" fontWeight={600} color="var(--cc-success)">
             {eurFromCents(metrics.revenueCents)}
           </Text>
         </HStack>

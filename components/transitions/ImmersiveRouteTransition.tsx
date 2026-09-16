@@ -1,15 +1,14 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion, type Variants } from "framer-motion";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 
-/** Routen mit gemeinsamem „Sky-Arch“-Erlebnis — cinematische Übergänge. */
+/** Routen mit gemeinsamem Einstiegserlebnis (Sternenfeld-Grund) — cinematische Übergänge. */
 const IMMERSIVE_PATHS = new Set(["/einsteig"]);
 
 const easePremium = [0.16, 1, 0.3, 1] as const;
 
-const pageVariants = {
+const pageVariants: Variants = {
   initial: {
     opacity: 0,
     y: 40,
@@ -21,6 +20,8 @@ const pageVariants = {
     y: 0,
     scale: 1,
     filter: "blur(0px)",
+    // Kein Rest-Filter: sonst wird der Wrapper Containing Block für `fixed`-Ebenen (Sternenfeld).
+    transitionEnd: { filter: "none" },
   },
   exit: {
     opacity: 0,
@@ -30,18 +31,11 @@ const pageVariants = {
   },
 };
 
+/** Bei `prefers-reduced-motion` ohne Animation (`useReducedMotion` reagiert live auf die Einstellung). */
 export function ImmersiveRouteTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const immersive = pathname ? IMMERSIVE_PATHS.has(pathname) : false;
-  const [reduceMotion, setReduceMotion] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduceMotion(mq.matches);
-    const onChange = () => setReduceMotion(mq.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
+  const reduceMotion = useReducedMotion();
 
   if (!immersive || reduceMotion) {
     return <>{children}</>;
@@ -53,7 +47,8 @@ export function ImmersiveRouteTransition({ children }: { children: React.ReactNo
         position: "relative",
         minHeight: "100vh",
         isolation: "isolate",
-        overflowX: "hidden",
+        overflowX: "clip",
+        background: "var(--cc-bg)",
       }}
     >
       <AnimatePresence mode="wait">

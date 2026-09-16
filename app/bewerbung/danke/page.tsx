@@ -8,8 +8,9 @@ export const metadata: Metadata = {
   description: "Deine erweiterte Bewerbung ist eingegangen. Buche jetzt dein persönliches Gespräch.",
 };
 
+// Widget-Farben = Panel massiv / Text / Champagner (DESIGN.md v3.2), damit das Iframe im Rahmen verschwindet.
 const CALENDLY_BASE =
-  "https://calendly.com/contact-capitalcircletrading/30min?background_color=222222&text_color=ffffff&primary_color=d4af37&hide_gdpr_banner=1";
+  "https://calendly.com/contact-capitalcircletrading/30min?background_color=151a1e&text_color=f2f3f5&primary_color=d4b080&hide_gdpr_banner=1";
 
 function buildCalendlyUrl(userId: string, email: string, firstName: string): string {
   const url = new URL(CALENDLY_BASE);

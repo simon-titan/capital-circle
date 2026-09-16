@@ -17,6 +17,12 @@ export type AttachmentRow = {
   created_at: string;
 };
 
+/** Schalter-Spur in Champagner statt Chakra-Palette (v3.2). */
+const switchSx = {
+  ".chakra-switch__track": { bg: "var(--cc-track)" },
+  ".chakra-switch__track[data-checked]": { bg: "var(--cc-gold)" },
+};
+
 type AttachmentManagerProps = {
   courseId: string;
   moduleId: string;
@@ -141,21 +147,14 @@ export function AttachmentManager({ courseId, moduleId, videoId }: AttachmentMan
 
   if (loading) {
     return (
-      <Text fontSize="sm" color="gray.400" className="inter">
+      <Text fontSize="sm" color="var(--cc-text-2)">
         Anhänge werden geladen…
       </Text>
     );
   }
 
   return (
-    <Stack
-      spacing={3}
-      p={4}
-      borderRadius="12px"
-      borderWidth="1px"
-      borderColor="whiteAlpha.200"
-      bg="rgba(0,0,0,0.2)"
-    >
+    <Stack spacing={3} p={4} borderRadius="10px" border="1px solid var(--cc-line)" bg="rgba(255, 255, 255, 0.02)">
       <input
         ref={inputRef}
         type="file"
@@ -168,49 +167,35 @@ export function AttachmentManager({ courseId, moduleId, videoId }: AttachmentMan
           <FormLabel
             m={0}
             mb={1}
-            className="inter"
-            fontSize="xs"
+            fontSize="12px"
+            fontWeight={500}
             textTransform="uppercase"
-            letterSpacing="0.06em"
-            color="gray.300"
+            letterSpacing="0.08em"
+            color="var(--cc-text-2)"
           >
             Anhänge für Lernende
           </FormLabel>
-          <Text fontSize="sm" className="inter" color="gray.400">
+          <Text fontSize="sm" color="var(--cc-text-2)">
             PDFs und andere Dateien zum Download neben dem Video.
           </Text>
         </Box>
-        <Button
-          size="md"
-          colorScheme="blue"
-          variant="solid"
-          onClick={onPick}
-          isLoading={busy}
-          isDisabled={busy}
-          flexShrink={0}
-        >
+        <Button size="sm" variant="line" onClick={onPick} isLoading={busy} isDisabled={busy} flexShrink={0}>
           Datei hinzufügen
         </Button>
       </HStack>
 
       {busy ? (
-        <Box
-          p={3}
-          borderRadius="10px"
-          borderWidth="1px"
-          borderColor="rgba(59, 130, 246, 0.4)"
-          bg="rgba(30, 58, 138, 0.15)"
-        >
+        <Box p={3} borderRadius="10px" border="1px solid rgba(212, 176, 128, 0.25)" bg="rgba(212, 176, 128, 0.06)">
           <HStack justify="space-between" mb={1} flexWrap="wrap" gap={1}>
-            <Text fontSize="sm" className="inter-semibold" color="blue.200" noOfLines={1} maxW="75%">
+            <Text fontSize="sm" fontWeight={600} color="var(--cc-text)" noOfLines={1} maxW="75%">
               {fileName ?? "Datei…"}
             </Text>
-            <Text fontSize="sm" className="jetbrains-mono" color="blue.300" flexShrink={0}>
+            <Text fontSize="sm" fontWeight={600} className="cc-num" color="var(--cc-gold-light)" flexShrink={0}>
               {progress}%
             </Text>
           </HStack>
           {fileSize ? (
-            <Text fontSize="xs" color="gray.400" className="inter" mb={2}>
+            <Text fontSize="xs" color="var(--cc-text-2)" className="cc-num" mb={2}>
               {(fileSize / 1024 / 1024).toFixed(2)} MB
               {progress > 0 && progress < 100
                 ? ` — ${((fileSize / 1024 / 1024) * (progress / 100)).toFixed(2)} MB übertragen`
@@ -220,20 +205,19 @@ export function AttachmentManager({ courseId, moduleId, videoId }: AttachmentMan
           <Progress
             value={progress}
             size="sm"
+            aria-label="Upload-Fortschritt"
             borderRadius="full"
-            colorScheme="blue"
-            bg="whiteAlpha.100"
-            hasStripe={progress < 100}
-            isAnimated={progress < 100}
+            bg="rgba(255, 255, 255, 0.07)"
+            sx={{ "& > div": { bg: "var(--cc-gold-bar)" } }}
           />
           {status ? (
-            <Text fontSize="xs" color="blue.300" className="inter" mt={2}>{status}</Text>
+            <Text fontSize="xs" color="var(--cc-text-2)" mt={2}>{status}</Text>
           ) : null}
         </Box>
       ) : null}
 
       {items.length === 0 ? (
-        <Text fontSize="sm" color="gray.500" className="inter">
+        <Text fontSize="sm" color="var(--cc-text-3)">
           Noch keine Dateien — oben auf &bdquo;Datei hinzufügen&ldquo; klicken.
         </Text>
       ) : (
@@ -243,23 +227,22 @@ export function AttachmentManager({ courseId, moduleId, videoId }: AttachmentMan
               key={a.id}
               py={2.5}
               px={3}
-              borderRadius="md"
-              borderWidth="1px"
-              borderColor="whiteAlpha.150"
-              bg="whiteAlpha.50"
+              borderRadius="8px"
+              border="1px solid var(--cc-line)"
+              bg="rgba(255, 255, 255, 0.02)"
               justify="space-between"
               align="center"
             >
               <HStack minW={0} spacing={3}>
-                <Box as="span" color="blue.300" display="flex" flexShrink={0} aria-hidden>
-                  <FileDown size={18} />
+                <Box as="span" color="var(--cc-text-2)" display="flex" flexShrink={0} aria-hidden>
+                  <FileDown size={18} strokeWidth={1.75} />
                 </Box>
                 <Box minW={0}>
-                  <Text className="inter" fontSize="sm" noOfLines={2} color="gray.100">
+                  <Text fontSize="sm" noOfLines={2} color="var(--cc-text)">
                     {a.filename}
                   </Text>
                   {a.size_bytes ? (
-                    <Text fontSize="xs" color="gray.500" className="inter">
+                    <Text fontSize="xs" color="var(--cc-text-3)" className="cc-num">
                       {(a.size_bytes / 1024 / 1024).toFixed(2)} MB
                     </Text>
                   ) : null}
@@ -269,15 +252,15 @@ export function AttachmentManager({ courseId, moduleId, videoId }: AttachmentMan
                 <HStack spacing={2}>
                   <Switch
                     size="sm"
-                    colorScheme="yellow"
+                    sx={switchSx}
                     isChecked={Boolean(a.is_free)}
                     onChange={(e) => void toggleIsFree(a.id, e.target.checked)}
                     aria-label="Free-Kurs Zugriff freischalten"
                   />
                   <Text
                     fontSize="xs"
-                    className="inter-semibold"
-                    color={a.is_free ? "var(--color-accent-gold)" : "gray.500"}
+                    fontWeight={600}
+                    color={a.is_free ? "var(--cc-gold-light)" : "var(--cc-text-3)"}
                     textTransform="uppercase"
                     letterSpacing="0.06em"
                   >
@@ -287,11 +270,9 @@ export function AttachmentManager({ courseId, moduleId, videoId }: AttachmentMan
                 <IconButton
                   aria-label="Anhang löschen"
                   size="sm"
-                  variant="outline"
-                  colorScheme="red"
-                  borderColor="red.400"
-                  color="red.200"
-                  _hover={{ bg: "red.900", borderColor: "red.300" }}
+                  variant="line"
+                  color="var(--cc-danger)"
+                  _hover={{ bg: "rgba(248, 113, 113, 0.08)", borderColor: "rgba(248, 113, 113, 0.5)", boxShadow: "none" }}
                   icon={<Trash2 size={16} />}
                   onClick={() => void remove(a.id)}
                 />
@@ -302,7 +283,7 @@ export function AttachmentManager({ courseId, moduleId, videoId }: AttachmentMan
       )}
 
       {!busy && status ? (
-        <Text fontSize="sm" color={isError ? "red.300" : "green.300"} className="inter">
+        <Text fontSize="sm" color={isError ? "var(--cc-danger)" : "var(--cc-success)"}>
           {status}
         </Text>
       ) : null}

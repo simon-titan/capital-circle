@@ -19,12 +19,15 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { ArrowRightLeft, ChevronDown, ChevronRight, Clock, ImagePlus, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { uploadSmallFilePresigned } from "@/lib/admin-upload-presigned";
 import { AttachmentManager } from "@/components/admin/AttachmentManager";
 import { DraggableList } from "@/components/admin/DraggableList";
 import { VideoMoveModal } from "@/components/admin/VideoMoveModal";
-import { VideoUploader, type VideoUploadedPayload } from "@/components/admin/VideoUploader";
+import {
+  CloudflareVideoUploader,
+  type CloudflareVideoUploadedPayload,
+} from "@/components/admin/CloudflareVideoUploader";
 import type { SubcategoryRow } from "@/components/admin/SubcategoryManager";
 
 export type VideoRow = {
@@ -34,12 +37,79 @@ export type VideoRow = {
   title: string;
   description: string | null;
   position: number;
-  storage_key: string;
+  storage_key: string | null;
+  cloudflare_uid: string | null;
+  cloudflare_status: string;
+  cloudflare_error: string | null;
   thumbnail_key: string | null;
   duration_seconds: number | null;
   is_published: boolean;
   created_at: string;
 };
+
+const CLOUDFLARE_POLL_INTERVAL_MS = 8_000;
+const CLOUDFLARE_POLL_MAX_MS = 5 * 60 * 1000;
+
+/* ── v3.2 „Champagner auf Graphit“: Felder, Labels, Schalter, Pills ── */
+const fieldStyles = {
+  bg: "rgba(255, 255, 255, 0.03)",
+  border: "1px solid",
+  borderColor: "var(--cc-line-strong)",
+  borderRadius: "8px",
+  color: "var(--cc-text)",
+  _placeholder: { color: "var(--cc-text-3)" },
+  _hover: { borderColor: "rgba(255, 255, 255, 0.22)" },
+  _focusVisible: { borderColor: "var(--cc-gold-line)", boxShadow: "0 0 0 1px var(--cc-gold-line)" },
+} as const;
+
+const labelSx = {
+  fontSize: "12px",
+  fontWeight: 500,
+  textTransform: "uppercase",
+  letterSpacing: "0.08em",
+  color: "var(--cc-text-2)",
+} as const;
+
+const switchSx = {
+  ".chakra-switch__track": { bg: "var(--cc-track)" },
+  ".chakra-switch__track[data-checked]": { bg: "var(--cc-gold)" },
+};
+
+const optionStyle = { background: "var(--cc-panel-solid)" };
+
+type PillTone = "success" | "danger" | "neutral" | "gold";
+
+const PILL_TONES: Record<PillTone, { bg: string; color: string }> = {
+  success: { bg: "rgba(74, 222, 128, 0.12)", color: "var(--cc-success)" },
+  danger: { bg: "rgba(248, 113, 113, 0.12)", color: "var(--cc-danger)" },
+  neutral: { bg: "rgba(255, 255, 255, 0.06)", color: "var(--cc-text-2)" },
+  gold: { bg: "rgba(212, 176, 128, 0.12)", color: "var(--cc-gold-light)" },
+};
+
+function pillProps(tone: PillTone) {
+  return {
+    ...PILL_TONES[tone],
+    fontSize: "11px",
+    fontWeight: 500,
+    textTransform: "none",
+    borderRadius: "full",
+    px: 2,
+    py: 0.5,
+    flexShrink: 0,
+  } as const;
+}
+
+/** Cloudflare: bereit = grün, Fehler = rot, alles andere läuft noch = Champagner. */
+function cloudflareTone(status: string): PillTone {
+  return status === "ready" ? "success" : status === "error" ? "danger" : "gold";
+}
+
+const dangerLineProps = {
+  variant: "line",
+  color: "var(--cc-danger)",
+  borderColor: "rgba(248, 113, 113, 0.4)",
+  _hover: { bg: "rgba(248, 113, 113, 0.08)", borderColor: "rgba(248, 113, 113, 0.6)", boxShadow: "none" },
+} as const;
 
 type VideoManagerProps = {
   courseId: string;
@@ -125,12 +195,25 @@ export function VideoManager({
     });
   };
 
-  const onUploaded = async (payload: VideoUploadedPayload) => {
+  /**
+   * Nächste freie Position. Bei Mehrfach-Upload läuft `onUploaded` mehrmals
+   * hintereinander innerhalb derselben Closure — `items.length` wäre dabei für
+   * jede Datei gleich und alle bekämen dieselbe Position.
+   */
+  const naechstePositionRef = useRef(0);
+
+  const onUploaded = async (payload: CloudflareVideoUploadedPayload) => {
+    // Das Maximum aus beidem: `items.length` holt auf, sobald der State nachzieht —
+    // dadurch heilt sich der Zähler nach jedem Batch von selbst.
+    const position = Math.max(items.length, naechstePositionRef.current);
+    naechstePositionRef.current = position + 1;
+
     const body = {
       id: payload.videoId,
-      title: "Neues Video",
-      position: items.length,
-      storage_key: payload.storageKey,
+      title: payload.fileName,
+      position,
+      cloudflare_uid: payload.cloudflareUid,
+      cloudflare_status: "processing",
       duration_seconds: payload.durationSeconds,
       is_published: false,
       ...(subcategoryId
@@ -149,6 +232,40 @@ export function VideoManager({
       setExpandedIds((prev) => new Set(prev).add(newItem.id));
     }
   };
+
+  const pollStartedAtRef = useRef<Map<string, number>>(new Map());
+
+  const pollCloudflareStatus = useCallback(
+    async (id: string) => {
+      const res = await fetch(`/api/admin/videos/${id}/cloudflare-status`);
+      const json = (await res.json()) as { ok?: boolean; item?: VideoRow };
+      if (json.ok && json.item) {
+        const updated = json.item;
+        setItems((prev) => prev.map((v) => (v.id === id ? updated : v)));
+      }
+    },
+    [setItems],
+  );
+
+  useEffect(() => {
+    const pending = items.filter((v) => v.cloudflare_status === "uploading" || v.cloudflare_status === "processing");
+    if (pending.length === 0) return;
+
+    const now = Date.now();
+    for (const v of pending) {
+      if (!pollStartedAtRef.current.has(v.id)) pollStartedAtRef.current.set(v.id, now);
+    }
+
+    const timer = setInterval(() => {
+      for (const v of pending) {
+        const startedAt = pollStartedAtRef.current.get(v.id) ?? Date.now();
+        if (Date.now() - startedAt > CLOUDFLARE_POLL_MAX_MS) continue;
+        void pollCloudflareStatus(v.id);
+      }
+    }, CLOUDFLARE_POLL_INTERVAL_MS);
+
+    return () => clearInterval(timer);
+  }, [items, pollCloudflareStatus]);
 
   const patch = async (id: string, updates: Record<string, unknown>) => {
     const res = await fetch("/api/admin/videos", {
@@ -228,9 +345,11 @@ export function VideoManager({
   const [detectingDuration, setDetectingDuration] = useState<Set<string>>(new Set());
 
   const onDetectDuration = async (item: VideoRow) => {
+    const key = item.cloudflare_uid ?? item.storage_key;
+    if (!key) return;
     setDetectingDuration((prev) => new Set(prev).add(item.id));
     try {
-      const res = await fetch(`/api/video-url?key=${encodeURIComponent(item.storage_key)}`);
+      const res = await fetch(`/api/video-url?key=${encodeURIComponent(key)}`);
       const json = (await res.json()) as { ok?: boolean; url?: string };
       if (!json.ok || !json.url) return;
       const dur = await new Promise<number | null>((resolve) => {
@@ -291,38 +410,34 @@ export function VideoManager({
 
   if (loading) {
     return (
-      <Text fontSize="sm" color="gray.500" className="inter">
+      <Text fontSize="sm" color="var(--cc-text-2)">
         Videos werden geladen…
       </Text>
     );
   }
 
-  const fieldStyles = {
-    bg: "rgba(255,255,255,0.06)",
-    borderColor: "whiteAlpha.300",
-    color: "gray.100",
-    _placeholder: { color: "gray.500" },
-    _focus: { borderColor: "blue.400", boxShadow: "0 0 0 1px rgba(59,130,246,0.45)" },
-  } as const;
-
   return (
     <Stack spacing={5}>
       <Box>
-        <Text className="radley-regular" fontSize="lg" color="whiteAlpha.950">
+        <Text fontSize="md" fontWeight={600} color="var(--cc-text)">
           {subcategoryId ? "Videos in dieser Subkategorie" : "Videos direkt im Modul"}
         </Text>
-        <Text mt={1} fontSize="sm" className="inter" color="gray.400">
+        <Text mt={1} fontSize="sm" color="var(--cc-text-2)">
           Reihenfolge per Griff links ändern. Auf den Titel klicken zum Auf-/Einklappen.
         </Text>
       </Box>
 
       {items.length === 0 ? (
-        <Text fontSize="sm" color="gray.400" className="inter">
+        <Text fontSize="sm" color="var(--cc-text-2)">
           Noch keine Videos — unten eine Videodatei hochladen.
         </Text>
       ) : (
         <DraggableList
           items={items}
+          // Eindeutiger Name je Subkategorie: Mehrere aufgeklappte Subkategorien
+          // liegen in derselben DragUmgebung und wuerden sich sonst gegenseitig
+          // aus deren Listen-Register werfen.
+          listenName={subcategoryId ? `sub:${subcategoryId}` : `modul:${moduleId}`}
           onReorder={onReorder}
           renderItem={(item, handle) => {
             const isExpanded = expandedIds.has(item.id);
@@ -335,10 +450,10 @@ export function VideoManager({
                 key={item.id}
                 spacing={0}
                 mb={3}
-                borderRadius="16px"
-                borderWidth="1px"
-                borderColor={isExpanded ? "rgba(212,175,55,0.3)" : "whiteAlpha.200"}
-                bg="rgba(255,255,255,0.05)"
+                borderRadius="10px"
+                border="1px solid"
+                borderColor={isExpanded ? "rgba(212, 176, 128, 0.3)" : "var(--cc-line)"}
+                bg="rgba(255, 255, 255, 0.02)"
                 overflow="hidden"
                 transition="border-color 0.15s"
               >
@@ -349,7 +464,7 @@ export function VideoManager({
                   spacing={2}
                   cursor="pointer"
                   onClick={() => toggleExpanded(item.id)}
-                  _hover={{ bg: "whiteAlpha.50" }}
+                  _hover={{ bg: "rgba(255, 255, 255, 0.03)" }}
                   transition="background 0.12s"
                   role="button"
                   aria-expanded={isExpanded}
@@ -358,50 +473,33 @@ export function VideoManager({
                   <Box flex={1} minW={0}>
                     <HStack spacing={2} flexWrap="wrap">
                       <Text
-                        className="inter"
                         fontSize="sm"
-                        fontWeight="600"
-                        color="gray.100"
+                        fontWeight={600}
+                        color="var(--cc-text)"
                         noOfLines={1}
                         flex={1}
                         minW={0}
                       >
                         {item.title}
                       </Text>
-                      {subLabel && (
-                        <Badge
-                          fontSize="10px"
-                          colorScheme="purple"
-                          variant="subtle"
-                          px={2}
-                          py={0.5}
-                          borderRadius="md"
-                          flexShrink={0}
-                        >
-                          {subLabel}
-                        </Badge>
-                      )}
-                      <Badge
-                        fontSize="10px"
-                        colorScheme={item.is_published ? "green" : "gray"}
-                        variant="subtle"
-                        px={2}
-                        py={0.5}
-                        borderRadius="md"
-                        flexShrink={0}
-                      >
+                      {subLabel && <Badge {...pillProps("neutral")}>{subLabel}</Badge>}
+                      <Badge {...pillProps(item.is_published ? "success" : "neutral")}>
                         {item.is_published ? "Veröffentlicht" : "Entwurf"}
                       </Badge>
-                      {item.duration_seconds != null && (
+                      {item.cloudflare_uid && (
                         <Badge
-                          fontSize="10px"
-                          colorScheme="blue"
-                          variant="subtle"
-                          px={2}
-                          py={0.5}
-                          borderRadius="md"
-                          flexShrink={0}
+                          {...pillProps(cloudflareTone(item.cloudflare_status))}
+                          title={item.cloudflare_error ?? undefined}
                         >
+                          {item.cloudflare_status === "ready"
+                            ? "Cloudflare: Bereit"
+                            : item.cloudflare_status === "error"
+                              ? "Cloudflare: Fehler"
+                              : "Cloudflare: Verarbeitung…"}
+                        </Badge>
+                      )}
+                      {item.duration_seconds != null && (
+                        <Badge {...pillProps("neutral")} className="cc-num">
                           {item.duration_seconds}s
                         </Badge>
                       )}
@@ -412,8 +510,8 @@ export function VideoManager({
                     icon={isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                     size="sm"
                     variant="ghost"
-                    color="gray.400"
-                    _hover={{ color: "gray.100", bg: "transparent" }}
+                    color="var(--cc-text-2)"
+                    _hover={{ color: "var(--cc-text)", bg: "transparent" }}
                     onClick={(e) => {
                       e.stopPropagation();
                       toggleExpanded(item.id);
@@ -428,8 +526,7 @@ export function VideoManager({
                     px={{ base: 3, md: 5 }}
                     pt={1}
                     pb={5}
-                    borderTopWidth="1px"
-                    borderColor="whiteAlpha.100"
+                    borderTop="1px solid var(--cc-line)"
                   >
                     <Stack
                       direction={{ base: "column", lg: "row" }}
@@ -442,11 +539,7 @@ export function VideoManager({
                           {/* Subkategorie-Zuordnung — prominent oben */}
                           <FormControl>
                             <FormLabel
-                              className="inter"
-                              fontSize="xs"
-                              textTransform="uppercase"
-                              letterSpacing="0.07em"
-                              color="gray.300"
+                              {...labelSx}
                               mb={1}
                             >
                               Zuordnung
@@ -458,29 +551,25 @@ export function VideoManager({
                               {...fieldStyles}
                               maxW="md"
                             >
-                              <option value="__direct__">Direkt im Modul (ohne Subkategorie)</option>
+                              <option value="__direct__" style={optionStyle}>Direkt im Modul (ohne Subkategorie)</option>
                               {orderedSubOptions.map((s) => (
-                                <option key={s.id} value={s.id}>
+                                <option key={s.id} value={s.id} style={optionStyle}>
                                   Subkategorie: {s.title}
                                 </option>
                               ))}
                             </Select>
                           </FormControl>
 
-                          <Divider borderColor="whiteAlpha.100" />
+                          <Divider borderColor="var(--cc-line)" />
 
                           <FormControl>
                             <FormLabel
-                              className="inter"
-                              fontSize="xs"
-                              textTransform="uppercase"
-                              letterSpacing="0.07em"
-                              color="gray.300"
+                              {...labelSx}
                               mb={1}
                             >
                               Vorschaubild (Dashboard &amp; Institut-Karte)
                             </FormLabel>
-                            <Text fontSize="sm" color="gray.500" className="inter" mb={3}>
+                            <Text fontSize="sm" color="var(--cc-text-2)" mb={3}>
                               Entspricht der großen Bildfläche auf der Modulkarte — nicht nur der kleinen Liste in der
                               Videowiedergabe.
                             </Text>
@@ -488,11 +577,12 @@ export function VideoManager({
                               position="relative"
                               w="100%"
                               maxW="360px"
-                              borderRadius="xl"
+                              borderRadius="10px"
+                              border="1px solid var(--cc-line-strong)"
                               overflow="hidden"
                               role="img"
                             >
-                              <Box position="relative" w="100%" pt="56.25%" bg="rgba(0,0,0,0.35)">
+                              <Box position="relative" w="100%" pt="56.25%" bg="var(--cc-surface-2)">
                                 {item.thumbnail_key ? (
                                   // eslint-disable-next-line @next/next/no-img-element
                                   <img
@@ -514,9 +604,9 @@ export function VideoManager({
                                     display="flex"
                                     alignItems="center"
                                     justifyContent="center"
-                                    bg="linear-gradient(145deg, rgba(212,175,55,0.15) 0%, rgba(15,23,42,0.9) 60%)"
+                                    bg="radial-gradient(circle at 100% 0%, rgba(212, 176, 128, 0.14), transparent 60%)"
                                   >
-                                    <Text fontSize="sm" textAlign="center" px={4} color="gray.400" className="inter">
+                                    <Text fontSize="sm" textAlign="center" px={4} color="var(--cc-text-2)">
                                       Noch kein Vorschaubild
                                     </Text>
                                   </Box>
@@ -528,16 +618,17 @@ export function VideoManager({
                                 right={2}
                                 px={2}
                                 py={1}
-                                borderRadius="md"
-                                bg="rgba(8,10,14,0.75)"
-                                borderWidth="1px"
-                                borderColor="whiteAlpha.200"
+                                borderRadius="6px"
+                                bg="rgba(8, 10, 12, 0.75)"
+                                border="1px solid var(--cc-line-strong)"
                               >
                                 <Text
                                   fontSize="10px"
-                                  className="inter-medium"
-                                  color="gray.300"
+                                  fontWeight={500}
+                                  letterSpacing="0.06em"
+                                  color="var(--cc-text-soft)"
                                   textTransform="uppercase"
+                                  className="cc-num"
                                 >
                                   16:9 wie im Dashboard
                                 </Text>
@@ -546,7 +637,7 @@ export function VideoManager({
                             <Button
                               mt={3}
                               size="md"
-                              colorScheme="blue"
+                              variant="line"
                               leftIcon={<ImagePlus size={18} />}
                               onClick={() => void onUploadThumbnail(item)}
                             >
@@ -556,11 +647,7 @@ export function VideoManager({
 
                           <FormControl>
                             <FormLabel
-                              className="inter"
-                              fontSize="xs"
-                              textTransform="uppercase"
-                              letterSpacing="0.07em"
-                              color="gray.300"
+                              {...labelSx}
                               mb={2}
                             >
                               Titel
@@ -581,11 +668,7 @@ export function VideoManager({
 
                           <FormControl>
                             <FormLabel
-                              className="inter"
-                              fontSize="xs"
-                              textTransform="uppercase"
-                              letterSpacing="0.07em"
-                              color="gray.300"
+                              {...labelSx}
                             >
                               Beschreibung (für Lernende)
                             </FormLabel>
@@ -607,30 +690,41 @@ export function VideoManager({
                               }
                               {...fieldStyles}
                               fontSize="sm"
-                              className="inter"
                             />
                           </FormControl>
 
                           <FormControl>
                             <FormLabel
-                              className="inter"
-                              fontSize="xs"
-                              textTransform="uppercase"
-                              letterSpacing="0.07em"
-                              color="gray.300"
+                              {...labelSx}
                             >
-                              Speicherort (Object Storage)
+                              Speicherort
                             </FormLabel>
-                            <Text
-                              fontSize="xs"
-                              className="jetbrains-mono"
-                              color="gray.500"
-                              title={item.storage_key}
-                              noOfLines={2}
-                              wordBreak="break-all"
-                            >
-                              {item.storage_key}
-                            </Text>
+                            {item.cloudflare_uid ? (
+                              <Text
+                                fontSize="xs"
+                                className="cc-num"
+                                color="var(--cc-text-2)"
+                                title={item.cloudflare_uid}
+                                noOfLines={2}
+                                wordBreak="break-all"
+                              >
+                                Cloudflare Stream · {item.cloudflare_uid}
+                              </Text>
+                            ) : null}
+                            {item.storage_key ? (
+                              <Text
+                                fontSize="xs"
+                                className="cc-num"
+                                color="var(--cc-text-3)"
+                                title={item.storage_key}
+                                noOfLines={2}
+                                wordBreak="break-all"
+                                mt={item.cloudflare_uid ? 1 : 0}
+                              >
+                                {item.cloudflare_uid ? "Legacy (Hetzner): " : ""}
+                                {item.storage_key}
+                              </Text>
+                            ) : null}
                           </FormControl>
 
                           <AttachmentManager courseId={courseId} moduleId={moduleId} videoId={item.id} />
@@ -643,11 +737,11 @@ export function VideoManager({
                         minW={{ base: "100%", lg: "200px" }}
                         pl={{ base: 0, lg: 2 }}
                         borderLeftWidth={{ base: 0, lg: "1px" }}
-                        borderColor="whiteAlpha.150"
+                        borderColor="var(--cc-line)"
                         pt={{ base: 2, lg: 0 }}
                       >
                         <FormControl>
-                          <FormLabel className="inter" fontSize="sm" color="gray.200" mb={1}>
+                          <FormLabel fontSize="sm" fontWeight={500} color="var(--cc-text-soft)" mb={1}>
                             Veröffentlicht
                           </FormLabel>
                           <HStack spacing={3}>
@@ -661,28 +755,27 @@ export function VideoManager({
                                 );
                                 void patch(item.id, { is_published });
                               }}
-                              colorScheme="blue"
+                              sx={switchSx}
                             />
-                            <Text fontSize="sm" color="gray.400" className="inter">
+                            <Text fontSize="sm" color="var(--cc-text-2)">
                               Sichtbar in der Plattform
                             </Text>
                           </HStack>
                         </FormControl>
                         <Button
                           size="md"
-                          variant="outline"
-                          colorScheme="blue"
+                          variant="line"
                           leftIcon={<Clock size={18} />}
                           isLoading={detectingDuration.has(item.id)}
                           loadingText="Ermittle…"
+                          isDisabled={Boolean(item.cloudflare_uid) && item.cloudflare_status !== "ready"}
                           onClick={() => void onDetectDuration(item)}
                         >
                           {item.duration_seconds != null ? "Dauer neu ermitteln" : "Dauer ermitteln"}
                         </Button>
                         <Button
                           size="md"
-                          variant="outline"
-                          colorScheme="yellow"
+                          variant="line"
                           leftIcon={<ArrowRightLeft size={18} />}
                           onClick={() => setMoveVideo(item)}
                         >
@@ -690,13 +783,8 @@ export function VideoManager({
                         </Button>
                         <Button
                           size="md"
-                          variant="outline"
-                          colorScheme="red"
+                          {...dangerLineProps}
                           leftIcon={<Trash2 size={18} />}
-                          borderWidth="2px"
-                          borderColor="red.400"
-                          color="red.100"
-                          _hover={{ bg: "rgba(254, 178, 178, 0.12)" }}
                           onClick={() => void remove(item.id)}
                         >
                           Video löschen
@@ -711,12 +799,7 @@ export function VideoManager({
         />
       )}
 
-      <VideoUploader
-        courseId={courseId}
-        moduleId={moduleId}
-        subcategoryId={subcategoryId}
-        onUploaded={onUploaded}
-      />
+      <CloudflareVideoUploader onUploaded={onUploaded} />
 
       <VideoMoveModal
         isOpen={moveVideo != null}

@@ -3,6 +3,7 @@
 import { Box, Button, HStack, SimpleGrid, Stack, Text } from "@chakra-ui/react";
 import { Activity } from "lucide-react";
 import { useState } from "react";
+import { ADMIN_CHART, adminChipProps, adminInsetProps } from "@/components/admin/adminUi";
 import {
   SOURCE_ORIGIN_LABELS,
   type FunnelByOrigin,
@@ -16,7 +17,7 @@ function FunnelStages({ funnel }: { funnel: FunnelStage[] }) {
   return (
     <Stack spacing={5}>
       {funnel.length === 0 ? (
-        <Text fontSize="sm" color="#3A3A40" className="inter" fontStyle="italic">
+        <Text fontSize="14px" color="var(--cc-text-3)">
           Keine Daten im Zeitraum.
         </Text>
       ) : null}
@@ -24,10 +25,10 @@ function FunnelStages({ funnel }: { funnel: FunnelStage[] }) {
         if (stage.isRevenue) {
           return (
             <HStack key={stage.key} justify="space-between">
-              <Text fontSize="sm" color="var(--color-text-primary)" className="inter">
+              <Text fontSize="14px" color="var(--cc-text-soft)">
                 {stage.label}
               </Text>
-              <Text className="inter-semibold" fontSize="sm" color="#E8C547" fontWeight={700}>
+              <Text className="cc-num" fontSize="14px" fontWeight={600} color="var(--cc-success)">
                 {eurFromCents(stage.value)}
               </Text>
             </HStack>
@@ -37,21 +38,20 @@ function FunnelStages({ funnel }: { funnel: FunnelStage[] }) {
         return (
           <Stack key={stage.key} spacing={2}>
             <HStack justify="space-between">
-              <Text fontSize="sm" color="var(--color-text-primary)" className="inter">
+              <Text fontSize="14px" color="var(--cc-text-soft)">
                 {stage.label}
               </Text>
-              <Text className="inter-semibold" fontSize="sm" color="var(--color-text-primary)">
+              <Text className="cc-num" fontSize="14px" fontWeight={600} color="var(--cc-text)">
                 {stage.value}
               </Text>
             </HStack>
-            <Box bg="#1A1B1F" borderRadius="9999px" overflow="hidden" h="8px">
+            <Box bg={ADMIN_CHART.track} borderRadius="full" overflow="hidden" h="8px">
               <Box
                 h="full"
                 w={`${(pct * 100).toFixed(2)}%`}
-                background="linear-gradient(90deg, #A67C00 0%, #D4AF37 100%)"
-                borderRadius="9999px"
-                boxShadow="0 0 8px rgba(212,175,55,0.30)"
-                transition="width 600ms cubic-bezier(0.16, 1, 0.3, 1)"
+                bg={ADMIN_CHART.gold}
+                borderRadius="full"
+                transition="width 600ms var(--cc-ease)"
               />
             </Box>
           </Stack>
@@ -77,7 +77,7 @@ export function FunnelSection({
       icon={<Activity size={16} />}
       right={
         hasOrigin ? (
-          <HStack spacing={1}>
+          <HStack spacing={2}>
             {(
               [
                 { id: false, label: "Gesamt" },
@@ -88,14 +88,9 @@ export function FunnelSection({
               return (
                 <Button
                   key={String(opt.id)}
+                  {...adminChipProps(active)}
                   size="xs"
                   onClick={() => setByOrigin(opt.id)}
-                  bg={active ? "rgba(212,175,55,0.16)" : "transparent"}
-                  color={active ? "var(--color-accent-gold-light, #E8C547)" : "var(--color-text-secondary)"}
-                  border="1px solid"
-                  borderColor={active ? "rgba(212,175,55,0.45)" : "rgba(255,255,255,0.10)"}
-                  _hover={{ bg: "rgba(255,255,255,0.06)" }}
-                  className="inter"
                 >
                   {opt.label}
                 </Button>
@@ -108,14 +103,8 @@ export function FunnelSection({
       {byOrigin && funnelByOrigin ? (
         <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={6}>
           {(["discord_funnel", "termin_direct"] as const).map((origin) => (
-            <Box
-              key={origin}
-              bg="#0C0D10"
-              border="1px solid rgba(255,255,255,0.07)"
-              borderRadius="12px"
-              p={4}
-            >
-              <Text className="inter-semibold" fontSize="sm" color="var(--color-accent-gold-light, #E8C547)" mb={4}>
+            <Box key={origin} {...adminInsetProps} p={4}>
+              <Text fontSize="14px" fontWeight={600} color="var(--cc-text)" mb={4}>
                 {SOURCE_ORIGIN_LABELS[origin]}
               </Text>
               <FunnelStages funnel={funnelByOrigin[origin] ?? []} />

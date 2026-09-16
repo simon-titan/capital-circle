@@ -3,7 +3,6 @@
 import {
   Alert,
   AlertIcon,
-  Badge,
   Box,
   Button,
   FormControl,
@@ -34,6 +33,22 @@ import {
 } from "@chakra-ui/react";
 import { Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import {
+  ADMIN_CARD_CLASS,
+  StatusPill,
+  adminAlertIconColor,
+  adminAlertProps,
+  adminCardPadding,
+  adminDangerButtonProps,
+  adminFormLabelProps,
+  adminInputProps,
+  adminModalHeaderProps,
+  adminModalProps,
+  adminOptionStyle,
+  adminOverlayProps,
+  adminSwitchSx,
+  adminTableSx,
+} from "@/components/admin/adminUi";
 
 interface Coupon {
   id: string;
@@ -60,24 +75,6 @@ function formatDate(value: string | null): string {
   if (!value) return "—";
   return new Date(value).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
-
-const inputSx = {
-  bg: "rgba(255,255,255,0.04)",
-  borderColor: "rgba(255,255,255,0.10)",
-  color: "var(--color-text-primary)",
-  _placeholder: { color: "rgba(255,255,255,0.25)" },
-  _hover: { borderColor: "rgba(212,175,55,0.35)" },
-  _focus: { borderColor: "rgba(212,175,55,0.60)", boxShadow: "0 0 0 1px rgba(212,175,55,0.40)" },
-  borderRadius: "10px",
-};
-
-const labelSx = {
-  fontSize: "xs",
-  textTransform: "uppercase" as const,
-  letterSpacing: "0.06em",
-  color: "rgba(255,255,255,0.55)",
-  className: "inter-semibold",
-};
 
 /* ── Create Modal ─────────────────────────────────────────────────────────── */
 
@@ -158,121 +155,107 @@ function CreateCouponModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="md" isCentered>
-      <ModalOverlay bg="rgba(0,0,0,0.70)" backdropFilter="blur(10px)" />
-      <ModalContent
-        bg="rgba(12,12,16,0.98)"
-        border="1px solid rgba(255,255,255,0.08)"
-        borderRadius="20px"
-        boxShadow="0 24px 80px rgba(0,0,0,0.70), 0 0 0 1px rgba(212,175,55,0.06)"
-      >
-        <ModalHeader pt={6} pb={2} fontSize="lg" className="inter-semibold" color="var(--color-text-primary)">
+      <ModalOverlay {...adminOverlayProps} />
+      <ModalContent {...adminModalProps}>
+        <ModalHeader pt={6} pb={2} {...adminModalHeaderProps}>
           Neuen Gutschein erstellen
         </ModalHeader>
         <ModalBody pb={2}>
           <Stack spacing={4}>
             <FormControl isInvalid={Boolean(errors.code)} isRequired>
-              <FormLabel {...labelSx}>Code</FormLabel>
+              <FormLabel {...adminFormLabelProps}>Code</FormLabel>
               <Input
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 placeholder="z. B. WELCOME10"
-                sx={inputSx}
-                fontFamily="JetBrains Mono, monospace"
+                {...adminInputProps}
+                className="cc-num"
+                letterSpacing="0.04em"
                 fontSize="sm"
               />
-              <FormErrorMessage>{errors.code}</FormErrorMessage>
+              <FormErrorMessage color="var(--cc-danger)">{errors.code}</FormErrorMessage>
             </FormControl>
 
             <FormControl>
-              <FormLabel {...labelSx}>Beschreibung (intern)</FormLabel>
+              <FormLabel {...adminFormLabelProps}>Beschreibung (intern)</FormLabel>
               <Input
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="z. B. Black-Friday-Aktion"
-                sx={inputSx}
+                {...adminInputProps}
               />
             </FormControl>
 
             <HStack spacing={4} align="flex-start">
               <FormControl w="140px">
-                <FormLabel {...labelSx}>Rabatt-Typ</FormLabel>
+                <FormLabel {...adminFormLabelProps}>Rabatt-Typ</FormLabel>
                 <Select
                   value={discountType}
                   onChange={(e) => setDiscountType(e.target.value as "percent" | "fixed")}
-                  sx={inputSx}
+                  {...adminInputProps}
                 >
-                  <option value="percent">Prozent</option>
-                  <option value="fixed">Fixbetrag (€)</option>
+                  <option value="percent" style={adminOptionStyle}>
+                    Prozent
+                  </option>
+                  <option value="fixed" style={adminOptionStyle}>
+                    Fixbetrag (€)
+                  </option>
                 </Select>
               </FormControl>
               <FormControl flex={1} isInvalid={Boolean(errors.discountValue)} isRequired>
-                <FormLabel {...labelSx}>{discountType === "percent" ? "Prozent" : "Betrag (€)"}</FormLabel>
+                <FormLabel {...adminFormLabelProps}>{discountType === "percent" ? "Prozent" : "Betrag (€)"}</FormLabel>
                 <Input
                   type="number"
                   value={discountValue}
                   onChange={(e) => setDiscountValue(e.target.value)}
-                  sx={inputSx}
+                  {...adminInputProps}
+                  className="cc-num"
                 />
-                <FormErrorMessage>{errors.discountValue}</FormErrorMessage>
+                <FormErrorMessage color="var(--cc-danger)">{errors.discountValue}</FormErrorMessage>
               </FormControl>
             </HStack>
 
             <HStack spacing={4} align="flex-start">
               <FormControl flex={1}>
-                <FormLabel {...labelSx}>Gültig bis</FormLabel>
+                <FormLabel {...adminFormLabelProps}>Gültig bis</FormLabel>
                 <Input
                   type="date"
                   value={validUntil}
                   onChange={(e) => setValidUntil(e.target.value)}
-                  sx={inputSx}
+                  {...adminInputProps}
+                  className="cc-num"
                 />
-                <FormHelperText color="rgba(255,255,255,0.30)" fontSize="xs" className="inter">
+                <FormHelperText color="var(--cc-text-3)" fontSize="xs">
                   Leer = unbegrenzt gültig.
                 </FormHelperText>
               </FormControl>
               <FormControl flex={1}>
-                <FormLabel {...labelSx}>Max. Einlösungen</FormLabel>
+                <FormLabel {...adminFormLabelProps}>Max. Einlösungen</FormLabel>
                 <Input
                   type="number"
                   min={1}
                   value={maxRedemptions}
                   onChange={(e) => setMaxRedemptions(e.target.value)}
                   placeholder="unbegrenzt"
-                  sx={inputSx}
+                  {...adminInputProps}
+                  className="cc-num"
                 />
               </FormControl>
             </HStack>
 
             {serverError && (
-              <Alert status="error" variant="subtle" bg="rgba(229,72,77,0.10)" borderRadius="10px" border="1px solid rgba(229,72,77,0.22)">
-                <AlertIcon />
-                <Text fontSize="sm" className="inter">{serverError}</Text>
+              <Alert status="error" {...adminAlertProps("error")}>
+                <AlertIcon color={adminAlertIconColor("error")} />
+                <Text fontSize="sm">{serverError}</Text>
               </Alert>
             )}
           </Stack>
         </ModalBody>
         <ModalFooter gap={2} pt={4} pb={5}>
-          <Button
-            variant="ghost"
-            onClick={onClose}
-            color="rgba(255,255,255,0.45)"
-            _hover={{ bg: "rgba(255,255,255,0.06)" }}
-            borderRadius="10px"
-            className="inter"
-          >
+          <Button variant="ghost" onClick={onClose} color="var(--cc-text-2)">
             Abbrechen
           </Button>
-          <Button
-            onClick={handleSubmit}
-            isLoading={saving}
-            loadingText="Erstellen…"
-            borderRadius="10px"
-            className="inter-semibold"
-            bg="rgba(212,175,55,0.15)"
-            color="var(--color-accent-gold)"
-            border="1px solid rgba(212,175,55,0.35)"
-            _hover={{ bg: "rgba(212,175,55,0.25)", borderColor: "rgba(212,175,55,0.60)" }}
-          >
+          <Button variant="gold" onClick={handleSubmit} isLoading={saving} loadingText="Erstellen…">
             Gutschein erstellen
           </Button>
         </ModalFooter>
@@ -311,47 +294,25 @@ function DeleteConfirmModal({
 
   return (
     <Modal isOpen={Boolean(coupon)} onClose={onClose} size="sm" isCentered>
-      <ModalOverlay bg="rgba(0,0,0,0.70)" backdropFilter="blur(10px)" />
-      <ModalContent
-        bg="rgba(12,12,16,0.98)"
-        border="1px solid rgba(229,72,77,0.18)"
-        borderRadius="20px"
-        boxShadow="0 24px 80px rgba(0,0,0,0.70)"
-      >
-        <ModalHeader fontSize="md" className="inter-semibold" color="var(--color-text-primary)" pt={6} pb={2}>
+      <ModalOverlay {...adminOverlayProps} />
+      <ModalContent {...adminModalProps}>
+        <ModalHeader pt={6} pb={2} {...adminModalHeaderProps}>
           Gutschein löschen?
         </ModalHeader>
         <ModalBody pb={2}>
-          <Text fontSize="sm" color="rgba(255,255,255,0.60)" className="inter" lineHeight="1.65">
+          <Text fontSize="sm" color="var(--cc-text-2)" lineHeight="1.65">
             Der Code{" "}
-            <Box as="span" fontFamily="JetBrains Mono, monospace" color="var(--color-text-primary)" fontSize="xs">
+            <Box as="span" className="cc-num" fontWeight={600} letterSpacing="0.04em" color="var(--cc-gold-light)">
               {coupon?.code}
             </Box>{" "}
             wird auf Stripe deaktiviert (kein Hard-Delete möglich) und aus dieser Liste entfernt.
           </Text>
         </ModalBody>
         <ModalFooter gap={2} pt={4} pb={5}>
-          <Button
-            variant="ghost"
-            onClick={onClose}
-            color="rgba(255,255,255,0.45)"
-            _hover={{ bg: "rgba(255,255,255,0.06)" }}
-            borderRadius="10px"
-            className="inter"
-          >
+          <Button variant="ghost" onClick={onClose} color="var(--cc-text-2)">
             Abbrechen
           </Button>
-          <Button
-            onClick={handleDelete}
-            isLoading={deleting}
-            loadingText="Löschen…"
-            borderRadius="10px"
-            className="inter-semibold"
-            bg="rgba(229,72,77,0.15)"
-            color="rgba(248,113,113,0.90)"
-            border="1px solid rgba(229,72,77,0.30)"
-            _hover={{ bg: "rgba(229,72,77,0.25)" }}
-          >
+          <Button {...adminDangerButtonProps} onClick={handleDelete} isLoading={deleting} loadingText="Löschen…">
             Endgültig löschen
           </Button>
         </ModalFooter>
@@ -429,151 +390,119 @@ export function AdminGutscheineManager() {
   return (
     <>
       <HStack justify="space-between" align="center" flexWrap="wrap" gap={3}>
-        <Text fontSize="sm" color="var(--color-text-secondary)" className="inter">
+        <Text fontSize="sm" color="var(--cc-text-2)" className="cc-num">
           {coupons.length} Gutschein{coupons.length === 1 ? "" : "e"}
         </Text>
-        <Button
-          leftIcon={<Plus size={16} />}
-          onClick={createModal.onOpen}
-          borderRadius="10px"
-          className="inter-semibold"
-          bg="rgba(212,175,55,0.15)"
-          color="var(--color-accent-gold)"
-          border="1px solid rgba(212,175,55,0.35)"
-          _hover={{ bg: "rgba(212,175,55,0.25)", borderColor: "rgba(212,175,55,0.60)" }}
-          size="sm"
-        >
+        <Button variant="gold" leftIcon={<Plus size={16} />} onClick={createModal.onOpen} size="sm">
           Neuen Gutschein erstellen
         </Button>
       </HStack>
 
       {error && (
-        <Alert status="error" variant="subtle" bg="rgba(229,72,77,0.10)" borderRadius="12px" mt={4}>
-          <AlertIcon />
-          <Text fontSize="sm" className="inter">{error}</Text>
+        <Alert status="error" {...adminAlertProps("error")} mt={4}>
+          <AlertIcon color={adminAlertIconColor("error")} />
+          <Text fontSize="sm">{error}</Text>
         </Alert>
       )}
 
-      <Box mt={6} borderRadius="16px" border="1px solid rgba(255,255,255,0.07)" overflow="hidden" bg="rgba(255,255,255,0.02)">
+      <Box mt={5} className={ADMIN_CARD_CLASS} p={adminCardPadding}>
         {loading ? (
           <Box p={8} textAlign="center">
-            <Text color="rgba(255,255,255,0.35)" className="inter" fontSize="sm">Lade Gutscheine…</Text>
+            <Text color="var(--cc-text-2)" fontSize="sm">
+              Lade Gutscheine…
+            </Text>
           </Box>
         ) : coupons.length === 0 ? (
           <Box p={10} textAlign="center">
-            <Text color="rgba(255,255,255,0.35)" className="inter" fontSize="sm" mb={2}>
+            <Text color="var(--cc-text-2)" fontSize="sm" mb={2}>
               Noch keine Gutscheine erstellt.
             </Text>
-            <Text color="rgba(255,255,255,0.20)" className="inter" fontSize="xs">
+            <Text color="var(--cc-text-3)" fontSize="xs">
               Erstelle einen Rabattcode — er ist danach direkt im Stripe-Checkout einlösbar.
             </Text>
           </Box>
         ) : (
-          <Box overflowX="auto">
-            <Table variant="unstyled" size="sm">
+          <Box overflowX="auto" mx={{ base: -1, md: -2 }}>
+            <Table variant="unstyled" size="sm" sx={adminTableSx}>
               <Thead>
-                <Tr borderBottom="1px solid rgba(255,255,255,0.06)">
+                <Tr>
                   {["Code", "Rabatt", "Gültig bis", "Einlösungen", "Status", "Erstellt", ""].map((h) => (
-                    <Th
-                      key={h}
-                      py={3}
-                      px={4}
-                      fontSize="10px"
-                      letterSpacing="0.10em"
-                      textTransform="uppercase"
-                      color="rgba(255,255,255,0.35)"
-                      className="inter-semibold"
-                      fontWeight={600}
-                    >
-                      {h}
-                    </Th>
+                    <Th key={h}>{h}</Th>
                   ))}
                 </Tr>
               </Thead>
               <Tbody>
                 {coupons.map((c) => (
-                  <Tr
-                    key={c.id}
-                    borderBottom="1px solid rgba(255,255,255,0.04)"
-                    _last={{ borderBottom: "none" }}
-                    _hover={{ bg: "rgba(255,255,255,0.025)" }}
-                    transition="background 150ms ease"
-                  >
-                    <Td py={3.5} px={4}>
+                  <Tr key={c.id}>
+                    <Td>
                       <Stack spacing={0}>
                         <Text
                           fontSize="xs"
-                          fontFamily="JetBrains Mono, monospace"
-                          color="rgba(212,175,55,0.85)"
-                          bg="rgba(212,175,55,0.07)"
+                          className="cc-num"
+                          fontWeight={600}
+                          letterSpacing="0.04em"
+                          color="var(--cc-gold-light)"
+                          bg="var(--cc-gold-wash)"
                           px={2}
                           py={0.5}
                           borderRadius="6px"
-                          border="1px solid rgba(212,175,55,0.15)"
+                          border="1px solid rgba(212, 176, 128, 0.22)"
                           display="inline-block"
                           w="fit-content"
                         >
                           {c.code}
                         </Text>
                         {c.description && (
-                          <Text fontSize="xs" color="rgba(255,255,255,0.35)" className="inter" mt={1}>
+                          <Text fontSize="xs" color="var(--cc-text-3)" mt={1}>
                             {c.description}
                           </Text>
                         )}
                       </Stack>
                     </Td>
-                    <Td py={3.5} px={4}>
-                      <Text fontSize="sm" className="jetbrains-mono" color="var(--color-text-primary)">
+                    <Td>
+                      <Text fontSize="sm" className="cc-num" color="var(--cc-text)">
                         {formatDiscount(c)}
                       </Text>
                     </Td>
-                    <Td py={3.5} px={4}>
-                      <Text fontSize="sm" className="inter" color="rgba(255,255,255,0.60)">
+                    <Td>
+                      <Text fontSize="sm" className="cc-num" color="var(--cc-text-2)">
                         {formatDate(c.valid_until)}
                       </Text>
                     </Td>
-                    <Td py={3.5} px={4}>
-                      <Text fontSize="sm" className="jetbrains-mono" color="var(--color-text-primary)">
+                    <Td>
+                      <Text fontSize="sm" className="cc-num" color="var(--cc-text)">
                         {c.times_redeemed ?? "—"}
                         {c.max_redemptions ? ` / ${c.max_redemptions}` : ""}
                       </Text>
                     </Td>
-                    <Td py={3.5} px={4}>
+                    <Td>
                       <HStack spacing={2}>
                         <Switch
                           isChecked={c.active}
                           isDisabled={togglingId === c.id}
                           onChange={() => toggleActive(c)}
-                          colorScheme="yellow"
+                          sx={adminSwitchSx}
                           size="sm"
                         />
-                        <Badge
-                          fontSize="9px"
-                          px={2}
-                          py={0.5}
-                          borderRadius="6px"
-                          bg={c.active ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.06)"}
-                          color={c.active ? "rgba(74,222,128,0.90)" : "rgba(255,255,255,0.40)"}
-                          border="none"
-                        >
+                        <StatusPill tone={c.active ? "success" : "neutral"}>
                           {c.active ? "Aktiv" : "Inaktiv"}
-                        </Badge>
+                        </StatusPill>
                       </HStack>
                     </Td>
-                    <Td py={3.5} px={4}>
-                      <Text fontSize="xs" color="rgba(255,255,255,0.35)" className="inter">
+                    <Td>
+                      <Text fontSize="xs" className="cc-num" color="var(--cc-text-3)">
                         {formatDate(c.created_at)}
                       </Text>
                     </Td>
-                    <Td py={3.5} px={4}>
+                    <Td>
                       <IconButton
                         aria-label="Löschen"
                         icon={<Trash2 size={14} />}
                         size="xs"
                         variant="ghost"
-                        color="rgba(255,255,255,0.25)"
-                        _hover={{ color: "rgba(248,113,113,0.80)", bg: "rgba(229,72,77,0.08)" }}
-                        borderRadius="7px"
+                        color="var(--cc-text-3)"
+                        _hover={{ color: "var(--cc-danger)", bg: "rgba(248, 113, 113, 0.08)" }}
+                        borderRadius="6px"
                         onClick={() => setDeleteTarget(c)}
                       />
                     </Td>
@@ -585,7 +514,7 @@ export function AdminGutscheineManager() {
         )}
       </Box>
 
-      <Text fontSize="xs" color="rgba(255,255,255,0.20)" className="inter" mt={2}>
+      <Text fontSize="xs" color="var(--cc-text-3)" mt={2}>
         Einlösungen werden live von Stripe gezählt (Source of Truth), nicht lokal gespeichert.
       </Text>
 

@@ -5,7 +5,8 @@ mit jeder größeren Änderung nachgetragen, nicht ersetzt — neue Einträge ko
 in den jeweiligen Abschnitt, mit Datum.
 
 Stack: Next.js 16 (App Router) · React 19 · Supabase (Postgres/Auth/RLS) · Stripe ·
-Resend (react-email) · Chakra UI v2 · Hetzner S3 (Datei-Uploads) · Discord-Bot · Telegram-Bot.
+Resend (react-email) · Chakra UI v2 · **Cloudflare Stream** (Kursvideos) · **Cloudflare R2**
+(sonstige Datei-Uploads) · Discord-Bot · Telegram-Bot.
 Hosting: Vercel (Domain `capitalcircletrading.com`). Repo: `simon-titan/capital-circle`
 (GitHub, privat).
 
@@ -17,17 +18,104 @@ Mitgliedschafts-Stufen in `profiles.membership_tier`:
 | Tier | Preis | Vertriebsweg |
 |---|---|---|
 | `free` | kostenlos | Discord-Funnel / Free-Kurs |
-| `monthly` | 97 €/Monat | Self-Checkout (`/pricing` → Stripe) |
-| `lifetime` | 699 € einmalig | Self-Checkout (`/pricing` → Stripe) |
+| `monthly` | 99 €/Monat | Gast-Checkout (`/` → `/go/monthly` → Stripe) |
+| `quarterly` | 267 €/3 Monate | Gast-Checkout (`/` → `/go/quarterly` → Stripe) |
+| `yearly` | 990 €/Jahr | Gast-Checkout (`/` → `/go/yearly` → Stripe) |
+| `lifetime` | 699 € einmalig | **nicht mehr verkäuflich** — Bestandskunden behalten den Zugang |
 | `ht_1on1` | individuell | Bewerbung + Calendly-Call, kein Self-Checkout |
+
+Seit 16.09.2026 ist `/` die Sales-Landing mit Gast-Checkout (Konto entsteht erst nach der
+Zahlung im Webhook), Login/Onboarding liegt auf `/einsteig`, `/pricing` leitet dauerhaft
+auf `/#angebot`.
 
 Kernbereiche: Ausbildung/Kurse (sequenzielles Freischalten), Arsenal (Tools/Templates),
 Events (Kalender/Webinare), News (Ankündigungs-Feed), Analyse (Markt-Updates),
 Trading Journal (aktuell in eigenem, separatem Umbau — siehe unten), Discord-Community,
 Telegram-Bot, Bewerbungs-/Sales-Funnel für High-Ticket. Zahlungen laufen vollständig
-über Stripe (Checkout + Customer Portal + Webhooks), Mails über Resend/react-email,
-Datei-Uploads (Videos, Anhänge, Zertifikate) über Hetzner S3 mit Presigned URLs statt
-Supabase Storage.
+über Stripe (Checkout + Customer Portal + Webhooks), Mails über Resend/react-email.
+Kursvideos liegen in Cloudflare Stream (signiertes HLS, `videos.cloudflare_uid`), alle
+übrigen Datei-Uploads (Thumbnails, Anhänge, Zertifikate, Avatare) in Cloudflare R2 mit
+Presigned URLs statt Supabase Storage.
+
+---
+
+## 16.09.2026 — Cloudflare-Umstellung, Sales-Landing auf `/`, Gast-Checkout
+
+**Cloudflare scharf geschaltet.** Signing-Key-Paar über `POST /stream/keys` erzeugt, alle
+`CLOUDFLARE_*`- und `R2_*`-Variablen gesetzt, R2-Bucket `capital-circle` in der
+**EU-Jurisdiktion** angelegt (DSGVO — der S3-Endpunkt trägt deshalb `.eu.` im Host).
+`npm run cf:check` prüft Stream-API, Signatur, Manifest-URL und R2 in einem Lauf.
+
+⚠️ **Hetzner Object Storage ist verschwunden.** Der Bucket `capitalcircle` antwortet in
+nbg1/fsn1/hel1 mit `NoSuchBucket`, die Keys mit `InvalidAccessKeyId`. Damit zeigen alle
+118 `videos.storage_key`, sämtliche Thumbnails, Arsenal-PDFs, Zertifikate und Avatare ins
+Leere. `lib/storage.ts` läuft jetzt auf R2 (gleiche Schlüsselstruktur; Hetzner nur noch als
+Lese-Rückfallebene hinter `STORAGE_LEGACY_FALLBACK=1`). R2 startet leer — alles außer den
+Kursvideos muss neu hochgeladen werden.
+
+**148 Videos liegen bereits in Cloudflare Stream** (1535 Min), aus einem früheren
+Direkt-Upload — mit Nummern-Präfix umbenannt und ohne Signatur-Zwang, also allein über die
+UID öffentlich abrufbar. `npm run cf:link` ordnet sie über Name + Dauer den DB-Zeilen zu
+(75/118 Treffer, 50 auf die Sekunde bestätigt), trägt `cloudflare_uid` nach und schaltet
+`requireSignedURLs` ein. Prüfliste: `exports/cloudflare-video-abgleich.csv`. Das
+öffentliche Funnel-Video aus `NEXT_PUBLIC_DISCORD_TERMIN_VIDEO_URL` ist ausgenommen.
+
+**Admin-Upload per Drag & Drop.** Dateien in die Zone ziehen, mehrere gleichzeitig,
+Warteschlange mit Fortschritt pro Datei; der Titel kommt aus dem Dateinamen. Ein Video auf
+die Mitte einer Subkategorie zu ziehen verschiebt es hinein (`DraggableList` kennt jetzt
+Ablage-Ziele und eine Raster-Variante).
+
+**Modul-Übersichten als Raster.** `/admin/kurse/[courseId]` und `/ausbildung` zeigen Module
+nebeneinander; ein Klick klappt die Untermodule auf (Admin: mit Videos, Dauer und
+Unveröffentlicht-Markierung; Mitglieder: mit `x/y`-Fortschritt je Untermodul).
+
+**Sales-Landing auf `/` mit Gast-Checkout.** Acht Abschnitte nach den Kunden-Mockups,
+Kaufweg `/go/<plan>` → Stripe → Webhook legt das Konto an → `/checkout/success` mit
+Passwort-Formular. Prefetch-/Bot-/HEAD-Schutz auf `/go/` (bei MoonTrading hat dessen Fehlen
+589 von 729 Sessions als Phantom-Abbrüche erzeugt). Login/Onboarding auf `/einsteig`,
+`/pricing` gelöscht und auf `/#angebot` umgeleitet, Lifetime aus dem Verkaufsweg entfernt.
+Stripe-Preise per `npm run stripe:preise -- --apply` angelegt (Test-Modus, Produkt
+`prod_VGo4kOUjnyWCfp`). Dabei fiel auf: die bisher eingetragene `STRIPE_PRICE_MONTHLY`
+gehörte zu einem **anderen Stripe-Konto** als der hinterlegte `sk_test`-Key.
+
+---
+
+## 06.09.2026 — Plattform-Migrations-Kampagne (Whop → eigene Plattform)
+
+Whop-Abonnenten sollen möglichst reibungslos zurück auf die eigene Plattform wechseln.
+Gebaut nach exakt demselben, bereits bewährten Muster wie die ursprüngliche
+Whop-Migration (siehe Meilensteine unten), nur umgekehrte Richtung:
+
+- `config/platform-migration-campaign.ts` + 3 neue Mail-Templates
+  (`lib/email/templates/platform-migration-{1-announcement,2-reminder,3-faq}.tsx`,
+  teilen sich die Kampagnen-Bausteine aus `lib/email/campaigns/whop-migration/` —
+  die sind rein optisch generisch, Name kommt nur historisch von der Erstnutzung).
+- Admin-Trigger `POST /api/admin/campaigns/platform-migration` (Mail 1, Snapshot) +
+  Cron `/api/cron/platform-migration-followups` (Mail 2/3, öffner-/klick-basiert,
+  registriert in `vercel.json`) — strukturell identisch zur Whop-Migration.
+- Zielgruppe kommt NICHT aus `profiles` (die meisten Whop-Abonnent:innen haben keine
+  eigene DB-Zeile), sondern aus einem manuellen Whop-Mitgliederexport (CSV), importiert
+  über `npm run import:whop-members -- <csv>` in ein eigenes Resend-Segment
+  (`RESEND_PLATFORM_MIGRATION_SEGMENT_ID`, wird beim ersten Lauf automatisch angelegt).
+- Preis einheitlich auf **99 €/Monat** vereinheitlicht (vorher inkonsistent 97 €/99 €
+  an verschiedenen Stellen) — angepasst in `PricingCards.tsx`, `UserTierOverrideModal.tsx`,
+  `apply/thanks-membership/page.tsx` und `MONTHLY_PRICE_EUR` in
+  `app/api/admin/analytics/route.ts`.
+- Whop-Kündigung bleibt bewusst Self-Service (FAQ-Mail 3 erklärt den Ablauf) — keine
+  Whop-API-Integration vorhanden, um das zu automatisieren.
+
+🔒 **Blockierend, bevor Mail 1 ausgelöst wird:**
+- Dieselben Go-Live-Blocker wie unten (Migrationen 062–066, Rechtstexte) — zahlende
+  Whop-Mitglieder sollen nicht auf eine rechtlich unvollständige Seite geschickt werden.
+- ~~`STRIPE_PRICE_MONTHLY` (`price_1TOK0fGUgAQCwJluNepVhRzn`) ließ sich gegen den
+  hinterlegten Testmodus-Key nicht auflösen (`404 resource_missing`).~~
+  **Am 16.09.2026 geklärt und behoben:** Die Preis-ID gehörte zu einem *anderen
+  Stripe-Konto* als der `sk_test`-Key — daher der 404. Ersetzt durch die drei per
+  `npm run stripe:preise -- --apply` erzeugten Preise (99 € / 267 € / 990 €, Produkt
+  `prod_VGo4kOUjnyWCfp`). Für den Live-Betrieb müssen sie im Live-Modus neu angelegt
+  werden.
+- Whop-Mitgliederexport (CSV) einmalig aus dem Whop-Dashboard ziehen und mit
+  `npm run import:whop-members -- <pfad>` importieren, bevor Mail 1 getriggert wird.
 
 ---
 
@@ -98,8 +186,22 @@ siehe "Was jetzt noch zu tun ist" am Ende.
 ## Was jetzt noch zu tun ist (vor Live-Schaltung dieser fünf Module)
 
 🔒 **Blockierend:**
-- Migrationen `062`–`066` gegen Supabase ausführen (`supabase db push` bzw. übliches
-  Projekt-Verfahren) — bisher nur lokal geschrieben, nicht angewendet.
+- Migrationen `062`–`067` **und** `069` gegen Supabase ausführen — bisher nur lokal
+  geschrieben, nicht angewendet. Für `062`–`067` liegt eine wiederholbar ausführbare
+  Sammeldatei bereit: `supabase/migrations/_JETZT_EINSPIELEN_062-067.sql` (Dashboard →
+  SQL Editor → einfügen → Run; erzeugt aus `npm run db:pending`). Ohne `067` fehlt
+  `videos.cloudflare_uid` und die Cloudflare-Anbindung läuft gar nicht, ohne `069` fehlen
+  die Laufzeiten `quarterly`/`yearly` im CHECK und die Trichter-Tabelle.
+- Danach `npm run cf:link -- --apply` — verknüpft die Videos mit Cloudflare und schaltet
+  den Signatur-Zwang ein. Bis dahin sind alle Kursvideos über ihre UID öffentlich.
+- **Dateien neu hochladen:** Thumbnails, Arsenal-PDFs, Zertifikate und Avatare lagen auf
+  dem verschwundenen Hetzner-Bucket. R2 ist leer.
+- **Stripe-Webhook-Endpoint** auf `https://<domain>/api/stripe/webhook` einrichten, Events
+  inkl. des neuen `checkout.session.expired`; `STRIPE_WEBHOOK_SECRET` setzen. Ohne den
+  Webhook entsteht nach einer Gast-Zahlung **kein Konto**.
+- **Live-Preise anlegen**, sobald der Stripe-Account live geht (`npm run stripe:preise --
+  --apply` mit `sk_live`-Key) und die drei `STRIPE_PRICE_*` in Vercel setzen — zusammen mit
+  den `CLOUDFLARE_*`- und `R2_*`-Variablen.
 - `DISCORD_WAITING_ROOM_ROLE_ID` in Discord-Server anlegen und in den Env-Vars (Vercel +
   lokal) setzen, sonst bleibt die Warteraum-Logik inaktiv (harmlos, aber ungenutzt).
 - Einmalig einen echten `admin_role='owner'` setzen (siehe oben) — sonst bleibt die

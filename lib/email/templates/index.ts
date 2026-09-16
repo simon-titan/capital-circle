@@ -26,3 +26,6 @@ export { sendSupportReply } from "./support-reply";
 export { sendWhopMigrationMail1 } from "./whop-migration-1-announcement";
 export { sendWhopMigrationMail2 } from "./whop-migration-2-reminder";
 export { sendWhopMigrationMail3 } from "./whop-migration-3-faq";
+export { sendPlatformMigrationMail1 } from "./platform-migration-1-announcement";
+export { sendPlatformMigrationMail2 } from "./platform-migration-2-reminder";
+export { sendPlatformMigrationMail3 } from "./platform-migration-3-faq";

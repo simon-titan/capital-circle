@@ -1,14 +1,28 @@
 "use client";
 
-import { Box, Flex, HStack, IconButton, Stack, Text, useToast } from "@chakra-ui/react";
+import { Box, Button, Flex, IconButton, Stack, useToast, type ButtonProps } from "@chakra-ui/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
 import { Bookmark, BookmarkCheck, Heart, MessageSquare } from "lucide-react";
 import type { NewsPostWithCounts } from "@/lib/server-data";
 import { plainTextFromTiptapJson } from "@/lib/tiptap-excerpt";
+import { Meta, clampLines } from "@/components/platform/dashboard/primitives";
 
 type PostState = NewsPostWithCounts;
+
+/** Aktiver Filter wie der aktive Nav-Punkt: Gold-Haarlinie, Gold-Verlauf von links, Text in Gold hell. */
+const activeChip: ButtonProps = {
+  bg: "linear-gradient(90deg, rgba(212, 176, 128, 0.16) 0%, rgba(212, 176, 128, 0.03) 100%)",
+  borderColor: "var(--cc-gold-line)",
+  color: "var(--cc-gold-light)",
+  boxShadow: "0 0 18px rgba(212, 176, 128, 0.1)",
+  _hover: { borderColor: "var(--cc-gold-line)", boxShadow: "0 0 18px rgba(212, 176, 128, 0.14)" },
+};
+
+function riseDelay(i: number) {
+  return { animationDelay: `${80 + Math.min(i, 10) * 70}ms` };
+}
 
 function cardImageSrc(post: PostState): string | null {
   if (post.cover_image_storage_key) {
@@ -91,31 +105,29 @@ export function NewsFeed({ posts: initialPosts }: { posts: NewsPostWithCounts[] 
   };
 
   return (
-    <Stack gap={6}>
-      <HStack gap={2} flexWrap="wrap">
-        <FilterButton active={filter === "all"} onClick={() => setFilter("all")} label="Alle Posts" />
-        <FilterButton active={filter === "saved"} onClick={() => setFilter("saved")} label="Gespeichert" />
-      </HStack>
+    <Stack gap={5}>
+      <Flex role="group" aria-label="News filtern" gap={2} wrap="wrap">
+        <FilterChip active={filter === "all"} onClick={() => setFilter("all")}>
+          Alle Posts
+        </FilterChip>
+        <FilterChip active={filter === "saved"} onClick={() => setFilter("saved")}>
+          Gespeichert
+        </FilterChip>
+      </Flex>
 
       {filtered.length === 0 ? (
-        <Box
-          p={8}
-          borderRadius="16px"
-          textAlign="center"
-          borderWidth="1px"
-          borderColor="rgba(212, 175, 55, 0.18)"
-          bg="rgba(255, 255, 255, 0.03)"
-        >
-          <Text className="inter" color="var(--color-text-muted)">
-            {filter === "saved" ? "Du hast noch keine Posts gespeichert." : "Noch keine News. Schau spaeter wieder rein."}
-          </Text>
+        <Box className="cc-card cc-card--still cc-rise" style={riseDelay(0)} p={{ base: 6, md: 8 }} textAlign="center">
+          <Meta fontSize="16px">
+            {filter === "saved" ? "Du hast noch keine Posts gespeichert." : "Noch keine News. Schau später wieder rein."}
+          </Meta>
         </Box>
       ) : (
         <Stack gap={5}>
-          {filtered.map((post) => (
+          {filtered.map((post, i) => (
             <NewsCard
               key={post.id}
               post={post}
+              index={i}
               onToggleLike={() => void toggleLike(post.id)}
               onToggleSave={() => void toggleSave(post.id)}
             />
@@ -126,34 +138,22 @@ export function NewsFeed({ posts: initialPosts }: { posts: NewsPostWithCounts[] 
   );
 }
 
-function FilterButton({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
+function FilterChip({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
   return (
-    <Box
-      as="button"
-      onClick={onClick}
-      px={4}
-      py={1.5}
-      borderRadius="999px"
-      borderWidth="1px"
-      borderColor={active ? "rgba(212, 175, 55, 0.55)" : "rgba(255, 255, 255, 0.12)"}
-      bg={active ? "rgba(212, 175, 55, 0.18)" : "transparent"}
-      color={active ? "#FEF3C7" : "var(--color-text-secondary)"}
-      fontSize="sm"
-      className="inter-medium"
-      transition="all 0.18s ease"
-      _hover={{ bg: active ? "rgba(212, 175, 55, 0.24)" : "rgba(255, 255, 255, 0.06)" }}
-    >
-      {label}
-    </Box>
+    <Button size="sm" variant="line" aria-pressed={active} onClick={onClick} {...(active ? activeChip : {})}>
+      {children}
+    </Button>
   );
 }
 
 function NewsCard({
   post,
+  index,
   onToggleLike,
   onToggleSave,
 }: {
   post: PostState;
+  index: number;
   onToggleLike: () => void;
   onToggleSave: () => void;
 }) {
@@ -161,123 +161,110 @@ function NewsCard({
   const [, startTransition] = useTransition();
   const img = cardImageSrc(post);
   const text = teaser(post);
+  const titleId = `news-card-${post.id}`;
 
   return (
     <Box
-      role="article"
-      position="relative"
-      borderRadius="18px"
-      borderWidth="1px"
-      borderColor="rgba(255, 255, 255, 0.08)"
-      bg="rgba(12, 13, 16, 0.72)"
-      overflow="hidden"
-      transition="border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease"
-      _hover={{
-        borderColor: "rgba(212, 175, 55, 0.38)",
-        transform: "translateY(-2px)",
-        boxShadow: "0 12px 40px rgba(0, 0, 0, 0.45)",
-      }}
+      as="article"
+      aria-labelledby={titleId}
+      className="cc-card cc-rise"
+      style={riseDelay(index)}
+      display="flex"
+      flexDirection={{ base: "column", md: img ? "row" : "column" }}
+      minW={0}
     >
-      <Box
-        position="absolute"
-        top={0}
-        left={0}
-        right={0}
-        h="2px"
-        bg="linear-gradient(90deg, rgba(212,175,55,0) 0%, rgba(212,175,55,0.7) 50%, rgba(212,175,55,0) 100%)"
-        opacity={0.8}
-        pointerEvents="none"
-      />
+      {img ? (
+        // Bild ist ein zweiter Weg zum Beitrag — für Tastatur/Screenreader reicht der Titel-Link.
+        <Box
+          as={Link}
+          href={`/news/${post.id}`}
+          aria-hidden
+          tabIndex={-1}
+          flexShrink={0}
+          w={{ base: "100%", md: "220px" }}
+          h={{ base: "180px", md: "auto" }}
+          minH={{ md: "180px" }}
+          bg="var(--cc-surface-2)"
+          overflow="hidden"
+          borderTopLeftRadius="11px"
+          borderTopRightRadius={{ base: "11px", md: 0 }}
+          borderBottomLeftRadius={{ base: 0, md: "11px" }}
+          borderBottom={{ base: "1px solid var(--cc-line)", md: "none" }}
+          borderRight={{ base: "none", md: "1px solid var(--cc-line)" }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        </Box>
+      ) : null}
 
-      <Flex direction={{ base: "column", md: img ? "row" : "column" }} gap={0}>
-        {img ? (
+      <Stack gap={3} p={{ base: 5, md: 6 }} flex="1" minW={0}>
+        <Stack gap={1.5}>
           <Box
-            as={Link}
-            href={`/news/${post.id}`}
-            flexShrink={0}
-            w={{ base: "100%", md: "220px" }}
-            h={{ base: "180px", md: "auto" }}
-            minH={{ md: "180px" }}
-            bg="rgba(15, 23, 42, 0.5)"
-            overflow="hidden"
-            position="relative"
+            as="h2"
+            id={titleId}
+            fontSize={{ base: "17px", md: "18px" }}
+            fontWeight={600}
+            lineHeight={1.3}
+            letterSpacing="-0.01em"
+            color="var(--cc-text)"
+            sx={clampLines(2)}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={img}
-              alt=""
-              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-            />
-          </Box>
-        ) : null}
-
-        <Stack gap={3} p={{ base: 5, md: 6 }} flex="1" minW={0}>
-          <HStack justify="space-between" align="flex-start" gap={3}>
-            <Text
+            <Box
               as={Link}
               href={`/news/${post.id}`}
-              className="radley-regular"
-              fontSize={{ base: "lg", md: "xl" }}
-              color="var(--color-text-primary)"
-              lineHeight={1.25}
-              _hover={{ color: "#FEF3C7" }}
-              noOfLines={2}
+              transition="color 180ms var(--cc-ease)"
+              _hover={{ color: "var(--cc-gold-light)" }}
             >
               {post.title}
-            </Text>
-            <Text
-              fontSize="xs"
-              letterSpacing="0.08em"
-              color="var(--color-text-tertiary)"
-              className="inter"
-              flexShrink={0}
-              mt={1}
-            >
-              {formatDate(post.published_at)}
-            </Text>
-          </HStack>
-
-          {text ? (
-            <Text className="inter" fontSize="sm" color="var(--color-text-secondary)" lineHeight={1.6} noOfLines={3}>
-              {text}
-            </Text>
-          ) : null}
-
-          <HStack
-            pt={2}
-            borderTopWidth="1px"
-            borderColor="rgba(255, 255, 255, 0.06)"
-            gap={1}
-            justify="flex-start"
-            align="center"
+            </Box>
+          </Box>
+          <Box
+            as="time"
+            dateTime={post.published_at}
+            className="cc-num"
+            fontSize="13px"
+            lineHeight={1.5}
+            color="var(--cc-text-2)"
           >
-            <ActionButton
-              icon={<Heart size={18} fill={post.liked_by_me ? "#D4AF37" : "none"} />}
-              count={post.like_count}
-              active={post.liked_by_me}
-              onClick={onToggleLike}
-              label={post.liked_by_me ? "Gefaellt mir entfernen" : "Gefaellt mir"}
-            />
-            <ActionButton
-              icon={<MessageSquare size={18} />}
-              count={post.comment_count}
-              active={post.commented_by_me}
-              onClick={() => startTransition(() => router.push(`/news/${post.id}#comments`))}
-              label="Kommentare"
-            />
-            <Box flex="1" />
-            <IconButton
-              aria-label={post.saved_by_me ? "Gespeichert" : "Speichern"}
-              icon={post.saved_by_me ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
-              onClick={onToggleSave}
-              variant="ghost"
-              size="sm"
-              color={post.saved_by_me ? "#D4AF37" : "var(--color-text-tertiary)"}
-              _hover={{ bg: "rgba(212, 175, 55, 0.12)", color: "#FEF3C7" }}
-            />
-          </HStack>
+            {formatDate(post.published_at)}
+          </Box>
         </Stack>
-      </Flex>
+
+        {text ? (
+          <Meta fontSize="15px" lineHeight={1.6} sx={clampLines(3)}>
+            {text}
+          </Meta>
+        ) : null}
+
+        <Flex pt={3} mt="auto" borderTop="1px solid var(--cc-line)" gap={1} align="center">
+          <ActionButton
+            icon={<Heart size={18} strokeWidth={1.75} fill={post.liked_by_me ? "currentColor" : "none"} />}
+            count={post.like_count}
+            active={post.liked_by_me}
+            pressed={post.liked_by_me}
+            onClick={onToggleLike}
+            label={post.liked_by_me ? "Gefällt mir entfernen" : "Gefällt mir"}
+          />
+          <ActionButton
+            icon={<MessageSquare size={18} strokeWidth={1.75} />}
+            count={post.comment_count}
+            active={post.commented_by_me}
+            onClick={() => startTransition(() => router.push(`/news/${post.id}#comments`))}
+            label="Kommentare"
+          />
+          <Box flex="1" />
+          <IconButton
+            aria-label={post.saved_by_me ? "Gespeichert" : "Speichern"}
+            aria-pressed={post.saved_by_me}
+            icon={post.saved_by_me ? <BookmarkCheck size={18} strokeWidth={1.75} /> : <Bookmark size={18} strokeWidth={1.75} />}
+            onClick={onToggleSave}
+            variant="ghost"
+            size="sm"
+            color={post.saved_by_me ? "var(--cc-gold-light)" : "var(--cc-text-2)"}
+            _hover={{ bg: "rgba(255, 255, 255, 0.04)", color: post.saved_by_me ? "var(--cc-gold-light)" : "var(--cc-text)" }}
+          />
+        </Flex>
+      </Stack>
     </Box>
   );
 }
@@ -286,36 +273,40 @@ function ActionButton({
   icon,
   count,
   active,
+  pressed,
   onClick,
   label,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   count: number;
   active: boolean;
+  pressed?: boolean;
   onClick: () => void;
   label: string;
 }) {
   return (
     <Box
       as="button"
+      type="button"
       onClick={onClick}
-      aria-label={label}
+      aria-label={`${label} (${count})`}
+      aria-pressed={pressed}
       display="inline-flex"
       alignItems="center"
       gap={1.5}
       px={2.5}
       py={1.5}
       borderRadius="8px"
-      color={active ? "#D4AF37" : "var(--color-text-tertiary)"}
-      fontSize="sm"
-      className="inter-medium"
-      transition="all 0.18s ease"
-      _hover={{ bg: "rgba(212, 175, 55, 0.12)", color: "#FEF3C7" }}
+      color={active ? "var(--cc-gold-light)" : "var(--cc-text-2)"}
+      fontSize="14px"
+      fontWeight={500}
+      transition="background-color 180ms var(--cc-ease), color 180ms var(--cc-ease)"
+      _hover={{ bg: "rgba(255, 255, 255, 0.04)", color: active ? "var(--cc-gold-light)" : "var(--cc-text)" }}
     >
       {icon}
-      <Text as="span" fontSize="xs" className="inter-medium">
+      <Box as="span" className="cc-num" aria-hidden>
         {count}
-      </Text>
+      </Box>
     </Box>
   );
 }

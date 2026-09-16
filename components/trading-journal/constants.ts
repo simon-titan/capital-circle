@@ -1,14 +1,9 @@
-/** Tick-Wert $ pro Punkt (Template v4) */
-export const TICK_VALUE_USD: Record<string, number> = {
-  NQ: 5,
-  MNQ: 0.5,
-  ES: 12.5,
-  MES: 1.25,
-  GC: 10,
-  MGC: 1,
-  CL: 10,
-  MCL: 1,
-};
+/**
+ * Tick-Wert in $ pro Tick. Kanonisch in lib/journal/instruments.ts —
+ * hier nur re-exportiert, damit klassisches Journal und Import dieselbe
+ * Quelle nutzen.
+ */
+export { TICK_VALUE_USD } from "@/lib/journal/instruments";
 
 export const WEEKDAYS_DE = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 

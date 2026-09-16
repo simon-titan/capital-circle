@@ -1,34 +1,22 @@
 "use client";
 
-import { Box, Button, Checkbox, Stack, Text } from "@chakra-ui/react";
-import { motion } from "framer-motion";
-import Image from "next/image";
-import { useMemo, useState } from "react";
+import { Box, Button, Stack, Text, type HTMLChakraProps } from "@chakra-ui/react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { glassPrimaryButtonProps } from "@/components/ui/glassButtonStyles";
 import { usageAgreementLeadParagraphs, usageAgreementSections } from "@/components/onboarding/usageAgreementContent";
-import { type HTMLChakraProps } from "@chakra-ui/react";
+import { AcceptanceCheck, OnboardingHeading } from "@/components/onboarding/OnboardingParts";
 
-const MotionBox = motion<HTMLChakraProps<"div">>(Box);
-
-/** Rendert *hervorgehobenen* Text als kursiv; `emphasisColor` optional für dezentere Leads. */
-function TextWithEmphasis({
-  text,
-  baseProps,
-  emphasisColor = "rgba(253, 230, 138, 0.95)",
-}: {
-  text: string;
-  baseProps: HTMLChakraProps<"p">;
-  emphasisColor?: string;
-}) {
+/** Rendert *hervorgehobenen* Text in Gold hell (600) — Inter, ohne Kursive. */
+function TextWithEmphasis({ text, baseProps }: { text: string; baseProps: HTMLChakraProps<"p"> }) {
   const parts = text.split(/(\*[^*]+\*)/g).filter(Boolean);
   return (
     <Text {...baseProps}>
       {parts.map((part, i) => {
         if (part.startsWith("*") && part.endsWith("*")) {
           return (
-            <Text as="em" key={i} fontStyle="italic" color={emphasisColor}>
+            <Text as="em" key={i} fontStyle="normal" fontWeight={600} color="var(--cc-gold-light)">
               {part.slice(1, -1)}
             </Text>
           );
@@ -39,28 +27,25 @@ function TextWithEmphasis({
   );
 }
 
+const textProps: HTMLChakraProps<"p"> = {
+  fontSize: { base: "14px", md: "15px" },
+  color: "var(--cc-text-soft)",
+  lineHeight: "1.65",
+};
+
+const leadTextProps: HTMLChakraProps<"p"> = {
+  fontSize: { base: "13px", md: "14px" },
+  color: "var(--cc-text-2)",
+  lineHeight: "1.5",
+  textAlign: "center",
+};
+
 export function UsageAgreementStep() {
   const [accepted, setAccepted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
-  const canContinue = useMemo(() => accepted, [accepted]);
-
-  const textProps: HTMLChakraProps<"p"> = {
-    fontSize: { base: "sm", md: "md" },
-    className: "inter",
-    color: "rgba(248, 250, 252, 0.92)",
-    lineHeight: "1.6",
-  };
-
-  const leadTextProps: HTMLChakraProps<"p"> = {
-    fontSize: { base: "xs", md: "sm" },
-    className: "inter",
-    color: "rgba(240, 240, 242, 0.62)",
-    lineHeight: "1.32",
-    textAlign: "center",
-  };
 
   const onConfirm = async () => {
     setError(null);
@@ -94,7 +79,7 @@ export function UsageAgreementStep() {
 
     if (!profileCheck?.usage_agreement_accepted) {
       setSaving(false);
-      setError("Profil wurde nicht gefunden. Bitte Migration fuer Profile/RLS pruefen.");
+      setError("Profil wurde nicht gefunden. Bitte Migration für Profile/RLS prüfen.");
       return;
     }
 
@@ -113,74 +98,53 @@ export function UsageAgreementStep() {
       py={{ base: 8, md: 5 }}
       overflowY={{ base: "auto", md: "hidden" }}
     >
+      {/* Ohne overflow: hidden, damit die Gold-Kante (::before) der Karte sichtbar bleibt. */}
       <Stack
-        className="glass-card"
+        as="section"
+        aria-labelledby="agreement-title"
+        className="cc-card cc-card--hero cc-card--still"
         p={{ base: 6, md: 8 }}
         maxW="800px"
         w="full"
         gap={{ base: 5, md: 6 }}
-        borderColor="rgba(255, 255, 255, 0.12)"
-        boxShadow="0 8px 40px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06)"
         flexDir="column"
         minH={0}
         h={{ base: "auto", md: "calc(100dvh - 40px)" }}
         maxH={{ base: "none", md: "calc(100dvh - 40px)" }}
-        overflow="hidden"
       >
-        <MotionBox
-          style={{ flexShrink: 0 }}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45 }}
-        >
-          <Stack spacing={{ base: 4, md: 5 }} align="center" textAlign="center">
-            <Box display="flex" justifyContent="center" px={{ base: 1, md: 2 }} w="full">
-              <Box position="relative" w="full" maxW={{ base: "280px", sm: "320px", md: "380px" }}>
-                <Image
-                  src="/logo/logo-agreement.png"
-                  alt="Capital Circle Vereinbarung"
-                  width={760}
-                  height={280}
-                  priority
-                  style={{
-                    width: "100%",
-                    height: "auto",
-                    objectFit: "contain",
-                    display: "block",
-                  }}
-                />
-              </Box>
-            </Box>
-            <Stack spacing={1.5}>
-              {usageAgreementLeadParagraphs.map((p) => (
-                <TextWithEmphasis
-                  key={p}
-                  text={p}
-                  baseProps={leadTextProps}
-                  emphasisColor="rgba(212, 175, 55, 0.55)"
-                />
-              ))}
-            </Stack>
+        <Stack className="cc-rise" flexShrink={0} spacing={{ base: 4, md: 5 }} align="center" textAlign="center">
+          <OnboardingHeading id="agreement-title" title="Vereinbarung" />
+          <Stack spacing={1.5}>
+            {usageAgreementLeadParagraphs.map((p) => (
+              <TextWithEmphasis key={p} text={p} baseProps={leadTextProps} />
+            ))}
           </Stack>
-        </MotionBox>
+        </Stack>
 
         <Box
+          role="region"
+          aria-label="Vereinbarung zur Nutzung und Vertraulichkeit"
+          tabIndex={0}
           flex={{ base: "none", md: "1 1 0" }}
           minH={{ base: "auto", md: 0 }}
           maxH={{ base: "min(52vh, 480px)", md: "none" }}
           overflowY="auto"
-          borderRadius="16px"
-          border="1px solid rgba(255, 255, 255, 0.1)"
-          bg="linear-gradient(165deg, rgba(28, 28, 30, 0.72) 0%, rgba(12, 12, 14, 0.78) 100%)"
-          backdropFilter="blur(20px) saturate(1.05)"
+          borderRadius="10px"
+          border="1px solid var(--cc-line)"
+          bg="rgba(255, 255, 255, 0.02)"
+          boxShadow="inset 0 1px 0 rgba(255, 255, 255, 0.03)"
           sx={{
-            WebkitBackdropFilter: "blur(20px) saturate(1.05)",
-            boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 4px 24px rgba(0, 0, 0, 0.35)",
+            scrollbarWidth: "thin",
+            scrollbarColor: "var(--cc-track) transparent",
             "&::-webkit-scrollbar": { width: "8px" },
             "&::-webkit-scrollbar-track": { background: "transparent" },
             "&::-webkit-scrollbar-thumb": {
-              background: "rgba(255,255,255,0.14)",
+              background: "var(--cc-line-strong)",
               borderRadius: "999px",
+            },
+            "&:focus-visible": {
+              outline: "2px solid var(--cc-gold-line)",
+              outlineOffset: "2px",
             },
           }}
           px={{ base: 4, md: 6 }}
@@ -190,10 +154,11 @@ export function UsageAgreementStep() {
             {usageAgreementSections.map((section) => (
               <Box key={section.heading}>
                 <Text
-                  fontSize={{ base: "sm", md: "md" }}
-                  fontWeight="700"
-                  className="inter-semibold"
-                  color="rgba(253, 230, 138, 0.95)"
+                  as="h2"
+                  fontSize={{ base: "15px", md: "16px" }}
+                  fontWeight={600}
+                  lineHeight={1.35}
+                  color="var(--cc-text)"
                   mb={2}
                 >
                   {section.heading}
@@ -216,62 +181,21 @@ export function UsageAgreementStep() {
         </Box>
 
         <Stack spacing={3} flexShrink={0} w="full">
-        <Box
-          borderRadius="20px"
-          p={{ base: 5, md: 6 }}
-          border="2px solid"
-          borderColor={accepted ? "rgba(212, 175, 55, 0.55)" : "rgba(255, 255, 255, 0.18)"}
-          bg={accepted ? "rgba(212, 175, 55, 0.12)" : "rgba(255, 255, 255, 0.03)"}
-          backdropFilter="blur(22px) saturate(1.4)"
-          sx={{
-            WebkitBackdropFilter: "blur(22px) saturate(1.4)",
-            boxShadow: accepted
-              ? "0 0 40px rgba(212, 175, 55, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.1)"
-              : "inset 0 1px 0 rgba(255, 255, 255, 0.06)",
-            transition: "border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease",
-          }}
-        >
-          <Checkbox
+          <AcceptanceCheck
             isChecked={accepted}
-            onChange={(e) => setAccepted(e.target.checked)}
-            colorScheme="brand"
-            size="lg"
-            w="full"
-            flexDirection="column"
-            alignItems="center"
-            gap={4}
-            sx={{
-              ".chakra-checkbox__label": {
-                marginInlineStart: "0 !important",
-                width: "100%",
-                textAlign: "center",
-              },
-              ".chakra-checkbox__control": {
-                w: "28px",
-                h: "28px",
-                borderWidth: "2px",
-              },
-            }}
-          >
-            <Stack spacing={2} align="center" maxW="lg" mx="auto">
-              <Text fontSize={{ base: "md", md: "lg" }} fontWeight="600" className="inter-semibold" color="rgba(248, 250, 252, 0.98)">
-                Ich akzeptiere diese Vereinbarung
-              </Text>
-              <Text fontSize="sm" className="inter" color="rgba(240, 240, 242, 0.55)" lineHeight="1.55">
-                Mit dem Haken bestätigst du, den Text gelesen zu haben und an die Bedingungen gebunden zu sein.
-              </Text>
-            </Stack>
-          </Checkbox>
-        </Box>
+            onChange={setAccepted}
+            title="Ich akzeptiere diese Vereinbarung"
+            text="Mit dem Haken bestätigst du, den Text gelesen zu haben und an die Bedingungen gebunden zu sein."
+          />
 
-        {error ? (
-          <Text fontSize="sm" color="red.300" textAlign="center">
-            {error}
-          </Text>
-        ) : null}
-        <Button {...glassPrimaryButtonProps} isDisabled={!canContinue} onClick={onConfirm} isLoading={saving}>
-          Zur Plattform
-        </Button>
+          {error ? (
+            <Text role="alert" fontSize="14px" color="var(--cc-danger)" textAlign="center">
+              {error}
+            </Text>
+          ) : null}
+          <Button {...glassPrimaryButtonProps} isDisabled={!accepted} onClick={onConfirm} isLoading={saving}>
+            Zur Plattform
+          </Button>
         </Stack>
       </Stack>
     </Stack>

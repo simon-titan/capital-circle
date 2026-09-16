@@ -1,6 +1,16 @@
 import type { Metadata } from "next";
-import { Box, Heading, Stack, Text } from "@chakra-ui/react";
+import { Box, Button, Stack } from "@chakra-ui/react";
 import { Logo } from "@/components/brand/Logo";
+import {
+  FunnelEyebrow,
+  FunnelFinePrint,
+  FunnelHeadline,
+  FunnelLead,
+  FunnelVideoFrame,
+  GoldWord,
+  SuccessMark,
+  rise,
+} from "@/components/marketing/funnel-ui";
 
 export const metadata: Metadata = {
   title: "Bewerbung eingegangen — 1:1 Mentoring · Capital Circle",
@@ -20,36 +30,28 @@ export default function ThanksHighTicketPage() {
     : null;
 
   return (
-    <Box as="main" minH="100vh" w="full" py={{ base: 8, md: 14 }} px={{ base: 4, md: 8 }}>
+    <Box as="main" minH="100vh" w="full" py={{ base: 10, md: 16 }} px={{ base: 4, md: 8 }}>
       <Stack spacing={{ base: 8, md: 10 }} maxW="720px" mx="auto">
-        <Box maxW="200px" mx="auto">
+        <Box maxW="180px" mx="auto" {...rise(0)}>
           <Logo variant="onDark" priority />
         </Box>
 
         {videoSrc ? (
-          <Box
-            maxW="768px"
-            mx="auto"
-            w="full"
-            borderRadius="16px"
-            overflow="hidden"
-            border="1px solid rgba(255,255,255,0.09)"
-            boxShadow="0 18px 60px rgba(0,0,0,0.55)"
-            sx={{ aspectRatio: "16/9" }}
-            bg="black"
-          >
-            <Box
-              as="video"
-              src={videoSrc}
-              poster={videoPoster || undefined}
-              controls
-              playsInline
-              autoPlay
-              preload="metadata"
-              w="full"
-              h="full"
-              sx={{ objectFit: "cover" }}
-            />
+          <Box w="full" {...rise(1)}>
+            <FunnelVideoFrame>
+              <Box
+                as="video"
+                src={videoSrc}
+                poster={videoPoster || undefined}
+                controls
+                playsInline
+                autoPlay
+                preload="metadata"
+                w="full"
+                h="full"
+                sx={{ objectFit: "cover" }}
+              />
+            </FunnelVideoFrame>
           </Box>
         ) : null}
 
@@ -58,99 +60,41 @@ export default function ThanksHighTicketPage() {
           textAlign="center"
           align="center"
           p={{ base: 6, md: 10 }}
-          sx={{
-            background: "rgba(255,255,255,0.05)",
-            backdropFilter: "blur(16px)",
-            WebkitBackdropFilter: "blur(16px)",
-            border: "1px solid rgba(255,255,255,0.09)",
-            borderRadius: "16px",
-            boxShadow:
-              "0 8px 32px rgba(0,0,0,0.60), inset 0 1px 0 rgba(255,255,255,0.07)",
-          }}
+          {...rise(2, "cc-card")}
         >
-          <Box
-            w="64px"
-            h="64px"
-            borderRadius="full"
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            bg="rgba(212,175,55,0.18)"
-            border="1px solid rgba(212,175,55,0.5)"
-            color="var(--color-accent-gold)"
-            fontSize="32px"
-          >
-            ✓
-          </Box>
+          <SuccessMark />
 
-          <Stack spacing={2}>
-            <Text
-              fontSize="xs"
-              letterSpacing="0.22em"
-              textTransform="uppercase"
-              color="var(--color-accent-gold)"
-              className="inter-semibold"
-            >
-              Bewerbung eingegangen
-            </Text>
-            <Heading
-              as="h1"
-              className="radley-regular"
-              fontWeight={400}
-              fontSize={{ base: "3xl", md: "4xl" }}
-              lineHeight="1.15"
-              color="var(--color-text-primary)"
-            >
-              Danke für deine Bewerbung!
-            </Heading>
+          <Stack spacing={4} align="center">
+            <FunnelEyebrow>Bewerbung eingegangen</FunnelEyebrow>
+            <FunnelHeadline scale="lg">Danke für deine Bewerbung!</FunnelHeadline>
           </Stack>
 
-          <Text
-            fontSize={{ base: "md", md: "lg" }}
-            color="rgba(255,255,255,0.72)"
-            className="inter"
-            maxW="520px"
-            lineHeight="1.65"
-          >
-            Du hörst innerhalb von <Box as="span" color="var(--color-accent-gold)" className="inter-semibold">2 Stunden</Box> per WhatsApp von mir persönlich.
+          <FunnelLead maxW="520px" lineHeight={1.65}>
+            Du hörst innerhalb von <GoldWord fontWeight={600}>2 Stunden</GoldWord> per WhatsApp von mir persönlich.
             Schau parallel auch in deine E-Mails — dort findest du eine Bestätigung.
-          </Text>
+          </FunnelLead>
 
           {whatsappLink ? (
-            <Box
+            <Button
               as="a"
               href={whatsappLink}
               target="_blank"
               rel="noopener noreferrer"
-              display="inline-flex"
-              alignItems="center"
-              gap={2}
-              px={5}
+              variant="line"
+              h="auto"
+              minH="44px"
+              maxW="full"
               py={3}
-              borderRadius="12px"
-              border="1px solid rgba(255,255,255,0.12)"
-              bg="rgba(255,255,255,0.04)"
-              color="var(--color-text-primary)"
-              className="inter"
-              fontSize="sm"
-              _hover={{
-                borderColor: "rgba(212,175,55,0.45)",
-                bg: "rgba(255,255,255,0.06)",
-              }}
+              px={5}
+              fontSize="14px"
+              whiteSpace="normal"
             >
               Du erreichst uns auch direkt: WhatsApp öffnen →
-            </Box>
+            </Button>
           ) : null}
         </Stack>
 
-        <Text
-          fontSize="xs"
-          color="rgba(255,255,255,0.32)"
-          textAlign="center"
-          className="inter"
-        >
-          Bitte halte dein Telefon die nächsten Stunden griffbereit.
-        </Text>
+        <FunnelFinePrint textAlign="center">Bitte halte dein Telefon die nächsten Stunden griffbereit.</FunnelFinePrint>
       </Stack>
     </Box>
   );

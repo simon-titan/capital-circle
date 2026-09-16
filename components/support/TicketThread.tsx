@@ -4,10 +4,10 @@ import { Box, Button, Flex, HStack, Stack, Text, Textarea, useToast } from "@cha
 import { Send } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { GlassCard } from "@/components/ui/GlassCard";
+import { DashCard, Meta } from "@/components/platform/dashboard/primitives";
+import { TicketStatusDot } from "@/components/support/TicketStatusDot";
 import {
   CATEGORY_LABELS,
-  STATUS_COLORS,
   STATUS_LABELS,
   formatDateTime,
   formatResponseTime,
@@ -34,6 +34,17 @@ export interface TicketDetailRow {
   resolved_at: string | null;
   updated_at: string;
 }
+
+/** Eingabefeld auf Glas: Haarlinie, beim Hover Gold-Kante, Fokus in Gold. */
+const FIELD_SX = {
+  bg: "rgba(255, 255, 255, 0.03)",
+  borderColor: "var(--cc-line-strong)",
+  borderRadius: "8px",
+  color: "var(--cc-text)",
+  _placeholder: { color: "var(--cc-text-3)" },
+  _hover: { borderColor: "rgba(212, 176, 128, 0.4)" },
+  _focusVisible: { borderColor: "var(--cc-gold)", boxShadow: "0 0 0 1px var(--cc-gold)" },
+};
 
 export function TicketThread({
   ticket,
@@ -76,100 +87,109 @@ export function TicketThread({
   };
 
   return (
-    <Stack spacing={6}>
-      <GlassCard>
-        <Stack spacing={3}>
+    <Stack spacing={5}>
+      <Box className="cc-card cc-card--still cc-rise" style={{ animationDelay: "80ms" }} p={{ base: 5, md: 6 }}>
+        <Stack spacing={2.5}>
           <HStack spacing={2}>
-            <Box w="9px" h="9px" borderRadius="full" bg={STATUS_COLORS[ticket.status]} flexShrink={0} />
-            <Text className="inter-semibold" fontSize="sm" color="var(--color-text-primary)">
+            <TicketStatusDot status={ticket.status} size={9} />
+            <Text fontSize="15px" fontWeight={600} color="var(--cc-text)">
               {STATUS_LABELS[ticket.status]}
             </Text>
           </HStack>
-          <HStack spacing={2} fontSize="xs" color="var(--color-text-tertiary)" className="inter" flexWrap="wrap">
-            {ticket.category ? (
-              <>
-                <Text>{CATEGORY_LABELS[ticket.category as TicketCategory] ?? ticket.category}</Text>
-                <Text>·</Text>
-              </>
-            ) : null}
-            <Text>Erstellt {formatDateTime(ticket.created_at)}</Text>
-            <Text>·</Text>
-            <Text color={response.isPending ? "var(--color-accent-gold-light)" : undefined}>
-              {response.isPending ? response.label : `Erste Antwort nach ${response.label}`}
-            </Text>
-          </HStack>
+          <Box overflow="hidden">
+            <Flex className="cc-meta-row" wrap="wrap" rowGap={0.5} fontSize="13px" color="var(--cc-text-2)">
+              {ticket.category ? (
+                <Box as="span" className="cc-meta-item">
+                  {CATEGORY_LABELS[ticket.category as TicketCategory] ?? ticket.category}
+                </Box>
+              ) : null}
+              <Box as="span" className="cc-meta-item cc-num">
+                Erstellt {formatDateTime(ticket.created_at)}
+              </Box>
+              <Box
+                as="span"
+                className="cc-meta-item cc-num"
+                color={response.isPending ? "var(--cc-gold-light)" : undefined}
+              >
+                {response.isPending ? response.label : `Erste Antwort nach ${response.label}`}
+              </Box>
+            </Flex>
+          </Box>
         </Stack>
-      </GlassCard>
+      </Box>
 
-      <Stack spacing={4}>
+      <Stack spacing={4} className="cc-rise" style={{ animationDelay: "150ms" }}>
         {localMessages.map((m) => (
           <MessageBubble key={m.id} message={m} />
         ))}
       </Stack>
 
       {canReply ? (
-        <GlassCard>
+        <DashCard
+          label="Antworten"
+          labelId="ticket-reply-label"
+          className="cc-card--still cc-rise"
+          style={{ animationDelay: "220ms" }}
+        >
           <Stack spacing={3}>
-            <Text className="inter-semibold" fontSize="sm" color="var(--color-text-primary)">
-              Antworten
-            </Text>
             <Textarea
               value={reply}
               onChange={(e) => setReply(e.target.value)}
               placeholder="Deine Nachricht..."
               rows={4}
+              aria-labelledby="ticket-reply-label"
+              sx={FIELD_SX}
             />
             <Button
               alignSelf="flex-end"
-              leftIcon={<Send size={16} />}
+              variant="gold"
+              leftIcon={<Send size={16} aria-hidden />}
               onClick={() => void submit()}
               isLoading={sending}
               isDisabled={reply.trim().length === 0}
-              bg="linear-gradient(135deg, #D4AF37 0%, #A67C00 100%)"
-              color="#0a0a0a"
-              className="inter-semibold"
-              _hover={{ filter: "brightness(1.08)" }}
             >
               Senden
             </Button>
           </Stack>
-        </GlassCard>
+        </DashCard>
       ) : (
-        <Text fontSize="sm" color="var(--color-text-tertiary)" className="inter" textAlign="center">
+        <Meta textAlign="center" color="var(--cc-text-3)">
           Dieses Ticket ist geschlossen. Erstelle bei Bedarf ein neues Ticket.
-        </Text>
+        </Meta>
       )}
     </Stack>
   );
 }
 
+/** Nachricht: Support in Gold-Hauch links, eigene Nachrichten neutral rechts. */
 function MessageBubble({ message }: { message: TicketMessageRow }) {
   const isAdmin = message.sender_type === "admin";
   return (
     <Flex justify={isAdmin ? "flex-start" : "flex-end"}>
       <Box
         maxW={{ base: "90%", md: "75%" }}
+        minW={0}
         p={4}
-        borderRadius="14px"
-        bg={isAdmin ? "rgba(212,175,55,0.08)" : "rgba(255,255,255,0.05)"}
+        borderRadius="12px"
+        bg={isAdmin ? "var(--cc-gold-wash)" : "rgba(255, 255, 255, 0.04)"}
         border="1px solid"
-        borderColor={isAdmin ? "rgba(212,175,55,0.28)" : "rgba(255,255,255,0.10)"}
+        borderColor={isAdmin ? "rgba(212, 176, 128, 0.28)" : "var(--cc-line-strong)"}
       >
-        <HStack spacing={2} mb={2}>
+        <Flex wrap="wrap" align="baseline" columnGap={2} rowGap={0.5} mb={2}>
           <Text
-            fontSize="10px"
-            letterSpacing="0.08em"
+            fontSize="12px"
+            fontWeight={500}
+            letterSpacing="0.12em"
             textTransform="uppercase"
-            className="inter-semibold"
-            color={isAdmin ? "var(--color-accent-gold-light)" : "var(--color-text-tertiary)"}
+            color={isAdmin ? "var(--cc-gold-light)" : "var(--cc-text-2)"}
           >
             {isAdmin ? "Capital Circle Support" : "Du"}
           </Text>
-          <Text fontSize="10px" color="var(--color-text-tertiary)" className="inter">
+          <Text className="cc-num" fontSize="12px" color="var(--cc-text-3)">
             {formatDateTime(message.created_at)}
           </Text>
-        </HStack>
-        <Text className="inter" fontSize="sm" color="var(--color-text-primary)" whiteSpace="pre-wrap">
+        </Flex>
+        <Text fontSize="15px" lineHeight={1.6} color="var(--cc-text)" whiteSpace="pre-wrap" overflowWrap="anywhere">
           {message.body}
         </Text>
       </Box>

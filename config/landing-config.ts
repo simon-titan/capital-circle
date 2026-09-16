@@ -75,7 +75,7 @@ export const landingConfig: LandingConfig = {
   brand: {
     name: "Capital Circle",
     tagline: "Professionelles Trading. Strukturiert. Messbar.",
-    color: "#D4AF37",
+    color: "#d4b080",
   },
 
   product: {

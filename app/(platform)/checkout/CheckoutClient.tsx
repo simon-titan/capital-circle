@@ -7,29 +7,30 @@ import {
 } from "@stripe/react-stripe-js";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { PageHeader } from "@/components/journal/PageHeader";
+import { Meta } from "@/components/platform/dashboard/primitives";
 import { getStripePromise } from "@/lib/stripe/client";
-
-type Plan = "monthly" | "lifetime";
+import { isMembershipPlan, type MembershipPlan } from "@/lib/stripe/plan-map";
 
 const stripePromise = getStripePromise();
 
 /**
- * Embedded-Stripe-Checkout-Wrapper.
+ * Embedded-Stripe-Checkout-Wrapper für **eingeloggte** Nutzer.
  *
  * Erwartet entweder:
- *   - `?cs=<clientSecret>` (vom /pricing-Flow) → direktes Mounten
- *   - `?plan=monthly|lifetime` → ruft selbst /api/stripe/create-checkout-session
- *     auf, um ein clientSecret zu erhalten (z. B. wenn der User direkt
- *     /checkout?plan=lifetime aufruft).
+ *   - `?cs=<clientSecret>` (aus dem Upgrade-Block in `/billing`) → direktes Mounten
+ *   - `?plan=monthly|quarterly|yearly` → ruft selbst
+ *     /api/stripe/create-checkout-session auf, um ein clientSecret zu erhalten.
  *
- * Ohne beides → Redirect auf /pricing.
+ * Ohne beides → zurück auf `/billing`. Dort stehen die Laufzeiten, seit
+ * `/pricing` entfallen ist; der Gast-Weg läuft stattdessen über `/go/<plan>`.
  */
 export function CheckoutClient() {
   const params = useSearchParams();
   const router = useRouter();
 
   const queryClientSecret = params.get("cs");
-  const queryPlan = params.get("plan") as Plan | null;
+  const queryPlan = params.get("plan") as MembershipPlan | null;
 
   const [clientSecret, setClientSecret] = useState<string | null>(queryClientSecret);
   const [loading, setLoading] = useState<boolean>(!queryClientSecret && Boolean(queryPlan));
@@ -38,7 +39,7 @@ export function CheckoutClient() {
   useEffect(() => {
     // Kein Plan, kein clientSecret → User hat versehentlich /checkout aufgerufen
     if (!queryClientSecret && !queryPlan) {
-      router.replace("/pricing");
+      router.replace("/billing");
       return;
     }
 
@@ -50,8 +51,8 @@ export function CheckoutClient() {
     }
 
     // Sonst: Session frisch erzeugen
-    if (queryPlan !== "monthly" && queryPlan !== "lifetime") {
-      router.replace("/pricing");
+    if (!queryPlan || !isMembershipPlan(queryPlan)) {
+      router.replace("/billing");
       return;
     }
 
@@ -94,87 +95,56 @@ export function CheckoutClient() {
   );
 
   return (
-    <Box maxW="720px" mx="auto" mt={{ base: 6, md: 12 }} mb={12}>
-      <Box
-        p={{ base: 6, md: 8 }}
-        sx={{
-          background: "rgba(255,255,255,0.04)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-          border: "1px solid rgba(255,255,255,0.09)",
-          borderRadius: "24px",
-          boxShadow:
-            "0 8px 32px rgba(0,0,0,0.60), inset 0 1px 0 rgba(255,255,255,0.07)",
-        }}
-      >
-        <Stack spacing={5}>
-          <Stack spacing={1}>
-            <Text
-              fontSize="xs"
-              letterSpacing="0.22em"
-              textTransform="uppercase"
-              color="var(--color-accent-gold)"
-              className="inter-semibold"
-            >
-              Bezahlung
-            </Text>
-            <Text
-              as="h1"
-              className="radley-regular"
-              fontWeight={400}
-              fontSize={{ base: "2xl", md: "3xl" }}
-              lineHeight="1.2"
-              color="var(--color-text-primary)"
-            >
-              Sichere Zahlung über Stripe
-            </Text>
-            <Text className="inter" fontSize="sm" color="rgba(255,255,255,0.55)">
-              Du bleibst während der gesamten Bezahlung auf Capital Circle. Daten werden verschlüsselt direkt an Stripe übertragen.
-            </Text>
-          </Stack>
+    <Box maxW="720px" mx="auto" w="full" mb={12}>
+      <PageHeader
+        title="Sichere Zahlung über Stripe"
+        subtitle="Du bleibst während der gesamten Bezahlung auf Capital Circle. Daten werden verschlüsselt direkt an Stripe übertragen."
+      />
 
-          {loading ? (
-            <Center py={16}>
-              <Stack spacing={4} align="center">
-                <Spinner size="lg" color="var(--color-accent-gold)" thickness="3px" />
-                <Text className="inter" fontSize="sm" color="rgba(255,255,255,0.55)">
-                  Checkout wird vorbereitet…
-                </Text>
-              </Stack>
-            </Center>
-          ) : error ? (
-            <Stack spacing={4} py={6}>
-              <Text className="inter" fontSize="md" color="#FCA5A5">
-                Checkout konnte nicht geladen werden ({error}).
-              </Text>
-              <Button
-                onClick={() => router.replace("/pricing")}
-                variant="unstyled"
-                w="fit-content"
-                px={5}
-                minH="44px"
-                borderRadius="10px"
-                borderWidth="1px"
-                borderColor="rgba(212,175,55,0.40)"
-                color="var(--color-accent-gold)"
-                className="inter-semibold"
-                _hover={{ bg: "rgba(212,175,55,0.10)" }}
-              >
-                Zurück zu den Preisen
-              </Button>
+      <Box
+        as="section"
+        aria-labelledby="checkout-label"
+        className="cc-card cc-card--still cc-rise"
+        style={{ animationDelay: "80ms" }}
+        p={{ base: 4, md: 6 }}
+      >
+        <Text
+          as="h2"
+          id="checkout-label"
+          fontSize="13px"
+          lineHeight="18px"
+          fontWeight={500}
+          letterSpacing="0.12em"
+          textTransform="uppercase"
+          color="var(--cc-text-soft)"
+          mb={4}
+        >
+          Bezahlung
+        </Text>
+
+        {loading ? (
+          <Center py={16}>
+            <Stack spacing={4} align="center">
+              <Spinner size="lg" color="var(--cc-gold)" emptyColor="var(--cc-track)" thickness="3px" />
+              <Meta role="status">Checkout wird vorbereitet…</Meta>
             </Stack>
-          ) : options ? (
-            <Box
-              borderRadius="14px"
-              overflow="hidden"
-              sx={{ background: "transparent" }}
-            >
-              <EmbeddedCheckoutProvider stripe={stripePromise} options={options}>
-                <EmbeddedCheckout />
-              </EmbeddedCheckoutProvider>
-            </Box>
-          ) : null}
-        </Stack>
+          </Center>
+        ) : error ? (
+          <Stack spacing={4} py={4} align="flex-start">
+            <Text fontSize="15px" lineHeight={1.6} color="var(--cc-danger)" role="alert">
+              Checkout konnte nicht geladen werden ({error}).
+            </Text>
+            <Button variant="line" onClick={() => router.replace("/billing")}>
+              Zurück zur Mitgliedschaft
+            </Button>
+          </Stack>
+        ) : options ? (
+          <Box borderRadius="10px" overflow="hidden">
+            <EmbeddedCheckoutProvider stripe={stripePromise} options={options}>
+              <EmbeddedCheckout />
+            </EmbeddedCheckoutProvider>
+          </Box>
+        ) : null}
       </Box>
     </Box>
   );

@@ -1,18 +1,24 @@
 "use client";
 
-import { Box, HStack, Stack, Text } from "@chakra-ui/react";
+import { Box, Flex, SimpleGrid, Stack, Text } from "@chakra-ui/react";
 import Image from "next/image";
-import { type ReactNode, useCallback, useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { Maximize2, X } from "lucide-react";
+import { Accent, DisplayHeading, Eyebrow, Reveal } from "./landing-ui";
 
 interface CaseData {
   name: string;
   image: string;
   description: ReactNode;
-  accent: string;
-  glow: string;
-  bgGradient: string;
-  border: string;
+}
+
+/** Betrag / Zeitraum im Fall: Gold hell, tabellarische Ziffern. */
+function Figure({ children }: { children: ReactNode }) {
+  return (
+    <Box as="span" className="cc-num" color="var(--cc-gold-light)" fontWeight={600}>
+      {children}
+    </Box>
+  );
 }
 
 const CASES: CaseData[] = [
@@ -21,87 +27,57 @@ const CASES: CaseData[] = [
     image: "/cases/driton.png",
     description: (
       <>
-        Besteht erste Challenge innerhalb{" "}
-        <Box as="span" color="#D4AF37" className="inter-semibold" sx={{ textShadow: "0 0 10px rgba(212,175,55,0.35)" }}>
-          3 Tagen
-        </Box>
+        Besteht erste Challenge innerhalb <Figure>3 Tagen</Figure>
       </>
     ),
-    accent: "#D4AF37",
-    glow: "rgba(212,175,55,0.18)",
-    bgGradient: "linear-gradient(135deg, rgba(212,175,55,0.10) 0%, rgba(8,8,8,0.65) 100%)",
-    border: "rgba(212,175,55,0.30)",
   },
   {
     name: "Halil",
     image: "/cases/halil.png",
     description: (
       <>
-        Zahlt sich{" "}
-        <Box as="span" color="#FF9430" className="inter-semibold" sx={{ textShadow: "0 0 10px rgba(255,148,48,0.35)" }}>
-          15.000$
-        </Box>{" "}
-        aus mithilfe unserer Trading Methodik
+        Zahlt sich <Figure>15.000$</Figure> aus mithilfe unserer Trading Methodik
       </>
     ),
-    accent: "#FF9430",
-    glow: "rgba(255,148,48,0.16)",
-    bgGradient: "linear-gradient(135deg, rgba(255,140,40,0.10) 0%, rgba(200,80,0,0.04) 50%, rgba(8,8,8,0.65) 100%)",
-    border: "rgba(255,148,50,0.30)",
   },
   {
     name: "Yücel",
     image: "/cases/yuecel.png",
     description: (
       <>
-        Zahlt sich innerhalb 7 Tagen{" "}
-        <Box as="span" color="#F0DC82" className="inter-semibold" sx={{ textShadow: "0 0 10px rgba(240,220,130,0.35)" }}>
-          7.000$
-        </Box>{" "}
-        aus
+        Zahlt sich innerhalb 7 Tagen <Figure>7.000$</Figure> aus
       </>
     ),
-    accent: "#F0DC82",
-    glow: "rgba(240,220,130,0.16)",
-    bgGradient: "linear-gradient(135deg, rgba(240,220,130,0.10) 0%, rgba(212,175,55,0.04) 50%, rgba(8,8,8,0.65) 100%)",
-    border: "rgba(240,220,130,0.30)",
   },
   {
     name: "Dominik",
     image: "/cases/dominik.png",
     description: (
       <>
-        Zahlt sich{" "}
-        <Box as="span" color="#B4C8E8" className="inter-semibold" sx={{ textShadow: "0 0 10px rgba(180,200,232,0.35)" }}>
-          1.250$
-        </Box>{" "}
-        aus
+        Zahlt sich <Figure>1.250$</Figure> aus
       </>
     ),
-    accent: "#B4C8E8",
-    glow: "rgba(180,200,232,0.14)",
-    bgGradient: "linear-gradient(135deg, rgba(180,200,230,0.08) 0%, rgba(212,175,55,0.03) 50%, rgba(8,8,8,0.65) 100%)",
-    border: "rgba(190,210,240,0.25)",
   },
 ];
 
-/* ── Fullscreen Lightbox ── */
+/* ── Vollbild-Ansicht ── */
 
-function Lightbox({
-  c,
-  onClose,
-}: {
-  c: CaseData;
-  onClose: () => void;
-}) {
+function Lightbox({ c, onClose }: { c: CaseData; onClose: () => void }) {
+  const closeRef = useRef<HTMLButtonElement>(null);
+
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
+    closeRef.current?.focus();
+    return () => {
+      document.body.style.overflow = prev;
+    };
   }, []);
 
   const handleKey = useCallback(
-    (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); },
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    },
     [onClose],
   );
   useEffect(() => {
@@ -110,16 +86,18 @@ function Lightbox({
   }, [handleKey]);
 
   return (
-    <Box
+    <Flex
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Ergebnis von ${c.name}`}
       position="fixed"
       inset={0}
       zIndex={10000}
-      display="flex"
-      alignItems="center"
-      justifyContent="center"
+      align="center"
+      justify="center"
       onClick={onClose}
       sx={{
-        background: "rgba(0,0,0,0.88)",
+        background: "rgba(8, 10, 12, 0.88)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
         animation: "lbFadeIn 200ms ease forwards",
@@ -129,43 +107,38 @@ function Lightbox({
         },
       }}
     >
-      {/* Close button */}
-      <Box
+      <Flex
         as="button"
+        ref={closeRef}
+        type="button"
+        aria-label="Schließen"
         position="absolute"
         top={{ base: "16px", md: "28px" }}
         right={{ base: "16px", md: "28px" }}
         w="44px"
         h="44px"
         borderRadius="full"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
+        align="center"
+        justify="center"
         cursor="pointer"
         zIndex={1}
         onClick={onClose}
-        sx={{
-          background: "rgba(255,255,255,0.08)",
-          border: "1px solid rgba(255,255,255,0.12)",
-          color: "rgba(255,255,255,0.70)",
-          transition: "all 180ms ease",
-          _hover: {
-            background: "rgba(255,255,255,0.14)",
-            color: "#fff",
-          },
-        }}
+        bg="rgba(255, 255, 255, 0.04)"
+        border="1px solid var(--cc-line-strong)"
+        color="var(--cc-text-soft)"
+        transition="background-color 180ms var(--cc-ease), border-color 180ms var(--cc-ease), color 180ms var(--cc-ease)"
+        _hover={{ bg: "rgba(212, 176, 128, 0.1)", borderColor: "var(--cc-gold-line)", color: "var(--cc-text)" }}
+        _focusVisible={{ outline: "2px solid var(--cc-gold-line)", outlineOffset: "2px" }}
       >
-        <X size={20} />
-      </Box>
+        <X size={20} aria-hidden />
+      </Flex>
 
-      {/* Image + caption */}
-      <Box
+      <Flex
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
         maxW="92vw"
         maxH="90vh"
-        display="flex"
-        flexDirection="column"
-        alignItems="center"
+        direction="column"
+        align="center"
         gap={4}
         sx={{
           animation: "lbScaleIn 250ms cubic-bezier(0.16,1,0.3,1) forwards",
@@ -179,10 +152,8 @@ function Lightbox({
           position="relative"
           borderRadius="12px"
           overflow="hidden"
-          sx={{
-            border: `1px solid ${c.border}`,
-            boxShadow: `0 8px 48px ${c.glow}, 0 0 0 1px rgba(255,255,255,0.04) inset`,
-          }}
+          border="1px solid rgba(212, 176, 128, 0.3)"
+          boxShadow="0 16px 56px rgba(0, 0, 0, 0.55), 0 0 46px rgba(212, 176, 128, 0.16)"
         >
           <Image
             src={c.image}
@@ -200,90 +171,76 @@ function Lightbox({
           />
         </Box>
 
-        <Text
-          className="inter-semibold"
-          fontSize={{ base: "md", md: "lg" }}
-          color={c.accent}
-          textAlign="center"
-        >
+        <Text fontSize={{ base: "16px", md: "18px" }} fontWeight={600} color="var(--cc-gold-light)" textAlign="center">
           {c.name}
         </Text>
-      </Box>
-    </Box>
+      </Flex>
+    </Flex>
   );
 }
 
-/* ── Case Card ── */
+/* ── Fall-Karte ── */
 
 function CaseCard({ c, onOpen }: { c: CaseData; onOpen: () => void }) {
   return (
     <Box
-      borderRadius="16px"
-      overflow="hidden"
-      position="relative"
-      cursor="pointer"
+      className="cc-card"
       role="button"
       tabIndex={0}
+      aria-haspopup="dialog"
+      cursor="zoom-in"
       onClick={onOpen}
-      onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") onOpen(); }}
-      sx={{
-        background: c.bgGradient,
-        border: `1px solid ${c.border}`,
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-        boxShadow: `0 4px 24px ${c.glow}, 0 0 0 1px rgba(255,255,255,0.03) inset`,
-        transition: "transform 220ms ease, box-shadow 220ms ease",
-        _hover: {
-          transform: "translateY(-3px)",
-          boxShadow: `0 8px 36px ${c.glow}, 0 0 0 1px rgba(255,255,255,0.05) inset`,
-        },
+      onKeyDown={(e: React.KeyboardEvent) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
+        }
       }}
+      _focusVisible={{ outline: "2px solid var(--cc-gold-line)", outlineOffset: "2px" }}
+      sx={{ "&:hover .cc-case-shot": { transform: "scale(1.03)" } }}
     >
-      {/* Accent light line top */}
-      <Box
-        position="absolute"
-        top={0}
-        left={0}
-        right={0}
-        h="2px"
-        zIndex={1}
-        sx={{
-          background: `linear-gradient(90deg, transparent, ${c.accent}CC, transparent)`,
-        }}
-      />
-
-      {/* Screenshot image */}
-      <Box
-        position="relative"
-        w="full"
-        h={{ base: "200px", md: "260px" }}
-        bg="rgba(0,0,0,0.4)"
-      >
-        <Image
-          src={c.image}
-          alt={c.name}
-          fill
-          sizes="(max-width: 48em) 100vw, 560px"
-          style={{ objectFit: "cover", objectPosition: "top center" }}
+      {/* Screenshot: oben gerundet, eigene Maske, damit die Gold-Kante der Karte sichtbar bleibt */}
+      <Box position="relative" w="full" h={{ base: "220px", md: "280px" }} borderTopRadius="11px" overflow="hidden" bg="rgba(0, 0, 0, 0.25)">
+        <Box className="cc-case-shot" position="absolute" inset={0} transition="transform 500ms var(--cc-ease)">
+          <Image
+            src={c.image}
+            alt=""
+            fill
+            sizes="(max-width: 48em) 100vw, 560px"
+            style={{ objectFit: "cover", objectPosition: "top center" }}
+          />
+        </Box>
+        <Box
+          aria-hidden
+          position="absolute"
+          inset={0}
+          bg="linear-gradient(180deg, transparent 58%, rgba(24, 29, 34, 0.9) 100%)"
+          pointerEvents="none"
         />
+        <Flex
+          aria-hidden
+          position="absolute"
+          top={3}
+          right={3}
+          w="34px"
+          h="34px"
+          align="center"
+          justify="center"
+          borderRadius="full"
+          bg="var(--cc-bg-raised)"
+          border="1px solid var(--cc-line-strong)"
+          color="var(--cc-text-soft)"
+          backdropFilter="blur(10px)"
+        >
+          <Maximize2 size={15} strokeWidth={1.75} />
+        </Flex>
       </Box>
 
-      {/* Text content */}
-      <Stack gap={1.5} p={{ base: 4, md: 5 }}>
-        <Text
-          fontSize={{ base: "md", md: "lg" }}
-          className="inter-semibold"
-          color={c.accent}
-          lineHeight="1.2"
-        >
+      <Stack spacing={1.5} p={{ base: 5, md: 6 }} pt={{ base: 4, md: 5 }}>
+        <Text fontSize={{ base: "17px", md: "18px" }} fontWeight={600} lineHeight={1.25} color="var(--cc-text)">
           {c.name}
         </Text>
-        <Text
-          fontSize={{ base: "sm", md: "sm" }}
-          className="inter"
-          color="rgba(255,255,255,0.60)"
-          lineHeight="1.55"
-        >
+        <Text fontSize="15px" lineHeight={1.55} color="var(--cc-text-2)">
           {c.description}
         </Text>
       </Stack>
@@ -291,111 +248,50 @@ function CaseCard({ c, onOpen }: { c: CaseData; onOpen: () => void }) {
   );
 }
 
-/* ── Cases Section ── */
+/* ── Abschnitt ── */
 
 export function CasesSection() {
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
   return (
-    <Box
-      as="section"
-      w="100%"
-      bg="var(--color-bg-primary, #07080A)"
-      py={{ base: 14, md: 20 }}
-      px={{ base: 4, md: 8, lg: 12 }}
-    >
+    <Box as="section" aria-labelledby="cases-title" w="100%" py={{ base: 16, md: 24 }} px={{ base: 4, md: 8, lg: 12 }}>
       <Box maxW="1200px" mx="auto">
-        {/* Section label */}
-        <HStack mb={3} justify="center" gap={3}>
-          <Box
-            w="28px"
-            h="1px"
-            bg="linear-gradient(90deg, transparent, rgba(212,175,55,0.70))"
-          />
-          <Text
-            fontSize="xs"
-            letterSpacing="0.22em"
-            textTransform="uppercase"
-            color="var(--color-accent-gold, #D4AF37)"
-            className="inter-semibold"
-          >
-            Echte Ergebnisse
-          </Text>
-          <Box
-            w="28px"
-            h="1px"
-            bg="linear-gradient(90deg, rgba(212,175,55,0.70), transparent)"
-          />
-        </HStack>
+        <Reveal>
+          <Stack spacing={4} align="center" textAlign="center" mb={{ base: 10, md: 14 }}>
+            <Eyebrow>Echte Ergebnisse</Eyebrow>
+            <DisplayHeading id="cases-title">
+              Was in weniger als <Accent>2 Monaten</Accent> möglich ist
+            </DisplayHeading>
+          </Stack>
+        </Reveal>
 
-        {/* Headline */}
-        <Text
-          as="h2"
-          className="inter-bold"
-          fontSize={{ base: "2xl", md: "3xl", lg: "4xl" }}
-          color="var(--color-text-primary, #F0F0F2)"
-          textAlign="center"
-          lineHeight="1.15"
-          mb={{ base: 3, md: 4 }}
-        >
-          Was in weniger als{" "}
-          <Box
-            as="span"
-            sx={{
-              color: "var(--color-accent-gold, #D4AF37)",
-              textShadow: "0 0 16px rgba(212,175,55,0.30)",
-            }}
-          >
-            2 Monaten
-          </Box>{" "}
-          möglich ist
-        </Text>
-
-        {/* 2x2 Card Grid */}
-        <Box
-          display="grid"
-          sx={{
-            gridTemplateColumns: { base: "1fr", md: "1fr 1fr" },
-            gap: { base: "16px", md: "20px" },
-          }}
-          mb={{ base: 10, md: 14 }}
-        >
+        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={{ base: 4, md: 5 }} mb={{ base: 12, md: 16 }}>
           {CASES.map((c, i) => (
-            <CaseCard key={c.name} c={c} onOpen={() => setLightboxIdx(i)} />
+            <Reveal key={c.name} delay={(i % 2) * 90}>
+              <CaseCard c={c} onOpen={() => setLightboxIdx(i)} />
+            </Reveal>
           ))}
-        </Box>
+        </SimpleGrid>
 
-        {/* Fazit block */}
-        <Stack gap={3} align="center" textAlign="center" maxW="640px" mx="auto">
-          <Text
-            fontSize={{ base: "sm", md: "md" }}
-            className="inter"
-            color="rgba(255,255,255,0.40)"
-            lineHeight="1.7"
-          >
-            Das sind keine Ausnahmen.
-          </Text>
-          <Text
-            fontSize={{ base: "md", md: "lg" }}
-            className="inter-semibold"
-            lineHeight="1.55"
-            sx={{
-              color: "var(--color-accent-gold, #D4AF37)",
-              textShadow: "0 0 20px rgba(212,175,55,0.25)",
-            }}
-          >
-            Das ist das Ergebnis wenn ein klares System auf ernsthafte Trader trifft.
-          </Text>
-        </Stack>
+        <Reveal>
+          <Stack spacing={3} align="center" textAlign="center" maxW="660px" mx="auto">
+            <Text fontSize={{ base: "15px", md: "16px" }} lineHeight={1.7} color="var(--cc-text-2)">
+              Das sind keine Ausnahmen.
+            </Text>
+            <Text
+              fontSize={{ base: "20px", md: "24px" }}
+              fontWeight={600}
+              lineHeight={1.4}
+              letterSpacing="-0.01em"
+              color="var(--cc-gold-light)"
+            >
+              Das ist das Ergebnis wenn ein klares System auf ernsthafte Trader trifft.
+            </Text>
+          </Stack>
+        </Reveal>
       </Box>
 
-      {/* Lightbox overlay */}
-      {lightboxIdx !== null && (
-        <Lightbox
-          c={CASES[lightboxIdx]}
-          onClose={() => setLightboxIdx(null)}
-        />
-      )}
+      {lightboxIdx !== null && <Lightbox c={CASES[lightboxIdx]} onClose={() => setLightboxIdx(null)} />}
     </Box>
   );
 }

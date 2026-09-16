@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { Stack, Text } from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
 import { createClient } from "@/lib/supabase/server";
+import { PageHeader } from "@/components/journal/PageHeader";
 import { SupportTicketsList, type SupportTicketRow } from "@/components/support/SupportTicketsList";
 
 export const metadata: Metadata = {
@@ -27,33 +28,12 @@ export default async function SupportPage() {
   const tickets = (data as SupportTicketRow[] | null) ?? [];
 
   return (
-    <Stack spacing={{ base: 6, md: 8 }} maxW="900px" mx="auto" w="full">
-      <Stack spacing={2}>
-        <Text
-          fontSize="xs"
-          letterSpacing="0.22em"
-          textTransform="uppercase"
-          color="var(--color-accent-gold)"
-          className="inter-semibold"
-        >
-          Support
-        </Text>
-        <Text
-          as="h1"
-          className="radley-regular"
-          fontWeight={400}
-          fontSize={{ base: "3xl", md: "4xl" }}
-          lineHeight="1.15"
-          color="var(--color-text-primary)"
-        >
-          Hilfe & Anfragen
-        </Text>
-        <Text className="inter" fontSize="sm" color="var(--color-text-secondary)">
-          Stelle eine Anfrage an unser Team — wir antworten direkt hier im Ticket.
-        </Text>
-      </Stack>
-
+    <Box maxW="900px" mx="auto" w="full">
+      <PageHeader
+        title="Hilfe & Anfragen"
+        subtitle="Stelle eine Anfrage an unser Team — wir antworten direkt hier im Ticket."
+      />
       <SupportTicketsList tickets={tickets} />
-    </Stack>
+    </Box>
   );
 }

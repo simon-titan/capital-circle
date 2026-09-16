@@ -1,16 +1,13 @@
 "use client";
 
-import { Box, Button, Checkbox, Flex, Stack, Text } from "@chakra-ui/react";
-import { useMemo, useState } from "react";
+import { Box, Button, Stack, Text } from "@chakra-ui/react";
+import { useState } from "react";
 import Image from "next/image";
-import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { glassPrimaryButtonProps } from "@/components/ui/glassButtonStyles";
 import { CodexPillarsScroll } from "@/components/codex/CodexPillarsScroll";
 import { coreLaws, executionLaws, mindsetLaws } from "@/components/onboarding/codexLaws";
-import { type HTMLChakraProps } from "@chakra-ui/react";
-
-const MotionBox = motion<HTMLChakraProps<"div">>(Box);
+import { AcceptanceCheck, OnboardingHeading } from "@/components/onboarding/OnboardingParts";
 
 /** Mittlere Lücke zwischen Ober- und Unterteil in pillar-glass.svg (viewBox 810×1440). */
 const PILLAR_TEXT_INSET = {
@@ -20,7 +17,8 @@ const PILLAR_TEXT_INSET = {
   bottom: "18.04%",
 };
 
-const pillarGlassBoxSx = {
+/** Graphit-Fläche in der Säulenlücke, auf der die Gesetze stehen. */
+const pillarPanelSx = {
   w: "full",
   h: "full",
   maxH: "100%",
@@ -30,13 +28,10 @@ const pillarGlassBoxSx = {
   justifyContent: "center",
   overflow: "hidden",
   p: { base: 2, md: 2.5 },
-  borderRadius: "16px",
-  border: "1px solid rgba(148, 163, 184, 0.22)",
-  bg: "linear-gradient(145deg, rgba(212, 175, 55, 0.12) 0%, rgba(60, 45, 10, 0.08) 100%)",
-  backdropFilter: "blur(16px) saturate(1.12)",
-  WebkitBackdropFilter: "blur(16px) saturate(1.12)",
-  boxShadow:
-    "0 2px 18px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -1px 0 rgba(212, 175, 55, 0.08)",
+  borderRadius: "10px",
+  border: "1px solid var(--cc-line)",
+  bg: "linear-gradient(180deg, rgba(27, 32, 38, 0.92) 0%, rgba(24, 29, 34, 0.92) 100%)",
+  boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.05)",
 };
 
 /** Römische Nummerierung am Anfang (I. … XV.) vom Rest trennen. */
@@ -50,8 +45,7 @@ function LawRuleLine({ rule }: { rule: string }) {
   const parts = splitRomanLawLine(rule);
   const textProps = {
     fontSize: { base: "11px", md: "12px" },
-    className: "inter",
-    color: "rgba(248, 250, 252, 0.94)",
+    color: "var(--cc-text-soft)",
     lineHeight: "1.45",
     textAlign: "center" as const,
   };
@@ -62,13 +56,7 @@ function LawRuleLine({ rule }: { rule: string }) {
 
   return (
     <Text {...textProps}>
-      <Text
-        as="span"
-        fontWeight="700"
-        letterSpacing="0.06em"
-        color="rgba(253, 230, 138, 0.98)"
-        textShadow="0 0 20px rgba(212, 175, 55, 0.35)"
-      >
+      <Text as="span" fontWeight={600} letterSpacing="0.06em" color="var(--cc-gold-light)">
         {parts.numeral}
       </Text>{" "}
       {parts.body}
@@ -80,13 +68,7 @@ type CodexStepProps = {
   onCompleted: () => void | Promise<void>;
 };
 
-function PillarColumn({
-  title,
-  rules,
-}: {
-  title: string;
-  rules: string[];
-}) {
+function PillarColumn({ title, rules }: { title: string; rules: string[] }) {
   return (
     <Box
       flex={{ base: "0 0 min(88vw, 360px)", lg: "unset" }}
@@ -94,18 +76,19 @@ function PillarColumn({
       w={{ base: "min(88vw, 360px)", lg: "full" }}
       maxW={{ base: "360px", lg: "none" }}
     >
-      <Text
+      <Box
+        as="h2"
         textAlign="center"
-        fontSize={{ base: "xl", md: "2xl" }}
-        fontWeight="400"
-        className="radley-regular"
-        letterSpacing="0.12em"
+        fontSize={{ base: "14px", md: "15px" }}
+        lineHeight="20px"
+        fontWeight={500}
+        letterSpacing="0.14em"
         textTransform="uppercase"
-        color="rgba(240, 240, 242, 0.95)"
+        color="var(--cc-gold-light)"
         mb={3}
       >
         {title}
-      </Text>
+      </Box>
 
       <Box position="relative" w="full" mx="auto">
         <Box position="relative" w="full" lineHeight={0}>
@@ -126,7 +109,7 @@ function PillarColumn({
           />
         </Box>
 
-        {/* Mittlere Lücke: blaue Glassmorphism-Box zwischen Ober- und Unterteil */}
+        {/* Mittlere Lücke: Graphit-Fläche zwischen Ober- und Unterteil */}
         <Box
           position="absolute"
           top={PILLAR_TEXT_INSET.top}
@@ -140,13 +123,8 @@ function PillarColumn({
           justifyContent="center"
           pointerEvents="auto"
         >
-          <Box sx={pillarGlassBoxSx}>
-            <Stack
-              gap={{ base: 1.5, md: 2 }}
-              w="full"
-              justify="center"
-              textAlign="center"
-            >
+          <Box sx={pillarPanelSx}>
+            <Stack gap={{ base: 1.5, md: 2 }} w="full" justify="center" textAlign="center">
               {rules.map((rule) => (
                 <LawRuleLine key={rule} rule={rule} />
               ))}
@@ -163,7 +141,6 @@ export function CodexStep({ onCompleted }: CodexStepProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
-  const canContinue = useMemo(() => accepted, [accepted]);
 
   const onConfirm = async () => {
     setError(null);
@@ -194,7 +171,7 @@ export function CodexStep({ onCompleted }: CodexStepProps) {
 
     if (!profileCheck?.codex_accepted) {
       setSaving(false);
-      setError("Profil wurde nicht gefunden. Bitte Migration fuer Profile-Trigger/RLS ausfuehren.");
+      setError("Profil wurde nicht gefunden. Bitte Migration für Profile-Trigger/RLS ausführen.");
       return;
     }
 
@@ -212,33 +189,17 @@ export function CodexStep({ onCompleted }: CodexStepProps) {
       py={{ base: 8, md: 10 }}
     >
       <Stack
-        className="glass-card"
+        as="section"
+        aria-labelledby="codex-title"
+        className="cc-card cc-card--hero cc-card--still"
         p={{ base: 6, md: 8 }}
         maxW="1100px"
         w="full"
         gap={{ base: 6, md: 8 }}
-        borderColor="rgba(255, 255, 255, 0.12)"
-        boxShadow="0 8px 40px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06)"
       >
-        <MotionBox initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-          <Flex justify="center" mb={2}>
-            <Box position="relative" w="full" maxW={{ base: "300px", md: "400px" }}>
-              <Image
-                src="/logo/codex-new.png"
-                alt="Capital Circle Codex"
-                width={760}
-                height={280}
-                priority
-                style={{
-                  width: "100%",
-                  height: "auto",
-                  objectFit: "contain",
-                  display: "block",
-                }}
-              />
-            </Box>
-          </Flex>
-        </MotionBox>
+        <Box className="cc-rise">
+          <OnboardingHeading id="codex-title" title="Codex" />
+        </Box>
 
         <CodexPillarsScroll>
           <PillarColumn title="Core Law" rules={coreLaws} />
@@ -246,60 +207,19 @@ export function CodexStep({ onCompleted }: CodexStepProps) {
           <PillarColumn title="Mindset Laws" rules={mindsetLaws} />
         </CodexPillarsScroll>
 
-        <Box
-          borderRadius="20px"
-          p={{ base: 5, md: 6 }}
-          border="2px solid"
-          borderColor={accepted ? "rgba(212, 175, 55, 0.55)" : "rgba(255, 255, 255, 0.18)"}
-          bg={accepted ? "rgba(212, 175, 55, 0.12)" : "rgba(255, 255, 255, 0.03)"}
-          backdropFilter="blur(22px) saturate(1.4)"
-          sx={{
-            WebkitBackdropFilter: "blur(22px) saturate(1.4)",
-            boxShadow: accepted
-              ? "0 0 40px rgba(212, 175, 55, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.1)"
-              : "inset 0 1px 0 rgba(255, 255, 255, 0.06)",
-            transition: "border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease",
-          }}
-        >
-          <Checkbox
-            isChecked={accepted}
-            onChange={(e) => setAccepted(e.target.checked)}
-            colorScheme="brand"
-            size="lg"
-            w="full"
-            flexDirection="column"
-            alignItems="center"
-            gap={4}
-            sx={{
-              ".chakra-checkbox__label": {
-                marginInlineStart: "0 !important",
-                width: "100%",
-                textAlign: "center",
-              },
-              ".chakra-checkbox__control": {
-                w: "28px",
-                h: "28px",
-                borderWidth: "2px",
-              },
-            }}
-          >
-            <Stack spacing={2} align="center" maxW="lg" mx="auto">
-              <Text fontSize={{ base: "md", md: "lg" }} fontWeight="600" className="inter-semibold" color="rgba(248, 250, 252, 0.98)">
-                Ich verpflichte mich.
-              </Text>
-              <Text fontSize="sm" className="inter" color="rgba(240, 240, 242, 0.55)" lineHeight="1.55">
-                Du verpflichtest dich hiermit konsequent unseren Codex einzuhalten!
-              </Text>
-            </Stack>
-          </Checkbox>
-        </Box>
+        <AcceptanceCheck
+          isChecked={accepted}
+          onChange={setAccepted}
+          title="Ich verpflichte mich."
+          text="Du verpflichtest dich hiermit konsequent unseren Codex einzuhalten!"
+        />
 
         {error ? (
-          <Text fontSize="sm" color="red.300" textAlign="center">
+          <Text role="alert" fontSize="14px" color="var(--cc-danger)" textAlign="center">
             {error}
           </Text>
         ) : null}
-        <Button {...glassPrimaryButtonProps} isDisabled={!canContinue} onClick={onConfirm} isLoading={saving}>
+        <Button {...glassPrimaryButtonProps} isDisabled={!accepted} onClick={onConfirm} isLoading={saving}>
           Weiter
         </Button>
       </Stack>

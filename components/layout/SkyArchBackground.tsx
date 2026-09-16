@@ -6,24 +6,19 @@ type SkyArchBackgroundProps = {
   children: React.ReactNode;
 };
 
-/** Vollflächiger Hintergrund wie Login — `public/bg/sky-arch.png` + Verlauf. */
+/**
+ * Vollflächiger Grund für Einstieg, Login und Onboarding (DESIGN.md v3.2):
+ * Graphit mit Sternenfeld und Champagner-Licht (`.cc-stars`, `.cc-goldlight`,
+ * beide `fixed` hinter dem Inhalt). Der Name stammt vom früheren Landschaftsbild
+ * und bleibt für bestehende Imports.
+ *
+ * `overflow-x: clip` statt `hidden`, damit `position: sticky` im Inhalt greift.
+ */
 export function SkyArchBackground({ children }: SkyArchBackgroundProps) {
   return (
-    <Box position="relative" minH="100vh" w="full" overflow="hidden">
-      <Box
-        position="absolute"
-        inset={0}
-        bgImage="url(/bg/sky-arch.png)"
-        bgSize="cover"
-        bgPosition="center"
-        bgRepeat="no-repeat"
-      />
-      <Box
-        position="absolute"
-        inset={0}
-        bgGradient="linear(to-b, rgba(7, 8, 10, 0.42), rgba(7, 8, 10, 0.82))"
-        pointerEvents="none"
-      />
+    <Box position="relative" minH="100vh" w="full" bg="var(--cc-bg)" overflowX="clip">
+      <Box className="cc-stars" aria-hidden />
+      <Box className="cc-goldlight" aria-hidden />
       <Box position="relative" zIndex={1} minH="100vh" w="full">
         {children}
       </Box>

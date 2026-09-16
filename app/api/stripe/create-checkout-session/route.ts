@@ -1,7 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { getAppUrl } from "@/lib/site-url";
 import { getStripe } from "@/lib/stripe/server";
+import { isMembershipPlan, MEMBERSHIP_PLANS, priceIdForPlan } from "@/lib/stripe/plan-map";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,24 +13,19 @@ interface Body {
   promo?: string;
 }
 
-const PLANS = {
-  monthly: {
-    mode: "subscription" as const,
-    priceEnv: "STRIPE_PRICE_MONTHLY",
-  },
-  lifetime: {
-    mode: "payment" as const,
-    priceEnv: "STRIPE_PRICE_LIFETIME",
-  },
-};
-
-function getAppUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    "https://www.capitalcircletrading.com"
-  ).replace(/\/$/, "");
-}
+/**
+ * Eingebetteter Checkout fuer **eingeloggte** Nutzer (Upgrade aus `/billing`).
+ *
+ * Der Weg von der Landing laeuft dagegen ueber `/go/<plan>` als Gast-Checkout —
+ * dort gibt es noch kein Konto, an das sich ein `customer` haengen liesse.
+ * Beide Wege teilen sich `lib/stripe/plan-map.ts`, damit Preis und Plan nicht
+ * auseinanderlaufen.
+ *
+ * Der frueher hier gefuehrte `lifetime`-Plan (`mode: "payment"`) ist aus dem
+ * Verkauf genommen. Bestandskunden behalten ihren Zugang (siehe
+ * `lib/access-control/has-access.ts` und `checkout-completed.ts`), aber kaufbar
+ * ist er nicht mehr.
+ */
 
 export async function POST(request: NextRequest) {
   let body: Body;
@@ -42,9 +39,9 @@ export async function POST(request: NextRequest) {
   }
 
   const plan = body.plan;
-  if (plan !== "monthly" && plan !== "lifetime") {
+  if (!plan || !isMembershipPlan(plan)) {
     return NextResponse.json(
-      { ok: false, error: "invalid_plan", allowed: ["monthly", "lifetime"] },
+      { ok: false, error: "invalid_plan", allowed: MEMBERSHIP_PLANS },
       { status: 400 },
     );
   }
@@ -59,14 +56,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const planConfig = PLANS[plan];
-  const priceId = process.env[planConfig.priceEnv]?.trim();
-  if (!priceId) {
+  let priceId: string;
+  try {
+    priceId = priceIdForPlan(plan);
+  } catch (err) {
     return NextResponse.json(
       {
         ok: false,
         error: "config_missing",
-        detail: `${planConfig.priceEnv} ist nicht gesetzt`,
+        detail: err instanceof Error ? err.message : "Preis-Konfiguration fehlt",
       },
       { status: 500 },
     );
@@ -135,7 +133,9 @@ export async function POST(request: NextRequest) {
     // für das vorherige `embedded` (Stripe-Checkout als iframe in der eigenen
     // Seite, gesteuert via `client_secret` + `<EmbeddedCheckout/>`).
     ui_mode: "embedded_page",
-    mode: planConfig.mode,
+    // Alle drei Laufzeiten sind Abos — "vierteljaehrlich" und "jaehrlich" sind
+    // Abrechnungsintervalle, keine Einmalzahlungen.
+    mode: "subscription",
     customer: customerId,
     line_items: [{ price: priceId, quantity: 1 }],
     return_url: `${appUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
@@ -144,13 +144,7 @@ export async function POST(request: NextRequest) {
       ? { discounts: [{ promotion_code: promotionCodeId }] }
       : { allow_promotion_codes: true }),
     metadata: { user_id: user.id, plan },
-    ...(planConfig.mode === "subscription"
-      ? {
-          subscription_data: {
-            metadata: { user_id: user.id, plan },
-          },
-        }
-      : {}),
+    subscription_data: { metadata: { user_id: user.id, plan } },
   });
 
   return NextResponse.json({

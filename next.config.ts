@@ -1,6 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      /** YouTube-Vorschaubilder (Journal-Home). Werden serverseitig geholt,
+       *  damit der Browser vor dem Klick keine Verbindung zu Google aufbaut. */
+      { protocol: "https", hostname: "*.ytimg.com", pathname: "/vi/**" },
+    ],
+  },
   experimental: {
     optimizePackageImports: ["@chakra-ui/react", "framer-motion", "@aws-sdk/client-s3", "react-icons", "lucide-react"],
     /** Große Uploads (Admin upload-proxy, Live-Session-Videos) — Standard ist 10 MB. */
@@ -15,6 +22,12 @@ const nextConfig: NextConfig = {
         source: "/free-discord",
         destination: "https://whop.com/capital-circle/cc-kostenloser-discord/",
         permanent: false,
+      },
+      /** Trading Journal v2: Positionsrechner ist aus dem Journal-Teilbaum gewandert. */
+      {
+        source: "/trading-journal/position-calculator",
+        destination: "/position-rechner",
+        permanent: true,
       },
     ];
   },

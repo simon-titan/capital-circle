@@ -4,18 +4,32 @@ import { updateLastLoginIfNeeded } from "@/lib/auth/middleware-last-login";
 import { isFreeMember } from "@/lib/membership";
 import { createServiceClient } from "@/lib/supabase/service";
 
-// Marketing-Pfade (öffentlich, kein Auth nötig). /free + /pricing + /apply
-// werden in den Marketing-Paketen 3/4/7 aufgebaut.
+// Marketing-Pfade (öffentlich, kein Auth nötig).
+//
+// `/pricing` ist entfallen: Die Laufzeiten stehen jetzt im Abschnitt „Angebot"
+// der Startseite, eingeloggte Nutzer wählen sie in `/billing`. Die alte Adresse
+// leitet weiter (siehe `proxy()`), damit Links aus alten Mails nicht ins Leere
+// laufen.
+//
+// Die Checkout-Pfade müssen öffentlich sein, weil der Gast-Checkout genau das
+// ist: Wer über `/go/<plan>` kauft, hat beim Rücksprung noch kein Konto, und
+// ausgewiesen wird er über die Stripe-Session, nicht über einen Login.
 const PUBLIC_PATHS = [
   "/einsteig",
   "/login",
   "/register",
   "/free",
-  "/pricing",
   "/apply",
   "/insight",
   "/erfolge",
   "/wartung",
+  "/checkout/success",
+  "/checkout/zurueck",
+  "/set-password",
+  // `app/robots.ts` erzeugt diese Adresse. Sie steht im Matcher unten nicht
+  // unter den Ausnahmen, also käme sie ohne diesen Eintrag als Login-HTML
+  // beim Crawler an — und `/go/` wäre nicht gesperrt.
+  "/robots.txt",
 ];
 
 // `/survey/*` ist Token-authentifiziert (Cancellation-Survey aus Paket 6) und
@@ -24,7 +38,19 @@ const PUBLIC_PATHS = [
 // standalone Leads ohne Auth, daher der gesamte Prefix öffentlich.
 // `/termin/*` ist der öffentliche Direkt-Termin-Funnel (Cold Traffic / Ads) —
 // Landing + /termin/danke, ebenfalls ohne Auth zugänglich.
-const PUBLIC_PREFIXES = ["/datenschutz", "/impressum", "/survey", "/discord", "/termin"];
+// `/go/*` startet die Stripe-Kasse — auch für eingeloggte Nutzer, die noch
+// mitten im Onboarding stecken; ohne den Eintrag schöbe die Onboarding-Weiche
+// unten sie beim Klick auf „Community beitreten" nach `/einsteig`.
+// `/auth/*` löst Einmal-Token aus unseren E-Mails ein, ebenfalls ohne Sitzung.
+const PUBLIC_PREFIXES = [
+  "/datenschutz",
+  "/impressum",
+  "/survey",
+  "/discord",
+  "/termin",
+  "/go",
+  "/auth",
+];
 
 function isPublicPath(pathname: string): boolean {
   if (PUBLIC_PATHS.includes(pathname)) return true;
@@ -62,6 +88,15 @@ async function getMaintenanceState(): Promise<MaintenanceState> {
 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+
+  // `/pricing` ist ersatzlos entfallen (Entscheidung 2026-09-16). Dauerhafte
+  // Weiterleitung statt 404: Die Adresse steht in verschickten Mails und in
+  // Suchmaschinen-Indizes. 308 statt 307, damit Suchmaschinen den Umzug auch
+  // übernehmen. Steht ganz oben, weil sie für eingeloggte wie nicht
+  // eingeloggte Besucher gleichermaßen gilt.
+  if (pathname === "/pricing") {
+    return NextResponse.redirect(new URL("/#angebot", request.url), 308);
+  }
 
   // Statische Assets aus `public/tg-slides/`, `public/founder/`, `public/cases/`, … —
   // nicht durch Auth-/Pending-/Onboarding-Gates schicken, sonst liefert der Browser
@@ -148,7 +183,7 @@ export async function proxy(request: NextRequest) {
     is_admin?: boolean;
     is_paid?: boolean;
     application_status?: "pending" | "approved" | "rejected" | null;
-    membership_tier?: "free" | "monthly" | "lifetime" | "ht_1on1";
+    membership_tier?: "free" | "monthly" | "quarterly" | "yearly" | "lifetime" | "ht_1on1";
     step2_application_status?: "pending" | "approved" | "rejected" | null;
     access_until?: string | null;
     last_login_at?: string | null;

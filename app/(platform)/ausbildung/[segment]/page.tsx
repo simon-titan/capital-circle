@@ -1,7 +1,6 @@
-import { Box, Grid, GridItem, Heading, Stack, Text } from "@chakra-ui/react";
+import { Box, Heading, Stack, Text } from "@chakra-ui/react";
 import { notFound, redirect } from "next/navigation";
 import { ChakraLinkButton } from "@/components/platform/ChakraLinkButton";
-import { GlassCard } from "@/components/ui/GlassCard";
 import { PaywallOverlay } from "@/components/ui/PaywallOverlay";
 import { AusbildungModuleLearningClient } from "@/components/platform/AusbildungPageCards";
 import { createClient } from "@/lib/supabase/server";
@@ -14,6 +13,25 @@ import type { VideoAttachmentItem } from "@/components/platform/VideoAttachments
 type PageProps = {
   params: Promise<{ segment: string }>;
 };
+
+/** Harte Sperre (gesperrtes Modul / Kurs / Reihenfolge) als ruhige Glas-Karte. */
+function LockedNotice({ title, text }: { title: string; text: string }) {
+  return (
+    <Stack gap={6} maxW="720px" mx="auto">
+      <Box className="cc-card cc-card--still" p={{ base: 6, md: 8 }}>
+        <Heading as="h1" fontSize="22px" fontWeight={600} color="var(--cc-text)" mb={2}>
+          {title}
+        </Heading>
+        <Text fontSize="15px" color="var(--cc-text-2)" mb={6}>
+          {text}
+        </Text>
+        <ChakraLinkButton href="/ausbildung" variant="line">
+          Zur Instituts-Übersicht
+        </ChakraLinkButton>
+      </Box>
+    </Stack>
+  );
+}
 
 export default async function AcademyModulePage({ params }: PageProps) {
   const { segment: raw } = await params;
@@ -34,7 +52,7 @@ export default async function AcademyModulePage({ params }: PageProps) {
   if (!mod?.id) notFound();
 
   const [{ data: courseRow }, { data: profileRow }] = await Promise.all([
-    supabase.from("courses").select("is_free").eq("id", mod.course_id).maybeSingle(),
+    supabase.from("courses").select("is_free,title").eq("id", mod.course_id).maybeSingle(),
     supabase.from("profiles").select("is_paid").eq("id", user.id).maybeSingle(),
   ]);
 
@@ -44,59 +62,17 @@ export default async function AcademyModulePage({ params }: PageProps) {
   // (no overlay — there is no premium content to "preview" for these cases).
   if (hasAccess) {
     if (mod.is_locked) {
-      return (
-        <Stack gap={6} maxW="720px" mx="auto">
-          <GlassCard highlight>
-            <Heading as="h1" size="md" className="inter-semibold" fontWeight={600} mb={2}>
-              Modul gesperrt
-            </Heading>
-            <Text className="inter" color="var(--color-text-muted)" fontSize="sm" mb={6}>
-              Dieses Modul ist derzeit nicht verfügbar.
-            </Text>
-            <ChakraLinkButton href="/ausbildung" variant="outline" borderColor="rgba(212,175,55,0.45)" color="var(--color-accent-gold)">
-              Zur Instituts-Übersicht
-            </ChakraLinkButton>
-          </GlassCard>
-        </Stack>
-      );
+      return <LockedNotice title="Modul gesperrt" text="Dieses Modul ist derzeit nicht verfügbar." />;
     }
 
     const courseUnlocked = await isCourseUnlocked(user.id, mod.course_id as string);
     if (!courseUnlocked) {
-      return (
-        <Stack gap={6} maxW="720px" mx="auto">
-          <GlassCard highlight>
-            <Heading as="h1" size="md" className="inter-semibold" fontWeight={600} mb={2}>
-              Kurs gesperrt
-            </Heading>
-            <Text className="inter" color="var(--color-text-muted)" fontSize="sm" mb={6}>
-              Schließe zuerst den vorherigen Kurs ab, um fortzufahren.
-            </Text>
-            <ChakraLinkButton href="/ausbildung" variant="outline" borderColor="rgba(212,175,55,0.45)" color="var(--color-accent-gold)">
-              Zur Instituts-Übersicht
-            </ChakraLinkButton>
-          </GlassCard>
-        </Stack>
-      );
+      return <LockedNotice title="Kurs gesperrt" text="Schließe zuerst den vorherigen Kurs ab, um fortzufahren." />;
     }
 
     const moduleUnlocked = await isModuleUnlocked(user.id, mod.id);
     if (!moduleUnlocked) {
-      return (
-        <Stack gap={6} maxW="720px" mx="auto">
-          <GlassCard highlight>
-            <Heading as="h1" size="md" className="inter-semibold" fontWeight={600} mb={2}>
-              Modul gesperrt
-            </Heading>
-            <Text className="inter" color="var(--color-text-muted)" fontSize="sm" mb={6}>
-              Schließe zuerst das vorherige Modul ab, um fortzufahren.
-            </Text>
-            <ChakraLinkButton href="/ausbildung" variant="outline" borderColor="rgba(212,175,55,0.45)" color="var(--color-accent-gold)">
-              Zur Instituts-Übersicht
-            </ChakraLinkButton>
-          </GlassCard>
-        </Stack>
-      );
+      return <LockedNotice title="Modul gesperrt" text="Schließe zuerst das vorherige Modul ab, um fortzufahren." />;
     }
   }
 
@@ -160,50 +136,26 @@ export default async function AcademyModulePage({ params }: PageProps) {
 
   const initialNoteContent = typeof noteRow?.content === "string" ? noteRow.content : "";
 
+  // Aufbau wie in der Vorlage: Kursleiste links, Player und Notizen rechts — alles im Client.
   const pageContent = (
-    <Grid templateColumns="1fr" gap={6} alignItems="start">
-      <GridItem>
-        <ChakraLinkButton
-          href="/ausbildung"
-          variant="ghost"
-          size="sm"
-          mb={2}
-          color="var(--color-accent-gold)"
-          className="inter"
-        >
-          ← Zur Instituts-Übersicht
-        </ChakraLinkButton>
-        <GlassCard p={{ base: 0, md: 6 }}>
-          <Stack spacing={4} mb={6} px={{ base: 4, md: 0 }} pt={{ base: 4, md: 0 }}>
-            <Heading as="h1" size="lg" className="radley-regular" fontWeight={400} color="var(--color-text-primary)">
-              {mod.title}
-            </Heading>
-            {mod.description ? (
-              <Text className="inter" fontSize="sm" color="var(--color-text-muted)" lineHeight={1.6}>
-                {mod.description}
-              </Text>
-            ) : null}
-          </Stack>
-          <AusbildungModuleLearningClient
-            moduleId={mod.id}
-            playlist={playlist}
-            initialVideoId={lastVideoId}
-            initialProgressMap={initialMap}
-            questions={Array.isArray(quiz?.questions) ? (quiz.questions as never[]) : []}
-            quizMode={quiz?.quiz_mode === "single_page" ? "single_page" : "multi_page"}
-            passThreshold={typeof quiz?.pass_threshold === "number" ? quiz.pass_threshold : 100}
-            initialQuizPassed={Boolean(progress?.quiz_passed)}
-            initialQuizLastScore={
-              typeof progress?.quiz_last_score === "number" ? progress.quiz_last_score : null
-            }
-            initialModuleCompleted={Boolean(progress?.completed)}
-            nextModuleHref={nextModuleHref}
-            initialNoteContent={initialNoteContent}
-            attachmentsByVideoId={attachmentsByVideoId}
-          />
-        </GlassCard>
-      </GridItem>
-    </Grid>
+    <AusbildungModuleLearningClient
+      moduleId={mod.id}
+      moduleTitle={mod.title as string}
+      courseTitle={(courseRow?.title as string | null | undefined) ?? null}
+      moduleDescription={(mod.description as string | null) ?? null}
+      playlist={playlist}
+      initialVideoId={lastVideoId}
+      initialProgressMap={initialMap}
+      questions={Array.isArray(quiz?.questions) ? (quiz.questions as never[]) : []}
+      quizMode={quiz?.quiz_mode === "single_page" ? "single_page" : "multi_page"}
+      passThreshold={typeof quiz?.pass_threshold === "number" ? quiz.pass_threshold : 100}
+      initialQuizPassed={Boolean(progress?.quiz_passed)}
+      initialQuizLastScore={typeof progress?.quiz_last_score === "number" ? progress.quiz_last_score : null}
+      initialModuleCompleted={Boolean(progress?.completed)}
+      nextModuleHref={nextModuleHref}
+      initialNoteContent={initialNoteContent}
+      attachmentsByVideoId={attachmentsByVideoId}
+    />
   );
 
   if (!hasAccess) {

@@ -3,7 +3,6 @@
 import {
   Alert,
   AlertIcon,
-  Badge,
   Box,
   Button,
   Collapse,
@@ -26,6 +25,23 @@ import {
 } from "@chakra-ui/react";
 import { Check, ChevronDown, ChevronUp, Search, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ADMIN_CARD_CLASS,
+  AdminCount,
+  AdminLabel,
+  StatusDot,
+  StatusPill,
+  adminAlertIconColor,
+  adminAlertProps,
+  adminChipProps,
+  adminDangerButtonProps,
+  adminEmptyProps,
+  adminInputProps,
+  adminModalHeaderProps,
+  adminModalProps,
+  adminOverlayProps,
+  type AdminTone,
+} from "@/components/admin/adminUi";
 
 type Status = "pending" | "approved" | "rejected";
 type Tab = Status | "all";
@@ -59,6 +75,12 @@ const TAB_ORDER: { id: Tab; label: string }[] = [
   { id: "rejected", label: "Rejected" },
   { id: "all", label: "Alle" },
 ];
+
+const STATUS_TONE: Record<Status, AdminTone> = {
+  pending: "attention",
+  approved: "success",
+  rejected: "danger",
+};
 
 const dateFormatter = new Intl.DateTimeFormat("de-DE", {
   dateStyle: "medium",
@@ -209,78 +231,39 @@ export function ApplicationsManager() {
                   ? counters.approved
                   : counters.rejected;
           return (
-            <Button
-              key={t.id}
-              size="sm"
-              variant="outline"
-              onClick={() => setTab(t.id)}
-              bg={active ? "rgba(212,175,55,0.14)" : "transparent"}
-              borderColor={active ? "rgba(212,175,55,0.55)" : "rgba(255,255,255,0.12)"}
-              color={active ? "var(--color-accent-gold-light)" : "var(--color-text-secondary)"}
-              _hover={{
-                bg: "rgba(255,255,255,0.06)",
-                borderColor: "rgba(212,175,55,0.45)",
-              }}
-              className="inter"
-            >
+            <Button key={t.id} {...adminChipProps(active)} onClick={() => setTab(t.id)}>
               {t.label}
-              <Badge
-                ml={2}
-                bg={active ? "rgba(212,175,55,0.22)" : "rgba(255,255,255,0.06)"}
-                color={active ? "var(--color-accent-gold-light)" : "var(--color-text-secondary)"}
-                borderRadius="full"
-                px={2}
-              >
-                {count}
-              </Badge>
+              <AdminCount active={active}>{count}</AdminCount>
             </Button>
           );
         })}
       </HStack>
 
       <InputGroup maxW="360px">
-        <InputLeftElement pointerEvents="none">
-          <Search size={16} color="rgba(255,255,255,0.4)" />
+        <InputLeftElement pointerEvents="none" color="var(--cc-text-3)">
+          <Search size={16} />
         </InputLeftElement>
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Nach E-Mail oder Name suchen…"
-          bg="rgba(255,255,255,0.04)"
-          borderColor="rgba(255,255,255,0.12)"
-          _hover={{ borderColor: "rgba(212,175,55,0.4)" }}
-          _focus={{
-            borderColor: "rgba(212,175,55,0.65)",
-            boxShadow: "0 0 0 1px rgba(212,175,55,0.45)",
-          }}
-          color="var(--color-text-primary)"
-          className="inter"
+          {...adminInputProps}
         />
       </InputGroup>
 
       {error && (
-        <Alert status="error" variant="subtle" bg="rgba(229,72,77,0.10)" borderRadius="12px">
-          <AlertIcon />
-          <Text fontSize="sm" className="inter">{error}</Text>
+        <Alert status="error" variant="subtle" {...adminAlertProps("error")}>
+          <AlertIcon color={adminAlertIconColor("error")} />
+          <Text fontSize="sm">{error}</Text>
         </Alert>
       )}
 
       {loading ? (
         <HStack py={12} justify="center">
-          <Spinner color="var(--color-accent-gold)" />
+          <Spinner color="var(--cc-gold)" />
         </HStack>
       ) : filtered.length === 0 ? (
-        <Box
-          py={12}
-          textAlign="center"
-          color="var(--color-text-secondary)"
-          className="inter"
-          fontSize="sm"
-          border="1px dashed rgba(255,255,255,0.08)"
-          borderRadius="12px"
-        >
-          Keine Bewerbungen in dieser Ansicht.
-        </Box>
+        <Box {...adminEmptyProps}>Keine Bewerbungen in dieser Ansicht.</Box>
       ) : (
         <Stack spacing={3}>
           {filtered.map((row) => (
@@ -298,49 +281,33 @@ export function ApplicationsManager() {
       )}
 
       <Modal isOpen={rejectModal.isOpen} onClose={rejectModal.onClose} isCentered>
-        <ModalOverlay backdropFilter="blur(8px)" bg="rgba(0,0,0,0.6)" />
-        <ModalContent
-          bg="rgba(20,20,26,0.96)"
-          border="1px solid rgba(255,255,255,0.09)"
-          color="var(--color-text-primary)"
-        >
-          <ModalHeader className="radley-regular" fontWeight={400}>
-            Bewerbung ablehnen
-          </ModalHeader>
-          <ModalCloseButton />
+        <ModalOverlay {...adminOverlayProps} />
+        <ModalContent {...adminModalProps}>
+          <ModalHeader {...adminModalHeaderProps}>Bewerbung ablehnen</ModalHeader>
+          <ModalCloseButton color="var(--cc-text-2)" />
           <ModalBody>
             <Stack spacing={3}>
-              <Text fontSize="sm" color="var(--color-text-secondary)" className="inter">
+              <Text fontSize="sm" color="var(--cc-text-2)">
                 Der Grund ist nur intern sichtbar — er taucht NICHT in der E-Mail auf.
               </Text>
               <Textarea
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 placeholder="Optionaler interner Grund…"
-                bg="rgba(255,255,255,0.04)"
-                borderColor="rgba(255,255,255,0.12)"
-                _focus={{
-                  borderColor: "rgba(212,175,55,0.65)",
-                  boxShadow: "0 0 0 1px rgba(212,175,55,0.45)",
-                }}
+                {...adminInputProps}
                 minH="120px"
-                className="inter"
               />
             </Stack>
           </ModalBody>
           <ModalFooter gap={2}>
-            <Button variant="ghost" onClick={rejectModal.onClose} className="inter">
+            <Button variant="ghost" color="var(--cc-text-2)" onClick={rejectModal.onClose}>
               Abbrechen
             </Button>
             <Button
+              {...adminDangerButtonProps}
               onClick={confirmReject}
               isLoading={rejecting}
               loadingText="Ablehnen…"
-              bg="rgba(229,72,77,0.18)"
-              color="#FCA5A5"
-              border="1px solid rgba(229,72,77,0.45)"
-              _hover={{ bg: "rgba(229,72,77,0.28)" }}
-              className="inter-semibold"
             >
               Endgültig ablehnen
             </Button>
@@ -362,37 +329,34 @@ function ApplicationCard(props: {
   const { row, isOpen, busy, onToggle, onApprove, onReject } = props;
 
   return (
-    <Box
-      borderRadius="14px"
-      border="1px solid rgba(255,255,255,0.09)"
-      bg="rgba(255,255,255,0.04)"
-      overflow="hidden"
-      transition="border-color .2s ease, background .2s ease"
-      _hover={{ borderColor: "rgba(212,175,55,0.30)" }}
-    >
+    <Box className={ADMIN_CARD_CLASS}>
       <HStack
         as="button"
         onClick={onToggle}
         w="full"
-        p={4}
+        px={4}
+        py={3.5}
         spacing={4}
         align="center"
         justifyContent="space-between"
         textAlign="left"
-        _hover={{ bg: "rgba(255,255,255,0.02)" }}
+        borderTopRadius="12px"
+        borderBottomRadius={isOpen ? 0 : "12px"}
+        transition="background-color 120ms ease"
+        _hover={{ bg: "rgba(255, 255, 255, 0.02)" }}
       >
         <HStack spacing={3} align="center" flex="1" minW={0}>
-          <StatusDot status={row.status} />
-          <Stack spacing={0} flex="1" minW={0}>
+          <StatusDot tone={STATUS_TONE[row.status]} />
+          <Stack spacing={0.5} flex="1" minW={0}>
             <HStack spacing={2}>
-              <Text className="inter-semibold" color="var(--color-text-primary)" noOfLines={1}>
+              <Text fontWeight={600} color="var(--cc-text)" noOfLines={1}>
                 {row.name || "(Kein Name)"}
               </Text>
-              <Text fontSize="xs" className="inter" color="var(--color-text-secondary)">
+              <Text fontSize="xs" className="cc-num" color="var(--cc-text-2)" flexShrink={0}>
                 · {relativeTime(row.createdAt)}
               </Text>
             </HStack>
-            <Text fontSize="xs" className="inter" color="var(--color-text-secondary)" noOfLines={1}>
+            <Text fontSize="xs" color="var(--cc-text-2)" noOfLines={1}>
               {row.email}
             </Text>
           </Stack>
@@ -400,14 +364,14 @@ function ApplicationCard(props: {
 
         <HStack spacing={2}>
           <StatusBadge status={row.status} />
-          <Box color="var(--color-text-secondary)">
+          <Box color="var(--cc-text-2)">
             {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </Box>
         </HStack>
       </HStack>
 
       <Collapse in={isOpen} animateOpacity>
-        <Box px={5} pb={5} pt={2} borderTop="1px solid rgba(255,255,255,0.06)">
+        <Box px={5} pb={5} pt={4} borderTop="1px solid var(--cc-line)">
           <Stack spacing={4}>
             <AnswerBlock label="Erfahrung" value={row.experience} />
             <AnswerBlock label="Größtes Problem" value={row.biggestProblem} />
@@ -416,40 +380,34 @@ function ApplicationCard(props: {
             {row.status === "pending" ? (
               <HStack justify="flex-end" pt={2} spacing={2}>
                 <Button
+                  {...adminDangerButtonProps}
                   onClick={onReject}
                   isDisabled={busy}
-                  variant="outline"
-                  borderColor="rgba(229,72,77,0.45)"
-                  color="#FCA5A5"
-                  bg="rgba(229,72,77,0.08)"
-                  _hover={{ bg: "rgba(229,72,77,0.18)" }}
                   leftIcon={<X size={16} />}
-                  className="inter"
                 >
                   Ablehnen
                 </Button>
                 <Button
+                  variant="gold"
                   onClick={onApprove}
                   isLoading={busy}
                   loadingText="Annehmen…"
-                  bg="linear-gradient(135deg, #D4AF37 0%, #A67C00 100%)"
-                  color="#0a0a0a"
-                  _hover={{ filter: "brightness(1.06)" }}
                   leftIcon={<Check size={16} />}
-                  className="inter-semibold"
                 >
                   Annehmen
                 </Button>
               </HStack>
             ) : (
               <Stack spacing={1} pt={2}>
-                <Text fontSize="xs" className="inter" color="var(--color-text-secondary)">
+                <Text fontSize="xs" color="var(--cc-text-2)">
                   {row.status === "approved" ? "✓ Angenommen" : "✗ Abgelehnt"} am{" "}
-                  {formatDate(row.reviewedAt)}
+                  <Box as="span" className="cc-num">
+                    {formatDate(row.reviewedAt)}
+                  </Box>
                   {row.reviewedByName ? ` durch ${row.reviewedByName}` : ""}
                 </Text>
                 {row.status === "rejected" && row.rejectionReason && (
-                  <Text fontSize="xs" className="inter" color="var(--color-text-secondary)">
+                  <Text fontSize="xs" color="var(--cc-text-2)">
                     Interner Grund: {row.rejectionReason}
                   </Text>
                 )}
@@ -465,91 +423,15 @@ function ApplicationCard(props: {
 function AnswerBlock({ label, value }: { label: string; value: string }) {
   return (
     <Stack spacing={1}>
-      <Text
-        fontSize="xs"
-        letterSpacing="0.14em"
-        textTransform="uppercase"
-        color="var(--color-accent-gold)"
-        className="inter-semibold"
-      >
-        {label}
-      </Text>
-      <Text
-        fontSize="sm"
-        color="var(--color-text-primary)"
-        className="inter"
-        whiteSpace="pre-wrap"
-        lineHeight="1.6"
-      >
+      <AdminLabel>{label}</AdminLabel>
+      <Text fontSize="sm" color="var(--cc-text)" whiteSpace="pre-wrap" lineHeight="1.6">
         {value}
       </Text>
     </Stack>
   );
 }
 
-function StatusDot({ status }: { status: Status }) {
-  const color =
-    status === "pending" ? "#F5C84A" : status === "approved" ? "#34D399" : "#F87171";
-  return (
-    <Box
-      w="10px"
-      h="10px"
-      borderRadius="full"
-      bg={color}
-      boxShadow={`0 0 12px ${color}55`}
-      flexShrink={0}
-    />
-  );
-}
-
 function StatusBadge({ status }: { status: Status }) {
-  if (status === "pending") {
-    return (
-      <Badge
-        bg="rgba(245,200,74,0.14)"
-        color="#F5C84A"
-        border="1px solid rgba(245,200,74,0.4)"
-        borderRadius="full"
-        px={2}
-        py={0.5}
-        textTransform="none"
-        fontWeight={500}
-        className="inter"
-      >
-        Pending
-      </Badge>
-    );
-  }
-  if (status === "approved") {
-    return (
-      <Badge
-        bg="rgba(52,211,153,0.14)"
-        color="#34D399"
-        border="1px solid rgba(52,211,153,0.4)"
-        borderRadius="full"
-        px={2}
-        py={0.5}
-        textTransform="none"
-        fontWeight={500}
-        className="inter"
-      >
-        Angenommen
-      </Badge>
-    );
-  }
-  return (
-    <Badge
-      bg="rgba(248,113,113,0.14)"
-      color="#F87171"
-      border="1px solid rgba(248,113,113,0.4)"
-      borderRadius="full"
-      px={2}
-      py={0.5}
-      textTransform="none"
-      fontWeight={500}
-      className="inter"
-    >
-      Abgelehnt
-    </Badge>
-  );
+  const label = status === "pending" ? "Pending" : status === "approved" ? "Angenommen" : "Abgelehnt";
+  return <StatusPill tone={STATUS_TONE[status]}>{label}</StatusPill>;
 }

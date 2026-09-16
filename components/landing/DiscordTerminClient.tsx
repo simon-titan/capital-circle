@@ -1,14 +1,12 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Box, HStack, Stack, Text } from "@chakra-ui/react";
-import { Lock } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Logo } from "@/components/brand/Logo";
 import { DiscordTerminHero } from "./DiscordTerminHero";
 import { DiscordTerminFounder } from "./DiscordTerminFounder";
 import { DiscordTerminMobileCTA } from "./DiscordTerminMobileCTA";
+import { FunnelFooter, FunnelGround, FunnelPageStyles, FunnelSplash } from "./DiscordFunnelChrome";
 import { createVideoTracker } from "@/lib/discord-funnel/video-tracking";
 
 const DiscordQuestionsModal = dynamic(
@@ -20,7 +18,7 @@ const DiscordQuestionsModal = dynamic(
 );
 
 /**
- * /discord/termin — /bewerbung-Kopie im neuen Branding (Hero + CTA-Footer + Founder).
+ * /discord/termin — /bewerbung-Kopie im Funnel-Look (Hero + CTA-Footer + Founder).
  * Der CTA öffnet das 6-Fragen-Popup; nach Abschluss → /discord/termin/danke (Calendly).
  */
 export function DiscordTerminClient() {
@@ -69,104 +67,29 @@ export function DiscordTerminClient() {
 
   return (
     <>
-      {/* Splash overlay */}
-      <Box
-        position="fixed"
-        inset={0}
-        zIndex={9999}
-        display="flex"
-        flexDirection="column"
-        alignItems="center"
-        justifyContent="center"
-        gap={5}
-        bg="#000000"
-        pointerEvents={loading ? "auto" : "none"}
-        sx={{
-          transition: "transform 450ms cubic-bezier(0.4, 0, 0.2, 1), opacity 350ms ease",
-          transform: loading ? "translateY(0)" : "translateY(-100%)",
-          opacity: loading ? 1 : 0,
-        }}
-      >
-        <Logo variant="onDark" width={200} height={56} priority />
-        <Box w="120px" h="3px" borderRadius="full" bg="rgba(255,255,255,0.06)" overflow="hidden">
-          <Box
-            h="full"
-            borderRadius="full"
-            sx={{
-              background: "linear-gradient(90deg, #1FB9A6, #47F7DC, #8FFBEB)",
-              animation: "splashProgress 300ms linear forwards",
-              "@keyframes splashProgress": {
-                "0%": { width: "0%" },
-                "100%": { width: "100%" },
-              },
-            }}
-          />
-        </Box>
-      </Box>
-
-      <style>{`
-        nav[aria-label], header[role="banner"], [data-platform-nav], [data-topbar] {
-          display: none !important;
-        }
-        body {
-          padding-top: 0 !important;
-          margin-top: 0 !important;
-          background: #000000 !important;
-          padding-bottom: 120px;
-        }
-        @media (min-width: 768px) {
-          body { padding-bottom: 0; }
-        }
-      `}</style>
+      <FunnelSplash visible={loading} />
+      <FunnelPageStyles mobileCta />
 
       <DiscordTerminMobileCTA onApply={openModal} />
 
-      <Box
-        minH="100vh"
-        w="full"
-        bg="#000000"
-        color="var(--color-text-primary, #F0F0F2)"
-        position="relative"
-        overflowX="hidden"
-        _before={{
-          content: '""',
-          position: "fixed",
-          inset: 0,
-          background:
-            "radial-gradient(ellipse 80% 60% at 82% -10%, rgba(71,247,220,0.10), transparent 60%), radial-gradient(ellipse 60% 55% at 8% 105%, rgba(88,101,242,0.10), transparent 62%)",
-          pointerEvents: "none",
-          zIndex: 0,
-        }}
-      >
-        <Box position="relative" zIndex={1}>
-          <DiscordTerminHero
-            onApply={openModal}
-            videoSrc={videoSrc}
-            videoPoster={videoPoster}
-            onVideoProgress={videoTracker.handleProgress}
-            onVideoEnded={videoTracker.handleEnded}
-          />
+      <FunnelGround>
+        <DiscordTerminHero
+          onApply={openModal}
+          videoSrc={videoSrc}
+          videoPoster={videoPoster}
+          onVideoProgress={videoTracker.handleProgress}
+          onVideoEnded={videoTracker.handleEnded}
+        />
 
-          <DiscordTerminFounder />
+        <DiscordTerminFounder />
 
-          {/* Footer disclaimer */}
-          <Box pb={10} px={{ base: 4, md: 8 }} textAlign="center" borderTop="1px solid rgba(255,255,255,0.05)" pt={8}>
-            <Stack spacing={2} maxW="560px" mx="auto">
-              <Text fontSize="xs" color="rgba(255,255,255,0.22)" className="inter" lineHeight="1.7">
-                Mit dem Abschicken der Bewerbung stimmst du unserer Datenschutzerklärung zu. Trading
-                und Investitionen sind mit erheblichen Verlustrisiken verbunden. Frühere Ergebnisse
-                sind keine Garantie für zukünftige Gewinne.
-              </Text>
-              <HStack justify="center" spacing={1.5} color="rgba(255,255,255,0.15)">
-                <Lock size={11} strokeWidth={2} />
-                <Text fontSize="xs" className="inter">
-                  © {new Date().getFullYear()} Capital Circle Institut
-                </Text>
-              </HStack>
-            </Stack>
-          </Box>
-        </Box>
-      </Box>
+        {/* Footer disclaimer */}
+        <FunnelFooter>
+          Mit dem Abschicken der Bewerbung stimmst du unserer Datenschutzerklärung zu. Trading
+          und Investitionen sind mit erheblichen Verlustrisiken verbunden. Frühere Ergebnisse
+          sind keine Garantie für zukünftige Gewinne.
+        </FunnelFooter>
+      </FunnelGround>
 
       {modalOpen && (
         <DiscordQuestionsModal

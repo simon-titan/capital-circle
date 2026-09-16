@@ -60,16 +60,72 @@ function toDatetimeLocalValue(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-const adminSelectStyles = {
-  bg: "rgba(7, 8, 10, 0.85)",
-  borderColor: "rgba(212, 175, 55, 0.35)",
-  color: "gray.100",
-  borderRadius: "10px",
-  h: "40px",
-  _hover: { borderColor: "rgba(212, 175, 55, 0.5)" },
-  _focusVisible: { borderColor: "rgba(212, 175, 55, 0.65)", boxShadow: "0 0 0 1px rgba(212, 175, 55, 0.25)" },
-  sx: { "& option": { bg: "#0c0d10" } },
-};
+/* v3.2 „Champagner auf Graphit“ (DESIGN.md) — Admin-Formular, Tabs, Zeilen, Upload-Fortschritt */
+const fieldSx = {
+  bg: "rgba(255, 255, 255, 0.03)",
+  border: "1px solid",
+  borderColor: "var(--cc-line-strong)",
+  borderRadius: "8px",
+  color: "var(--cc-text)",
+  _placeholder: { color: "var(--cc-text-3)" },
+  _hover: { borderColor: "rgba(255, 255, 255, 0.22)" },
+  _focusVisible: { borderColor: "var(--cc-gold-line)", boxShadow: "0 0 0 1px var(--cc-gold-line)" },
+} as const;
+
+const selectSx = {
+  ...fieldSx,
+  sx: { "& option": { background: "var(--cc-panel-solid)", color: "var(--cc-text)" } },
+} as const;
+
+const labelSx = { fontSize: "12px", fontWeight: 500, color: "var(--cc-text-2)", mb: 1 } as const;
+
+const sectionTitleSx = { fontSize: "15px", fontWeight: 600, color: "var(--cc-text)" } as const;
+
+const ghostSx = {
+  color: "var(--cc-text-2)",
+  _hover: { bg: "rgba(255, 255, 255, 0.06)", color: "var(--cc-text)" },
+} as const;
+
+const dangerIconSx = {
+  color: "var(--cc-danger)",
+  _hover: { bg: "rgba(248, 113, 113, 0.08)", borderColor: "rgba(248, 113, 113, 0.5)", boxShadow: "none" },
+} as const;
+
+const rowSx = {
+  p: 3,
+  borderRadius: "8px",
+  border: "1px solid",
+  borderColor: "var(--cc-line)",
+  bg: "rgba(255, 255, 255, 0.02)",
+  transition: "border-color 150ms var(--cc-ease), background-color 150ms var(--cc-ease)",
+  _hover: { borderColor: "rgba(255, 255, 255, 0.14)" },
+} as const;
+
+/** Aktiver Tab wie der aktive Nav-Punkt: Gold-Haarlinie, Verlauf von links, Text in Gold hell. */
+const tabSx = {
+  px: 3.5,
+  py: 2,
+  fontSize: "14px",
+  fontWeight: 500,
+  color: "var(--cc-text-2)",
+  borderRadius: "8px",
+  border: "1px solid transparent",
+  transition: "background-color 150ms var(--cc-ease), border-color 150ms var(--cc-ease), color 150ms var(--cc-ease)",
+  _hover: { color: "var(--cc-text)", bg: "rgba(255, 255, 255, 0.04)" },
+  _selected: {
+    color: "var(--cc-gold-light)",
+    bg: "linear-gradient(90deg, rgba(212, 176, 128, 0.14) 0%, rgba(212, 176, 128, 0.03) 100%)",
+    borderColor: "var(--cc-gold-line)",
+  },
+} as const;
+
+/** Upload-Fortschritt in Champagner (die gefüllte Spur ist das direkte Kind-`div`). */
+const progressSx = {
+  bg: "rgba(255, 255, 255, 0.07)",
+  "& > div": { bgColor: "var(--cc-gold)", boxShadow: "0 0 10px rgba(212, 176, 128, 0.35)" },
+} as const;
+
+const cardSx = { className: "cc-card cc-card--still", p: { base: 5, md: 6 } } as const;
 
 async function uploadCover(file: File): Promise<string> {
   return uploadSmallFilePresigned(file, { folder: "covers" });
@@ -658,17 +714,17 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
   };
 
   return (
-    <Tabs variant="enclosed" colorScheme="yellow">
-      <TabList flexWrap="wrap">
-        <Tab>Kategorien</Tab>
-        <Tab>Schnell-Recap</Tab>
-        <Tab>Sessions</Tab>
-        <Tab>Videos &amp; Abschnitte</Tab>
+    <Tabs variant="unstyled">
+      <TabList flexWrap="wrap" gap={1} pb={3} borderBottom="1px solid var(--cc-line)">
+        <Tab {...tabSx}>Kategorien</Tab>
+        <Tab {...tabSx}>Schnell-Recap</Tab>
+        <Tab {...tabSx}>Sessions</Tab>
+        <Tab {...tabSx}>Videos &amp; Abschnitte</Tab>
       </TabList>
       <TabPanels>
         <TabPanel px={0} pt={6}>
-          <Stack gap={4} maxW="720px">
-            <Text fontSize="sm" color="gray.400">
+          <Stack gap={4} maxW="720px" {...cardSx}>
+            <Text fontSize="sm" color="var(--cc-text-2)">
               Kategorien gruppieren die Live Sessions in der Mitglieder-Übersicht (Filter-Tabs).
             </Text>
             <HStack flexWrap="wrap" gap={3}>
@@ -676,7 +732,7 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                 placeholder="Titel"
                 value={catTitle}
                 onChange={(e) => setCatTitle(e.target.value)}
-                bg="whiteAlpha.50"
+                {...fieldSx}
                 maxW="280px"
               />
               <Input
@@ -684,34 +740,28 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                 placeholder="Position"
                 value={catPosition}
                 onChange={(e) => setCatPosition(Number(e.target.value))}
-                bg="whiteAlpha.50"
+                {...fieldSx}
+                className="cc-num"
                 maxW="120px"
               />
-              <Button colorScheme="yellow" onClick={() => void addCategory()}>
+              <Button variant="gold" onClick={() => void addCategory()}>
                 Hinzufügen
               </Button>
             </HStack>
             <Stack gap={2}>
               {categories.map((c) => (
-                <HStack
-                  key={c.id}
-                  justify="space-between"
-                  p={3}
-                  borderRadius="md"
-                  borderWidth="1px"
-                  borderColor="whiteAlpha.200"
-                >
-                  <Text>
+                <HStack key={c.id} justify="space-between" {...rowSx}>
+                  <Text color="var(--cc-text)">
                     {c.title}{" "}
-                    <Text as="span" fontSize="xs" color="gray.500">
+                    <Text as="span" fontSize="xs" color="var(--cc-text-3)" className="cc-num">
                       (pos. {c.position})
                     </Text>
                   </Text>
                   <IconButton
                     aria-label="Löschen"
                     size="sm"
-                    variant="outline"
-                    colorScheme="red"
+                    variant="line"
+                    {...dangerIconSx}
                     icon={<Trash2 size={16} />}
                     onClick={() => void removeCategory(c.id)}
                   />
@@ -722,17 +772,17 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
         </TabPanel>
 
         <TabPanel px={0} pt={6}>
-          <Stack gap={5} maxW="720px">
-            <Text fontSize="sm" color="gray.400">
+          <Stack gap={5} maxW="720px" {...cardSx}>
+            <Text fontSize="sm" color="var(--cc-text-2)">
               Nach einem Kalender-Event: zuerst Event wählen — Titel und Datum werden übernommen (anpassbar). Dann Kategorie
               und Video (Upload oder externe URL).
             </Text>
 
             <Box>
-              <FormLabel fontSize="xs" fontWeight="600" color="yellow.400">
+              <FormLabel {...labelSx} fontWeight={600} color="var(--cc-gold-light)">
                 Kalender-Event
               </FormLabel>
-              <Text fontSize="xs" color="gray.500" mb={1}>
+              <Text fontSize="xs" color="var(--cc-text-3)" mb={1}>
                 Optional. Wenn gesetzt, füllen wir Titel und Datum aus dem Event vor.
               </Text>
               <Select
@@ -747,9 +797,8 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                   setRecapTitle((prev) => (prev.trim() ? prev : ev.title));
                   setRecapRecordedAt((prev) => (prev.trim() ? prev : toDatetimeLocalValue(ev.start_time)));
                 }}
-                bg="whiteAlpha.50"
+                {...selectSx}
                 maxW="480px"
-                sx={adminSelectStyles.sx}
               >
                 <option value="">Kein Event — Datum manuell</option>
                 {sortedEvents.map((ev) => (
@@ -762,14 +811,13 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
             </Box>
 
             <Box>
-              <FormLabel fontSize="xs">Kategorie</FormLabel>
+              <FormLabel {...labelSx}>Kategorie</FormLabel>
               <Select
                 placeholder="Kategorie wählen"
                 value={recapCategoryId}
                 onChange={(e) => setRecapCategoryId(e.target.value)}
-                bg="whiteAlpha.50"
+                {...selectSx}
                 maxW="400px"
-                sx={adminSelectStyles.sx}
               >
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -783,19 +831,20 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
               placeholder="Titel der Session / des Recaps"
               value={recapTitle}
               onChange={(e) => setRecapTitle(e.target.value)}
-              bg="whiteAlpha.50"
+              {...fieldSx}
             />
 
             <Box>
-              <FormLabel fontSize="xs">Datum / Aufzeichnung</FormLabel>
-              <Text fontSize="xs" color="gray.500" mb={1}>
+              <FormLabel {...labelSx}>Datum / Aufzeichnung</FormLabel>
+              <Text fontSize="xs" color="var(--cc-text-3)" mb={1}>
                 Vom Event übernommen oder manuell — steuert die Anzeige im Mitglieder-Bereich.
               </Text>
               <Input
                 type="datetime-local"
                 value={recapRecordedAt}
                 onChange={(e) => setRecapRecordedAt(e.target.value)}
-                bg="whiteAlpha.50"
+                {...fieldSx}
+                className="cc-num"
                 maxW="280px"
               />
             </Box>
@@ -804,19 +853,18 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
               placeholder="Beschreibung (optional)"
               value={recapDesc}
               onChange={(e) => setRecapDesc(e.target.value)}
-              bg="whiteAlpha.50"
+              {...fieldSx}
             />
 
             {!recapEditingId ? (
               <>
                 <Box>
-                  <FormLabel fontSize="xs">Video-Quelle (nur bei neuer Session)</FormLabel>
+                  <FormLabel {...labelSx}>Video-Quelle (nur bei neuer Session)</FormLabel>
                   <Select
                     value={recapSource}
                     onChange={(e) => setRecapSource(e.target.value as "url" | "file")}
-                    bg="whiteAlpha.50"
+                    {...selectSx}
                     maxW="320px"
-                    sx={adminSelectStyles.sx}
                   >
                     <option value="file">Datei-Upload (Hetzner Storage)</option>
                     <option value="url">Externe Video-URL (z. B. Zoom-Cloud)</option>
@@ -827,7 +875,7 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                     placeholder="https://…"
                     value={recapUrl}
                     onChange={(e) => setRecapUrl(e.target.value)}
-                    bg="whiteAlpha.50"
+                    {...fieldSx}
                   />
                 ) : (
                   <Box>
@@ -845,11 +893,11 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                       }}
                     />
                     <HStack gap={3} flexWrap="wrap">
-                      <Button size="sm" variant="outline" onClick={() => recapFileRef.current?.click()}>
+                      <Button size="sm" variant="line" onClick={() => recapFileRef.current?.click()}>
                         Videodatei wählen
                       </Button>
                       {recapFileName ? (
-                        <Text fontSize="xs" color="gray.300" className="inter" noOfLines={1} maxW="280px">
+                        <Text fontSize="xs" color="var(--cc-text-soft)" className="cc-num" noOfLines={1} maxW="280px">
                           {recapFileName}
                           {recapFileSize ? ` (${(recapFileSize / 1024 / 1024).toFixed(1)} MB)` : ""}
                         </Text>
@@ -859,18 +907,17 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                 )}
               </>
             ) : (
-              <Box p={3} borderRadius="md" borderWidth="1px" borderColor="whiteAlpha.200" bg="whiteAlpha.50">
-                <Text fontSize="sm" color="gray.300" mb={2}>
+              <Box p={3} borderRadius="8px" border="1px solid var(--cc-line)" bg="rgba(255, 255, 255, 0.02)">
+                <Text fontSize="sm" color="var(--cc-text-soft)" mb={2}>
                   Video ist bereits hinterlegt. Du kannst die Metadaten oben ändern.
                 </Text>
-                <FormLabel fontSize="xs">Externe Video-URL ändern (optional)</FormLabel>
+                <FormLabel {...labelSx}>Externe Video-URL ändern (optional)</FormLabel>
                 <Select
                   value={recapSource}
                   onChange={(e) => setRecapSource(e.target.value as "url" | "file")}
-                  bg="whiteAlpha.50"
+                  {...selectSx}
                   maxW="320px"
                   mb={2}
-                  sx={adminSelectStyles.sx}
                 >
                   <option value="file">Aktuelles Video beibehalten (Storage)</option>
                   <option value="url">Auf externe URL umstellen / URL ändern</option>
@@ -880,30 +927,24 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                     placeholder="https://…"
                     value={recapUrl}
                     onChange={(e) => setRecapUrl(e.target.value)}
-                    bg="whiteAlpha.50"
+                    {...fieldSx}
                   />
                 ) : null}
               </Box>
             )}
 
             {recapBusy && recapSource === "file" ? (
-              <Box
-                p={4}
-                borderRadius="12px"
-                borderWidth="1px"
-                borderColor="rgba(59, 130, 246, 0.4)"
-                bg="rgba(30, 58, 138, 0.15)"
-              >
+              <Box p={4} borderRadius="12px" border="1px solid rgba(212, 176, 128, 0.28)" bg="var(--cc-gold-wash)">
                 <HStack justify="space-between" mb={2} flexWrap="wrap" gap={1}>
-                  <Text fontSize="sm" className="inter-semibold" color="blue.200" noOfLines={1} maxW="70%">
+                  <Text fontSize="sm" fontWeight={600} color="var(--cc-text)" noOfLines={1} maxW="70%">
                     {recapFileName ?? "Video wird hochgeladen…"}
                   </Text>
-                  <Text fontSize="sm" className="jetbrains-mono" color="blue.300" flexShrink={0}>
+                  <Text fontSize="sm" fontWeight={600} className="cc-num" color="var(--cc-gold-light)" flexShrink={0}>
                     {recapProgress}%
                   </Text>
                 </HStack>
                 {recapFileSize ? (
-                  <Text fontSize="xs" color="gray.400" className="inter" mb={2}>
+                  <Text fontSize="xs" color="var(--cc-text-2)" className="cc-num" mb={2}>
                     {(recapFileSize / 1024 / 1024).toFixed(1)} MB
                     {recapProgress > 0 && recapProgress < 100
                       ? ` — ${((recapFileSize / 1024 / 1024) * (recapProgress / 100)).toFixed(1)} MB übertragen`
@@ -914,12 +955,12 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                   value={recapProgress}
                   size="sm"
                   borderRadius="full"
-                  colorScheme="blue"
+                  sx={progressSx}
                   hasStripe={recapProgress < 100}
                   isAnimated={recapProgress < 100}
                 />
                 {recapStatus ? (
-                  <Text fontSize="xs" color="blue.300" className="inter" mt={2}>
+                  <Text fontSize="xs" color="var(--cc-text-2)" mt={2}>
                     {recapStatus}
                   </Text>
                 ) : null}
@@ -928,7 +969,7 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
 
             <HStack flexWrap="wrap" gap={3}>
               <Button
-                colorScheme="yellow"
+                variant="gold"
                 onClick={() => void submitRecap()}
                 isLoading={recapBusy}
                 isDisabled={recapBusy}
@@ -936,7 +977,7 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                 {recapEditingId ? "Änderungen speichern" : "Recap anlegen"}
               </Button>
               {recapEditingId ? (
-                <Button variant="ghost" onClick={clearRecapForm}>
+                <Button variant="ghost" {...ghostSx} onClick={clearRecapForm}>
                   Abbrechen
                 </Button>
               ) : null}
@@ -945,17 +986,18 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
             {!recapBusy && recapStatus ? (
               <Text
                 fontSize="sm"
-                color={recapStatus.includes("fehlgeschlagen") || recapStatus.includes("Fehler") || recapStatus.includes("Bitte") ? "red.300" : "green.300"}
+                role="status"
+                color={recapStatus.includes("fehlgeschlagen") || recapStatus.includes("Fehler") || recapStatus.includes("Bitte") ? "var(--cc-danger)" : "var(--cc-success)"}
               >
                 {recapStatus}
               </Text>
             ) : null}
 
-            <Stack gap={2} pt={4} borderTopWidth="1px" borderColor="whiteAlpha.200">
-              <Text fontSize="md" className="inter-semibold">
+            <Stack gap={2} pt={4} borderTop="1px solid var(--cc-line)">
+              <Text {...sectionTitleSx}>
                 Vorhandene Recaps / Sessions
               </Text>
-              <Text fontSize="xs" color="gray.500">
+              <Text fontSize="xs" color="var(--cc-text-3)">
                 Schnell bearbeiten oder löschen (Löschen entfernt auch alle zugehörigen Videos).
               </Text>
               <Stack gap={2} maxH="320px" overflowY="auto">
@@ -966,40 +1008,40 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                     : s.recorded_at
                       ? new Date(s.recorded_at).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })
                       : "—";
+                  const isEditing = recapEditingId === s.id;
                   return (
                     <HStack
                       key={s.id}
                       justify="space-between"
-                      p={3}
-                      borderRadius="md"
-                      borderWidth="1px"
-                      borderColor={recapEditingId === s.id ? "rgba(212,175,55,0.45)" : "whiteAlpha.200"}
+                      {...rowSx}
+                      borderColor={isEditing ? "var(--cc-gold-line)" : "var(--cc-line)"}
+                      bg={isEditing ? "var(--cc-gold-wash)" : "rgba(255, 255, 255, 0.02)"}
                       align="flex-start"
                       flexWrap="wrap"
                       gap={2}
                     >
                       <Box minW={0} flex={1}>
-                        <Text fontWeight="600" noOfLines={2}>
+                        <Text fontWeight={600} color="var(--cc-text)" noOfLines={2}>
                           {s.title}
                         </Text>
-                        <Text fontSize="xs" color="gray.500">
+                        <Text fontSize="xs" color="var(--cc-text-3)" className="cc-num">
                           {categories.find((c) => c.id === s.category_id)?.title ?? "—"} · {dateStr}
                         </Text>
                         {ev ? (
-                          <Text fontSize="xs" color="blue.200" noOfLines={1}>
+                          <Text fontSize="xs" color="var(--cc-text-2)" noOfLines={1}>
                             Event: {ev.title}
                           </Text>
                         ) : null}
                       </Box>
                       <HStack flexShrink={0}>
-                        <Button size="sm" variant="outline" onClick={() => void startEditRecap(s)}>
+                        <Button size="sm" variant="line" onClick={() => void startEditRecap(s)}>
                           Bearbeiten
                         </Button>
                         <IconButton
                           aria-label="Löschen"
                           size="sm"
-                          variant="outline"
-                          colorScheme="red"
+                          variant="line"
+                          {...dangerIconSx}
                           icon={<Trash2 size={16} />}
                           onClick={() => void deleteSession(s.id)}
                         />
@@ -1013,8 +1055,8 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
         </TabPanel>
 
         <TabPanel px={0} pt={6}>
-          <Stack gap={6} maxW="900px">
-            <Text fontSize="sm" color="gray.400">
+          <Stack gap={6} maxW="900px" {...cardSx}>
+            <Text fontSize="sm" color="var(--cc-text-2)">
               Pro Session ein Eintrag: Metadaten, optionales Event, Thumbnail. Videos legst du im Tab „Videos &amp;
               Abschnitte“ an.
             </Text>
@@ -1023,23 +1065,22 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                 placeholder="Titel"
                 value={sessionTitle}
                 onChange={(e) => setSessionTitle(e.target.value)}
-                bg="whiteAlpha.50"
+                {...fieldSx}
               />
               <Textarea
                 placeholder="Beschreibung"
                 value={sessionDesc}
                 onChange={(e) => setSessionDesc(e.target.value)}
-                bg="whiteAlpha.50"
+                {...fieldSx}
               />
               <HStack flexWrap="wrap" gap={4} align="flex-end">
                 <Box flex={1} minW="200px">
-                  <FormLabel fontSize="xs">Kategorie</FormLabel>
+                  <FormLabel {...labelSx}>Kategorie</FormLabel>
                   <Select
                     placeholder="Kategorie wählen"
                     value={sessionCategoryId}
                     onChange={(e) => setSessionCategoryId(e.target.value)}
-                    bg="whiteAlpha.50"
-                    sx={adminSelectStyles.sx}
+                    {...selectSx}
                   >
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -1049,13 +1090,12 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                   </Select>
                 </Box>
                 <Box flex={1} minW="200px">
-                  <FormLabel fontSize="xs">Event (optional)</FormLabel>
+                  <FormLabel {...labelSx}>Event (optional)</FormLabel>
                   <Select
                     placeholder="Kein Event"
                     value={sessionEventId}
                     onChange={(e) => setSessionEventId(e.target.value)}
-                    bg="whiteAlpha.50"
-                    sx={adminSelectStyles.sx}
+                    {...selectSx}
                   >
                     <option value="">Kein Event</option>
                     {sortedEvents.map((ev) => (
@@ -1067,35 +1107,36 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                 </Box>
               </HStack>
               <Box>
-                <FormLabel fontSize="xs">Aufzeichnungsdatum</FormLabel>
+                <FormLabel {...labelSx}>Aufzeichnungsdatum</FormLabel>
                 <Input
                   type="datetime-local"
                   value={sessionRecordedAt}
                   onChange={(e) => setSessionRecordedAt(e.target.value)}
-                  bg="whiteAlpha.50"
+                  {...fieldSx}
+                  className="cc-num"
                   maxW="280px"
                 />
               </Box>
               <HStack gap={3}>
-                <Button size="sm" variant="outline" onClick={() => void pickSessionThumb()} isLoading={thumbBusy}>
+                <Button size="sm" variant="line" onClick={() => void pickSessionThumb()} isLoading={thumbBusy}>
                   Session-Thumbnail
                 </Button>
                 {sessionThumbKey ? (
-                  <Text fontSize="xs" color="green.300">
+                  <Text fontSize="xs" color="var(--cc-success)">
                     Bild gesetzt
                   </Text>
                 ) : (
-                  <Text fontSize="xs" color="gray.500">
+                  <Text fontSize="xs" color="var(--cc-text-3)">
                     Kein Thumbnail
                   </Text>
                 )}
               </HStack>
               <HStack gap={3}>
-                <Button colorScheme="blue" onClick={() => void saveSession()} isLoading={sessionBusy}>
+                <Button variant="gold" onClick={() => void saveSession()} isLoading={sessionBusy}>
                   {editingSessionId ? "Änderungen speichern" : "Session anlegen"}
                 </Button>
                 {editingSessionId ? (
-                  <Button variant="ghost" onClick={clearSessionForm}>
+                  <Button variant="ghost" {...ghostSx} onClick={clearSessionForm}>
                     Abbrechen
                   </Button>
                 ) : null}
@@ -1103,34 +1144,28 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
             </Stack>
 
             <Stack gap={2}>
-              <Text fontSize="lg" className="inter-semibold">
+              <Text {...sectionTitleSx}>
                 Vorhandene Sessions
               </Text>
               {sessions.map((s) => (
-                <HStack
-                  key={s.id}
-                  justify="space-between"
-                  p={3}
-                  borderRadius="md"
-                  borderWidth="1px"
-                  borderColor="whiteAlpha.200"
-                  align="flex-start"
-                >
+                <HStack key={s.id} justify="space-between" {...rowSx} align="flex-start">
                   <Box minW={0}>
-                    <Text fontWeight="600">{s.title}</Text>
-                    <Text fontSize="xs" color="gray.500">
+                    <Text fontWeight={600} color="var(--cc-text)">
+                      {s.title}
+                    </Text>
+                    <Text fontSize="xs" color="var(--cc-text-3)">
                       Kategorie: {categories.find((c) => c.id === s.category_id)?.title ?? "—"}
                     </Text>
                   </Box>
                   <HStack>
-                    <Button size="sm" variant="outline" onClick={() => startEditSession(s)}>
+                    <Button size="sm" variant="line" onClick={() => startEditSession(s)}>
                       Bearbeiten
                     </Button>
                     <IconButton
                       aria-label="Löschen"
                       size="sm"
-                      variant="outline"
-                      colorScheme="red"
+                      variant="line"
+                      {...dangerIconSx}
                       icon={<Trash2 size={16} />}
                       onClick={() => void deleteSession(s.id)}
                     />
@@ -1142,16 +1177,15 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
         </TabPanel>
 
         <TabPanel px={0} pt={6}>
-          <Stack gap={6} maxW="900px">
+          <Stack gap={6} maxW="900px" {...cardSx}>
             <Box>
-              <FormLabel fontSize="xs">Session auswählen</FormLabel>
+              <FormLabel {...labelSx}>Session auswählen</FormLabel>
               <Select
                 placeholder="Session wählen…"
                 value={selectedSessionId}
                 onChange={(e) => setSelectedSessionId(e.target.value)}
-                bg="whiteAlpha.50"
+                {...selectSx}
                 maxW="480px"
-                sx={adminSelectStyles.sx}
               >
                 {sessions.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -1162,16 +1196,16 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
             </Box>
 
             {!selectedSessionId ? (
-              <Text fontSize="sm" color="gray.500">
+              <Text fontSize="sm" color="var(--cc-text-3)">
                 Bitte zuerst eine Session wählen oder im Tab „Sessions“ anlegen.
               </Text>
             ) : (
               <>
                 <Stack gap={3}>
-                  <Text fontSize="md" className="inter-semibold">
+                  <Text {...sectionTitleSx}>
                     Abschnitte (Sub-Kategorien)
                   </Text>
-                  <Text fontSize="xs" color="gray.500">
+                  <Text fontSize="xs" color="var(--cc-text-3)">
                     Optional: Videos einer Session in Accordions gruppieren (z. B. „Teil 1“, „Q&amp;A“).
                   </Text>
                   <HStack flexWrap="wrap" gap={3}>
@@ -1179,26 +1213,27 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                       placeholder="Abschnitts-Titel"
                       value={subTitle}
                       onChange={(e) => setSubTitle(e.target.value)}
-                      bg="whiteAlpha.50"
+                      {...fieldSx}
                       maxW="280px"
                     />
                     <Input
                       type="number"
                       value={subPosition}
                       onChange={(e) => setSubPosition(Number(e.target.value))}
-                      bg="whiteAlpha.50"
+                      {...fieldSx}
+                      className="cc-num"
                       maxW="100px"
                     />
-                    <Button size="sm" onClick={() => void addSubcategory()}>
+                    <Button size="sm" variant="line" onClick={() => void addSubcategory()}>
                       Abschnitt hinzufügen
                     </Button>
                   </HStack>
                   <Stack gap={1}>
                     {subs.map((sub) => (
-                      <HStack key={sub.id} justify="space-between" p={2} borderRadius="md" bg="whiteAlpha.50">
-                        <Text fontSize="sm">
+                      <HStack key={sub.id} justify="space-between" {...rowSx} p={2}>
+                        <Text fontSize="sm" color="var(--cc-text)">
                           {sub.title}{" "}
-                          <Text as="span" fontSize="xs" color="gray.500">
+                          <Text as="span" fontSize="xs" color="var(--cc-text-3)" className="cc-num">
                             (pos. {sub.position})
                           </Text>
                         </Text>
@@ -1206,7 +1241,7 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                           aria-label="Löschen"
                           size="xs"
                           variant="ghost"
-                          colorScheme="red"
+                          {...dangerIconSx}
                           icon={<Trash2 size={14} />}
                           onClick={() => void removeSub(sub.id)}
                         />
@@ -1216,10 +1251,10 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                 </Stack>
 
                 <Stack gap={3}>
-                  <Text fontSize="md" className="inter-semibold">
+                  <Text {...sectionTitleSx}>
                     Video (Hetzner / S3)
                   </Text>
-                  <Text fontSize="xs" color="gray.500">
+                  <Text fontSize="xs" color="var(--cc-text-3)">
                     Titel eingeben, optional Abschnitt wählen, dann MP4 hochladen. Pro Session typischerweise ein Video;
                     die Struktur erlaubt mehrere Clips.
                   </Text>
@@ -1227,22 +1262,21 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                     placeholder="Video-Titel"
                     value={videoTitle}
                     onChange={(e) => setVideoTitle(e.target.value)}
-                    bg="whiteAlpha.50"
+                    {...fieldSx}
                   />
                   <Textarea
                     placeholder="Beschreibung (optional)"
                     value={videoDesc}
                     onChange={(e) => setVideoDesc(e.target.value)}
-                    bg="whiteAlpha.50"
+                    {...fieldSx}
                   />
                   <Box maxW="320px">
-                    <FormLabel fontSize="xs">Abschnitt (optional)</FormLabel>
+                    <FormLabel {...labelSx}>Abschnitt (optional)</FormLabel>
                     <Select
                       placeholder="Kein Abschnitt"
                       value={videoSubId}
                       onChange={(e) => setVideoSubId(e.target.value)}
-                      bg="whiteAlpha.50"
-                      sx={adminSelectStyles.sx}
+                      {...selectSx}
                     >
                       <option value="">Kein Abschnitt</option>
                       {subs.map((sub) => (
@@ -1262,7 +1296,7 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                     />
                     <Button
                       size="md"
-                      colorScheme="blue"
+                      variant="gold"
                       isLoading={videoBusy}
                       isDisabled={videoBusy}
                       onClick={() => videoFileRef.current?.click()}
@@ -1271,43 +1305,37 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                     </Button>
                   </Box>
                   {videoBusy || videoProgress > 0 ? (
-                    <Progress value={videoProgress} size="sm" borderRadius="full" colorScheme="blue" maxW="400px" />
+                    <Progress value={videoProgress} size="sm" borderRadius="full" sx={progressSx} maxW="400px" />
                   ) : null}
                   {videoStatus ? (
-                    <Text fontSize="sm" color="blue.200">
+                    <Text fontSize="sm" color="var(--cc-text-2)" role="status">
                       {videoStatus}
                     </Text>
                   ) : null}
 
                   <Stack gap={2} mt={4}>
-                    <Text fontSize="sm" className="inter-semibold">
+                    <Text fontSize="sm" fontWeight={600} color="var(--cc-text)">
                       Hochgeladene Videos
                     </Text>
                     {videos.map((v) => (
-                      <HStack
-                        key={v.id}
-                        justify="space-between"
-                        p={3}
-                        borderRadius="md"
-                        borderWidth="1px"
-                        borderColor="whiteAlpha.200"
-                        align="flex-start"
-                      >
+                      <HStack key={v.id} justify="space-between" {...rowSx} align="flex-start">
                         <Box minW={0}>
-                          <Text fontWeight="600">{v.title}</Text>
-                          <Text fontSize="xs" color="gray.500" noOfLines={2}>
+                          <Text fontWeight={600} color="var(--cc-text)">
+                            {v.title}
+                          </Text>
+                          <Text fontSize="xs" color="var(--cc-text-3)" className="cc-num" noOfLines={2}>
                             {v.storage_key}
                           </Text>
                         </Box>
                         <HStack>
-                          <Button size="xs" variant="outline" onClick={() => pickVideoThumb(v.id)}>
+                          <Button size="xs" variant="line" onClick={() => pickVideoThumb(v.id)}>
                             Thumb
                           </Button>
                           <IconButton
                             aria-label="Löschen"
                             size="sm"
-                            variant="outline"
-                            colorScheme="red"
+                            variant="line"
+                            {...dangerIconSx}
                             icon={<Trash2 size={16} />}
                             onClick={() => void removeVideo(v.id)}
                           />
@@ -1322,7 +1350,7 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
         </TabPanel>
       </TabPanels>
       {status ? (
-        <Text mt={4} fontSize="sm" color="green.300">
+        <Text mt={4} fontSize="sm" color="var(--cc-success)" role="status">
           {status}
         </Text>
       ) : null}

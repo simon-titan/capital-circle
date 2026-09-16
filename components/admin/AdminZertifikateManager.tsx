@@ -1,8 +1,17 @@
 "use client";
 
-import { Alert, AlertIcon, Badge, Box, Button, HStack, Image, Spinner, Stack, Switch, Text } from "@chakra-ui/react";
+import { Alert, AlertIcon, Box, Button, HStack, Image, Spinner, Stack, Switch, Text } from "@chakra-ui/react";
 import { Check, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import {
+  StatusPill,
+  adminAlertIconColor,
+  adminAlertProps,
+  adminDangerButtonProps,
+  adminEmptyProps,
+  adminInsetProps,
+  adminSwitchSx,
+} from "@/components/admin/adminUi";
 
 type Status = "pending" | "approved" | "rejected";
 
@@ -30,54 +39,12 @@ function formatDate(iso: string): string {
 
 function StatusBadge({ status }: { status: Status }) {
   if (status === "approved") {
-    return (
-      <Badge
-        bg="rgba(52,211,153,0.14)"
-        color="#34D399"
-        border="1px solid rgba(52,211,153,0.4)"
-        borderRadius="full"
-        px={2}
-        py={0.5}
-        textTransform="none"
-        fontWeight={500}
-        className="inter"
-      >
-        Freigegeben
-      </Badge>
-    );
+    return <StatusPill tone="success">Freigegeben</StatusPill>;
   }
   if (status === "rejected") {
-    return (
-      <Badge
-        bg="rgba(248,113,113,0.14)"
-        color="#F87171"
-        border="1px solid rgba(248,113,113,0.4)"
-        borderRadius="full"
-        px={2}
-        py={0.5}
-        textTransform="none"
-        fontWeight={500}
-        className="inter"
-      >
-        Abgelehnt
-      </Badge>
-    );
+    return <StatusPill tone="danger">Abgelehnt</StatusPill>;
   }
-  return (
-    <Badge
-      bg="rgba(245,200,74,0.14)"
-      color="#F5C84A"
-      border="1px solid rgba(245,200,74,0.4)"
-      borderRadius="full"
-      px={2}
-      py={0.5}
-      textTransform="none"
-      fontWeight={500}
-      className="inter"
-    >
-      Pending
-    </Badge>
-  );
+  return <StatusPill tone="attention">Pending</StatusPill>;
 }
 
 export function AdminZertifikateManager() {
@@ -136,7 +103,7 @@ export function AdminZertifikateManager() {
   if (loading) {
     return (
       <HStack py={10} justify="center">
-        <Spinner color="#D4AF37" />
+        <Spinner color="var(--cc-gold)" />
       </HStack>
     );
   }
@@ -144,35 +111,29 @@ export function AdminZertifikateManager() {
   return (
     <Stack gap={4}>
       {error ? (
-        <Alert status="error" borderRadius="md" variant="left-accent">
-          <AlertIcon />
-          <Text fontSize="sm" className="inter">
-            {error}
-          </Text>
+        <Alert status="error" {...adminAlertProps("error")}>
+          <AlertIcon color={adminAlertIconColor("error")} />
+          <Text fontSize="sm">{error}</Text>
         </Alert>
       ) : null}
 
       {items.length === 0 ? (
-        <Text fontSize="sm" color="gray.500" className="inter">
-          Noch keine Einreichungen.
-        </Text>
+        <Box {...adminEmptyProps}>Noch keine Einreichungen.</Box>
       ) : (
         <Stack gap={3}>
           {items.map((item) => {
             const busy = busyIds.has(item.id);
             return (
-              <HStack
-                key={item.id}
-                align="flex-start"
-                gap={4}
-                p={4}
-                borderRadius="12px"
-                borderWidth="1px"
-                borderColor="whiteAlpha.200"
-                bg="rgba(255,255,255,0.02)"
-                flexWrap="wrap"
-              >
-                <Box w="120px" h="120px" flexShrink={0} borderRadius="8px" overflow="hidden" bg="blackAlpha.400">
+              <HStack key={item.id} align="flex-start" gap={4} p={4} flexWrap="wrap" {...adminInsetProps}>
+                <Box
+                  w="120px"
+                  h="120px"
+                  flexShrink={0}
+                  borderRadius="8px"
+                  overflow="hidden"
+                  bg="var(--cc-surface-2)"
+                  border="1px solid var(--cc-line)"
+                >
                   <Image
                     src={`/api/admin/storage-url?key=${encodeURIComponent(item.storageKey)}`}
                     alt={item.caption ?? "Nachweis"}
@@ -184,21 +145,21 @@ export function AdminZertifikateManager() {
 
                 <Stack flex="1" minW="220px" gap={1}>
                   <HStack justify="space-between" flexWrap="wrap" gap={2}>
-                    <Text fontWeight="600" className="inter-semibold">
+                    <Text fontWeight={600} color="var(--cc-text)">
                       {item.memberName}
                     </Text>
                     <StatusBadge status={item.status} />
                   </HStack>
                   {item.caption ? (
-                    <Text fontSize="sm" color="gray.300" className="inter">
+                    <Text fontSize="sm" color="var(--cc-text-soft)">
                       {item.caption}
                     </Text>
                   ) : (
-                    <Text fontSize="sm" color="gray.600" className="inter" fontStyle="italic">
+                    <Text fontSize="sm" color="var(--cc-text-3)" fontStyle="italic">
                       Keine Beschreibung
                     </Text>
                   )}
-                  <Text fontSize="xs" color="gray.500" className="inter">
+                  <Text className="cc-num" fontSize="xs" color="var(--cc-text-2)">
                     Eingereicht: {formatDate(item.submittedAt)}
                     {item.reviewedAt ? ` · Geprueft: ${formatDate(item.reviewedAt)}` : ""}
                   </Text>
@@ -208,7 +169,7 @@ export function AdminZertifikateManager() {
                   {item.status !== "approved" ? (
                     <Button
                       size="sm"
-                      colorScheme="green"
+                      variant="gold"
                       leftIcon={<Check size={14} />}
                       isLoading={busy}
                       onClick={() => void patch(item.id, { status: "approved" })}
@@ -219,8 +180,7 @@ export function AdminZertifikateManager() {
                   {item.status !== "rejected" ? (
                     <Button
                       size="sm"
-                      variant="outline"
-                      colorScheme="red"
+                      {...adminDangerButtonProps}
                       leftIcon={<X size={14} />}
                       isLoading={busy}
                       onClick={() => void patch(item.id, { status: "rejected" })}
@@ -230,12 +190,12 @@ export function AdminZertifikateManager() {
                   ) : null}
                   {item.status === "approved" ? (
                     <HStack>
-                      <Text fontSize="xs" color="gray.400" className="inter">
-                        Oeffentlich
+                      <Text fontSize="xs" color="var(--cc-text-2)">
+                        Öffentlich
                       </Text>
                       <Switch
                         size="sm"
-                        colorScheme="yellow"
+                        sx={adminSwitchSx}
                         isChecked={item.isPublic}
                         isDisabled={busy}
                         onChange={(e) => void patch(item.id, { isPublic: e.target.checked })}

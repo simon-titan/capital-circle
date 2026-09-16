@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getHetznerStorageMisconfiguration, getPresignedPutUrl } from "@/lib/storage";
+import { getStorageMisconfiguration, getPresignedPutUrl } from "@/lib/storage";
 
 export const runtime = "nodejs";
 
@@ -14,7 +14,7 @@ function extFromFileName(fileName: string): string {
  * GET /api/trading-journal/screenshot?tradeId=&journalId=&fileName=&contentType=
  */
 export async function GET(request: Request) {
-  const cfgErr = getHetznerStorageMisconfiguration();
+  const cfgErr = getStorageMisconfiguration();
   if (cfgErr) {
     return NextResponse.json({ ok: false, error: cfgErr }, { status: 503 });
   }

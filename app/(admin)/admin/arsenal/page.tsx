@@ -1,20 +1,19 @@
-import { Stack, Text } from "@chakra-ui/react";
+import { Box, Stack } from "@chakra-ui/react";
+import { AdminPageHeader } from "@/components/admin/adminUi";
 import { ArsenalManager } from "@/components/admin/ArsenalManager";
 import { StandaloneAttachmentManager } from "@/components/admin/StandaloneAttachmentManager";
 
 export default function AdminArsenalPage() {
   return (
-    <Stack gap={8} maxW="var(--adminMaxWidth, 1440px)" mx="auto">
-      <Stack spacing={2}>
-        <Text as="h1" className="radley-regular" fontSize={{ base: "xl", md: "2xl" }} color="whiteAlpha.900">
-          Arsenal
-        </Text>
-        <Text className="inter" fontSize="sm" color="gray.500">
-          Tools, Fremdkapital, eigene Kategorien für Templates/PDFs sowie Datei-Uploads pro Modul/Video.
-        </Text>
+    <Box maxW="var(--adminMaxWidth, 1440px)" mx="auto">
+      <AdminPageHeader
+        title="Arsenal"
+        subtitle="Tools, Fremdkapital, eigene Kategorien für Templates/PDFs sowie Datei-Uploads pro Modul/Video."
+      />
+      <Stack spacing={8}>
+        <StandaloneAttachmentManager />
+        <ArsenalManager />
       </Stack>
-      <StandaloneAttachmentManager />
-      <ArsenalManager />
-    </Stack>
+    </Box>
   );
 }

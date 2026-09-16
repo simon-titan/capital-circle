@@ -95,7 +95,7 @@ In `proxy.ts` muss die bestehende Profil-Select-Query um neue Spalten erweitert 
 **Gating-Regeln (nach Onboarding-Check):**
 - `application_status = 'pending'` → redirect `/pending-review`
 - `is_paid = false` AND `membership_tier = 'free'` → Plattform teilweise zugänglich (free_member)
-- `access_until` abgelaufen → redirect `/pricing`
+- `access_until` abgelaufen → redirect `/#angebot` (bis 16.09.2026: `/pricing`)
 
 ---
 
@@ -108,7 +108,7 @@ In `proxy.ts` muss die bestehende Profil-Select-Query um neue Spalten erweitert 
 | `(auth)` | `app/(auth)/` | vorhanden (login, register) |
 | `(onboarding)` | `app/(onboarding)/` | vorhanden (einsteig, intro-video) |
 | `(platform)` | `app/(platform)/` | vorhanden (dashboard, etc.) |
-| `(marketing)` | `app/(marketing)/` | **NEU** — für /free, /apply, /pricing |
+| `(marketing)` | `app/(marketing)/` | **NEU** — für /free, /apply (die Preisseite `/pricing` ist seit 16.09.2026 entfallen, Verkauf läuft über `/`) |
 
 **Wichtig:** Im Master-Prompt wird `(app)` als Group-Name erwähnt — im Repo heißt diese Gruppe **`(platform)`**.
 

@@ -16,6 +16,7 @@ import {
   Wrap,
   WrapItem,
 } from "@chakra-ui/react";
+import { ImagePlus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -38,14 +39,45 @@ function toggleInList(list: string[], tag: string): string[] {
   return list.includes(tag) ? list.filter((t) => t !== tag) : [...list, tag];
 }
 
+/** Umschalter/Tags: aktiv mit Gold-Verlauf von links und Gold-Haarlinie, inaktiv transparent. */
 const btnSx = (active: boolean) => ({
   variant: "outline" as const,
-  borderColor: active ? "rgba(212, 175, 55, 0.55)" : "rgba(255,255,255,0.09)",
-  bg: active ? "rgba(212, 175, 55, 0.12)" : "rgba(255,255,255,0.03)",
-  color: active ? "var(--color-text-primary)" : "var(--color-text-secondary)",
-  _hover: { bg: active ? "rgba(212, 175, 55, 0.18)" : "rgba(255,255,255,0.06)" },
-  className: "inter-medium",
+  fontWeight: 500,
+  borderRadius: "8px",
+  borderColor: active ? "var(--cc-gold-line)" : "var(--cc-line-strong)",
+  bg: active ? "linear-gradient(90deg, rgba(212, 176, 128, 0.16), rgba(212, 176, 128, 0.03))" : "transparent",
+  color: active ? "var(--cc-gold-light)" : "var(--cc-text-2)",
+  _hover: active
+    ? { bg: "linear-gradient(90deg, rgba(212, 176, 128, 0.2), rgba(212, 176, 128, 0.05))", borderColor: "var(--cc-gold-line)" }
+    : { bg: "rgba(255, 255, 255, 0.04)", borderColor: "var(--cc-gold-line)", color: "var(--cc-text)" },
+  _active: { bg: "rgba(212, 176, 128, 0.12)" },
 });
+
+const inputSx = {
+  bg: "rgba(255, 255, 255, 0.03)",
+  borderColor: "var(--cc-line-strong)",
+  borderRadius: "8px",
+  _hover: { borderColor: "var(--cc-gold-line)" },
+  _focusVisible: { borderColor: "var(--cc-gold)", boxShadow: "0 0 0 1px var(--cc-gold)" },
+};
+
+/** Berechnete Felder: zurückgenommen, damit klar ist, dass man sie nicht tippt. */
+const readOnlySx = {
+  ...inputSx,
+  bg: "rgba(255, 255, 255, 0.015)",
+  borderColor: "var(--cc-line)",
+  color: "var(--cc-text-soft)",
+  _hover: { borderColor: "var(--cc-line)" },
+};
+
+const selectSx = { ...inputSx, sx: { "& option, & optgroup": { background: "#0e1217" } } };
+
+const fieldLabelProps = {
+  fontSize: "12px",
+  fontWeight: 500,
+  color: "var(--cc-text-2)",
+  mb: 1.5,
+};
 
 type Props = {
   journalId: string;
@@ -110,6 +142,7 @@ export function TradeForm({ journalId, onSaved }: Props) {
     return { resultDollar: rd, rrStr: rr };
   }, [rt, tv, c, slN]);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- Objekt-URL für die Vorschau anlegen und wieder freigeben */
   useEffect(() => {
     if (!file) {
       setPreviewUrl(null);
@@ -119,9 +152,21 @@ export function TradeForm({ journalId, onSaved }: Props) {
     setPreviewUrl(u);
     return () => URL.revokeObjectURL(u);
   }, [file]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const section = (title: string) => (
-    <Text fontSize="10px" color="var(--color-text-tertiary)" letterSpacing="0.1em" textTransform="uppercase" fontWeight={700} mt={6} mb={2} borderBottom="1px solid rgba(255,255,255,0.06)" pb={1}>
+    <Text
+      fontSize="13px"
+      lineHeight="18px"
+      fontWeight={500}
+      letterSpacing="0.12em"
+      textTransform="uppercase"
+      color="var(--cc-text-soft)"
+      mt={7}
+      mb={3}
+      pb={2}
+      borderBottom="1px solid var(--cc-line)"
+    >
       {title}
     </Text>
   );
@@ -252,8 +297,7 @@ export function TradeForm({ journalId, onSaved }: Props) {
           value={addVal}
           onChange={(e) => setAddVal(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && onAdd()}
-          bg="rgba(255,255,255,0.04)"
-          borderColor="rgba(255,255,255,0.09)"
+          {...inputSx}
         />
       </WrapItem>
     </Wrap>
@@ -288,38 +332,32 @@ export function TradeForm({ journalId, onSaved }: Props) {
       {section("Trade Details")}
       <Grid templateColumns={{ base: "1fr", md: "repeat(4, 1fr)" }} gap={3} mb={3}>
         <GridItem>
-          <Text fontSize="xs" color="var(--color-text-secondary)" mb={1}>
-            Datum
-          </Text>
-          <Input type="date" value={tradeDate} onChange={(e) => setTradeDate(e.target.value)} bg="rgba(255,255,255,0.04)" borderColor="rgba(255,255,255,0.09)" />
+          <Text {...fieldLabelProps}>Datum</Text>
+          <Input type="date" className="cc-num" value={tradeDate} onChange={(e) => setTradeDate(e.target.value)} {...inputSx} />
         </GridItem>
         <GridItem>
-          <Text fontSize="xs" color="var(--color-text-secondary)" mb={1}>
-            Wochentag
-          </Text>
-          <Box
-            px={3}
-            py={2}
-            borderRadius="md"
-            border="1px solid rgba(255,255,255,0.09)"
+          <Text {...fieldLabelProps}>Wochentag</Text>
+          <Flex
+            h="40px"
+            px={4}
+            align="center"
+            borderRadius="8px"
+            border="1px solid var(--cc-line)"
+            bg="rgba(255, 255, 255, 0.015)"
             fontSize="sm"
-            className="jetbrains-mono"
+            color="var(--cc-text-soft)"
           >
             {weekdayFromDate(tradeDate)}
-          </Box>
+          </Flex>
         </GridItem>
         <GridItem>
-          <Text fontSize="xs" color="var(--color-text-secondary)" mb={1}>
-            Uhrzeit
-          </Text>
-          <Input type="time" value={tradeTime} onChange={(e) => setTradeTime(e.target.value)} bg="rgba(255,255,255,0.04)" borderColor="rgba(255,255,255,0.09)" />
+          <Text {...fieldLabelProps}>Uhrzeit</Text>
+          <Input type="time" className="cc-num" value={tradeTime} onChange={(e) => setTradeTime(e.target.value)} {...inputSx} />
         </GridItem>
         {strategy !== "ocrr" ? (
           <GridItem>
-            <Text fontSize="xs" color="var(--color-text-secondary)" mb={1}>
-              Session
-            </Text>
-            <Select value={session} onChange={(e) => setSession(e.target.value)} bg="rgba(255,255,255,0.04)" borderColor="rgba(255,255,255,0.09)">
+            <Text {...fieldLabelProps}>Session</Text>
+            <Select value={session} onChange={(e) => setSession(e.target.value)} {...selectSx}>
               <option>LONDON</option>
               <option>NEW YORK</option>
               <option>ASIA</option>
@@ -330,10 +368,8 @@ export function TradeForm({ journalId, onSaved }: Props) {
 
       <Grid templateColumns={{ base: "1fr", md: "repeat(4, 1fr)" }} gap={3} mb={3}>
         <GridItem>
-          <Text fontSize="xs" color="var(--color-text-secondary)" mb={1}>
-            Asset
-          </Text>
-          <Select value={asset} onChange={(e) => setAsset(e.target.value)} bg="rgba(255,255,255,0.04)" borderColor="rgba(255,255,255,0.09)">
+          <Text {...fieldLabelProps}>Asset</Text>
+          <Select value={asset} onChange={(e) => setAsset(e.target.value)} {...selectSx}>
             <optgroup label="Minis">
               {ASSETS.slice(0, 4).map((x) => (
                 <option key={x} value={x}>
@@ -351,105 +387,67 @@ export function TradeForm({ journalId, onSaved }: Props) {
           </Select>
         </GridItem>
         <GridItem>
-          <Text fontSize="xs" color="var(--color-text-secondary)" mb={1}>
-            Richtung
-          </Text>
+          <Text {...fieldLabelProps}>Richtung</Text>
           <HStack>
-            <Button
-              flex={1}
-              {...btnSx(direction === "long")}
-              color={direction === "long" ? "var(--color-profit)" : undefined}
-              onClick={() => setDirection("long")}
-            >
+            <Button flex={1} {...btnSx(direction === "long")} onClick={() => setDirection("long")}>
               Long
             </Button>
-            <Button
-              flex={1}
-              {...btnSx(direction === "short")}
-              color={direction === "short" ? "var(--color-loss)" : undefined}
-              onClick={() => setDirection("short")}
-            >
+            <Button flex={1} {...btnSx(direction === "short")} onClick={() => setDirection("short")}>
               Short
             </Button>
           </HStack>
         </GridItem>
         <GridItem>
-          <Text fontSize="xs" color="var(--color-text-secondary)" mb={1}>
-            Kontrakte
-          </Text>
-          <Input
-            type="number"
-            min={1}
-            value={contracts}
-            onChange={(e) => setContracts(e.target.value)}
-            bg="rgba(255,255,255,0.04)"
-            borderColor="rgba(255,255,255,0.09)"
-            className="jetbrains-mono"
-          />
+          <Text {...fieldLabelProps}>Kontrakte</Text>
+          <Input type="number" min={1} value={contracts} onChange={(e) => setContracts(e.target.value)} className="cc-num" {...inputSx} />
         </GridItem>
         <GridItem>
-          <Text fontSize="xs" color="var(--color-text-secondary)" mb={1}>
-            Entry Preis
-          </Text>
+          <Text {...fieldLabelProps}>Entry Preis</Text>
           <Input
             type="number"
             step="0.01"
             placeholder="z.B. 2650.50"
             value={entry}
             onChange={(e) => setEntry(e.target.value)}
-            bg="rgba(255,255,255,0.04)"
-            borderColor="rgba(255,255,255,0.09)"
-            className="jetbrains-mono"
+            className="cc-num"
+            {...inputSx}
           />
         </GridItem>
       </Grid>
 
       <Grid templateColumns={{ base: "1fr", md: "repeat(4, 1fr)" }} gap={3} mb={3}>
         <GridItem>
-          <Text fontSize="xs" color="var(--color-text-secondary)" mb={1}>
-            SL (Ticks)
-          </Text>
-          <Input type="number" min={1} value={sl} onChange={(e) => setSl(e.target.value)} bg="rgba(255,255,255,0.04)" borderColor="rgba(255,255,255,0.09)" className="jetbrains-mono" />
+          <Text {...fieldLabelProps}>SL (Ticks)</Text>
+          <Input type="number" min={1} value={sl} onChange={(e) => setSl(e.target.value)} className="cc-num" {...inputSx} />
         </GridItem>
         <GridItem>
-          <Text fontSize="xs" color="var(--color-text-secondary)" mb={1}>
-            TP (Ticks)
-          </Text>
-          <Input type="number" min={1} value={tp} onChange={(e) => setTp(e.target.value)} bg="rgba(255,255,255,0.04)" borderColor="rgba(255,255,255,0.09)" className="jetbrains-mono" />
+          <Text {...fieldLabelProps}>TP (Ticks)</Text>
+          <Input type="number" min={1} value={tp} onChange={(e) => setTp(e.target.value)} className="cc-num" {...inputSx} />
         </GridItem>
         <GridItem>
-          <Text fontSize="xs" color="var(--color-text-secondary)" mb={1}>
-            Ergebnis (Ticks)
-          </Text>
+          <Text {...fieldLabelProps}>Ergebnis (Ticks)</Text>
           <Input
             type="number"
             step={1}
             value={resultTicks}
             onChange={(e) => setResultTicks(e.target.value)}
-            bg="rgba(255,255,255,0.04)"
-            borderColor="rgba(255,255,255,0.09)"
-            className="jetbrains-mono"
+            className="cc-num"
+            {...inputSx}
           />
         </GridItem>
         <GridItem>
-          <Text fontSize="xs" color="var(--color-text-secondary)" mb={1}>
-            Ergebnis ($) — auto
-          </Text>
-          <Input isReadOnly value={resultDollar.toFixed(2)} bg="rgba(255,255,255,0.02)" borderColor="rgba(255,255,255,0.06)" className="jetbrains-mono" />
+          <Text {...fieldLabelProps}>Ergebnis ($) — auto</Text>
+          <Input isReadOnly value={resultDollar.toFixed(2)} className="cc-num" {...readOnlySx} />
         </GridItem>
       </Grid>
 
       <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={3} mb={3}>
         <GridItem>
-          <Text fontSize="xs" color="var(--color-text-secondary)" mb={1}>
-            RR erreicht — auto
-          </Text>
-          <Input isReadOnly value={rrStr} bg="rgba(255,255,255,0.02)" borderColor="rgba(255,255,255,0.06)" className="jetbrains-mono" />
+          <Text {...fieldLabelProps}>RR erreicht — auto</Text>
+          <Input isReadOnly value={rrStr} className="cc-num" {...readOnlySx} />
         </GridItem>
         <GridItem>
-          <Text fontSize="xs" color="var(--color-text-secondary)" mb={1}>
-            Order-Ausführung
-          </Text>
+          <Text {...fieldLabelProps}>Order-Ausführung</Text>
           <HStack>
             <Button flex={1} {...btnSx(orderType === "limit")} onClick={() => setOrderType("limit")}>
               Limit Order
@@ -567,10 +565,8 @@ export function TradeForm({ journalId, onSaved }: Props) {
       </Wrap>
       <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={3} mb={4}>
         <GridItem>
-          <Text fontSize="xs" color="var(--color-text-secondary)" mb={1}>
-            News Ausfall
-          </Text>
-          <Select value={newsResult} onChange={(e) => setNewsResult(e.target.value)} bg="rgba(255,255,255,0.04)" borderColor="rgba(255,255,255,0.09)">
+          <Text {...fieldLabelProps}>News Ausfall</Text>
+          <Select value={newsResult} onChange={(e) => setNewsResult(e.target.value)} {...selectSx}>
             <option value="">— Auswählen —</option>
             <option>Besser als erwartet (Bullish)</option>
             <option>Schlechter als erwartet (Bearish)</option>
@@ -579,9 +575,7 @@ export function TradeForm({ journalId, onSaved }: Props) {
           </Select>
         </GridItem>
         <GridItem>
-          <Text fontSize="xs" color="var(--color-text-secondary)" mb={1}>
-            Trade Timing zu News
-          </Text>
+          <Text {...fieldLabelProps}>Trade Timing zu News</Text>
           <Grid templateColumns="repeat(3, 1fr)" gap={1}>
             {["Vor News", "Während News", "Nach News"].map((t) => (
               <Button key={t} size="xs" {...btnSx(newsTiming === t)} onClick={() => setNewsTiming(t)}>
@@ -609,31 +603,30 @@ export function TradeForm({ journalId, onSaved }: Props) {
         ))}
       </Grid>
 
-      <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4} mb={4}>
+      <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4} mb={6}>
         <GridItem>
-          <Text fontSize="xs" color="var(--color-text-secondary)" mb={1}>
-            Notizen
-          </Text>
-          <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={5} bg="rgba(255,255,255,0.04)" borderColor="rgba(255,255,255,0.09)" placeholder="Warum dieser Trade?" />
+          <Text {...fieldLabelProps}>Notizen</Text>
+          <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={5} placeholder="Warum dieser Trade?" {...inputSx} />
         </GridItem>
         <GridItem>
-          <Text fontSize="xs" color="var(--color-text-secondary)" mb={1}>
-            Screenshot
-          </Text>
+          <Text {...fieldLabelProps}>Screenshot</Text>
           <Flex
-            border="2px dashed rgba(255,255,255,0.12)"
-            borderRadius="md"
+            border="1px dashed var(--cc-line-strong)"
+            borderRadius="10px"
+            bg="rgba(255, 255, 255, 0.02)"
             p={6}
             align="center"
             justify="center"
             direction="column"
             cursor="pointer"
+            transition="border-color 180ms var(--cc-ease), background-color 180ms var(--cc-ease)"
+            _hover={{ borderColor: "var(--cc-gold-line)", bg: "var(--cc-gold-wash)" }}
             onClick={() => document.getElementById("tj-sc-input")?.click()}
           >
-            <Text fontSize="2xl" mb={1}>
-              +
-            </Text>
-            <Text fontSize="sm" color="var(--color-text-tertiary)">
+            <Box color="var(--cc-gold-light)" mb={2}>
+              <ImagePlus size={22} strokeWidth={1.75} aria-hidden />
+            </Box>
+            <Text fontSize="sm" color="var(--cc-text-2)">
               Chart-Screenshot ablegen oder klicken
             </Text>
             <input
@@ -647,9 +640,23 @@ export function TradeForm({ journalId, onSaved }: Props) {
           {previewUrl ? (
             <Box position="relative" mt={3}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={previewUrl} alt="" style={{ maxWidth: "100%", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)" }} />
-              <Button size="xs" position="absolute" top={2} right={2} onClick={() => setFile(null)}>
-                ×
+              <img
+                src={previewUrl}
+                alt=""
+                style={{ maxWidth: "100%", borderRadius: 10, border: "1px solid var(--cc-line-strong)" }}
+              />
+              <Button
+                size="xs"
+                variant="line"
+                bg="rgba(14, 18, 23, 0.88)"
+                px={1.5}
+                position="absolute"
+                top={2}
+                right={2}
+                aria-label="Screenshot entfernen"
+                onClick={() => setFile(null)}
+              >
+                <X size={14} strokeWidth={1.75} />
               </Button>
             </Box>
           ) : null}
@@ -657,13 +664,12 @@ export function TradeForm({ journalId, onSaved }: Props) {
       </Grid>
 
       <Button
+        variant="gold"
         w="100%"
-        py={6}
-        bg="linear-gradient(135deg, #D4AF37 0%, #A67C00 100%)"
-        color="white"
-        _hover={{ bg: "linear-gradient(135deg, #E8C547 0%, #D4AF37 100%)" }}
+        h="48px"
+        fontSize="15px"
+        letterSpacing="0.06em"
         onClick={() => void saveTrade()}
-        className="inter-semibold"
       >
         TRADE SPEICHERN
       </Button>

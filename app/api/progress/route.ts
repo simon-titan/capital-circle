@@ -143,6 +143,14 @@ export async function POST(request: Request) {
     completed,
     quiz_passed,
     completed_at,
+    /**
+     * MUSS mitgeschrieben werden: `updated_at` hat in der Tabelle nur
+     * `default now()` und keinen Trigger — bei einem UPDATE bliebe der
+     * Zeitstempel also auf dem Wert vom ersten Anlegen stehen.
+     * „Weiter wo du warst" sortiert danach und zeigte deshalb dauerhaft ein
+     * Modul, das seit Monaten nicht mehr angefasst wurde.
+     */
+    updated_at: nowIso,
   };
 
   // Erweiterte Spalten nur hinzufügen wenn sie in der DB existieren
@@ -161,18 +169,45 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: upsertError.message }, { status: 500 });
   }
 
-  // Streak & Lernminuten aktualisieren
+  /**
+   * Streak & Lernzeit. Die Sekunden-Spalten kamen erst mit Migration 040 dazu —
+   * fehlt die, liefert PostgREST für den ganzen Select einen Fehler und `data`
+   * ist `null`. Vorher lief der Code trotzdem weiter und starb an
+   * `profile.learning_seconds_by_day`: 500 auf jeden Fortschritts-Ping.
+   *
+   * Deshalb zweistufig und mit hartem Null-Riegel: Der Fortschritt selbst ist
+   * oben schon gespeichert, Streak und Lernzeit sind Beiwerk und dürfen den
+   * Aufruf nie scheitern lassen.
+   */
+  const VOLLE_SPALTEN =
+    "created_at,streak_current,streak_longest,streak_last_activity,total_learning_minutes,total_learning_seconds,learning_minutes_by_day,learning_seconds_by_day,streak_activity_by_day";
+  const BASIS_SPALTEN =
+    "created_at,streak_current,streak_longest,streak_last_activity,total_learning_minutes,learning_minutes_by_day,streak_activity_by_day";
+
   const [playlist, profileRes] = await Promise.all([
     getModulePlaylistDurationsOnly(supabase, moduleId),
-    supabase
-      .from("profiles")
-      .select(
-        "created_at,streak_current,streak_longest,streak_last_activity,total_learning_minutes,total_learning_seconds,learning_minutes_by_day,learning_seconds_by_day,streak_activity_by_day",
-      )
-      .eq("id", userId)
-      .single(),
+    supabase.from("profiles").select(VOLLE_SPALTEN).eq("id", userId).maybeSingle(),
   ]);
-  const { data: profile } = profileRes;
+
+  let profile = profileRes.data as Record<string, unknown> | null;
+  /** Sekunden-Spalten vorhanden? Sonst später nicht zurückschreiben. */
+  let hatSekundenSpalten = true;
+
+  if (!profile) {
+    hatSekundenSpalten = false;
+    const { data: basis } = await supabase
+      .from("profiles")
+      .select(BASIS_SPALTEN)
+      .eq("id", userId)
+      .maybeSingle();
+    profile = (basis as Record<string, unknown> | null) ?? null;
+    if (!profile) {
+      // Kein Profil lesbar — Fortschritt ist gespeichert, mehr geht hier nicht.
+      console.error("[progress] Profil nicht lesbar, Streak/Lernzeit übersprungen", { userId });
+      return NextResponse.json({ ok: true, streakUpdated: false });
+    }
+    console.warn("[progress] Sekunden-Spalten fehlen (Migration 040 nicht eingespielt) — Lernzeit wird nicht fortgeschrieben");
+  }
 
   // Delta nur wenn per-video-Map nutzbar; video_progress_by_video = null ist Legacy-Zeile —
   // vorher wurde delta komplett unterdrückt → praktisch keine Lernzeit. Fortschritt kommt aus dem Client-Map.
@@ -181,10 +216,12 @@ export async function POST(request: Request) {
   const afterWatched = hasOldProgressMap ? watchedSecondsCapped(playlist, mergedMap) : 0;
   const deltaSeconds = hasOldProgressMap ? Math.max(0, afterWatched - beforeWatched) : 0;
 
-  const createdAt = profile?.created_at as string | null | undefined;
+  const createdAt = profile.created_at as string | null | undefined;
+  /** `profile` ist jetzt lose typisiert (zwei mögliche Spaltensätze) — hier auf Zahl festziehen. */
+  const zahl = (wert: unknown): number => (typeof wert === "number" && Number.isFinite(wert) ? wert : 0);
   const maxPlausible = maxPlausibleStreakDays(createdAt);
-  const safeCurrent = sanitizeStreakValue(profile?.streak_current ?? 0, createdAt);
-  const safeLongestStored = sanitizeStreakValue(profile?.streak_longest ?? 0, createdAt);
+  const safeCurrent = sanitizeStreakValue(zahl(profile.streak_current), createdAt);
+  const safeLongestStored = sanitizeStreakValue(zahl(profile.streak_longest), createdAt);
 
   const rawNext = calculateStreak(
     profile?.streak_last_activity ? new Date(profile.streak_last_activity as string) : null,
@@ -212,18 +249,26 @@ export async function POST(request: Request) {
   const total_learning_seconds = Math.max(0, prevTotalSeconds + deltaSeconds);
   const total_learning_minutes = Math.floor(total_learning_seconds / 60);
 
-  await supabase
-    .from("profiles")
-    .update({
-      streak_current: streak,
-      streak_longest,
-      streak_last_activity: nowIso,
-      total_learning_seconds,
-      total_learning_minutes,
-      learning_seconds_by_day,
-      streak_activity_by_day,
-    })
-    .eq("id", userId);
+  const profilUpdate: Record<string, unknown> = {
+    streak_current: streak,
+    streak_longest,
+    streak_last_activity: nowIso,
+    total_learning_minutes,
+    streak_activity_by_day,
+  };
+  // Nur schreiben, was es in der Datenbank auch gibt.
+  if (hatSekundenSpalten) {
+    profilUpdate.total_learning_seconds = total_learning_seconds;
+    profilUpdate.learning_seconds_by_day = learning_seconds_by_day;
+  }
 
-  return NextResponse.json({ ok: true });
+  const { error: profilFehler } = await supabase.from("profiles").update(profilUpdate).eq("id", userId);
+  if (profilFehler) {
+    // Wieder: der Fortschritt steht schon. Streak/Lernzeit sind es nicht wert,
+    // dem Client einen Fehler zu melden und ihn erneut senden zu lassen.
+    console.error("[progress] Profil-Update fehlgeschlagen:", profilFehler.message, { userId });
+    return NextResponse.json({ ok: true, streakUpdated: false });
+  }
+
+  return NextResponse.json({ ok: true, streakUpdated: true });
 }

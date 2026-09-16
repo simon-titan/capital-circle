@@ -1,5 +1,6 @@
 import type Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { findeUserIdZuEmail } from "@/lib/checkout/user-lookup";
 
 /**
  * Service-Role-Client-Typ. Wir verwenden bewusst `SupabaseClient` ohne
@@ -59,6 +60,43 @@ export async function loadProfileByUserId(
     throw new Error(`loadProfileByUserId(${userId}) failed: ${error.message}`);
   }
   return (data as ProfileLookup | null) ?? null;
+}
+
+/**
+ * Konto für einen Gast-Checkout anlegen — oder das bestehende wiederfinden.
+ *
+ * Der Kaufweg über `/go/<plan>` hat keinen vorgelagerten Login: Der erste
+ * Kontakt mit dem System ist die Zahlung. Das Konto entsteht deshalb hier, im
+ * Webhook, aus der E-Mail, die der Käufer bei Stripe eingegeben hat. Die
+ * `profiles`-Zeile legt der Trigger `on_auth_user_created` (Migration 003) an.
+ *
+ * Idempotent über die E-Mail: Kauft jemand ein zweites Mal oder rüstet ein
+ * bestehendes Free-Mitglied auf, liefert die Funktion das vorhandene Konto
+ * zurück. `isNew` steuert im Aufrufer, ob eine Willkommensmail mit
+ * Passwort-Link rausgeht — eine zweite wäre für den Kunden verwirrend und für
+ * ein bestehendes Passwort schlicht falsch.
+ */
+export async function getOrCreateUserByEmail(
+  supabase: WebhookSupabase,
+  email: string,
+): Promise<{ userId: string; isNew: boolean }> {
+  const { data: created, error: createError } = await supabase.auth.admin.createUser({
+    email,
+    email_confirm: true,
+  });
+
+  if (!createError && created.user) {
+    return { userId: created.user.id, isNew: true };
+  }
+
+  // „already registered" o. Ä. → bestehendes Konto anhand der E-Mail suchen.
+  const existingUserId = await findeUserIdZuEmail(supabase, email);
+  if (!existingUserId) {
+    throw new Error(
+      `getOrCreateUserByEmail(${email}) fehlgeschlagen: ${createError?.message ?? "Konto weder anlegbar noch auffindbar"}`,
+    );
+  }
+  return { userId: existingUserId, isNew: false };
 }
 
 /**

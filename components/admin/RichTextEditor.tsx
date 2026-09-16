@@ -64,6 +64,37 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
         attributes: {
           class: "article-body",
         },
+        /**
+         * Bild in den Text ziehen: Datei hochladen und an der Stelle einfügen,
+         * an der losgelassen wurde. Ohne das würde ProseMirror die Datei
+         * verwerfen (`allowBase64` ist aus) und der Browser sie im Tab öffnen.
+         *
+         * Das ist zugleich der Weg am Windows-Dateidialog vorbei, der auf dem
+         * Rechner des Nutzers den ganzen Browser einfriert.
+         */
+        handleDrop: (view, event) => {
+          const dateien = Array.from((event as DragEvent).dataTransfer?.files ?? []);
+          const bild = dateien.find((f) => f.type.startsWith("image/"));
+          if (!bild) return false;
+
+          event.preventDefault();
+          const pos = view.posAtCoords({ left: (event as DragEvent).clientX, top: (event as DragEvent).clientY })?.pos;
+
+          void (async () => {
+            try {
+              const src = await uploadCoverAndGetSrc(bild);
+              const chain = view.state.tr;
+              const node = view.state.schema.nodes.image?.create({ src });
+              if (!node) return;
+              view.dispatch(chain.insert(pos ?? view.state.selection.from, node));
+            } catch (e) {
+              console.error("[editor] Bild-Upload fehlgeschlagen:", e);
+            }
+          })();
+
+          // true = wir haben den Drop übernommen, ProseMirror soll nichts tun.
+          return true;
+        },
       },
       onUpdate: ({ editor: ed }) => {
         onChange(JSON.stringify(ed.getJSON()));
@@ -107,29 +138,39 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
   }
 
   const tb = (label: string, onClick: () => void, icon: ReactElement, active?: boolean) => (
-    <Tooltip label={label} hasArrow openDelay={400}>
+    <Tooltip label={label} hasArrow openDelay={400} bg="var(--cc-surface-2)" color="var(--cc-text)">
       <IconButton
         aria-label={label}
+        aria-pressed={active}
         size="xs"
-        variant={active ? "solid" : "ghost"}
-        colorScheme={active ? "yellow" : "gray"}
+        variant="ghost"
         icon={icon}
         onClick={onClick}
+        color={active ? "var(--cc-gold-light)" : "var(--cc-text-2)"}
+        bg={active ? "rgba(212, 176, 128, 0.12)" : "transparent"}
+        _hover={{ bg: "rgba(255, 255, 255, 0.06)", color: "var(--cc-text)" }}
       />
     </Tooltip>
   );
 
   return (
-    <Box borderRadius="12px" borderWidth="1px" borderColor="whiteAlpha.200" bg="rgba(7,8,10,0.65)" overflow="hidden">
+    <Box
+      borderRadius="12px"
+      border="1px solid var(--cc-line-strong)"
+      bg="rgba(255, 255, 255, 0.03)"
+      overflow="hidden"
+      transition="border-color 150ms var(--cc-ease), box-shadow 150ms var(--cc-ease)"
+      _focusWithin={{ borderColor: "var(--cc-gold-line)", boxShadow: "0 0 0 1px var(--cc-gold-line)" }}
+    >
       <ButtonGroup
         size="xs"
         variant="ghost"
         spacing={0}
         flexWrap="wrap"
-        p={2}
+        px={2}
+        py={1.5}
         gap={1}
-        borderBottomWidth="1px"
-        borderColor="whiteAlpha.150"
+        borderBottom="1px solid var(--cc-line)"
       >
         {tb("Rückgängig", () => editor.chain().focus().undo().run(), <Undo2 size={16} />)}
         {tb("Wiederholen", () => editor.chain().focus().redo().run(), <Redo2 size={16} />)}

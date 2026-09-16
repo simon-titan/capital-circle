@@ -3,6 +3,13 @@
 import { Button, HStack, Input, Select, Stack, Text } from "@chakra-ui/react";
 import { RefreshCw } from "lucide-react";
 import {
+  ADMIN_CARD_CLASS,
+  adminCardPadding,
+  adminChipProps,
+  adminInputProps,
+  adminOptionStyle,
+} from "@/components/admin/adminUi";
+import {
   CLOSERS,
   CLOSER_LABELS,
   SOURCE_ORIGINS,
@@ -30,12 +37,6 @@ const STATUS_OPTIONS: { id: string; label: string }[] = [
   { id: "lost", label: "Closed Lost" },
 ];
 
-const selectSx = {
-  bg: "rgba(255,255,255,0.04)",
-  borderColor: "rgba(255,255,255,0.12)",
-  color: "var(--color-text-primary)",
-} as const;
-
 export function FilterBar({
   filter,
   setFilter,
@@ -51,32 +52,14 @@ export function FilterBar({
   onApply: () => void;
 }) {
   return (
-    <Stack
-      spacing={4}
-      bg="rgba(20, 21, 25, 0.82)"
-      backdropFilter="blur(20px) saturate(1.6)"
-      border="1px solid rgba(255,255,255,0.09)"
-      borderRadius="20px"
-      p={{ base: 4, md: 5 }}
-      boxShadow="0 8px 32px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.06)"
-    >
+    <Stack spacing={4} className={ADMIN_CARD_CLASS} p={adminCardPadding}>
       {/* Range-Pills + Refresh */}
       <HStack justify="space-between" flexWrap="wrap" gap={3}>
-        <HStack spacing={1} flexWrap="wrap">
+        <HStack spacing={2} flexWrap="wrap">
           {RANGE_OPTIONS.map((r) => {
             const active = filter.range === r.id;
             return (
-              <Button
-                key={r.id}
-                size="sm"
-                onClick={() => setFilter({ range: r.id })}
-                bg={active ? "rgba(212,175,55,0.16)" : "transparent"}
-                color={active ? "var(--color-accent-gold-light, #E8C547)" : "var(--color-text-secondary)"}
-                border="1px solid"
-                borderColor={active ? "rgba(212,175,55,0.45)" : "rgba(255,255,255,0.10)"}
-                _hover={{ bg: "rgba(255,255,255,0.06)" }}
-                className="inter"
-              >
+              <Button key={r.id} {...adminChipProps(active)} onClick={() => setFilter({ range: r.id })}>
                 {r.label}
               </Button>
             );
@@ -84,14 +67,10 @@ export function FilterBar({
         </HStack>
         <Button
           size="sm"
-          variant="outline"
+          variant="line"
           leftIcon={<RefreshCw size={14} />}
           onClick={onApply}
           isLoading={loading}
-          borderColor="rgba(212,175,55,0.45)"
-          color="var(--color-accent-gold-light, #E8C547)"
-          _hover={{ bg: "rgba(212,175,55,0.10)" }}
-          className="inter"
         >
           Aktualisieren
         </Button>
@@ -108,8 +87,8 @@ export function FilterBar({
               value={filter.from}
               onChange={(e) => setFilter({ from: e.target.value })}
               maxW="180px"
-              className="inter"
-              {...selectSx}
+              className="cc-num"
+              {...adminInputProps}
             />
           </Stack>
           <Stack spacing={1}>
@@ -120,19 +99,11 @@ export function FilterBar({
               value={filter.to}
               onChange={(e) => setFilter({ to: e.target.value })}
               maxW="180px"
-              className="inter"
-              {...selectSx}
+              className="cc-num"
+              {...adminInputProps}
             />
           </Stack>
-          <Button
-            size="sm"
-            onClick={onApply}
-            bg="rgba(212,175,55,0.16)"
-            color="var(--color-accent-gold-light, #E8C547)"
-            border="1px solid rgba(212,175,55,0.45)"
-            _hover={{ bg: "rgba(212,175,55,0.24)" }}
-            className="inter"
-          >
+          <Button size="sm" variant="gold" onClick={onApply}>
             Anwenden
           </Button>
         </HStack>
@@ -148,12 +119,13 @@ export function FilterBar({
             onChange={(e) =>
               setFilter({ sourceOrigin: e.target.value as FunnelFilterState["sourceOrigin"] })
             }
-            className="inter"
-            {...selectSx}
+            {...adminInputProps}
           >
-            <option value="all">Alle Quellen</option>
+            <option value="all" style={adminOptionStyle}>
+              Alle Quellen
+            </option>
             {SOURCE_ORIGINS.map((o) => (
-              <option key={o} value={o}>
+              <option key={o} value={o} style={adminOptionStyle}>
                 {SOURCE_ORIGIN_LABELS[o]}
               </option>
             ))}
@@ -166,12 +138,13 @@ export function FilterBar({
             size="sm"
             value={filter.closer}
             onChange={(e) => setFilter({ closer: e.target.value as FunnelFilterState["closer"] })}
-            className="inter"
-            {...selectSx}
+            {...adminInputProps}
           >
-            <option value="all">Alle Closer</option>
+            <option value="all" style={adminOptionStyle}>
+              Alle Closer
+            </option>
             {CLOSERS.map((c) => (
-              <option key={c} value={c}>
+              <option key={c} value={c} style={adminOptionStyle}>
                 {CLOSER_LABELS[c]}
               </option>
             ))}
@@ -184,12 +157,13 @@ export function FilterBar({
             size="sm"
             value={filter.channel}
             onChange={(e) => setFilter({ channel: e.target.value })}
-            className="inter"
-            {...selectSx}
+            {...adminInputProps}
           >
-            <option value="all">Alle Kanäle</option>
+            <option value="all" style={adminOptionStyle}>
+              Alle Kanäle
+            </option>
             {channels.map((c) => (
-              <option key={c} value={c}>
+              <option key={c} value={c} style={adminOptionStyle}>
                 {c}
               </option>
             ))}
@@ -202,11 +176,10 @@ export function FilterBar({
             size="sm"
             value={filter.status}
             onChange={(e) => setFilter({ status: e.target.value })}
-            className="inter"
-            {...selectSx}
+            {...adminInputProps}
           >
             {STATUS_OPTIONS.map((s) => (
-              <option key={s.id} value={s.id}>
+              <option key={s.id} value={s.id} style={adminOptionStyle}>
                 {s.label}
               </option>
             ))}
@@ -214,7 +187,7 @@ export function FilterBar({
         </Stack>
       </HStack>
 
-      <Text fontSize="11px" color="#606068" className="inter">
+      <Text fontSize="12px" color="var(--cc-text-3)">
         Filter wirken auf alle Sektionen, Panels und Lead-Liste sowie auf die Exporte.
       </Text>
     </Stack>

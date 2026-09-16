@@ -1,21 +1,29 @@
 "use client";
 
 import {
-  Alert,
-  AlertIcon,
   Box,
   Button,
   FormControl,
   FormErrorMessage,
   FormLabel,
-  Heading,
   Select,
   Stack,
   Text,
   Textarea,
 } from "@chakra-ui/react";
 import { useState } from "react";
-import { glassPrimaryButtonProps } from "@/components/ui/glassButtonStyles";
+import {
+  FunnelAlert,
+  FunnelEyebrow,
+  FunnelFinePrint,
+  FunnelHeadline,
+  FunnelLead,
+  SuccessMark,
+  funnelErrorProps,
+  funnelFieldProps,
+  funnelLabelProps,
+  funnelSelectSx,
+} from "./funnel-ui";
 
 type StructuredReason =
   | "too_expensive"
@@ -29,18 +37,6 @@ const REASON_OPTIONS: { value: StructuredReason; label: string }[] = [
   { value: "tech_issues", label: "Technische Probleme" },
   { value: "other", label: "Anderes" },
 ];
-
-const inputStyles = {
-  bg: "rgba(255,255,255,0.04)",
-  borderColor: "rgba(255,255,255,0.12)",
-  color: "var(--color-text-primary)",
-  _placeholder: { color: "rgba(255,255,255,0.32)" },
-  _hover: { borderColor: "rgba(212,175,55,0.45)" },
-  _focus: {
-    borderColor: "rgba(212,175,55,0.65)",
-    boxShadow: "0 0 0 1px rgba(212,175,55,0.45)",
-  },
-} as const;
 
 interface Props {
   token: string;
@@ -104,67 +100,26 @@ export function CancellationSurveyForm({ token }: Props) {
   }
 
   return (
-    <Box
-      as="section"
-      maxW="560px"
-      mx="auto"
-      p={{ base: 6, md: 8 }}
-      sx={{
-        background: "rgba(255,255,255,0.05)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-        border: "1px solid rgba(255,255,255,0.09)",
-        borderRadius: "16px",
-        boxShadow:
-          "0 8px 32px rgba(0,0,0,0.60), inset 0 1px 0 rgba(255,255,255,0.07)",
-      }}
-    >
+    <Box as="section" className="cc-card cc-card--still" maxW="560px" mx="auto" p={{ base: 6, md: 8 }}>
       <Stack spacing={6}>
-        <Stack spacing={2}>
-          <Text
-            fontSize="xs"
-            letterSpacing="0.18em"
-            textTransform="uppercase"
-            color="var(--color-accent-gold)"
-            className="inter-semibold"
-          >
-            60 Sekunden · Feedback
-          </Text>
-          <Heading
-            as="h1"
-            className="radley-regular"
-            fontWeight={400}
-            fontSize={{ base: "2xl", md: "3xl" }}
-            lineHeight="1.2"
-          >
-            Schade, dass du gehst.
-          </Heading>
-          <Text fontSize="sm" color="rgba(255,255,255,0.62)" className="inter">
+        <Stack spacing={4} align="flex-start">
+          <FunnelEyebrow>60 Sekunden · Feedback</FunnelEyebrow>
+          <FunnelHeadline scale="md">Schade, dass du gehst.</FunnelHeadline>
+          <Text fontSize="14px" lineHeight={1.6} color="var(--cc-text-2)">
             Dein Feedback hilft uns, Capital Circle für die nächsten
             Trader:innen besser zu machen. Wir lesen jede Antwort selbst.
           </Text>
         </Stack>
 
         <FormControl isRequired>
-          <FormLabel
-            className="inter"
-            fontSize="sm"
-            color="var(--color-text-primary)"
-          >
-            Hauptgrund für deine Kündigung
-          </FormLabel>
+          <FormLabel {...funnelLabelProps}>Hauptgrund für deine Kündigung</FormLabel>
           <Select
-            {...inputStyles}
+            {...funnelFieldProps}
             value={structuredReason}
             onChange={(e) =>
               setStructuredReason(e.target.value as StructuredReason)
             }
-            sx={{
-              "& > option": {
-                background: "var(--color-bg-primary, #07080A)",
-                color: "var(--color-text-primary)",
-              },
-            }}
+            sx={funnelSelectSx}
           >
             {REASON_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -175,33 +130,21 @@ export function CancellationSurveyForm({ token }: Props) {
         </FormControl>
 
         <FormControl isInvalid={Boolean(errors.missing)} isRequired>
-          <FormLabel
-            className="inter"
-            fontSize="sm"
-            color="var(--color-text-primary)"
-          >
-            Was hat dir gefehlt?
-          </FormLabel>
+          <FormLabel {...funnelLabelProps}>Was hat dir gefehlt?</FormLabel>
           <Textarea
-            {...inputStyles}
+            {...funnelFieldProps}
             minH="120px"
             value={missing}
             onChange={(e) => setMissing(e.target.value)}
             placeholder="Sei so direkt wie du willst — wir vertragen das."
           />
-          <FormErrorMessage>{errors.missing}</FormErrorMessage>
+          <FormErrorMessage {...funnelErrorProps}>{errors.missing}</FormErrorMessage>
         </FormControl>
 
         <FormControl>
-          <FormLabel
-            className="inter"
-            fontSize="sm"
-            color="var(--color-text-primary)"
-          >
-            Was hätte besser sein können? (optional)
-          </FormLabel>
+          <FormLabel {...funnelLabelProps}>Was hätte besser sein können? (optional)</FormLabel>
           <Textarea
-            {...inputStyles}
+            {...funnelFieldProps}
             minH="120px"
             value={improvement}
             onChange={(e) => setImprovement(e.target.value)}
@@ -209,22 +152,14 @@ export function CancellationSurveyForm({ token }: Props) {
           />
         </FormControl>
 
-        {serverError && (
-          <Alert
-            status="error"
-            variant="subtle"
-            bg="rgba(229,72,77,0.10)"
-            borderRadius="12px"
-          >
-            <AlertIcon />
-            <Text fontSize="sm" className="inter">
-              {serverError}
-            </Text>
-          </Alert>
-        )}
+        {serverError && <FunnelAlert>{serverError}</FunnelAlert>}
 
         <Button
-          {...glassPrimaryButtonProps}
+          variant="gold"
+          size="lg"
+          w="full"
+          h="48px"
+          fontSize="16px"
           onClick={handleSubmit}
           isLoading={submitting}
           loadingText="Wird gesendet…"
@@ -232,15 +167,10 @@ export function CancellationSurveyForm({ token }: Props) {
           Feedback abschicken
         </Button>
 
-        <Text
-          fontSize="xs"
-          color="rgba(255,255,255,0.4)"
-          className="inter"
-          textAlign="center"
-        >
+        <FunnelFinePrint textAlign="center">
           Wir verwenden dein Feedback ausschließlich intern, um die Plattform
           weiterzuentwickeln.
-        </Text>
+        </FunnelFinePrint>
       </Stack>
     </Box>
   );
@@ -248,55 +178,17 @@ export function CancellationSurveyForm({ token }: Props) {
 
 function ThanksSection() {
   return (
-    <Box
-      maxW="520px"
-      mx="auto"
-      p={{ base: 6, md: 8 }}
-      sx={{
-        background: "rgba(255,255,255,0.05)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-        border: "1px solid rgba(255,255,255,0.09)",
-        borderRadius: "16px",
-        boxShadow:
-          "0 8px 32px rgba(0,0,0,0.60), inset 0 1px 0 rgba(255,255,255,0.07)",
-      }}
-    >
-      <Stack spacing={5} align="center" textAlign="center">
-        <Box
-          w="56px"
-          h="56px"
-          borderRadius="full"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          bg="rgba(212,175,55,0.18)"
-          border="1px solid rgba(212,175,55,0.5)"
-          color="var(--color-accent-gold)"
-          fontSize="24px"
-        >
-          ✓
-        </Box>
-        <Heading
-          as="h2"
-          className="radley-regular"
-          fontWeight={400}
-          fontSize={{ base: "2xl", md: "3xl" }}
-        >
+    <Box className="cc-card" maxW="520px" mx="auto" p={{ base: 6, md: 8 }}>
+      <Stack spacing={5} align="center" textAlign="center" role="status">
+        <SuccessMark size={56} />
+        <FunnelHeadline as="h2" scale="md">
           Danke für deine Ehrlichkeit.
-        </Heading>
-        <Text
-          fontSize="md"
-          color="rgba(255,255,255,0.72)"
-          className="inter"
-          maxW="420px"
-        >
+        </FunnelHeadline>
+        <FunnelLead fontSize="16px" maxW="420px">
           Wir haben dein Feedback erhalten und nehmen es ernst. Falls du
           irgendwann zurückkommen willst, ist die Tür offen.
-        </Text>
-        <Text fontSize="xs" color="rgba(255,255,255,0.4)" className="inter">
-          Du kannst dieses Fenster jetzt schließen.
-        </Text>
+        </FunnelLead>
+        <FunnelFinePrint>Du kannst dieses Fenster jetzt schließen.</FunnelFinePrint>
       </Stack>
     </Box>
   );

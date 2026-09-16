@@ -36,6 +36,31 @@ type SubcategoryManagerProps = {
   onSubcategoriesChange?: (updater: SubcategoryRow[] | ((prev: SubcategoryRow[]) => SubcategoryRow[])) => void;
 };
 
+const fieldSx = {
+  bg: "rgba(255, 255, 255, 0.03)",
+  border: "1px solid",
+  borderColor: "var(--cc-line-strong)",
+  borderRadius: "8px",
+  color: "var(--cc-text)",
+  _placeholder: { color: "var(--cc-text-3)" },
+  _hover: { borderColor: "rgba(255, 255, 255, 0.22)" },
+  _focusVisible: { borderColor: "var(--cc-gold-line)", boxShadow: "0 0 0 1px var(--cc-gold-line)" },
+} as const;
+
+const modalContentProps = {
+  bg: "var(--cc-panel-solid)",
+  border: "1px solid rgba(212, 176, 128, 0.28)",
+  borderRadius: "12px",
+  boxShadow: "0 24px 60px rgba(0, 0, 0, 0.6)",
+  mx: 4,
+} as const;
+
+const dangerButton = {
+  variant: "line",
+  color: "var(--cc-danger)",
+  _hover: { bg: "rgba(248, 113, 113, 0.08)", borderColor: "rgba(248, 113, 113, 0.45)", boxShadow: "none" },
+} as const;
+
 export function SubcategoryManager({
   moduleId,
   subcategories: externalSubs,
@@ -141,25 +166,25 @@ export function SubcategoryManager({
   };
 
   if (loading) {
-    return <Text fontSize="sm" color="gray.500" className="inter">Subkategorien werden geladen…</Text>;
+    return <Text fontSize="14px" color="var(--cc-text-3)">Subkategorien werden geladen…</Text>;
   }
 
   return (
     <Stack spacing={4}>
       <HStack justify="space-between" align="flex-start" flexWrap="wrap" gap={3}>
         <Box>
-          <Text className="radley-regular" fontSize="lg" color="whiteAlpha.950">Subkategorien</Text>
-          <Text mt={1} fontSize="sm" color="gray.400" className="inter" maxW="lg">
+          <Text fontSize="15px" fontWeight={600} color="var(--cc-text)">Subkategorien</Text>
+          <Text mt={1} fontSize="14px" color="var(--cc-text-2)" maxW="lg">
             Unterthemen innerhalb des Moduls. Videos oben per Zuordnungs-Dropdown einer Subkategorie zuweisen.
           </Text>
         </Box>
-        <Button size="md" colorScheme="blue" variant="solid" onClick={onOpen} flexShrink={0}>
+        <Button size="sm" variant="gold" onClick={onOpen} flexShrink={0}>
           Subkategorie anlegen
         </Button>
       </HStack>
 
       {items.length === 0 ? (
-        <Text fontSize="sm" color="gray.400" className="inter">
+        <Text fontSize="14px" color="var(--cc-text-2)">
           Keine Subkategorien — Videos liegen direkt im Modul, oder lege oben eine Subkategorie an.
         </Text>
       ) : (
@@ -169,24 +194,25 @@ export function SubcategoryManager({
           renderItem={(item, handle) => (
             <HStack
               key={item.id}
-              py={3}
+              py={2.5}
               px={{ base: 3, md: 4 }}
               mb={2}
-              borderRadius="12px"
-              borderWidth="1px"
-              borderColor="whiteAlpha.200"
-              bg="rgba(255,255,255,0.04)"
+              borderRadius="10px"
+              border="1px solid var(--cc-line)"
+              bg="rgba(255, 255, 255, 0.02)"
               spacing={3}
               flexWrap="wrap"
+              transition="background-color 150ms var(--cc-ease)"
+              _hover={{ bg: "rgba(255, 255, 255, 0.04)" }}
             >
               {handle}
-              <Text flex={1} className="inter" fontSize="sm" fontWeight="500" color="gray.100" minW={0}>
+              <Text flex={1} fontSize="14px" fontWeight={500} color="var(--cc-text)" minW={0}>
                 {item.title}
               </Text>
-              <Button size="sm" variant="outline" borderColor="whiteAlpha.400" color="gray.100" leftIcon={<Pencil size={14} />} onClick={() => openEdit(item)}>
+              <Button size="sm" variant="line" leftIcon={<Pencil size={14} />} onClick={() => openEdit(item)}>
                 Bearbeiten
               </Button>
-              <Button size="sm" variant="outline" colorScheme="red" borderWidth="2px" borderColor="red.400" color="red.100" leftIcon={<Trash2 size={14} />} onClick={() => void remove(item.id)}>
+              <Button size="sm" {...dangerButton} leftIcon={<Trash2 size={14} />} onClick={() => void remove(item.id)}>
                 Löschen
               </Button>
             </HStack>
@@ -195,32 +221,32 @@ export function SubcategoryManager({
       )}
 
       <Modal isOpen={isOpen} onClose={onClose} isCentered>
-        <ModalOverlay bg="blackAlpha.800" backdropFilter="blur(4px)" />
-        <ModalContent bg="rgba(10, 11, 14, 0.96)" border="1px solid rgba(255,255,255,0.09)" borderRadius="24px" mx={4}>
-          <ModalHeader className="radley-regular" fontWeight={400}>Neue Subkategorie</ModalHeader>
+        <ModalOverlay bg="rgba(8, 10, 12, 0.72)" backdropFilter="blur(6px)" />
+        <ModalContent {...modalContentProps}>
+          <ModalHeader fontSize="17px" fontWeight={600} color="var(--cc-text)">Neue Subkategorie</ModalHeader>
           <ModalBody>
-            <Input placeholder="Titel" value={title} onChange={(e) => setTitle(e.target.value)} borderColor="whiteAlpha.200" _focus={{ borderColor: "blue.500", boxShadow: "0 0 0 3px rgba(59,130,246,0.12)" }} />
+            <Input placeholder="Titel" value={title} onChange={(e) => setTitle(e.target.value)} {...fieldSx} />
           </ModalBody>
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onClose}>Abbrechen</Button>
-            <Button colorScheme="blue" onClick={() => void add()} isLoading={saving} isDisabled={!title.trim()}>Anlegen</Button>
+            <Button variant="line" mr={3} onClick={onClose}>Abbrechen</Button>
+            <Button variant="gold" onClick={() => void add()} isLoading={saving} isDisabled={!title.trim()}>Anlegen</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
 
       <Modal isOpen={isEditOpen} onClose={() => { onEditClose(); setEditId(null); }} isCentered>
-        <ModalOverlay bg="blackAlpha.800" backdropFilter="blur(4px)" />
-        <ModalContent bg="rgba(10, 11, 14, 0.96)" border="1px solid rgba(255,255,255,0.09)" borderRadius="24px" mx={4}>
-          <ModalHeader className="radley-regular" fontWeight={400}>Subkategorie bearbeiten</ModalHeader>
+        <ModalOverlay bg="rgba(8, 10, 12, 0.72)" backdropFilter="blur(6px)" />
+        <ModalContent {...modalContentProps}>
+          <ModalHeader fontSize="17px" fontWeight={600} color="var(--cc-text)">Subkategorie bearbeiten</ModalHeader>
           <ModalBody>
             <Stack spacing={3}>
-              <Input placeholder="Titel" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} borderColor="whiteAlpha.200" _focus={{ borderColor: "blue.500", boxShadow: "0 0 0 3px rgba(59,130,246,0.12)" }} />
-              <Textarea placeholder="Beschreibung (optional)" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={4} borderColor="whiteAlpha.200" _focus={{ borderColor: "blue.500", boxShadow: "0 0 0 3px rgba(59,130,246,0.12)" }} />
+              <Input placeholder="Titel" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} {...fieldSx} />
+              <Textarea placeholder="Beschreibung (optional)" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={4} {...fieldSx} />
             </Stack>
           </ModalBody>
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={() => { onEditClose(); setEditId(null); }}>Abbrechen</Button>
-            <Button colorScheme="blue" onClick={() => void saveEdit()} isLoading={editSaving} isDisabled={!editTitle.trim()}>Speichern</Button>
+            <Button variant="line" mr={3} onClick={() => { onEditClose(); setEditId(null); }}>Abbrechen</Button>
+            <Button variant="gold" onClick={() => void saveEdit()} isLoading={editSaving} isDisabled={!editTitle.trim()}>Speichern</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

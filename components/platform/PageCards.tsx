@@ -7,7 +7,6 @@ import type {
   ArsenalCardRow,
   LiveSessionCategoryRow,
   LiveSessionListItem,
-  LiveSessionVideoRow,
 } from "@/lib/server-data";
 import type { ArsenalBrowserAccent } from "@/components/platform/ArsenalAttachmentsBrowser";
 import type { ArsenalCardsAccent } from "@/components/platform/ArsenalCardsSection";
@@ -19,11 +18,6 @@ const AnalysisFeed = dynamic(
 
 const LiveSessionGrid = dynamic(
   () => import("@/components/platform/LiveSessionGrid").then((m) => m.LiveSessionGrid),
-  { ssr: false },
-);
-
-const LiveSessionDetailClient = dynamic(
-  () => import("@/components/platform/LiveSessionDetailClient").then((m) => m.LiveSessionDetailClient),
   { ssr: false },
 );
 
@@ -56,10 +50,6 @@ export function PageLiveSessionGrid({
   isFreeMember?: boolean;
 }) {
   return <LiveSessionGrid categories={categories} sessions={sessions} isFreeMember={isFreeMember} />;
-}
-
-export function PageLiveSessionDetailClient({ playlist }: { playlist: LiveSessionVideoRow[] }) {
-  return <LiveSessionDetailClient playlist={playlist} />;
 }
 
 export function PageArsenalAttachmentsBrowser({

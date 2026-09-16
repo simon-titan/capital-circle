@@ -1,16 +1,20 @@
-import { Box, Button, Flex, Heading, Stack, Text } from "@chakra-ui/react";
-import NextLink from "next/link";
+import { Box, Flex, Stack, Text } from "@chakra-ui/react";
 import { notFound, redirect } from "next/navigation";
-import { Lock } from "lucide-react";
+import { ArrowLeft, Lock } from "lucide-react";
 import { ChakraLinkButton } from "@/components/platform/ChakraLinkButton";
-import { GlassCard } from "@/components/ui/GlassCard";
-import { PageLiveSessionDetailClient } from "@/components/platform/PageCards";
+import { IconTile } from "@/components/platform/dashboard/primitives";
+import { LiveSessionDetailClient } from "@/components/platform/LiveSessionDetailClient";
 import { getCurrentUserAndProfile, getLiveSessionDetail } from "@/lib/server-data";
 import { isApprovedFreeMember } from "@/lib/membership";
 
 type PageProps = {
   params: Promise<{ id: string }>;
 };
+
+/** Zeitangaben in Berlin, unabhängig von der Server-Zeitzone. */
+function formatBerlin(iso: string, opts: Intl.DateTimeFormatOptions) {
+  return new Date(iso).toLocaleString("de-DE", { ...opts, timeZone: "Europe/Berlin" });
+}
 
 export default async function LiveSessionDetailPage({ params }: PageProps) {
   const { id } = await params;
@@ -25,141 +29,79 @@ export default async function LiveSessionDetailPage({ params }: PageProps) {
 
   if (freeMember && !isWeeklyOutlook) {
     return (
-      <Stack gap={6} alignItems="start">
-        <ChakraLinkButton
-          href="/live-session"
-          variant="ghost"
-          size="sm"
-          color="var(--color-accent-gold)"
-          className="inter"
-        >
-          ← Zurück zur Übersicht
-        </ChakraLinkButton>
+      <Stack spacing={5} align="stretch">
+        <Box>
+          <ChakraLinkButton
+            href="/live-session"
+            variant="ghost"
+            size="sm"
+            h="auto"
+            px={0}
+            leftIcon={<ArrowLeft size={15} strokeWidth={2} />}
+            color="var(--cc-text-2)"
+            fontWeight={500}
+            _hover={{ color: "var(--cc-gold-light)", bg: "transparent" }}
+          >
+            Zurück zur Übersicht
+          </ChakraLinkButton>
+        </Box>
 
-        <GlassCard>
-          <Flex direction="column" align="center" justify="center" py={16} px={6} textAlign="center">
-            <Box
-              h="2px"
-              w="48px"
-              borderRadius="full"
-              mb={4}
-              bg="linear-gradient(90deg, rgba(212,175,55,0) 0%, rgba(232,197,71,0.85) 50%, rgba(212,175,55,0) 100%)"
-              boxShadow="0 0 10px rgba(212,175,55,0.3)"
-            />
-            <Flex
-              align="center"
-              justify="center"
-              w="56px"
-              h="56px"
-              borderRadius="14px"
-              bg="rgba(212, 175, 55, 0.12)"
-              border="1px solid rgba(212, 175, 55, 0.38)"
-              mb={5}
-            >
-              <Lock size={26} strokeWidth={2} aria-hidden style={{ color: "rgba(212,175,55,0.9)" }} />
-            </Flex>
-            <Stack spacing={2} mb={6} maxW="420px">
-              <Text className="radley-regular" fontSize="xl" color="var(--color-text-primary)">
-                {detail.title}
-              </Text>
-              <Text className="inter-semibold" fontSize="sm" color="var(--color-text-primary)">
-                Nur für vollwertige Mitglieder
-              </Text>
-              <Text className="inter" fontSize="sm" color="rgba(255,255,255,0.52)" lineHeight="1.7">
-                Diese Live Session ist exklusiv für vollwertige Capital Circle Mitglieder verfügbar.
-                Als Free-Mitglied hast du Zugang zu allen Weekly Outlook Sessions.
-              </Text>
-            </Stack>
-            <Button
-              as={NextLink}
-              href="/bewerbung"
-              size="md"
-              borderRadius="10px"
-              bg="rgba(212, 175, 55, 0.22)"
-              border="1px solid rgba(212, 175, 55, 0.48)"
-              color="rgba(232, 197, 71, 0.95)"
-              className="inter-semibold"
-              fontSize="sm"
-              px={8}
-              _hover={{
-                bg: "rgba(212, 175, 55, 0.32)",
-                borderColor: "rgba(232, 197, 71, 0.65)",
-                boxShadow: "0 0 16px rgba(212,175,55,0.22)",
-              }}
-            >
-              Jetzt Mitglied werden
-            </Button>
-          </Flex>
-        </GlassCard>
+        <Flex
+          className="cc-card cc-card--still cc-rise"
+          direction="column"
+          align="center"
+          textAlign="center"
+          py={{ base: 10, md: 14 }}
+          px={{ base: 5, md: 6 }}
+        >
+          <IconTile>
+            <Box color="var(--cc-gold-light)">
+              <Lock size={24} strokeWidth={1.75} />
+            </Box>
+          </IconTile>
+          <Box
+            as="h1"
+            fontSize={{ base: "22px", md: "26px" }}
+            fontWeight={600}
+            lineHeight={1.25}
+            letterSpacing="-0.01em"
+            color="var(--cc-text)"
+            mt={5}
+            maxW="32rem"
+          >
+            {detail.title}
+          </Box>
+          <Text fontSize="16px" fontWeight={500} color="var(--cc-text)" mt={3}>
+            Nur für vollwertige Mitglieder
+          </Text>
+          <Text fontSize="14px" lineHeight={1.7} color="var(--cc-text-2)" mt={2} maxW="420px">
+            Diese Live Session ist exklusiv für vollwertige Capital Circle Mitglieder verfügbar.
+            Als Free-Mitglied hast du Zugang zu allen Weekly Outlook Sessions.
+          </Text>
+          <ChakraLinkButton href="/bewerbung" variant="gold" mt={6} px={8}>
+            Jetzt Mitglied werden
+          </ChakraLinkButton>
+        </Flex>
       </Stack>
     );
   }
 
-  return (
-    <Stack gap={6} alignItems="start">
-      <ChakraLinkButton
-        href="/live-session"
-        variant="ghost"
-        size="sm"
-        color="var(--color-accent-gold)"
-        className="inter"
-      >
-        ← Zurück zur Übersicht
-      </ChakraLinkButton>
+  const dateLine = detail.event
+    ? `Live am: ${formatBerlin(detail.event.start_time, { dateStyle: "full", timeStyle: "short" })}`
+    : detail.recorded_at
+      ? `Aufzeichnung: ${formatBerlin(detail.recorded_at, { dateStyle: "medium", timeStyle: "short" })}`
+      : null;
 
-      <GlassCard>
-        <Stack spacing={4} mb={6}>
-          <Text
-            fontSize="xs"
-            letterSpacing="0.12em"
-            textTransform="uppercase"
-            className="inter-semibold"
-            color="rgba(147, 197, 253, 0.9)"
-          >
-            {detail.category.title} · Live Session
-          </Text>
-          <Heading as="h1" size="lg" className="radley-regular" fontWeight={400} color="var(--color-text-primary)">
-            {detail.title}
-          </Heading>
-          {detail.description ? (
-            <Text className="inter" fontSize="sm" color="var(--color-text-muted)" lineHeight={1.6}>
-              {detail.description}
-            </Text>
-          ) : null}
-          {detail.event ? (
-            <Text className="inter-semibold" fontSize="sm" color="rgba(147, 197, 253, 0.95)">
-              Live am:{" "}
-              {new Date(detail.event.start_time).toLocaleString("de-DE", {
-                dateStyle: "full",
-                timeStyle: "short",
-              })}
-            </Text>
-          ) : detail.recorded_at ? (
-            <Text className="inter" fontSize="sm" color="var(--color-text-muted)">
-              Aufzeichnung:{" "}
-              {new Date(detail.recorded_at).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })}
-            </Text>
-          ) : null}
-          {detail.event ? (
-            <Box
-              px={3}
-              py={2}
-              borderRadius="md"
-              borderWidth="1px"
-              borderColor="rgba(100, 170, 240, 0.4)"
-              bg="rgba(74, 144, 217, 0.1)"
-            >
-              <Text fontSize="10px" letterSpacing="0.08em" textTransform="uppercase" className="inter-semibold" color="rgba(147, 197, 253, 0.85)" mb={1}>
-                Kalender-Event
-              </Text>
-              <Text className="inter" fontSize="sm" color="rgba(191, 219, 254, 0.98)">
-                {detail.event.title}
-              </Text>
-            </Box>
-          ) : null}
-        </Stack>
-        <PageLiveSessionDetailClient playlist={detail.playlist} />
-      </GlassCard>
-    </Stack>
+  return (
+    <LiveSessionDetailClient
+      playlist={detail.playlist}
+      session={{
+        title: detail.title,
+        categoryTitle: detail.category.title,
+        description: detail.description,
+        dateLine,
+        eventTitle: detail.event?.title ?? null,
+      }}
+    />
   );
 }

@@ -25,6 +25,33 @@ import { TradeForm } from "@/components/trading-journal/TradeForm";
 import { TradeHistory } from "@/components/trading-journal/TradeHistory";
 import type { TradeRow } from "@/components/trading-journal/types";
 
+/** Segment-Umschalter: aktiv mit Gold-Verlauf von links und Gold-Haarlinie. */
+const tabSx = (active: boolean) => ({
+  variant: "ghost" as const,
+  h: "36px",
+  px: 4,
+  fontSize: "14px",
+  fontWeight: 500,
+  borderRadius: "8px",
+  border: "1px solid",
+  borderColor: active ? "var(--cc-gold-line)" : "transparent",
+  bg: active ? "linear-gradient(90deg, rgba(212, 176, 128, 0.16), rgba(212, 176, 128, 0.03))" : "transparent",
+  color: active ? "var(--cc-gold-light)" : "var(--cc-text-2)",
+  boxShadow: active ? "0 0 14px rgba(212, 176, 128, 0.1)" : "none",
+  _hover: active
+    ? { bg: "linear-gradient(90deg, rgba(212, 176, 128, 0.2), rgba(212, 176, 128, 0.05))" }
+    : { bg: "rgba(255, 255, 255, 0.04)", color: "var(--cc-text)" },
+  _active: { bg: "rgba(212, 176, 128, 0.12)" },
+});
+
+const cardTitleSx = {
+  fontSize: "13px",
+  lineHeight: "18px",
+  fontWeight: 500,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase" as const,
+};
+
 export function JournalShell() {
   const supabase = createClient();
   const journalModal = useDisclosure();
@@ -78,9 +105,11 @@ export function JournalShell() {
     })();
   }, [loadJournals]);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- Trades des gewählten Journals aus Supabase laden */
   useEffect(() => {
     void loadTrades();
   }, [loadTrades]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const stats = useMemo(() => {
     const pnl = trades.reduce((s, t) => s + t.result_dollar, 0);
@@ -112,32 +141,12 @@ export function JournalShell() {
 
   const activeJournalName = journals.find((j) => j.id === journalId)?.name ?? "Journal wählen";
 
-  const menuListSx = {
-    bg: "rgba(12, 13, 16, 0.98)",
-    borderColor: "rgba(212, 175, 55, 0.35)",
-    boxShadow: "0 8px 32px rgba(0,0,0,0.55)",
-    py: 1,
-    minW: "260px",
-  };
-
-  const menuItemSx = {
-    bg: "transparent",
-    color: "var(--color-text-primary)",
-    _hover: { bg: "rgba(212, 175, 55, 0.12)" },
-    _focus: { bg: "rgba(212, 175, 55, 0.14)" },
-    className: "inter-medium",
-  };
-
   if (loading && journals.length === 0) {
-    return (
-      <Text color="var(--color-text-tertiary)" className="inter">
-        Lädt…
-      </Text>
-    );
+    return <Text color="var(--cc-text-2)">Lädt…</Text>;
   }
 
   return (
-    <Stack gap={6} w="100%" maxW="1120px">
+    <Stack gap={5} w="100%" maxW="1120px">
       <Flex
         direction={{ base: "column", lg: "row" }}
         align={{ base: "stretch", lg: "flex-start" }}
@@ -145,100 +154,91 @@ export function JournalShell() {
         gap={{ base: 5, lg: 6 }}
       >
         <Flex
+          className="cc-card cc-card--still"
           direction={{ base: "column", sm: "row" }}
           align={{ base: "stretch", sm: "flex-end" }}
           gap={3}
           flex="1"
           minW={0}
           p={{ base: 4, md: 5 }}
-          borderRadius="xl"
-          border="1px solid rgba(212, 175, 55, 0.22)"
-          bg="linear-gradient(165deg, rgba(212, 175, 55, 0.08) 0%, rgba(7, 8, 10, 0.65) 55%)"
-          boxShadow="0 4px 28px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)"
-          sx={{ backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
         >
           <Box flex="1" minW={0} maxW={{ base: "100%", sm: "320px" }}>
-            <Text
-              fontSize="10px"
-              fontWeight={600}
-              letterSpacing="0.1em"
-              textTransform="uppercase"
-              color="rgba(212, 175, 55, 0.85)"
-              mb={2}
-              className="inter-semibold"
-            >
+            <Text {...cardTitleSx} color="var(--cc-text-soft)" mb={3}>
               Aktives Journal
             </Text>
             <Menu placement="bottom-start" isLazy gutter={8}>
               <MenuButton
                 as={Button}
+                variant="line"
                 w="100%"
                 h="auto"
                 minH="48px"
                 py={2.5}
                 px={4}
                 justifyContent="space-between"
-                rightIcon={<ChevronDown size={18} strokeWidth={2} />}
-                leftIcon={<BookMarked size={20} strokeWidth={2} />}
-                bg="rgba(255,255,255,0.05)"
-                borderWidth="1px"
-                borderColor="rgba(255,255,255,0.12)"
-                color="var(--color-text-primary)"
-                fontWeight={500}
+                rightIcon={<ChevronDown size={18} strokeWidth={1.75} />}
+                leftIcon={<BookMarked size={18} strokeWidth={1.75} color="var(--cc-gold-light)" />}
                 fontSize="sm"
-                className="inter-medium"
-                _hover={{
-                  bg: "rgba(255,255,255,0.08)",
-                  borderColor: "rgba(212, 175, 55, 0.4)",
-                }}
-                _active={{ bg: "rgba(212, 175, 55, 0.12)" }}
-                _expanded={{ bg: "rgba(212, 175, 55, 0.1)", borderColor: "rgba(212, 175, 55, 0.45)" }}
+                _expanded={{ bg: "rgba(212, 176, 128, 0.06)", borderColor: "var(--cc-gold-line)" }}
               >
                 <Text as="span" noOfLines={1} textAlign="left" flex="1">
                   {activeJournalName}
                 </Text>
               </MenuButton>
-              <MenuList zIndex={20} {...menuListSx}>
-                {journals.map((j) => (
-                  <MenuItem
-                    key={j.id}
-                    {...menuItemSx}
-                    onClick={() => setJournalId(j.id)}
-                    bg={j.id === journalId ? "rgba(212, 175, 55, 0.12)" : "transparent"}
-                    fontWeight={j.id === journalId ? 600 : 500}
-                  >
-                    {j.name}
-                  </MenuItem>
-                ))}
+              <MenuList
+                zIndex={20}
+                bg="var(--cc-panel-solid)"
+                borderColor="var(--cc-gold-line)"
+                borderRadius="10px"
+                boxShadow="0 16px 40px rgba(0, 0, 0, 0.5)"
+                py={1}
+                minW="260px"
+              >
+                {journals.map((j) => {
+                  const active = j.id === journalId;
+                  return (
+                    <MenuItem
+                      key={j.id}
+                      onClick={() => setJournalId(j.id)}
+                      bg={active ? "rgba(212, 176, 128, 0.1)" : "transparent"}
+                      color={active ? "var(--cc-gold-light)" : "var(--cc-text)"}
+                      fontWeight={active ? 600 : 500}
+                      fontSize="sm"
+                      _hover={{ bg: "rgba(212, 176, 128, 0.1)" }}
+                      _focus={{ bg: "rgba(212, 176, 128, 0.12)" }}
+                    >
+                      {j.name}
+                    </MenuItem>
+                  );
+                })}
               </MenuList>
             </Menu>
           </Box>
           <Button
+            variant="line"
             size="md"
             h="48px"
             px={5}
-            variant="outline"
-            leftIcon={<Settings2 size={18} strokeWidth={2} />}
+            leftIcon={<Settings2 size={18} strokeWidth={1.75} />}
             alignSelf={{ base: "stretch", sm: "flex-end" }}
-            borderColor="rgba(212, 175, 55, 0.4)"
-            color="var(--color-text-primary)"
-            bg="rgba(212, 175, 55, 0.06)"
-            fontWeight={600}
             fontSize="sm"
-            className="inter-medium"
-            _hover={{
-              bg: "rgba(212, 175, 55, 0.14)",
-              borderColor: "rgba(212, 175, 55, 0.65)",
-              boxShadow: "0 0 20px rgba(212, 175, 55, 0.15)",
-            }}
-            _active={{ bg: "rgba(212, 175, 55, 0.2)" }}
             onClick={journalModal.onOpen}
           >
             Journale verwalten
           </Button>
         </Flex>
 
-        <HStack flexWrap="wrap" gap={1} justify={{ base: "center", lg: "flex-end" }} flexShrink={0}>
+        <HStack
+          flexWrap="wrap"
+          gap={1}
+          p={1}
+          justify={{ base: "center", lg: "flex-end" }}
+          alignSelf={{ base: "stretch", lg: "flex-start" }}
+          flexShrink={0}
+          border="1px solid var(--cc-line)"
+          borderRadius="10px"
+          bg="rgba(255, 255, 255, 0.02)"
+        >
           {(
             [
               ["log", "Trade erfassen"],
@@ -246,20 +246,7 @@ export function JournalShell() {
               ["analytics", "Auswertung"],
             ] as const
           ).map(([id, label]) => (
-            <Button
-              key={id}
-              size="sm"
-              variant={tab === id ? "solid" : "ghost"}
-              {...(tab === id
-                ? {
-                    bg: "linear-gradient(135deg, #D4AF37 0%, #A67C00 100%)",
-                    color: "white",
-                    _hover: { bg: "linear-gradient(135deg, #E8C547 0%, #D4AF37 100%)" },
-                  }
-                : { color: "var(--color-text-tertiary)" })}
-              onClick={() => setTab(id)}
-              className="inter-medium"
-            >
+            <Button key={id} {...tabSx(tab === id)} onClick={() => setTab(id)}>
               {label}
             </Button>
           ))}
@@ -269,23 +256,37 @@ export function JournalShell() {
       <Grid templateColumns={{ base: "repeat(2, 1fr)", md: "repeat(5, 1fr)" }} gap={3}>
         {[
           ["Gesamt P&L", fmtD(stats.pnl), stats.pnl >= 0 ? "var(--color-profit)" : "var(--color-loss)"],
-          ["Win Rate", `${stats.wr}%`, "rgba(212, 175, 55, 0.95)"],
-          ["Trades gesamt", String(stats.total), "var(--color-text-primary)"],
-          ["Ø RR", stats.avgRR, "var(--color-text-primary)"],
+          ["Win Rate", `${stats.wr}%`, "var(--cc-gold-light)"],
+          ["Trades gesamt", String(stats.total), "var(--cc-text)"],
+          ["Ø RR", stats.avgRR, "var(--cc-text)"],
           ["Heute P&L", fmtD(stats.todayPnl), stats.todayPnl >= 0 ? "var(--color-profit)" : "var(--color-loss)"],
-        ].map(([label, val, col]) => (
-          <GridItem key={String(label)} bg="rgba(20, 21, 25, 0.82)" border="1px solid rgba(255,255,255,0.09)" borderRadius="xl" p={4} backdropFilter="blur(20px)">
-            <Text fontSize="11px" color="var(--color-text-tertiary)" textTransform="uppercase" letterSpacing="0.08em" mb={2} fontWeight={500}>
-              {label}
-            </Text>
-            <Text fontSize="xl" fontWeight={700} color={col} className="jetbrains-mono">
-              {val}
-            </Text>
-          </GridItem>
-        ))}
+        ].map(([label, val, col], i) => {
+          const hero = i === 0;
+          return (
+            <GridItem
+              key={String(label)}
+              className={hero ? "cc-card cc-card--still cc-card--hero" : "cc-card cc-card--still"}
+              p={{ base: 4, md: 5 }}
+              minW={0}
+            >
+              <Text
+                {...cardTitleSx}
+                fontSize="12px"
+                color={hero ? "var(--cc-gold-light)" : "var(--cc-text-soft)"}
+                mb={2}
+                noOfLines={1}
+              >
+                {label}
+              </Text>
+              <Text fontSize={{ base: "20px", md: "22px" }} fontWeight={600} letterSpacing="-0.01em" color={col} className="cc-num">
+                {val}
+              </Text>
+            </GridItem>
+          );
+        })}
       </Grid>
 
-      <Box bg="rgba(255,255,255,0.03)" border="1px solid rgba(255,255,255,0.08)" borderRadius="2xl" p={{ base: 4, md: 6 }}>
+      <Box className="cc-card cc-card--still" p={{ base: 4, md: 6 }}>
         {tab === "log" && journalId ? <TradeForm journalId={journalId} onSaved={() => void loadTrades()} /> : null}
         {tab === "history" ? (
           <TradeHistory

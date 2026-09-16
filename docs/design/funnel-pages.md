@@ -1,6 +1,11 @@
 # Funnel- & Landing-Pages
 
-← zurück zum [Index](./README.md) · Modus: **Marketing/Metall-Tier** (siehe [principles.md](./principles.md))
+← zurück zum [Index](./README.md)
+
+> ⚠️ **HISTORISCH (Schema v2).** Abgelöst durch [`DESIGN.md`](../../DESIGN.md) v3.2 „Champagner auf Graphit“;
+> alle Funnels sind seit 2026-09-14 migriert. Metall-Tier (Bronze/Silber/Orange), Radley und die alten Glas-Klassen
+> sind aus dem Code entfernt. Die **Anatomie** unten (Aufbau, Tracking) bleibt nützlich; **Farben, Glas und Schriften
+> nicht übernehmen** — aktuelle Bausteine: `components/marketing/funnel-ui.tsx` (siehe [components.md](./components.md)).
 
 > Vorlage & Anatomie für neue Funnels. Zwei reale Referenz-Implementierungen:
 > **`/insight`** (kurz, Single-Section) und **`/bewerbung`** (Full-Marketing mit Below-Fold).

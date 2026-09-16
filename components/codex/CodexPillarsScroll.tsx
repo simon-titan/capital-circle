@@ -4,6 +4,7 @@ import { Box, IconButton } from "@chakra-ui/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
+/** Runde Pfeile im Line-Stil: deckendes Graphit, Haarlinie, Gold-Kante beim Hover. */
 const arrowButtonSx = {
   display: { base: "flex", lg: "none" },
   position: "absolute" as const,
@@ -14,25 +15,25 @@ const arrowButtonSx = {
   isRound: true,
   minW: "44px",
   minH: "44px",
-  bg: "rgba(212, 175, 55, 0.22)",
-  borderWidth: "1px",
-  borderColor: "rgba(232, 197, 71, 0.45)",
-  color: "rgba(255, 255, 255, 0.95)",
-  backdropFilter: "blur(12px)",
-  sx: { WebkitBackdropFilter: "blur(12px)" },
-  boxShadow: "0 4px 18px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.12)",
+  bg: "var(--cc-panel-solid)",
+  border: "1px solid var(--cc-line-strong)",
+  color: "var(--cc-text)",
+  boxShadow: "0 6px 18px rgba(0, 0, 0, 0.4)",
+  transition: "border-color 180ms var(--cc-ease), box-shadow 180ms var(--cc-ease)",
   _hover: {
-    bg: "rgba(212, 175, 55, 0.38)",
-    borderColor: "rgba(232, 197, 71, 0.65)",
+    bg: "var(--cc-panel-solid)",
+    borderColor: "var(--cc-gold-line)",
+    boxShadow: "0 0 18px rgba(212, 176, 128, 0.14)",
   },
+  _active: { bg: "var(--cc-surface-2)" },
   _disabled: {
     opacity: 0.35,
     cursor: "not-allowed",
-    bg: "rgba(212, 175, 55, 0.12)",
+    boxShadow: "none",
   },
 };
 
-/** Horizontal Scroll der Codex-Säulen: starker Scrollbalken (Mobile) + Pfeile. */
+/** Horizontal Scroll der Codex-Säulen: gut sichtbarer Scrollbalken (Mobile) + Pfeile. */
 export function CodexPillarsScroll({ children }: { children: ReactNode }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [hasOverflow, setHasOverflow] = useState(false);
@@ -105,7 +106,7 @@ export function CodexPillarsScroll({ children }: { children: ReactNode }) {
           <IconButton
             {...arrowButtonSx}
             left={{ base: 0, lg: undefined }}
-            icon={<ChevronLeft size={20} strokeWidth={2.25} />}
+            icon={<ChevronLeft size={20} strokeWidth={1.75} />}
             aria-label="Vorherige Säule"
             onClick={() => scrollByDir(-1)}
             isDisabled={!canLeft}
@@ -113,7 +114,7 @@ export function CodexPillarsScroll({ children }: { children: ReactNode }) {
           <IconButton
             {...arrowButtonSx}
             right={{ base: 0, lg: undefined }}
-            icon={<ChevronRight size={20} strokeWidth={2.25} />}
+            icon={<ChevronRight size={20} strokeWidth={1.75} />}
             aria-label="Nächste Säule"
             onClick={() => scrollByDir(1)}
             isDisabled={!canRight}
@@ -138,26 +139,26 @@ export function CodexPillarsScroll({ children }: { children: ReactNode }) {
           WebkitOverflowScrolling: "touch",
           scrollbarGutter: "stable",
           scrollbarWidth: "auto",
-          scrollbarColor: "rgba(212, 175, 55, 0.65) rgba(255, 255, 255, 0.1)",
+          // Neutraler Balken in Datentinte auf der Spur (keine zweite Gold-Fläche).
+          scrollbarColor: "rgba(209, 208, 212, 0.5) rgba(255, 255, 255, 0.07)",
           "&::-webkit-scrollbar": {
-            height: "14px",
+            height: "10px",
           },
           "&::-webkit-scrollbar-track": {
-            background: "rgba(255, 255, 255, 0.1)",
+            background: "rgba(255, 255, 255, 0.07)",
             borderRadius: "999px",
             marginLeft: "10px",
             marginRight: "10px",
           },
           "&::-webkit-scrollbar-thumb": {
-            background:
-              "linear-gradient(180deg, rgba(212, 175, 55, 0.85) 0%, rgba(166, 124, 0, 0.9) 100%)",
+            background: "rgba(209, 208, 212, 0.5)",
             borderRadius: "999px",
-            border: "3px solid rgba(15, 18, 24, 0.85)",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25)",
+            border: "2px solid transparent",
+            backgroundClip: "padding-box",
           },
           "&::-webkit-scrollbar-thumb:hover": {
-            background:
-              "linear-gradient(180deg, rgba(232, 197, 71, 0.95) 0%, rgba(212, 175, 55, 0.95) 100%)",
+            background: "rgba(209, 208, 212, 0.7)",
+            backgroundClip: "padding-box",
           },
         }}
       >

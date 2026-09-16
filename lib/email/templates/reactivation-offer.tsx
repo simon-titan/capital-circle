@@ -32,7 +32,7 @@ export default function ReactivationOfferEmail({ firstName }: Pick<Props, "first
         kostenlos.
       </EmailHighlight>
 
-      <EmailButton href={`${appUrl}/pricing`}>Reaktivieren</EmailButton>
+      <EmailButton href={`${appUrl}/#angebot`}>Reaktivieren</EmailButton>
 
       <EmailText muted>
         Kein Druck — wenn du nicht willst, hörst du nichts mehr von uns zu

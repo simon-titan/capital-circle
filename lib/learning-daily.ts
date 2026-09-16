@@ -110,10 +110,13 @@ export function formatLearningDurationDe(totalSeconds: number): string {
   return mm ? `${h} h ${mm} Min. Lernzeit` : `${h} h Lernzeit`;
 }
 
+/** `profile` darf null sein: Ein fehlgeschlagener Select liefert null statt einer Zeile,
+ *  und daran ist die Fortschritts-Route schon einmal mit 500 gestorben. */
 export function resolveTotalLearningSeconds(profile: {
   total_learning_seconds?: number | null;
   total_learning_minutes?: number | null;
-}): number {
+} | null | undefined): number {
+  if (!profile) return 0;
   const fromMinutes = Math.max(0, Math.floor((profile.total_learning_minutes ?? 0) * 60));
   const raw = profile.total_learning_seconds;
   if (raw == null || typeof raw !== "number" || !Number.isFinite(raw)) return fromMinutes;
@@ -127,7 +130,9 @@ export function resolveTotalLearningSeconds(profile: {
 export function resolveLearningSecondsByDay(profile: {
   learning_seconds_by_day?: unknown;
   learning_minutes_by_day?: unknown;
-}): Record<string, number> {
+} | null | undefined): Record<string, number> {
+  // Siehe resolveTotalLearningSeconds: null ist ein realer Fall, kein Programmierfehler.
+  if (!profile) return {};
   const sec = parseLearningSecondsByDay(profile.learning_seconds_by_day);
   if (Object.keys(sec).length > 0) return sec;
   const min = parseLearningMinutesByDay(profile.learning_minutes_by_day);

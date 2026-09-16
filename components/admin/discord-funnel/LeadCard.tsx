@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Badge,
   Box,
   Button,
   Collapse,
@@ -18,6 +17,13 @@ import { useState } from "react";
 import {
   DISCORD_FUNNEL_QUESTIONS,
 } from "@/config/discord-funnel-questions";
+import {
+  AdminLabel,
+  adminInputProps,
+  adminInsetProps,
+  adminOptionStyle,
+  StatusPill,
+} from "@/components/admin/adminUi";
 import {
   CLOSER_LABELS,
   SOURCE_ORIGIN_LABELS,
@@ -36,12 +42,6 @@ import {
   TagBadge,
   toDateInputValue,
 } from "./primitives";
-
-const fieldSx = {
-  bg: "rgba(255,255,255,0.04)",
-  borderColor: "rgba(255,255,255,0.12)",
-  color: "var(--color-text-primary)",
-} as const;
 
 export function LeadCard({
   lead,
@@ -68,12 +68,10 @@ export function LeadCard({
 
   return (
     <Box
-      borderRadius="14px"
-      border="1px solid rgba(255,255,255,0.09)"
-      bg="rgba(255,255,255,0.04)"
+      {...adminInsetProps}
       overflow="hidden"
-      transition="border-color .2s ease"
-      _hover={{ borderColor: "rgba(212,175,55,0.30)" }}
+      transition="border-color 150ms var(--cc-ease)"
+      _hover={{ borderColor: "var(--cc-line-strong)" }}
     >
       <HStack
         as="button"
@@ -84,11 +82,12 @@ export function LeadCard({
         align="center"
         justifyContent="space-between"
         textAlign="left"
-        _hover={{ bg: "rgba(255,255,255,0.02)" }}
+        transition="background-color 120ms ease"
+        _hover={{ bg: "rgba(255, 255, 255, 0.03)" }}
       >
         <Stack spacing={1} flex="1" minW={0}>
           <HStack spacing={2} flexWrap="wrap">
-            <Text className="inter-semibold" color="var(--color-text-primary)" noOfLines={1}>
+            <Text fontSize="14px" fontWeight={600} color="var(--cc-text)" noOfLines={1}>
               {lead.name || "(Kein Name)"}
             </Text>
             {lead.utm_source ? <TagBadge>{lead.utm_source}</TagBadge> : null}
@@ -97,56 +96,34 @@ export function LeadCard({
             ) : null}
             {lead.closer ? <TagBadge tone="gold">{CLOSER_LABELS[lead.closer]}</TagBadge> : null}
           </HStack>
-          <Text fontSize="xs" className="inter" color="var(--color-text-secondary)" noOfLines={1}>
+          <Text fontSize="12px" color="var(--cc-text-2)" noOfLines={1}>
             {lead.email}
           </Text>
         </Stack>
 
         <HStack spacing={3} flexShrink={0} display={{ base: "none", md: "flex" }}>
           {viewCount > 0 ? (
-            <Badge
-              bg="rgba(212,175,55,0.10)"
-              color="var(--color-accent-gold-light, #E8C547)"
-              border="1px solid rgba(212,175,55,0.25)"
-              borderRadius="full"
-              px={2}
-              py={0.5}
-              textTransform="none"
-              className="inter"
-            >
-              <HStack spacing={1}>
-                <Eye size={11} />
-                <Text className="inter-semibold" fontSize="11px">
+            <StatusPill tone="neutral">
+              <HStack as="span" spacing={1}>
+                <Eye size={11} aria-hidden />
+                <Text as="span" className="cc-num" fontSize="11px" fontWeight={500}>
                   {viewCount}×
                 </Text>
               </HStack>
-            </Badge>
+            </StatusPill>
           ) : null}
           <MetaPill label="Video" value={`${lead.video_max_percent ?? 0}%`} />
           <MetaPill label="Fragen" value={lead.questions_completed_at ? "✓" : "—"} />
-          {lead.calendly_booked_at ? (
-            <Badge
-              bg="rgba(52,211,153,0.12)"
-              color="#34D399"
-              border="1px solid rgba(52,211,153,0.3)"
-              borderRadius="full"
-              px={2}
-              py={0.5}
-              textTransform="none"
-              className="inter"
-            >
-              Call gebucht
-            </Badge>
-          ) : null}
+          {lead.calendly_booked_at ? <StatusPill tone="success">Call gebucht</StatusPill> : null}
           <ClosedBadge closed={lead.closed} />
         </HStack>
-        <Box color="var(--color-text-secondary)" flexShrink={0}>
+        <Box color="var(--cc-text-2)" flexShrink={0}>
           {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </Box>
       </HStack>
 
       <Collapse in={isOpen} animateOpacity>
-        <Box px={5} pb={5} pt={2} borderTop="1px solid rgba(255,255,255,0.06)">
+        <Box px={5} pb={5} pt={4} borderTop="1px solid var(--cc-line)">
           <Stack spacing={5}>
             {/* Meta-Zeile */}
             <SimpleGrid columns={{ base: 2, md: 4 }} spacing={3}>
@@ -168,24 +145,16 @@ export function LeadCard({
 
             {/* Antworten */}
             <Stack spacing={3}>
-              <Text
-                fontSize="xs"
-                letterSpacing="0.12em"
-                textTransform="uppercase"
-                color="var(--color-accent-gold)"
-                className="inter-semibold"
-              >
-                Antworten (Closer-Kontext)
-              </Text>
+              <AdminLabel color="var(--cc-text-soft)">Antworten (Closer-Kontext)</AdminLabel>
               {DISCORD_FUNNEL_QUESTIONS.map((q) => (
                 <Stack key={q.id} spacing={1}>
-                  <Text fontSize="xs" color="var(--color-text-secondary)" className="inter">
+                  <Text fontSize="12px" color="var(--cc-text-2)">
                     {q.question}
                   </Text>
-                  <Text fontSize="sm" color="var(--color-text-primary)" className="inter">
+                  <Text fontSize="14px" color="var(--cc-text)">
                     {lead.answers?.[q.id] ?? "—"}
                   </Text>
-                  <Text fontSize="11px" color="#606068" className="inter" fontStyle="italic">
+                  <Text fontSize="12px" color="var(--cc-text-3)">
                     Closer sieht: {q.closerNote}
                   </Text>
                 </Stack>
@@ -193,17 +162,10 @@ export function LeadCard({
             </Stack>
 
             {/* Closer-Management (inline editierbar) */}
-            <Box bg="#0C0D10" border="1px solid rgba(255,255,255,0.07)" borderRadius="12px" p={4}>
-              <Text
-                fontSize="xs"
-                letterSpacing="0.12em"
-                textTransform="uppercase"
-                color="var(--color-accent-gold)"
-                className="inter-semibold"
-                mb={3}
-              >
+            <Box {...adminInsetProps} p={4}>
+              <AdminLabel color="var(--cc-text-soft)" mb={3}>
                 Closer-Management
-              </Text>
+              </AdminLabel>
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
                 <Stack spacing={1}>
                   <FieldLabel>Closer</FieldLabel>
@@ -214,12 +176,11 @@ export function LeadCard({
                       const v = e.target.value;
                       onPatch(lead.id, { closer: v === "" ? null : (v as CloserId) });
                     }}
-                    className="inter"
-                    {...fieldSx}
+                    {...adminInputProps}
                   >
-                    <option value="">–</option>
-                    <option value="kevin">{CLOSER_LABELS.kevin}</option>
-                    <option value="simon">{CLOSER_LABELS.simon}</option>
+                    <option value="" style={adminOptionStyle}>–</option>
+                    <option value="kevin" style={adminOptionStyle}>{CLOSER_LABELS.kevin}</option>
+                    <option value="simon" style={adminOptionStyle}>{CLOSER_LABELS.simon}</option>
                   </Select>
                 </Stack>
 
@@ -232,12 +193,11 @@ export function LeadCard({
                       const v = e.target.value;
                       onPatch(lead.id, { qualified: v === "yes" ? true : v === "no" ? false : null });
                     }}
-                    className="inter"
-                    {...fieldSx}
+                    {...adminInputProps}
                   >
-                    <option value="offen">Offen</option>
-                    <option value="yes">Ja</option>
-                    <option value="no">Nein</option>
+                    <option value="offen" style={adminOptionStyle}>Offen</option>
+                    <option value="yes" style={adminOptionStyle}>Ja</option>
+                    <option value="no" style={adminOptionStyle}>Nein</option>
                   </Select>
                 </Stack>
 
@@ -245,13 +205,12 @@ export function LeadCard({
                   <FieldLabel>No-Show</FieldLabel>
                   <Button
                     size="sm"
+                    variant="line"
                     onClick={() => onPatch(lead.id, { no_show: !lead.no_show })}
-                    bg={lead.no_show ? "rgba(229,72,77,0.18)" : "rgba(255,255,255,0.04)"}
-                    color={lead.no_show ? "#FCA5A5" : "var(--color-text-secondary)"}
-                    border="1px solid"
-                    borderColor={lead.no_show ? "rgba(229,72,77,0.45)" : "rgba(255,255,255,0.12)"}
-                    _hover={{ bg: "rgba(255,255,255,0.06)" }}
-                    className="inter"
+                    bg={lead.no_show ? "rgba(248, 113, 113, 0.1)" : "rgba(255, 255, 255, 0.03)"}
+                    color={lead.no_show ? "var(--cc-danger)" : "var(--cc-text-2)"}
+                    borderColor={lead.no_show ? "rgba(248, 113, 113, 0.35)" : "var(--cc-line-strong)"}
+                    fontWeight={400}
                     justifyContent="flex-start"
                   >
                     {lead.no_show ? "No-Show: Ja" : "No-Show: Nein"}
@@ -264,12 +223,11 @@ export function LeadCard({
                     size="sm"
                     value={lead.closed ?? "pending"}
                     onChange={(e) => onPatch(lead.id, { closed: e.target.value as LeadRow["closed"] ?? "pending" })}
-                    className="inter"
-                    {...fieldSx}
+                    {...adminInputProps}
                   >
-                    <option value="pending">Pending</option>
-                    <option value="closed_won">Closed Won</option>
-                    <option value="closed_lost">Closed Lost</option>
+                    <option value="pending" style={adminOptionStyle}>Pending</option>
+                    <option value="closed_won" style={adminOptionStyle}>Closed Won</option>
+                    <option value="closed_lost" style={adminOptionStyle}>Closed Lost</option>
                   </Select>
                 </Stack>
 
@@ -286,12 +244,11 @@ export function LeadCard({
                         ...(v !== "membership" ? { membership_installments: null } : {}),
                       });
                     }}
-                    className="inter"
-                    {...fieldSx}
+                    {...adminInputProps}
                   >
-                    <option value="">–</option>
-                    <option value="one_to_one">1:1</option>
-                    <option value="membership">Mitgliedschaft</option>
+                    <option value="" style={adminOptionStyle}>–</option>
+                    <option value="one_to_one" style={adminOptionStyle}>1:1</option>
+                    <option value="membership" style={adminOptionStyle}>Mitgliedschaft</option>
                   </Select>
                 </Stack>
 
@@ -308,13 +265,12 @@ export function LeadCard({
                     }}
                     isDisabled={!isMembership}
                     opacity={isMembership ? 1 : 0.45}
-                    className="inter"
-                    {...fieldSx}
+                    {...adminInputProps}
                   >
-                    <option value="">–</option>
-                    <option value="1">1 Rate</option>
-                    <option value="2">2 Raten</option>
-                    <option value="4">4 Raten</option>
+                    <option value="" style={adminOptionStyle}>–</option>
+                    <option value="1" style={adminOptionStyle}>1 Rate</option>
+                    <option value="2" style={adminOptionStyle}>2 Raten</option>
+                    <option value="4" style={adminOptionStyle}>4 Raten</option>
                   </Select>
                 </Stack>
 
@@ -328,8 +284,8 @@ export function LeadCard({
                       const v = e.target.value;
                       onPatch(lead.id, { closed_at: v === "" ? null : v });
                     }}
-                    className="inter"
-                    {...fieldSx}
+                    className="cc-num"
+                    {...adminInputProps}
                   />
                 </Stack>
 
@@ -343,8 +299,7 @@ export function LeadCard({
                       if (product !== (lead.product ?? "")) onPatch(lead.id, { product: product || null });
                     }}
                     placeholder="z. B. Mentoring"
-                    className="inter"
-                    {...fieldSx}
+                    {...adminInputProps}
                   />
                 </Stack>
 
@@ -363,8 +318,9 @@ export function LeadCard({
                       if (cents !== lead.revenue_cents) onPatch(lead.id, { revenue_cents: cents });
                     }}
                     placeholder="0.00"
-                    className="inter inter-semibold"
-                    {...fieldSx}
+                    className="cc-num"
+                    fontWeight={500}
+                    {...adminInputProps}
                   />
                 </Stack>
 
@@ -378,8 +334,8 @@ export function LeadCard({
                     }}
                     placeholder="Gesprächsnotizen, nächste Schritte…"
                     minH="90px"
-                    className="inter"
-                    {...fieldSx}
+                    fontSize="14px"
+                    {...adminInputProps}
                   />
                 </Stack>
               </SimpleGrid>

@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Badge,
   Box,
   Button,
   Divider,
@@ -25,6 +24,22 @@ import {
 } from "@chakra-ui/react";
 import { Download, Eye, EyeOff, FileText, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import {
+  ADMIN_CARD_CLASS,
+  ADMIN_TONES,
+  AdminCardTitle,
+  StatusPill,
+  adminCardPadding,
+  adminDangerButtonProps,
+  adminFormLabelProps,
+  adminInputProps,
+  adminModalHeaderProps,
+  adminModalProps,
+  adminOverlayProps,
+  adminRowProps,
+  adminSwitchSx,
+  type AdminTone,
+} from "@/components/admin/adminUi";
 import { UserTierOverrideModal, type Tier } from "./UserTierOverrideModal";
 
 type UserRow = {
@@ -42,39 +57,26 @@ type UserRow = {
   applicationStatus: "pending" | "approved" | "rejected" | null;
 };
 
-const TIER_BADGE_COLORS: Record<Tier, { bg: string; color: string; border: string; label: string }> = {
-  free: {
-    bg: "rgba(255,255,255,0.06)",
-    color: "#9A9AA4",
-    border: "rgba(255,255,255,0.10)",
-    label: "Free",
-  },
-  monthly: {
-    bg: "rgba(212,175,55,0.10)",
-    color: "#E8C547",
-    border: "rgba(212,175,55,0.22)",
-    label: "Monthly",
-  },
-  lifetime: {
-    bg: "rgba(212,175,55,0.18)",
-    color: "#FFD66B",
-    border: "rgba(212,175,55,0.40)",
-    label: "Lifetime",
-  },
-  ht_1on1: {
-    bg: "rgba(132,82,255,0.14)",
-    color: "#C4B5FD",
-    border: "rgba(132,82,255,0.40)",
-    label: "1on1",
-  },
+/** Tier-Pill: Free neutral, zahlende Tiers grün, High-Ticket in Champagner. */
+const TIER_BADGE: Record<Tier, { tone: AdminTone; label: string }> = {
+  free: { tone: "neutral", label: "Free" },
+  monthly: { tone: "success", label: "Monthly" },
+  lifetime: { tone: "success", label: "Lifetime" },
+  ht_1on1: { tone: "attention", label: "1on1" },
 };
 
-const fieldStyles = {
-  bg: "rgba(255,255,255,0.06)",
-  borderColor: "whiteAlpha.300",
-  color: "gray.100",
-  _placeholder: { color: "gray.500" },
-  _focus: { borderColor: "blue.400", boxShadow: "0 0 0 1px rgba(59,130,246,0.45)" },
+const iconButtonNeutral = {
+  variant: "ghost",
+  color: "var(--cc-text-2)",
+  _hover: { bg: "rgba(255, 255, 255, 0.05)", color: "var(--cc-text)" },
+} as const;
+
+const headerCellProps = {
+  fontSize: "12px",
+  fontWeight: 500,
+  letterSpacing: "0.06em",
+  textTransform: "uppercase",
+  color: "var(--cc-text-2)",
 } as const;
 
 export function AdminMembersManager() {
@@ -218,62 +220,50 @@ export function AdminMembersManager() {
   );
 
   return (
-    <Stack spacing={8}>
+    <Stack spacing={6}>
       {/* ── Nutzer anlegen ── */}
-      <Stack
-        spacing={5}
-        p={{ base: 4, md: 6 }}
-        borderRadius="20px"
-        borderWidth="1px"
-        borderColor="whiteAlpha.200"
-        bg="rgba(255,255,255,0.04)"
-      >
+      <Stack spacing={5} className={ADMIN_CARD_CLASS} p={adminCardPadding}>
         <Box>
-          <HStack spacing={3} mb={1}>
-            <UserPlus size={20} color="var(--chakra-colors-blue-300)" />
-            <Text className="radley-regular" fontSize="xl" color="whiteAlpha.950">
-              Neuen Nutzer anlegen
-            </Text>
+          <HStack spacing={2.5} mb={1.5}>
+            <Box color="var(--cc-text-2)">
+              <UserPlus size={16} strokeWidth={1.75} aria-hidden />
+            </Box>
+            <AdminCardTitle>Neuen Nutzer anlegen</AdminCardTitle>
           </HStack>
-          <Text fontSize="sm" className="inter" color="gray.400">
+          <Text fontSize="sm" color="var(--cc-text-2)">
             Nutzer wird direkt mit bestätigter E-Mail angelegt — kein Bestätigungs-Link nötig.
           </Text>
         </Box>
 
-        <Divider borderColor="whiteAlpha.150" />
+        <Divider borderColor="var(--cc-line)" />
 
         <Stack spacing={4} direction={{ base: "column", md: "row" }} flexWrap="wrap">
           <FormControl flex={1} minW="240px">
-            <FormLabel className="inter" fontSize="xs" textTransform="uppercase" letterSpacing="0.07em" color="gray.300">
-              E-Mail-Adresse *
-            </FormLabel>
+            <FormLabel {...adminFormLabelProps}>E-Mail-Adresse *</FormLabel>
             <Input
               type="email"
               placeholder="nutzer@beispiel.de"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              {...fieldStyles}
+              {...adminInputProps}
             />
           </FormControl>
 
           <FormControl flex={1} minW="240px">
-            <FormLabel className="inter" fontSize="xs" textTransform="uppercase" letterSpacing="0.07em" color="gray.300">
-              Passwort * (min. 8 Zeichen)
-            </FormLabel>
+            <FormLabel {...adminFormLabelProps}>Passwort * (min. 8 Zeichen)</FormLabel>
             <InputGroup>
               <Input
                 type={showPw ? "text" : "password"}
                 placeholder="Sicheres Passwort"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                {...fieldStyles}
+                {...adminInputProps}
               />
               <InputRightElement>
                 <IconButton
                   aria-label={showPw ? "Passwort verbergen" : "Passwort anzeigen"}
                   size="sm"
-                  variant="ghost"
-                  color="gray.400"
+                  {...iconButtonNeutral}
                   icon={showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                   onClick={() => setShowPw((v) => !v)}
                 />
@@ -282,37 +272,35 @@ export function AdminMembersManager() {
           </FormControl>
 
           <FormControl flex={1} minW="200px">
-            <FormLabel className="inter" fontSize="xs" textTransform="uppercase" letterSpacing="0.07em" color="gray.300">
-              Vollständiger Name (optional)
-            </FormLabel>
+            <FormLabel {...adminFormLabelProps}>Vollständiger Name (optional)</FormLabel>
             <Input
               placeholder="Max Mustermann"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              {...fieldStyles}
+              {...adminInputProps}
             />
           </FormControl>
         </Stack>
 
         <HStack spacing={8} flexWrap="wrap">
           <FormControl display="flex" alignItems="center" w="auto">
-            <FormLabel mb={0} className="inter" fontSize="sm" color="gray.200" mr={3}>
+            <FormLabel mb={0} fontSize="sm" color="var(--cc-text-soft)" mr={3}>
               Paid-Mitglied
             </FormLabel>
-            <Switch size="lg" colorScheme="blue" isChecked={isPaid} onChange={(e) => setIsPaid(e.target.checked)} />
+            <Switch size="lg" sx={adminSwitchSx} isChecked={isPaid} onChange={(e) => setIsPaid(e.target.checked)} />
           </FormControl>
           <FormControl display="flex" alignItems="center" w="auto">
-            <FormLabel mb={0} className="inter" fontSize="sm" color="gray.200" mr={3}>
+            <FormLabel mb={0} fontSize="sm" color="var(--cc-text-soft)" mr={3}>
               Admin-Rechte
             </FormLabel>
-            <Switch size="lg" colorScheme="orange" isChecked={isAdmin} onChange={(e) => setIsAdmin(e.target.checked)} />
+            <Switch size="lg" sx={adminSwitchSx} isChecked={isAdmin} onChange={(e) => setIsAdmin(e.target.checked)} />
           </FormControl>
         </HStack>
 
         <HStack>
           <Button
             size="md"
-            colorScheme="blue"
+            variant="gold"
             leftIcon={<UserPlus size={18} />}
             onClick={() => void createUser()}
             isLoading={creating}
@@ -323,20 +311,18 @@ export function AdminMembersManager() {
         </HStack>
 
         {formStatus && (
-          <Text fontSize="sm" className="inter" color={formStatus.ok ? "green.300" : "red.300"}>
+          <Text fontSize="sm" color={formStatus.ok ? "var(--cc-success)" : "var(--cc-danger)"}>
             {formStatus.msg}
           </Text>
         )}
       </Stack>
 
       {/* ── Mitglieder-Tabelle ── */}
-      <Stack spacing={4}>
+      <Stack spacing={4} className={ADMIN_CARD_CLASS} p={adminCardPadding}>
         <HStack justify="space-between" flexWrap="wrap" gap={3}>
           <Box>
-            <Text className="radley-regular" fontSize="xl" color="whiteAlpha.950">
-              Alle Mitglieder
-            </Text>
-            <Text fontSize="sm" className="inter" color="gray.400" mt={0.5}>
+            <AdminCardTitle>Alle Mitglieder</AdminCardTitle>
+            <Text fontSize="sm" color="var(--cc-text-2)" mt={1} className="cc-num">
               {loading ? "Wird geladen…" : `${users.length} Nutzer gesamt`}
             </Text>
           </Box>
@@ -347,36 +333,20 @@ export function AdminMembersManager() {
               onChange={(e) => setSearch(e.target.value)}
               maxW="300px"
               size="sm"
-              {...fieldStyles}
+              {...adminInputProps}
             />
-            <Button
-              size="sm"
-              variant="outline"
-              leftIcon={<Download size={14} />}
-              onClick={exportCsv}
-              borderColor="rgba(212,175,55,0.35)"
-              color="#E8C547"
-              className="inter"
-              _hover={{ bg: "rgba(212,175,55,0.10)" }}
-            >
+            <Button size="sm" variant="line" leftIcon={<Download size={14} />} onClick={exportCsv} flexShrink={0}>
               CSV exportieren
             </Button>
           </HStack>
         </HStack>
 
-        <Box
-          borderRadius="16px"
-          borderWidth="1px"
-          borderColor="whiteAlpha.150"
-          overflow="hidden"
-          bg="rgba(0,0,0,0.2)"
-        >
+        <Box mx={{ base: -2, md: -3 }}>
           {/* Tabellen-Header */}
           <HStack
-            px={4}
-            py={3}
-            borderBottom="1px solid rgba(255,255,255,0.07)"
-            bg="rgba(255,255,255,0.03)"
+            px={3}
+            py={2.5}
+            borderBottom="1px solid var(--cc-line-strong)"
             spacing={4}
             display={{ base: "none", lg: "flex" }}
           >
@@ -394,12 +364,7 @@ export function AdminMembersManager() {
                           ? "100px"
                           : "70px"
                   }
-                  fontSize="11px"
-                  className="inter"
-                  fontWeight={500}
-                  letterSpacing="0.08em"
-                  textTransform="uppercase"
-                  color="gray.600"
+                  {...headerCellProps}
                   textAlign={h === "" ? "right" : "left"}
                 >
                   {h}
@@ -409,134 +374,125 @@ export function AdminMembersManager() {
           </HStack>
 
           {loading ? (
-            <Text px={4} py={6} fontSize="sm" color="gray.400" className="inter">
+            <Text px={3} py={6} fontSize="sm" color="var(--cc-text-2)">
               Mitglieder werden geladen…
             </Text>
           ) : filtered.length === 0 ? (
-            <Text px={4} py={6} fontSize="sm" color="gray.400" className="inter">
+            <Text px={3} py={6} fontSize="sm" color="var(--cc-text-2)">
               Keine Mitglieder gefunden.
             </Text>
           ) : (
-            filtered.map((user) => (
-              <HStack
-                key={user.id}
-                px={4}
-                py={3.5}
-                borderBottom="1px solid rgba(255,255,255,0.05)"
-                spacing={4}
-                align="center"
-                transition="background 150ms"
-                _hover={{ bg: "rgba(255,255,255,0.03)" }}
-                flexDir={{ base: "column", lg: "row" }}
-              >
-                <Stack flex={1} spacing={0.5} align="flex-start" minW={0}>
-                  <Text className="inter" fontSize="sm" fontWeight={500} color="gray.100" noOfLines={1}>
-                    {user.email}
-                  </Text>
-                  {user.fullName || user.username ? (
-                    <Text fontSize="xs" className="inter" color="gray.500" noOfLines={1}>
-                      {user.fullName ?? user.username}
+            filtered.map((user) => {
+              const tier = TIER_BADGE[user.membershipTier];
+              const tone = ADMIN_TONES[tier.tone];
+              return (
+                <HStack
+                  key={user.id}
+                  px={3}
+                  py={3}
+                  spacing={4}
+                  align="center"
+                  flexDir={{ base: "column", lg: "row" }}
+                  {...adminRowProps}
+                >
+                  <Stack flex={1} spacing={0.5} align="flex-start" minW={0}>
+                    <Text fontSize="sm" fontWeight={500} color="var(--cc-text)" noOfLines={1}>
+                      {user.email}
                     </Text>
-                  ) : null}
-                </Stack>
+                    {user.fullName || user.username ? (
+                      <Text fontSize="xs" color="var(--cc-text-2)" noOfLines={1}>
+                        {user.fullName ?? user.username}
+                      </Text>
+                    ) : null}
+                  </Stack>
 
-                {/* Tier */}
-                <Box w={{ base: "auto", lg: "100px" }}>
-                  <Button
-                    size="xs"
-                    variant="outline"
-                    onClick={() => openTier(user)}
-                    leftIcon={<ShieldCheck size={12} />}
-                    bg={TIER_BADGE_COLORS[user.membershipTier].bg}
-                    color={TIER_BADGE_COLORS[user.membershipTier].color}
-                    borderColor={TIER_BADGE_COLORS[user.membershipTier].border}
-                    _hover={{ filter: "brightness(1.1)" }}
-                    className="inter"
-                    fontWeight={500}
-                  >
-                    {TIER_BADGE_COLORS[user.membershipTier].label}
-                  </Button>
-                </Box>
+                  {/* Tier */}
+                  <Box w={{ base: "auto", lg: "100px" }}>
+                    <Button
+                      size="xs"
+                      variant="line"
+                      onClick={() => openTier(user)}
+                      leftIcon={<ShieldCheck size={12} />}
+                      bg={tone.bg}
+                      color={tone.color}
+                      borderColor={tone.border}
+                      borderRadius="full"
+                      fontWeight={500}
+                      _hover={{ bg: tone.bg, borderColor: "var(--cc-gold-line)", filter: "brightness(1.1)" }}
+                    >
+                      {tier.label}
+                    </Button>
+                  </Box>
 
-                {/* Paid */}
-                <Box w={{ base: "auto", lg: "70px" }}>
-                  <Switch
-                    size="md"
-                    colorScheme="blue"
-                    isChecked={user.isPaid}
-                    onChange={() => void togglePaid(user)}
-                  />
-                </Box>
+                  {/* Paid */}
+                  <Box w={{ base: "auto", lg: "70px" }}>
+                    <Switch
+                      size="md"
+                      sx={adminSwitchSx}
+                      isChecked={user.isPaid}
+                      onChange={() => void togglePaid(user)}
+                    />
+                  </Box>
 
-                {/* Admin */}
-                <Box w={{ base: "auto", lg: "70px" }}>
-                  <Switch
-                    size="md"
-                    colorScheme="orange"
-                    isChecked={user.isAdmin}
-                    onChange={() => void toggleAdmin(user)}
-                  />
-                </Box>
+                  {/* Admin */}
+                  <Box w={{ base: "auto", lg: "70px" }}>
+                    <Switch
+                      size="md"
+                      sx={adminSwitchSx}
+                      isChecked={user.isAdmin}
+                      onChange={() => void toggleAdmin(user)}
+                    />
+                  </Box>
 
-                {/* Codex */}
-                <Box w={{ base: "auto", lg: "70px" }}>
-                  <Badge
-                    colorScheme={user.codexAccepted ? "green" : "gray"}
-                    variant="subtle"
+                  {/* Codex */}
+                  <Box w={{ base: "auto", lg: "70px" }}>
+                    <StatusPill tone={user.codexAccepted ? "success" : "neutral"}>
+                      {user.codexAccepted ? "Ja" : "Nein"}
+                    </StatusPill>
+                  </Box>
+
+                  {/* Discord */}
+                  <Text w={{ base: "auto", lg: "70px" }} fontSize="xs" color="var(--cc-text-2)" noOfLines={1}>
+                    {user.discordUsername ?? "—"}
+                  </Text>
+
+                  {/* Registriert */}
+                  <Text
+                    w={{ base: "auto", lg: "110px" }}
                     fontSize="xs"
-                    className="inter"
+                    className="cc-num"
+                    color="var(--cc-text-2)"
+                    flexShrink={0}
                   >
-                    {user.codexAccepted ? "Ja" : "Nein"}
-                  </Badge>
-                </Box>
+                    {new Date(user.createdAt).toLocaleDateString("de-DE")}
+                  </Text>
 
-                {/* Discord */}
-                <Text
-                  w={{ base: "auto", lg: "70px" }}
-                  fontSize="xs"
-                  className="inter"
-                  color="gray.400"
-                  noOfLines={1}
-                >
-                  {user.discordUsername ?? "—"}
-                </Text>
-
-                {/* Registriert */}
-                <Text
-                  w={{ base: "auto", lg: "110px" }}
-                  fontSize="xs"
-                  className="jetbrains-mono"
-                  color="gray.500"
-                  flexShrink={0}
-                >
-                  {new Date(user.createdAt).toLocaleDateString("de-DE")}
-                </Text>
-
-                {/* Aktionen */}
-                <Box w={{ base: "auto", lg: "76px" }} textAlign="right">
-                  <HStack spacing={1} justify="flex-end">
-                    <IconButton
-                      aria-label="DSGVO-Auskunft erzeugen"
-                      title="DSGVO-Auskunft erzeugen"
-                      size="sm"
-                      variant="ghost"
-                      color="#E8C547"
-                      icon={<FileText size={16} />}
-                      isLoading={gdprLoadingId === user.id}
-                      onClick={() => void exportGdpr(user)}
-                    />
-                    <IconButton
-                      aria-label="Nutzer löschen"
-                      size="sm"
-                      variant="ghost"
-                      colorScheme="red"
-                      icon={<Trash2 size={16} />}
-                      onClick={() => confirmDelete(user)}
-                    />
-                  </HStack>
-                </Box>
-              </HStack>
-            ))
+                  {/* Aktionen */}
+                  <Box w={{ base: "auto", lg: "76px" }} textAlign="right">
+                    <HStack spacing={1} justify="flex-end">
+                      <IconButton
+                        aria-label="DSGVO-Auskunft erzeugen"
+                        title="DSGVO-Auskunft erzeugen"
+                        size="sm"
+                        {...iconButtonNeutral}
+                        icon={<FileText size={16} />}
+                        isLoading={gdprLoadingId === user.id}
+                        onClick={() => void exportGdpr(user)}
+                      />
+                      <IconButton
+                        aria-label="Nutzer löschen"
+                        size="sm"
+                        variant="ghost"
+                        color="var(--cc-text-3)"
+                        _hover={{ bg: "rgba(248, 113, 113, 0.08)", color: "var(--cc-danger)" }}
+                        icon={<Trash2 size={16} />}
+                        onClick={() => confirmDelete(user)}
+                      />
+                    </HStack>
+                  </Box>
+                </HStack>
+              );
+            })
           )}
         </Box>
       </Stack>
@@ -588,35 +544,23 @@ export function AdminMembersManager() {
 
       {/* ── Löschen-Bestätigung ── */}
       <Modal isOpen={isDeleteOpen} onClose={onDeleteClose} isCentered>
-        <ModalOverlay bg="blackAlpha.800" backdropFilter="blur(4px)" />
-        <ModalContent
-          bg="rgba(10,11,14,0.97)"
-          border="1px solid rgba(255,255,255,0.09)"
-          borderRadius="24px"
-          mx={4}
-        >
-          <ModalHeader className="radley-regular" fontWeight={400} color="red.300">
-            Nutzer löschen
-          </ModalHeader>
+        <ModalOverlay {...adminOverlayProps} />
+        <ModalContent {...adminModalProps} mx={4}>
+          <ModalHeader {...adminModalHeaderProps}>Nutzer löschen</ModalHeader>
           <ModalBody>
-            <Text className="inter" fontSize="sm" color="gray.300">
+            <Text fontSize="sm" color="var(--cc-text-2)">
               Soll der Nutzer{" "}
-              <Text as="span" fontWeight={600} color="gray.100">
+              <Text as="span" fontWeight={600} color="var(--cc-text)">
                 {deleteTarget?.email}
               </Text>{" "}
               wirklich gelöscht werden? Diese Aktion kann nicht rückgängig gemacht werden.
             </Text>
           </ModalBody>
           <ModalFooter gap={3}>
-            <Button variant="ghost" onClick={onDeleteClose}>
+            <Button variant="ghost" color="var(--cc-text-2)" onClick={onDeleteClose}>
               Abbrechen
             </Button>
-            <Button
-              colorScheme="red"
-              variant="solid"
-              onClick={() => void doDelete()}
-              isLoading={deleting}
-            >
+            <Button {...adminDangerButtonProps} onClick={() => void doDelete()} isLoading={deleting}>
               Endgültig löschen
             </Button>
           </ModalFooter>

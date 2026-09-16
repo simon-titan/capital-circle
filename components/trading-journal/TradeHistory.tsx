@@ -42,6 +42,23 @@ type Props = {
   onOpenTrade: (id: string) => void;
 };
 
+const inputSx = {
+  bg: "rgba(255, 255, 255, 0.03)",
+  borderColor: "var(--cc-line-strong)",
+  borderRadius: "8px",
+  _hover: { borderColor: "var(--cc-gold-line)" },
+  _focusVisible: { borderColor: "var(--cc-gold)", boxShadow: "0 0 0 1px var(--cc-gold)" },
+};
+
+/** Native Dropdown-Listen: dunkler Grund statt System-Weiß. */
+const optionSx = { "& option, & optgroup": { background: "#0e1217" } };
+
+const filterLabelProps = {
+  fontSize: "xs",
+  fontWeight: 500,
+  color: "var(--cc-text-2)",
+};
+
 export function TradeHistory({ trades, onOpenTrade }: Props) {
   const [fStrat, setFStrat] = useState("");
   const [fAsset, setFAsset] = useState("");
@@ -91,13 +108,12 @@ export function TradeHistory({ trades, onOpenTrade }: Props) {
 
   const selProps = {
     size: "sm" as const,
-    bg: "rgba(255,255,255,0.04)",
-    borderColor: "rgba(255,255,255,0.09)",
+    ...inputSx,
+    sx: optionSx,
     maxW: { base: "100%", md: "160px" },
   };
   const dateInputProps = {
-    bg: "rgba(255,255,255,0.04)",
-    borderColor: "rgba(255,255,255,0.09)",
+    ...inputSx,
     maxW: { base: "100%", md: "160px" },
   };
 
@@ -145,12 +161,10 @@ export function TradeHistory({ trades, onOpenTrade }: Props) {
           <option>NEW YORK</option>
           <option>ASIA</option>
         </Select>
-        <Input type="date" size="sm" {...dateInputProps} value={fDate} onChange={(e) => setFDate(e.target.value)} />
+        <Input type="date" size="sm" className="cc-num" {...dateInputProps} value={fDate} onChange={(e) => setFDate(e.target.value)} />
       </Wrap>
       <Wrap spacing={2} mb={4} align="center">
-        <Text fontSize="xs" color="var(--color-text-tertiary)" className="inter-semibold">
-          Zonen:
-        </Text>
+        <Text {...filterLabelProps}>Zonen:</Text>
         <Select {...selProps} value={fZone} onChange={(e) => setFZone(e.target.value)}>
           <option value="">Alle Zonen</option>
           {zoneOpts.map((z) => (
@@ -159,9 +173,7 @@ export function TradeHistory({ trades, onOpenTrade }: Props) {
             </option>
           ))}
         </Select>
-        <Text fontSize="xs" color="var(--color-text-tertiary)" className="inter-semibold">
-          News:
-        </Text>
+        <Text {...filterLabelProps}>News:</Text>
         <Select {...selProps} value={fNews} onChange={(e) => setFNews(e.target.value)}>
           <option value="">Alle News</option>
           {newsOpts.map((z) => (
@@ -170,9 +182,7 @@ export function TradeHistory({ trades, onOpenTrade }: Props) {
             </option>
           ))}
         </Select>
-        <Text fontSize="xs" color="var(--color-text-tertiary)" className="inter-semibold">
-          Marktöffnung:
-        </Text>
+        <Text {...filterLabelProps}>Marktöffnung:</Text>
         <Select {...selProps} value={fOpen} onChange={(e) => setFOpen(e.target.value)}>
           <option value="">Alle</option>
           <option>Im Value geöffnet</option>
@@ -181,25 +191,39 @@ export function TradeHistory({ trades, onOpenTrade }: Props) {
         </Select>
       </Wrap>
 
-      <Text fontSize="xs" color="var(--color-text-tertiary)" mb={2}>
+      <Text fontSize="xs" color="var(--cc-text-2)" className="cc-num" mb={2}>
         {filtered.length} Trades · Klicke für Details
       </Text>
 
-      <TableContainer overflowX="auto" borderRadius="md" border="1px solid rgba(255,255,255,0.08)">
-        <Table size="sm">
-          <Thead bg="rgba(255,255,255,0.03)">
+      <TableContainer
+        overflowX="auto"
+        borderRadius="10px"
+        border="1px solid var(--cc-line)"
+        bg="rgba(255, 255, 255, 0.03)"
+      >
+        <Table size="sm" sx={{ "th, td": { borderColor: "var(--cc-line)" } }}>
+          <Thead bg="rgba(255, 255, 255, 0.03)">
             <Tr>
               {["Datum", "Tag", "Strat", "Asset", "Session", "Dir", "Kontr.", "SL", "TP", "Erg.(T)", "P&L $", "RR", "Emo V", "Emo N", "Tags"].map((h) => (
-                <Th key={h} color="var(--color-text-tertiary)" fontSize="10px" textTransform="uppercase" letterSpacing="0.06em" whiteSpace="nowrap">
+                <Th
+                  key={h}
+                  color="var(--cc-text-2)"
+                  fontSize="10px"
+                  fontWeight={500}
+                  textTransform="uppercase"
+                  letterSpacing="0.08em"
+                  whiteSpace="nowrap"
+                  fontFamily="inherit"
+                >
                   {h}
                 </Th>
               ))}
             </Tr>
           </Thead>
-          <Tbody>
+          <Tbody color="var(--cc-text-soft)">
             {filtered.length === 0 ? (
               <Tr>
-                <Td colSpan={15} textAlign="center" py={10} color="var(--color-text-tertiary)">
+                <Td colSpan={15} textAlign="center" py={10} color="var(--cc-text-2)">
                   Keine Trades.
                 </Td>
               </Tr>
@@ -210,62 +234,79 @@ export function TradeHistory({ trades, onOpenTrade }: Props) {
                 return (
                   <Tr
                     key={t.id}
-                    _hover={{ bg: "rgba(255,255,255,0.04)", cursor: "pointer" }}
+                    transition="background-color 150ms var(--cc-ease)"
+                    _hover={{ bg: "rgba(212, 176, 128, 0.05)", cursor: "pointer" }}
                     onClick={() => onOpenTrade(t.id)}
                   >
-                    <Td whiteSpace="nowrap" className="jetbrains-mono" fontSize="xs">
+                    <Td whiteSpace="nowrap" className="cc-num" fontSize="xs">
                       {t.trade_date} {t.trade_time?.slice(0, 5) ?? ""}
                     </Td>
-                    <Td fontWeight={600} fontSize="xs">
+                    <Td fontWeight={600} fontSize="xs" color="var(--cc-text)">
                       {t.weekday || "—"}
                     </Td>
                     <Td fontSize="xs">{strategyLabel(t.strategy)}</Td>
-                    <Td fontWeight={700} fontSize="xs">
+                    <Td fontWeight={600} fontSize="xs" color="var(--cc-text)">
                       {t.asset}
                     </Td>
                     <Td fontSize="11px">{t.session || "—"}</Td>
-                    <Td fontSize="xs" color={t.direction === "long" ? "var(--color-profit)" : "var(--color-loss)"}>
+                    <Td fontSize="xs" fontWeight={500} color="var(--cc-text)">
                       {t.direction === "long" ? "Long" : "Short"}
                     </Td>
-                    <Td className="jetbrains-mono" fontSize="xs">
+                    <Td className="cc-num" fontSize="xs">
                       {t.contracts}
                     </Td>
-                    <Td className="jetbrains-mono" fontSize="xs">
+                    <Td className="cc-num" fontSize="xs">
                       {t.sl_ticks}
                     </Td>
-                    <Td className="jetbrains-mono" fontSize="xs">
+                    <Td className="cc-num" fontSize="xs">
                       {t.tp_ticks}
                     </Td>
                     <Td
                       fontSize="xs"
-                      fontWeight={700}
+                      fontWeight={600}
                       color={t.result_ticks >= 0 ? "var(--color-profit)" : "var(--color-loss)"}
-                      className="jetbrains-mono"
+                      className="cc-num"
                     >
                       {t.result_ticks >= 0 ? "+" : ""}
                       {t.result_ticks}T
                     </Td>
                     <Td
                       fontSize="xs"
-                      fontWeight={700}
+                      fontWeight={600}
                       color={t.result_dollar >= 0 ? "var(--color-profit)" : "var(--color-loss)"}
-                      className="jetbrains-mono"
+                      className="cc-num"
                     >
                       {t.result_dollar >= 0 ? "+" : ""}$
                       {Math.abs(t.result_dollar).toFixed(2)}
                     </Td>
-                    <Td fontSize="xs" className="jetbrains-mono">
+                    <Td fontSize="xs" className="cc-num">
                       {t.rr || "—"}
                     </Td>
                     <Td fontSize="11px">{t.emotion_before || "—"}</Td>
                     <Td fontSize="11px">{t.emotion_after || "—"}</Td>
                     <Td fontSize="10px" maxW="140px">
                       {tags.map((x) => (
-                        <Box as="span" key={x} display="inline-block" px={1} py={0.5} mr={1} mb={1} borderRadius="sm" bg="rgba(255,255,255,0.06)">
+                        <Box
+                          as="span"
+                          key={x}
+                          display="inline-block"
+                          px={1.5}
+                          py={0.5}
+                          mr={1}
+                          mb={1}
+                          borderRadius="4px"
+                          border="1px solid var(--cc-line)"
+                          bg="rgba(255, 255, 255, 0.04)"
+                          color="var(--cc-text-soft)"
+                        >
                           {x}
                         </Box>
                       ))}
-                      {more > 0 ? <Text as="span" color="var(--color-text-tertiary)">+{more}</Text> : null}
+                      {more > 0 ? (
+                        <Text as="span" color="var(--cc-text-3)" className="cc-num">
+                          +{more}
+                        </Text>
+                      ) : null}
                     </Td>
                   </Tr>
                 );

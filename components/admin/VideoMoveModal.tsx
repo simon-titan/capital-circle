@@ -24,6 +24,20 @@ type SubcategoryOption = { id: string; title: string };
 const UNASSIGNED_SLUG = "__unassigned__";
 const DIRECT = "__direct__";
 
+const fieldSx = {
+  bg: "rgba(255, 255, 255, 0.03)",
+  border: "1px solid",
+  borderColor: "var(--cc-line-strong)",
+  borderRadius: "8px",
+  color: "var(--cc-text)",
+  _hover: { borderColor: "rgba(255, 255, 255, 0.22)" },
+  _focusVisible: { borderColor: "var(--cc-gold-line)", boxShadow: "0 0 0 1px var(--cc-gold-line)" },
+} as const;
+
+const labelSx = { fontSize: "13px", fontWeight: 500, color: "var(--cc-text-2)" } as const;
+
+const optionStyle = { background: "var(--cc-panel-solid)" };
+
 export function VideoMoveModal({
   isOpen,
   onClose,
@@ -153,46 +167,52 @@ export function VideoMoveModal({
 
   return (
     <Modal isOpen={isOpen} onClose={() => !saving && onClose()} isCentered size="md">
-      <ModalOverlay bg="rgba(7, 8, 10, 0.75)" backdropFilter="blur(8px)" />
-      <ModalContent bg="gray.900" borderWidth="1px" borderColor="whiteAlpha.200">
-        <ModalHeader className="inter-semibold" fontWeight={600} color="gray.100">
+      <ModalOverlay bg="rgba(8, 10, 12, 0.72)" backdropFilter="blur(6px)" />
+      <ModalContent
+        bg="var(--cc-panel-solid)"
+        border="1px solid rgba(212, 176, 128, 0.28)"
+        borderRadius="12px"
+        boxShadow="0 24px 60px rgba(0, 0, 0, 0.6)"
+        mx={4}
+      >
+        <ModalHeader fontSize="17px" fontWeight={600} color="var(--cc-text)">
           Video verschieben
         </ModalHeader>
-        <ModalCloseButton isDisabled={saving} />
+        <ModalCloseButton isDisabled={saving} color="var(--cc-text-2)" />
         <ModalBody>
           <Stack spacing={4}>
             {video ? (
-              <Text className="inter" fontSize="sm" color="gray.400">
-                „<Text as="span" fontWeight={600} color="gray.200">{video.title}</Text>“ in ein anderes
+              <Text fontSize="14px" lineHeight={1.5} color="var(--cc-text-2)">
+                „<Text as="span" fontWeight={600} color="var(--cc-text)">{video.title}</Text>“ in ein anderes
                 Modul/Subkategorie legen. Der Lernfortschritt der Mitglieder wird übernommen.
               </Text>
             ) : null}
 
             <FormControl>
-              <FormLabel className="inter" fontSize="xs" color="gray.500">Kurs</FormLabel>
+              <FormLabel {...labelSx}>Kurs</FormLabel>
               <Select
                 value={courseId}
                 onChange={(e) => setCourseId(e.target.value)}
-                borderColor="whiteAlpha.200"
+                {...fieldSx}
                 isDisabled={saving || loadingCourses}
               >
                 {courses.map((c) => (
-                  <option key={c.id} value={c.id}>{c.title}</option>
+                  <option key={c.id} value={c.id} style={optionStyle}>{c.title}</option>
                 ))}
               </Select>
             </FormControl>
 
             <FormControl>
-              <FormLabel className="inter" fontSize="xs" color="gray.500">Modul</FormLabel>
+              <FormLabel {...labelSx}>Modul</FormLabel>
               <Select
                 value={moduleId}
                 onChange={(e) => setModuleId(e.target.value)}
-                borderColor="whiteAlpha.200"
+                {...fieldSx}
                 isDisabled={saving || loadingModules || modules.length === 0}
               >
-                {modules.length === 0 ? <option value="">Keine Module</option> : null}
+                {modules.length === 0 ? <option value="" style={optionStyle}>Keine Module</option> : null}
                 {modules.map((m) => (
-                  <option key={m.id} value={m.id}>
+                  <option key={m.id} value={m.id} style={optionStyle}>
                     {m.title}{m.id === currentModuleId ? " (aktuelles Modul)" : ""}
                   </option>
                 ))}
@@ -200,29 +220,29 @@ export function VideoMoveModal({
             </FormControl>
 
             <FormControl>
-              <FormLabel className="inter" fontSize="xs" color="gray.500">Ziel im Modul</FormLabel>
+              <FormLabel {...labelSx}>Ziel im Modul</FormLabel>
               <Select
                 value={target}
                 onChange={(e) => setTarget(e.target.value)}
-                borderColor="whiteAlpha.200"
+                {...fieldSx}
                 isDisabled={saving}
               >
-                <option value={DIRECT}>— direkt im Modul —</option>
+                <option value={DIRECT} style={optionStyle}>— direkt im Modul —</option>
                 {subcategories.map((s) => (
-                  <option key={s.id} value={s.id}>Subkategorie: {s.title}</option>
+                  <option key={s.id} value={s.id} style={optionStyle}>Subkategorie: {s.title}</option>
                 ))}
               </Select>
             </FormControl>
 
             {error ? (
-              <Text className="inter" fontSize="sm" color="red.300">{error}</Text>
+              <Text fontSize="14px" color="var(--cc-danger)">{error}</Text>
             ) : null}
           </Stack>
         </ModalBody>
         <ModalFooter gap={3}>
-          <Button variant="ghost" onClick={onClose} isDisabled={saving}>Abbrechen</Button>
+          <Button variant="line" onClick={onClose} isDisabled={saving}>Abbrechen</Button>
           <Button
-            colorScheme="yellow"
+            variant="gold"
             onClick={() => void confirmMove()}
             isLoading={saving}
             isDisabled={!moduleId}

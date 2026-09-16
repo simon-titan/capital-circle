@@ -1,15 +1,12 @@
 "use client";
 
 import {
-  Alert,
-  AlertIcon,
   Box,
   Button,
   FormControl,
   FormErrorMessage,
   FormHelperText,
   FormLabel,
-  HStack,
   Input,
   Modal,
   ModalBody,
@@ -21,35 +18,31 @@ import {
   Text,
   Textarea,
 } from "@chakra-ui/react";
+import { Check } from "lucide-react";
 import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { glassPrimaryButtonProps } from "@/components/ui/glassButtonStyles";
+import {
+  CharCounterPill,
+  FunnelAlert,
+  FunnelHeadline,
+  FunnelModalTopBar,
+  FunnelProgress,
+  FunnelStepIndicator,
+  FunnelWarningOverlay,
+  funnelBackButtonProps,
+  funnelErrorProps,
+  funnelFieldProps,
+  funnelHelperProps,
+  funnelLabelProps,
+  funnelModalContentProps,
+  funnelOverlayProps,
+  noMotion,
+} from "./funnel-ui";
 
 const STEPS = 4;
 const MIN_CHARS = 150;
 const WARNING_SECONDS = 5;
-
-/** Gold-CTA wie auf Landing / Insight (nur sichtbar wenn Warn-Countdown abgelaufen). */
-const warningDismissGoldSx = {
-  background:
-    "linear-gradient(135deg, #E8C547 0%, #D4AF37 50%, #A67C00 100%)",
-  color: "#07080A",
-  border: "none",
-  boxShadow:
-    "0 0 28px rgba(212,175,55,0.30), 0 4px 16px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.22)",
-  _hover: {
-    background:
-      "linear-gradient(135deg, #F0DC82 0%, #E8C547 50%, #D4AF37 100%)",
-    boxShadow:
-      "0 0 44px rgba(212,175,55,0.50), 0 6px 22px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.28)",
-    transform: "translateY(-1px)",
-  },
-  _active: {
-    transform: "translateY(0px)",
-    boxShadow: "0 0 16px rgba(212,175,55,0.20)",
-  },
-} as const;
 
 const QUESTIONS = {
   experience: {
@@ -76,23 +69,6 @@ const QUESTIONS = {
     placeholder:
       "Ich möchte aufgenommen werden, weil ... Jetzt ist der richtige Zeitpunkt, weil ...",
   },
-} as const;
-
-const inputStyles = {
-  bg: "rgba(255,255,255,0.04)",
-  borderColor: "rgba(255,255,255,0.10)",
-  color: "var(--color-text-primary)",
-  _placeholder: {
-    color: "rgba(255,255,255,0.28)",
-    fontStyle: "italic" as const,
-  },
-  _hover: { borderColor: "rgba(212,175,55,0.40)" },
-  _focus: {
-    borderColor: "rgba(212,175,55,0.65)",
-    boxShadow: "0 0 0 1px rgba(212,175,55,0.45)",
-    bg: "rgba(212,175,55,0.04)",
-  },
-  transition: "all 200ms ease",
 } as const;
 
 interface Props {
@@ -306,6 +282,13 @@ export function FreeApplicationModal({ isOpen, onClose }: Props) {
 
   const progressPct = (step / STEPS) * 100;
   const isSubmitStep = step === 4;
+  const hiddenWhileWarning = {
+    "aria-hidden": showWarning,
+    sx: {
+      visibility: showWarning ? "hidden" : "visible",
+      pointerEvents: showWarning ? "none" : "auto",
+    },
+  } as const;
 
   return (
     <>
@@ -327,107 +310,24 @@ export function FreeApplicationModal({ isOpen, onClose }: Props) {
         closeOnEsc={!showWarning}
         isCentered
       >
-        <ModalOverlay
-          bg="rgba(0,0,0,0.78)"
-          backdropFilter="blur(14px)"
-          sx={{ WebkitBackdropFilter: "blur(14px)" }}
-        />
-        <ModalContent
-          sx={{
-            position: "relative",
-            overflow: "hidden",
-            background: "rgba(10,10,12,0.94)",
-            backdropFilter: "blur(28px)",
-            WebkitBackdropFilter: "blur(28px)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: "24px",
-            boxShadow:
-              "0 24px 80px rgba(0,0,0,0.80), 0 0 0 1px rgba(212,175,55,0.08), inset 0 1px 0 rgba(255,255,255,0.06)",
-            _before: {
-              content: '""',
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              height: "120px",
-              background:
-                "radial-gradient(ellipse at top, rgba(212,175,55,0.07), transparent 70%)",
-              pointerEvents: "none",
-              zIndex: 0,
-            },
-          }}
-          maxW="680px"
-          mx={4}
-        >
+        <ModalOverlay {...funnelOverlayProps} />
+        <ModalContent {...funnelModalContentProps}>
           {/* Warning overlay */}
           {showWarning && (
-            <WarningOverlay
+            <FunnelWarningOverlay
               countdown={warningCountdown}
               fadingOut={warningFadingOut}
               onDismiss={dismissWarning}
+              lead="Das ist deine offizielle Bewerbung für Capital Circle."
             />
           )}
 
-          <ModalHeader
-            px={6}
-            pt={6}
-            pb={0}
-            position="relative"
-            zIndex={1}
-            aria-hidden={showWarning}
-            sx={{
-              visibility: showWarning ? "hidden" : "visible",
-              pointerEvents: showWarning ? "none" : "auto",
-            }}
-          >
+          <ModalHeader px={6} pt={6} pb={0} position="relative" zIndex={1} {...hiddenWhileWarning}>
             {step < 5 && (
               <Stack spacing={4}>
-                <HStack justify="space-between" align="center">
-                  <Text
-                    fontSize="10px"
-                    letterSpacing="0.22em"
-                    textTransform="uppercase"
-                    color="var(--color-accent-gold)"
-                    className="inter-semibold"
-                  >
-                    Capital Circle · Offizielle Bewerbung
-                  </Text>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleClose}
-                    color="rgba(255,255,255,0.35)"
-                    _hover={{
-                      color: "rgba(255,255,255,0.7)",
-                      bg: "rgba(255,255,255,0.06)",
-                    }}
-                    borderRadius="8px"
-                    minW="auto"
-                    px={2}
-                    fontSize="lg"
-                  >
-                    ×
-                  </Button>
-                </HStack>
-
-                <StepIndicator current={step} total={4} />
-
-                <Box
-                  h="2px"
-                  w="full"
-                  bg="rgba(255,255,255,0.06)"
-                  borderRadius="full"
-                  overflow="hidden"
-                >
-                  <Box
-                    h="full"
-                    w={`${progressPct}%`}
-                    bg="linear-gradient(90deg, rgba(212,175,55,0.6) 0%, rgba(212,175,55,1) 100%)"
-                    borderRadius="full"
-                    boxShadow="0 0 10px rgba(212,175,55,0.4)"
-                    transition="width 0.4s cubic-bezier(0.4,0,0.2,1)"
-                  />
-                </Box>
+                <FunnelModalTopBar label="Capital Circle · Offizielle Bewerbung" onClose={handleClose} />
+                <FunnelStepIndicator current={step} total={4} />
+                <FunnelProgress value={progressPct} />
               </Stack>
             )}
           </ModalHeader>
@@ -437,6 +337,7 @@ export function FreeApplicationModal({ isOpen, onClose }: Props) {
               key={step}
               sx={{
                 animation: "appStepEnter 0.3s cubic-bezier(0.16,1,0.3,1)",
+                ...noMotion,
               }}
             >
               {step === 1 && (
@@ -486,7 +387,7 @@ export function FreeApplicationModal({ isOpen, onClose }: Props) {
                   turnstileContainerRef={turnstileContainerRef}
                 />
               )}
-              </Box>
+            </Box>
           </ModalBody>
 
           {step < 5 && (
@@ -498,108 +399,42 @@ export function FreeApplicationModal({ isOpen, onClose }: Props) {
               flexDirection="column"
               position="relative"
               zIndex={1}
-              aria-hidden={showWarning}
-              sx={{
-                visibility: showWarning ? "hidden" : "visible",
-                pointerEvents: showWarning ? "none" : "auto",
-              }}
+              {...hiddenWhileWarning}
             >
               {isSubmitStep ? (
                 <Button
-                  variant="unstyled"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  gap={2}
+                  variant="gold"
                   w="full"
-                  minH="48px"
-                  fontWeight="600"
-                  fontSize="md"
-                  borderRadius="12px"
-                  color="white"
-                  bg="rgba(34,197,94,0.55)"
-                  borderWidth="1px"
-                  borderColor="rgba(34,197,94,0.65)"
-                  boxShadow="inset 0 1px 0 rgba(255,255,255,0.12)"
-                  _hover={
-                    accountStepComplete
-                      ? {
-                          bg: "rgba(34,197,94,0.70)",
-                          borderColor: "rgba(74,222,128,0.75)",
-                          boxShadow:
-                            "0 0 24px rgba(34,197,94,0.30), inset 0 1px 0 rgba(255,255,255,0.12)",
-                          transform: "translateY(-1px)",
-                        }
-                      : {}
-                  }
-                  _active={{ bg: "rgba(22,163,74,0.65)" }}
-                  _disabled={{
-                    opacity: 0.5,
-                    cursor: "not-allowed",
-                    transform: "none",
-                    boxShadow: "none",
-                  }}
-                  transition="all 200ms ease"
+                  h="48px"
+                  fontSize="16px"
+                  leftIcon={<Check size={18} strokeWidth={2.25} />}
                   onClick={handleNext}
                   isLoading={submitting}
                   isDisabled={!accountStepComplete}
                   loadingText="Bewerbung wird abgeschickt…"
-                  className="inter-semibold"
                 >
-                  <Box as="span" fontSize="18px" lineHeight="1">
-                    ✓
-                  </Box>
                   Bewerbung absenden
                 </Button>
               ) : (
                 <Button
-                  {...glassPrimaryButtonProps}
-                  color="white"
+                  variant="gold"
+                  w="full"
+                  h="48px"
+                  fontSize="16px"
                   onClick={handleNext}
                   isDisabled={!currentStepMeetsMin}
-                  _hover={
-                    currentStepMeetsMin
-                      ? {
-                          ...glassPrimaryButtonProps._hover,
-                          color: "white",
-                          boxShadow: "0 0 24px rgba(212,175,55,0.25)",
-                          transform: "translateY(-1px)",
-                        }
-                      : {}
-                  }
-                  transition="all 200ms ease"
                 >
                   Weiter
                 </Button>
               )}
 
               {step > 1 && (
-                <Button
-                  variant="ghost"
-                  w="full"
-                  size="sm"
-                  onClick={handleBack}
-                  color="rgba(255,255,255,0.45)"
-                  _hover={{
-                    color: "rgba(255,255,255,0.75)",
-                    bg: "rgba(255,255,255,0.05)",
-                    borderColor: "rgba(212,175,55,0.25)",
-                  }}
-                  borderRadius="10px"
-                  border="1px solid transparent"
-                  transition="all 200ms ease"
-                  className="inter"
-                >
+                <Button {...funnelBackButtonProps} onClick={handleBack}>
                   ← Zurück
                 </Button>
               )}
 
-              <Text
-                fontSize="9px"
-                color="rgba(255,255,255,0.18)"
-                className="inter"
-                textAlign="center"
-              >
+              <Text fontSize="11px" color="var(--cc-text-3)" textAlign="center">
                 Mit dem Absenden stimmst du unserer Datenschutzerklärung zu.
               </Text>
             </ModalFooter>
@@ -607,275 +442,6 @@ export function FreeApplicationModal({ isOpen, onClose }: Props) {
         </ModalContent>
       </Modal>
     </>
-  );
-}
-
-/* ================================================================
-   Warning Overlay — subtle, semi-transparent glass over the modal
-   ================================================================ */
-
-function WarningOverlay({
-  countdown,
-  fadingOut,
-  onDismiss,
-}: {
-  countdown: number;
-  fadingOut: boolean;
-  onDismiss: () => void;
-}) {
-  const canDismiss = countdown <= 0;
-
-  return (
-    <Box
-      position="absolute"
-      inset={0}
-      zIndex={10}
-      borderRadius="inherit"
-      w="100%"
-      h="100%"
-      display="flex"
-      flexDirection="column"
-      alignItems="stretch"
-      justifyContent="center"
-      textAlign="center"
-      px={6}
-      pt={{
-        base: "max(24px, env(safe-area-inset-top, 0px))",
-        md: 6,
-      }}
-      pb={{
-        base: "max(24px, env(safe-area-inset-bottom, 0px))",
-        md: 6,
-      }}
-      overflowY="auto"
-      overflowX="hidden"
-      sx={{
-        WebkitOverflowScrolling: "touch",
-        overscrollBehavior: "contain",
-        background: "rgba(10,10,12,0.88)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-        borderTop: "2px solid rgba(220,60,60,0.35)",
-        animation: fadingOut
-          ? "appWarningFadeOut 0.3s ease forwards"
-          : undefined,
-      }}
-    >
-      <Box w="100%" maxW="100%" flexShrink={0} mx="auto">
-        {/* Subtle warning accent line */}
-        <Box
-          w="48px"
-          h="3px"
-          borderRadius="full"
-          bg="linear-gradient(90deg, rgba(220,60,60,0.6), rgba(220,60,60,0.2))"
-          mb={{ base: 3, md: 5 }}
-          mx="auto"
-        />
-
-        <Box
-          w={{ base: "48px", md: "56px" }}
-          h={{ base: "48px", md: "56px" }}
-          borderRadius="full"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          bg="rgba(220,60,60,0.10)"
-          border="1.5px solid rgba(220,60,60,0.30)"
-          mb={{ base: 3, md: 5 }}
-          mx="auto"
-          sx={{
-            animation: "appWarningPulse 2.5s ease-in-out infinite",
-          }}
-        >
-          <Text
-            fontSize={{ base: "22px", md: "26px" }}
-            lineHeight="1"
-            userSelect="none"
-            color="rgba(248,113,113,0.85)"
-          >
-            !
-          </Text>
-        </Box>
-
-        <Text
-          className="inter-bold"
-          fontSize="xs"
-          letterSpacing="0.22em"
-          textTransform="uppercase"
-          color="rgba(248,113,113,0.80)"
-          mb={{ base: 3, md: 4 }}
-        >
-          Wichtige Mitteilung
-        </Text>
-
-        <Stack spacing={3} mb={{ base: 5, md: 7 }}>
-          <Text
-            className="inter"
-            fontSize={{ base: "sm", md: "md" }}
-            lineHeight="1.7"
-            color="rgba(255,255,255,0.78)"
-          >
-            Das ist deine offizielle Bewerbung für Capital Circle.
-          </Text>
-          <Text
-            className="inter"
-            fontSize={{ base: "sm", md: "md" }}
-            lineHeight="1.7"
-            color="rgba(255,255,255,0.78)"
-          >
-            Wir wählen alle Teilnehmer nach einer ausführlichen Auswertung aus!
-          </Text>
-          <Text
-            className="inter"
-            fontSize={{ base: "sm", md: "md" }}
-            lineHeight="1.7"
-            color="rgba(255,255,255,0.78)"
-          >
-            Du hast eine{" "}
-            <Box as="span" className="inter-bold" color="rgba(248,113,113,0.90)">
-              einmalige Chance
-            </Box>{" "}
-            dich zu bewerben, sofern wir dich ablehnen ist diese Entscheidung{" "}
-            <Box as="span" className="inter-bold" color="rgba(248,113,113,0.90)">
-              final
-            </Box>
-            !
-          </Text>
-          <Text
-            className="inter-semibold"
-            fontSize={{ base: "sm", md: "md" }}
-            lineHeight="1.7"
-            color="rgba(255,255,255,0.88)"
-          >
-            Nimm dir also Zeit und beantworte alle Fragen ausführlich!
-          </Text>
-        </Stack>
-
-        <Button
-          variant="unstyled"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          w="full"
-          maxW="380px"
-          mx="auto"
-          minH={{ base: "44px", md: "48px" }}
-          px={5}
-          borderRadius="12px"
-          fontSize={{ base: "13px", md: "sm" }}
-          fontWeight="600"
-          className="inter-semibold"
-          whiteSpace={{ base: "normal", md: "nowrap" }}
-          lineHeight="1.35"
-          textAlign="center"
-          isDisabled={!canDismiss}
-          onClick={onDismiss}
-          bg={canDismiss ? undefined : "rgba(255,255,255,0.04)"}
-          color={
-            canDismiss ? "#07080A" : "rgba(255,255,255,0.35)"
-          }
-          border="1px solid"
-          borderColor={
-            canDismiss ? "transparent" : "rgba(255,255,255,0.06)"
-          }
-          sx={
-            canDismiss
-              ? warningDismissGoldSx
-              : {
-                  _hover: {},
-                }
-          }
-          _disabled={{
-            opacity: 1,
-            cursor: "not-allowed",
-          }}
-          transition="all 200ms ease"
-        >
-          {canDismiss
-            ? "Ich habe verstanden — Bewerbung starten →"
-            : `Bitte lies die Mitteilung sorgfältig… (${countdown}s)`}
-        </Button>
-      </Box>
-    </Box>
-  );
-}
-
-/* ================================================================
-   Step Indicator (Gold Circles)
-   ================================================================ */
-
-function StepIndicator({
-  current,
-  total,
-}: {
-  current: number;
-  total: number;
-}) {
-  return (
-    <HStack spacing={0} justify="center" align="center" w="full">
-      {Array.from({ length: total }, (_, i) => {
-        const stepNum = i + 1;
-        const isActive = stepNum === current;
-        const isCompleted = stepNum < current;
-
-        return (
-          <HStack key={stepNum} spacing={0} align="center">
-            {i > 0 && (
-              <Box
-                h="2px"
-                w={{ base: "28px", md: "48px" }}
-                bg={
-                  isCompleted || isActive
-                    ? "linear-gradient(90deg, rgba(212,175,55,0.8), rgba(212,175,55,0.4))"
-                    : "rgba(255,255,255,0.08)"
-                }
-                transition="background 0.4s ease"
-              />
-            )}
-            <Box
-              w="32px"
-              h="32px"
-              borderRadius="full"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              fontSize="12px"
-              fontWeight="700"
-              className="inter-bold"
-              flexShrink={0}
-              transition="all 0.25s cubic-bezier(0.16,1,0.3,1)"
-              transform={isActive ? "scale(1.12)" : "scale(1)"}
-              bg={
-                isCompleted
-                  ? "linear-gradient(135deg, #D4AF37, #F4D76E)"
-                  : isActive
-                    ? "linear-gradient(135deg, #D4AF37, #F4D76E)"
-                    : "rgba(255,255,255,0.05)"
-              }
-              color={
-                isCompleted || isActive
-                  ? "#0a0a0a"
-                  : "rgba(255,255,255,0.4)"
-              }
-              border={
-                isCompleted || isActive
-                  ? "none"
-                  : "1px solid rgba(255,255,255,0.12)"
-              }
-              boxShadow={
-                isActive
-                  ? "0 0 16px rgba(212,175,55,0.45)"
-                  : isCompleted
-                    ? "0 0 8px rgba(212,175,55,0.25)"
-                    : "none"
-              }
-            >
-              {isCompleted ? "✓" : stepNum}
-            </Box>
-          </HStack>
-        );
-      })}
-    </HStack>
   );
 }
 
@@ -903,23 +469,10 @@ function QuestionStep({
   return (
     <Stack spacing={5}>
       <Stack spacing={2}>
-        <Text
-          as="h2"
-          className="inter"
-          fontWeight={300}
-          fontSize={{ base: "xl", md: "2xl" }}
-          lineHeight="1.25"
-          letterSpacing="-0.01em"
-          color="var(--color-text-primary)"
-        >
+        <FunnelHeadline as="h2" scale="sm">
           {heading}
-        </Text>
-        <Text
-          fontSize="sm"
-          color="rgba(255,255,255,0.52)"
-          className="inter"
-          lineHeight="1.6"
-        >
+        </FunnelHeadline>
+        <Text fontSize="14px" color="var(--cc-text-2)" lineHeight="1.6">
           {description}
         </Text>
       </Stack>
@@ -927,19 +480,19 @@ function QuestionStep({
       <FormControl isInvalid={Boolean(error)} isRequired>
         <Box position="relative">
           <Textarea
-            {...inputStyles}
+            {...funnelFieldProps}
             minH="150px"
+            pb={10}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
             resize="vertical"
-            borderRadius="14px"
-            className="inter"
-            fontSize="sm"
+            fontSize="14px"
+            aria-label={heading}
           />
           <CharCounterPill value={value} min={min} />
         </Box>
-        <FormErrorMessage>{error}</FormErrorMessage>
+        <FormErrorMessage {...funnelErrorProps}>{error}</FormErrorMessage>
       </FormControl>
     </Stack>
   );
@@ -974,102 +527,56 @@ function AccountStep({
 }) {
   return (
     <Stack spacing={5}>
-      <Stack spacing={1}>
-        <Text
-          as="h2"
-          className="inter"
-          fontWeight={300}
-          fontSize={{ base: "xl", md: "2xl" }}
-          lineHeight="1.25"
-          letterSpacing="-0.01em"
-          color="var(--color-text-primary)"
-        >
+      <Stack spacing={2}>
+        <FunnelHeadline as="h2" scale="sm">
           Fast geschafft — deine Daten
-        </Text>
-        <Text
-          fontSize="sm"
-          color="rgba(255,255,255,0.52)"
-          className="inter"
-          lineHeight="1.6"
-        >
+        </FunnelHeadline>
+        <Text fontSize="14px" color="var(--cc-text-2)" lineHeight="1.6">
           Wir legen deinen Account an und schicken dir eine Bestätigung sobald
           deine Bewerbung geprüft wurde.
         </Text>
       </Stack>
 
       <FormControl isInvalid={Boolean(errors.fullName)} isRequired>
-        <FormLabel
-          className="inter-semibold"
-          fontSize="xs"
-          color="rgba(255,255,255,0.65)"
-          letterSpacing="0.04em"
-          textTransform="uppercase"
-        >
-          Vollständiger Name
-        </FormLabel>
+        <FormLabel {...funnelLabelProps}>Vollständiger Name</FormLabel>
         <Input
-          {...inputStyles}
+          {...funnelFieldProps}
+          h="48px"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
           placeholder="Max Mustermann"
           autoComplete="name"
-          borderRadius="12px"
-          className="inter"
         />
-        <FormErrorMessage>{errors.fullName}</FormErrorMessage>
+        <FormErrorMessage {...funnelErrorProps}>{errors.fullName}</FormErrorMessage>
       </FormControl>
 
       <FormControl isInvalid={Boolean(errors.email)} isRequired>
-        <FormLabel
-          className="inter-semibold"
-          fontSize="xs"
-          color="rgba(255,255,255,0.65)"
-          letterSpacing="0.04em"
-          textTransform="uppercase"
-        >
-          E-Mail-Adresse
-        </FormLabel>
+        <FormLabel {...funnelLabelProps}>E-Mail-Adresse</FormLabel>
         <Input
-          {...inputStyles}
+          {...funnelFieldProps}
+          h="48px"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="du@example.com"
           autoComplete="email"
-          borderRadius="12px"
-          className="inter"
         />
-        <FormErrorMessage>{errors.email}</FormErrorMessage>
+        <FormErrorMessage {...funnelErrorProps}>{errors.email}</FormErrorMessage>
       </FormControl>
 
       <FormControl isInvalid={Boolean(errors.password)} isRequired>
-        <FormLabel
-          className="inter-semibold"
-          fontSize="xs"
-          color="rgba(255,255,255,0.65)"
-          letterSpacing="0.04em"
-          textTransform="uppercase"
-        >
-          Passwort
-        </FormLabel>
+        <FormLabel {...funnelLabelProps}>Passwort</FormLabel>
         <Input
-          {...inputStyles}
+          {...funnelFieldProps}
+          h="48px"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Mindestens 8 Zeichen"
           autoComplete="new-password"
-          borderRadius="12px"
-          className="inter"
         />
-        <FormHelperText
-          color="rgba(255,255,255,0.30)"
-          fontSize="xs"
-          className="inter"
-        >
-          Mindestens 8 Zeichen.
-        </FormHelperText>
-        <FormErrorMessage>{errors.password}</FormErrorMessage>
+        <FormHelperText {...funnelHelperProps}>Mindestens 8 Zeichen.</FormHelperText>
+        <FormErrorMessage {...funnelErrorProps}>{errors.password}</FormErrorMessage>
       </FormControl>
 
       {siteKey ? (
@@ -1080,120 +587,20 @@ function AccountStep({
         />
       ) : null}
 
-      {serverError && (
-        <Alert
-          status="error"
-          variant="subtle"
-          bg="rgba(229,72,77,0.10)"
-          borderRadius="12px"
-          border="1px solid rgba(229,72,77,0.25)"
-        >
-          <AlertIcon />
-          <Text fontSize="sm" className="inter">
-            {serverError}
-          </Text>
-        </Alert>
-      )}
+      {serverError && <FunnelAlert>{serverError}</FunnelAlert>}
 
-      <Text
-        fontSize="xs"
-        color="rgba(255,255,255,0.35)"
-        className="inter"
-        textAlign="center"
-      >
+      <Text fontSize="13px" color="var(--cc-text-2)" textAlign="center">
         Du hast bereits einen Account?{" "}
         <Box
           as="a"
           href="/login"
-          color="var(--color-accent-gold)"
+          color="var(--cc-gold-light)"
           textDecoration="underline"
+          textUnderlineOffset="2px"
         >
           Einloggen
         </Box>
       </Text>
     </Stack>
-  );
-}
-
-/* ================================================================
-   Character Counter Pill with green check on completion
-   ================================================================ */
-
-function CharCounterPill({ value, min }: { value: string; min: number }) {
-  const len = value.trim().length;
-  const pct = Math.min(len / min, 1);
-  const ok = pct >= 1;
-
-  const r = 9;
-  const circ = 2 * Math.PI * r;
-  const offset = circ * (1 - pct);
-
-  return (
-    <HStack
-      position="absolute"
-      bottom="10px"
-      right="10px"
-      spacing={1.5}
-      bg="rgba(0,0,0,0.55)"
-      backdropFilter="blur(8px)"
-      borderRadius="full"
-      px={2}
-      py={0.5}
-      zIndex={2}
-    >
-      {ok ? (
-        <Box
-          w="22px"
-          h="22px"
-          borderRadius="full"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          bg="rgba(34,197,94,0.20)"
-          border="1.5px solid rgba(34,197,94,0.55)"
-        >
-          <Text
-            fontSize="12px"
-            lineHeight="1"
-            color="rgba(74,222,128,0.95)"
-          >
-            ✓
-          </Text>
-        </Box>
-      ) : (
-        <Box as="svg" w="22px" h="22px" viewBox="0 0 24 24">
-          <circle
-            cx="12"
-            cy="12"
-            r={r}
-            fill="none"
-            stroke="rgba(255,255,255,0.08)"
-            strokeWidth="2"
-          />
-          <circle
-            cx="12"
-            cy="12"
-            r={r}
-            fill="none"
-            stroke="rgba(212,175,55,0.4)"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeDasharray={circ}
-            strokeDashoffset={offset}
-            transform="rotate(-90 12 12)"
-            style={{ transition: "stroke-dashoffset 0.3s ease" }}
-          />
-        </Box>
-      )}
-      <Text
-        fontSize="10px"
-        className="inter-semibold"
-        color={ok ? "rgba(74,222,128,0.90)" : "rgba(255,255,255,0.35)"}
-        lineHeight="1"
-        whiteSpace="nowrap"
-      >
-        {ok ? `${len} ✓` : `${len}/${min}`}
-      </Text>
-    </HStack>
   );
 }

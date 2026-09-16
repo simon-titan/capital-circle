@@ -31,6 +31,50 @@ type NewsRow = {
   updated_at: string;
 };
 
+/* v3.2 „Champagner auf Graphit“ (DESIGN.md) — Admin-Formular: Felder, Labels, Zeilen */
+const fieldSx = {
+  bg: "rgba(255, 255, 255, 0.03)",
+  border: "1px solid",
+  borderColor: "var(--cc-line-strong)",
+  borderRadius: "8px",
+  color: "var(--cc-text)",
+  _placeholder: { color: "var(--cc-text-3)" },
+  _hover: { borderColor: "rgba(255, 255, 255, 0.22)" },
+  _focusVisible: { borderColor: "var(--cc-gold-line)", boxShadow: "0 0 0 1px var(--cc-gold-line)" },
+} as const;
+
+const labelSx = { fontSize: "12px", fontWeight: 500, color: "var(--cc-text-2)", mb: 1 } as const;
+
+/** Kartentitel im Label-Schnitt (13px, versal, gesperrt). */
+const cardTitleSx = {
+  fontSize: "13px",
+  lineHeight: "18px",
+  fontWeight: 500,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+  color: "var(--cc-text-soft)",
+} as const;
+
+const ghostSx = {
+  color: "var(--cc-text-2)",
+  _hover: { bg: "rgba(255, 255, 255, 0.06)", color: "var(--cc-text)" },
+} as const;
+
+const dangerIconSx = {
+  color: "var(--cc-danger)",
+  _hover: { bg: "rgba(248, 113, 113, 0.08)", borderColor: "rgba(248, 113, 113, 0.5)", boxShadow: "none" },
+} as const;
+
+const rowSx = {
+  p: 3,
+  borderRadius: "8px",
+  border: "1px solid",
+  borderColor: "var(--cc-line)",
+  bg: "rgba(255, 255, 255, 0.02)",
+  transition: "border-color 150ms var(--cc-ease)",
+  _hover: { borderColor: "rgba(255, 255, 255, 0.14)" },
+} as const;
+
 async function uploadCover(file: File): Promise<string> {
   return uploadSmallFilePresigned(file, { folder: "covers" });
 }
@@ -173,7 +217,7 @@ export function NewsManager() {
   };
 
   const remove = async (id: string) => {
-    if (!confirm("Beitrag loeschen? Alle Likes, Kommentare und Bookmarks werden mitentfernt.")) return;
+    if (!confirm("Beitrag löschen? Alle Likes, Kommentare und Bookmarks werden mitentfernt.")) return;
     const supabase = createClient();
     const { error } = await supabase.from("news_posts").delete().eq("id", id);
     if (!error) {
@@ -185,62 +229,56 @@ export function NewsManager() {
   };
 
   return (
-    <Stack gap={10} maxW="1400px">
+    <Stack gap={8} maxW="1400px">
       <SimpleGrid columns={{ base: 1, xl: 2 }} spacing={{ base: 8, xl: 10 }} alignItems="start">
-        <Stack gap={4}>
+        <Stack gap={4} className="cc-card cc-card--still" p={{ base: 5, md: 6 }}>
           <HStack justify="space-between" flexWrap="wrap" gap={2}>
-            <Text fontSize="xl" className="inter-semibold">
+            <Text as="h2" fontSize="18px" fontWeight={600} lineHeight={1.3} color="var(--cc-text)">
               {editingId ? "Beitrag bearbeiten" : "Neuer News-Beitrag"}
             </Text>
             {editingId ? (
-              <Button size="sm" variant="ghost" onClick={resetForm}>
+              <Button size="sm" variant="ghost" {...ghostSx} onClick={resetForm}>
                 Neu statt Bearbeiten
               </Button>
             ) : null}
           </HStack>
-          <Input
-            placeholder="Titel"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            bg="whiteAlpha.50"
-          />
+          <Input placeholder="Titel" value={title} onChange={(e) => setTitle(e.target.value)} {...fieldSx} />
           <Textarea
-            placeholder="Kurztext fuer die Karten-Ansicht (optional)"
+            placeholder="Kurztext für die Karten-Ansicht (optional)"
             value={excerpt}
             onChange={(e) => setExcerpt(e.target.value)}
-            bg="whiteAlpha.50"
+            {...fieldSx}
             rows={2}
           />
           <HStack flexWrap="wrap" gap={4}>
             <Box minW="220px">
-              <Text fontSize="xs" mb={1} color="gray.400">
-                Veroeffentlicht am (leer = jetzt)
-              </Text>
+              <Text {...labelSx}>Veroeffentlicht am (leer = jetzt)</Text>
               <Input
                 type="datetime-local"
                 value={publishedAt}
                 onChange={(e) => setPublishedAt(e.target.value)}
-                bg="whiteAlpha.50"
+                {...fieldSx}
+                className="cc-num"
               />
             </Box>
           </HStack>
           <Box>
-            <FormLabel fontSize="xs">Titelbild (optional)</FormLabel>
+            <FormLabel {...labelSx}>Titelbild (optional)</FormLabel>
             <HStack gap={3}>
-              <Button size="sm" variant="outline" onClick={() => void pickCover()} isLoading={coverBusy}>
-                Bild waehlen
+              <Button size="sm" variant="line" onClick={() => void pickCover()} isLoading={coverBusy}>
+                Bild wählen
               </Button>
               {coverKey ? (
                 <>
-                  <Text fontSize="xs" color="green.300">
+                  <Text fontSize="xs" color="var(--cc-success)">
                     Bild gesetzt
                   </Text>
-                  <Button size="xs" variant="ghost" onClick={() => setCoverKey(null)}>
+                  <Button size="xs" variant="ghost" {...ghostSx} onClick={() => setCoverKey(null)}>
                     entfernen
                   </Button>
                 </>
               ) : (
-                <Text fontSize="xs" color="gray.500">
+                <Text fontSize="xs" color="var(--cc-text-3)">
                   Kein Titelbild
                 </Text>
               )}
@@ -248,23 +286,18 @@ export function NewsManager() {
           </Box>
 
           <Box>
-            <Text fontSize="sm" className="inter-semibold" mb={2}>
+            <Text {...labelSx} mb={2}>
               Inhalt
             </Text>
             <RichTextEditor key={editingId ?? "new"} value={contentJson} onChange={setContentJson} />
           </Box>
 
           <HStack gap={3}>
-            <Button
-              colorScheme="yellow"
-              onClick={() => void savePost()}
-              isLoading={busy}
-              maxW="280px"
-            >
+            <Button variant="gold" onClick={() => void savePost()} isLoading={busy} maxW="280px">
               {editingId ? "Speichern" : "Veroeffentlichen"}
             </Button>
             {status ? (
-              <Text fontSize="sm" color="green.300">
+              <Text fontSize="sm" color="var(--cc-success)" role="status">
                 {status}
               </Text>
             ) : null}
@@ -274,45 +307,34 @@ export function NewsManager() {
         <ArticlePreview content={contentJson} />
       </SimpleGrid>
 
-      <Stack gap={2}>
-        <Text fontSize="lg" className="inter-semibold">
-          Alle News-Beitraege
+      <Stack gap={3} className="cc-card cc-card--still" p={{ base: 5, md: 6 }}>
+        <Text as="h2" {...cardTitleSx}>
+          Alle News-Beiträge
         </Text>
         {posts.length === 0 ? (
-          <Text fontSize="sm" color="gray.500">
-            Noch keine Beitraege.
+          <Text fontSize="sm" color="var(--cc-text-3)">
+            Noch keine Beiträge.
           </Text>
         ) : null}
         {posts.map((p) => (
-          <HStack
-            key={p.id}
-            justify="space-between"
-            p={3}
-            borderRadius="md"
-            borderWidth="1px"
-            borderColor="whiteAlpha.200"
-            align="flex-start"
-          >
+          <HStack key={p.id} justify="space-between" align="flex-start" {...rowSx}>
             <Box minW={0}>
-              <Text fontWeight="600">{p.title}</Text>
-              <Text fontSize="xs" color="gray.500">
+              <Text fontWeight={600} color="var(--cc-text)">
+                {p.title}
+              </Text>
+              <Text fontSize="xs" color="var(--cc-text-3)" className="cc-num">
                 {new Date(p.published_at).toLocaleString("de-DE")}
               </Text>
             </Box>
             <HStack>
-              <Button
-                size="sm"
-                variant="outline"
-                leftIcon={<Pencil size={14} />}
-                onClick={() => startEdit(p)}
-              >
+              <Button size="sm" variant="line" leftIcon={<Pencil size={14} />} onClick={() => startEdit(p)}>
                 Bearbeiten
               </Button>
               <IconButton
-                aria-label="Loeschen"
+                aria-label="Löschen"
                 size="sm"
-                variant="outline"
-                colorScheme="red"
+                variant="line"
+                {...dangerIconSx}
                 icon={<Trash2 size={16} />}
                 onClick={() => void remove(p.id)}
               />

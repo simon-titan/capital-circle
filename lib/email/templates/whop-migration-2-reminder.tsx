@@ -27,10 +27,8 @@ export default function WhopMigrationMail2({
   return (
     <BaseEmail
       previewText="Kurz nochmal, falls das von vorhin bei dir nicht angekommen ist."
-      accentGradient={`linear-gradient(90deg, transparent, ${T.brandRed} 30%, ${T.brandRedSoft} 70%, transparent)`}
       hideFooter={false}
       unsubscribeUrl={unsubscribeUrl}
-      footerLinkColor={T.accent}
       bodyFontFamily={T.fontBody}
       headFontLinkHref={T.fontLinkHref}
     >

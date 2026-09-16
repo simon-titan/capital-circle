@@ -1,8 +1,6 @@
 "use client";
 
 import {
-  Alert,
-  AlertIcon,
   Box,
   Button,
   FormControl,
@@ -10,15 +8,13 @@ import {
   FormHelperText,
   FormLabel,
   HStack,
-  Heading,
   Input,
   Stack,
   Text,
   Textarea,
-  VisuallyHidden,
 } from "@chakra-ui/react";
 import Script from "next/script";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   HT_QUESTIONS,
@@ -26,7 +22,20 @@ import {
   type HTQuestion,
   type BudgetTier,
 } from "@/config/ht-questions";
-import { glassPrimaryButtonProps } from "@/components/ui/glassButtonStyles";
+import {
+  CardLabel,
+  FieldError,
+  FunnelAlert,
+  FunnelHeadline,
+  FunnelNotice,
+  FunnelProgress,
+  FunnelVideoFrame,
+  OptionCard,
+  funnelErrorProps,
+  funnelFieldProps,
+  funnelHelperProps,
+  funnelLabelProps,
+} from "./funnel-ui";
 
 type Phase = "contact" | "questions" | "submitting";
 
@@ -34,18 +43,6 @@ interface ContactState {
   fullName: string;
   email: string;
 }
-
-const inputStyles = {
-  bg: "rgba(255,255,255,0.04)",
-  borderColor: "rgba(255,255,255,0.12)",
-  color: "var(--color-text-primary)",
-  _placeholder: { color: "rgba(255,255,255,0.32)" },
-  _hover: { borderColor: "rgba(212,175,55,0.45)" },
-  _focus: {
-    borderColor: "rgba(212,175,55,0.65)",
-    boxShadow: "0 0 0 1px rgba(212,175,55,0.45)",
-  },
-} as const;
 
 // Turnstile global types defined in types/turnstile.d.ts
 
@@ -278,17 +275,7 @@ export function HTApplicationForm({
 
 function IntroVideo({ src, poster }: { src: string; poster?: string }) {
   return (
-    <Box
-      maxW="768px"
-      mx="auto"
-      w="full"
-      borderRadius="16px"
-      overflow="hidden"
-      border="1px solid rgba(255,255,255,0.09)"
-      boxShadow="0 18px 60px rgba(0,0,0,0.55)"
-      sx={{ aspectRatio: "16/9" }}
-      bg="black"
-    >
+    <FunnelVideoFrame>
       <Box
         as="video"
         src={src}
@@ -300,48 +287,14 @@ function IntroVideo({ src, poster }: { src: string; poster?: string }) {
         h="full"
         sx={{ objectFit: "cover" }}
       />
-    </Box>
+    </FunnelVideoFrame>
   );
 }
 
-function ProgressBar({ percent }: { percent: number }) {
+/** Formular-Karte: Glas mit Gold-Kante, ohne Anheben beim Hover. */
+function FormCard({ children }: { children: React.ReactNode }) {
   return (
-    <Box
-      h="5px"
-      w="full"
-      borderRadius="9999px"
-      bg="rgba(255,255,255,0.08)"
-      overflow="hidden"
-      role="progressbar"
-      aria-valuenow={percent}
-      aria-valuemin={0}
-      aria-valuemax={100}
-    >
-      <Box
-        h="full"
-        w={`${percent}%`}
-        bg="linear-gradient(90deg, #A67C00 0%, #D4AF37 100%)"
-        boxShadow="0 0 8px rgba(212,175,55,0.30)"
-        transition="width .3s ease"
-      />
-    </Box>
-  );
-}
-
-function GlassPanel({ children }: { children: React.ReactNode }) {
-  return (
-    <Box
-      sx={{
-        background: "rgba(255,255,255,0.05)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-        border: "1px solid rgba(255,255,255,0.09)",
-        borderRadius: "16px",
-        boxShadow:
-          "0 8px 32px rgba(0,0,0,0.60), inset 0 1px 0 rgba(255,255,255,0.07)",
-      }}
-      p={{ base: 6, md: 8 }}
-    >
+    <Box className="cc-card cc-card--still" p={{ base: 5, md: 8 }}>
       {children}
     </Box>
   );
@@ -357,80 +310,56 @@ function ContactStep(props: {
 }) {
   const { contact, setContact, errors, siteKey, turnstileContainerRef, onContinue } = props;
   return (
-    <GlassPanel>
+    <FormCard>
       <Stack spacing={5}>
-        <Stack spacing={2}>
-          <Text
-            fontSize="xs"
-            letterSpacing="0.18em"
-            textTransform="uppercase"
-            color="var(--color-accent-gold)"
-            className="inter-semibold"
-          >
-            Bewerbung · 1:1 Mentoring
-          </Text>
-          <Heading
-            as="h2"
-            className="radley-regular"
-            fontWeight={400}
-            fontSize={{ base: "2xl", md: "3xl" }}
-            lineHeight="1.2"
-          >
+        <Stack spacing={3}>
+          <CardLabel hero>Bewerbung · 1:1 Mentoring</CardLabel>
+          <FunnelHeadline as="h2" scale="md">
             Bevor wir starten — wer bist du?
-          </Heading>
-          <Text fontSize="sm" color="rgba(255,255,255,0.62)" className="inter">
+          </FunnelHeadline>
+          <Text fontSize="14px" lineHeight={1.6} color="var(--cc-text-2)">
             Wir melden uns ausschließlich über die hier angegebene E-Mail und WhatsApp-Nummer.
           </Text>
         </Stack>
 
         <FormControl isInvalid={Boolean(errors.fullName)} isRequired>
-          <FormLabel className="inter" fontSize="sm" color="var(--color-text-primary)">
-            Vollständiger Name
-          </FormLabel>
+          <FormLabel {...funnelLabelProps}>Vollständiger Name</FormLabel>
           <Input
-            {...inputStyles}
+            {...funnelFieldProps}
+            h="48px"
             value={contact.fullName}
             onChange={(e) => setContact({ ...contact, fullName: e.target.value })}
             placeholder="Max Mustermann"
             autoComplete="name"
           />
-          <FormErrorMessage>{errors.fullName}</FormErrorMessage>
+          <FormErrorMessage {...funnelErrorProps}>{errors.fullName}</FormErrorMessage>
         </FormControl>
 
         <FormControl isInvalid={Boolean(errors.email)} isRequired>
-          <FormLabel className="inter" fontSize="sm" color="var(--color-text-primary)">
-            E-Mail
-          </FormLabel>
+          <FormLabel {...funnelLabelProps}>E-Mail</FormLabel>
           <Input
-            {...inputStyles}
+            {...funnelFieldProps}
+            h="48px"
             type="email"
             value={contact.email}
             onChange={(e) => setContact({ ...contact, email: e.target.value })}
             placeholder="du@example.com"
             autoComplete="email"
           />
-          <FormErrorMessage>{errors.email}</FormErrorMessage>
+          <FormErrorMessage {...funnelErrorProps}>{errors.email}</FormErrorMessage>
         </FormControl>
 
         {siteKey ? (
           <Box ref={turnstileContainerRef} display="flex" justifyContent="center" />
         ) : (
-          <Alert status="warning" variant="subtle" bg="rgba(255,180,0,0.08)" borderRadius="12px">
-            <AlertIcon />
-            <Text fontSize="xs" className="inter">
-              Captcha (NEXT_PUBLIC_TURNSTILE_SITE_KEY) ist nicht gesetzt — Schutz inaktiv.
-            </Text>
-          </Alert>
+          <FunnelNotice>Captcha (NEXT_PUBLIC_TURNSTILE_SITE_KEY) ist nicht gesetzt — Schutz inaktiv.</FunnelNotice>
         )}
 
-        <Button
-          {...glassPrimaryButtonProps}
-          onClick={onContinue}
-        >
+        <Button variant="gold" size="lg" w="full" h="48px" fontSize="16px" onClick={onContinue}>
           Weiter zu den Fragen →
         </Button>
       </Stack>
-    </GlassPanel>
+    </FormCard>
   );
 }
 
@@ -476,122 +405,46 @@ function QuestionStep(props: {
   return (
     <Stack spacing={5}>
       <HStack justify="space-between" align="center">
-        <Text
-          fontSize="xs"
-          letterSpacing="0.18em"
-          textTransform="uppercase"
-          color="var(--color-accent-gold)"
-          className="inter-semibold"
-        >
+        <CardLabel hero className="cc-num">
           Step {stepIndex + 1} von {totalSteps}
-        </Text>
-        <Text fontSize="xs" color="var(--color-text-secondary)" className="inter">
+        </CardLabel>
+        <Text className="cc-num" fontSize="13px" fontWeight={500} color="var(--cc-text-2)">
           {progressPercent}%
         </Text>
       </HStack>
 
-      <ProgressBar percent={progressPercent} />
+      <FunnelProgress value={progressPercent} h="6px" />
 
-      <GlassPanel>
+      <FormCard>
         <Stack spacing={5}>
           <Stack spacing={2}>
-            <Text
-              fontSize="xs"
-              className="inter"
-              color="var(--color-text-secondary)"
-            >
+            <Text className="cc-num" fontSize="12px" color="var(--cc-text-2)">
               Frage {stepIndex + 1} von {totalSteps}
             </Text>
-            <Heading
-              as="h2"
-              className="radley-regular"
-              fontWeight={400}
-              fontSize={{ base: "xl", md: "2xl" }}
-              lineHeight="1.3"
-            >
+            <FunnelHeadline as="h2" scale="sm">
               {question.question}
-            </Heading>
+            </FunnelHeadline>
           </Stack>
 
           {question.type === "select" ? (
-            <Stack spacing={3}>
-              {(question.options ?? []).map((opt) => {
-                const selected = value === opt;
-                return (
-                  <Box
-                    key={opt}
-                    as="label"
-                    cursor="pointer"
-                    p={4}
-                    borderRadius="12px"
-                    border="1px solid"
-                    borderColor={
-                      selected ? "rgba(212,175,55,0.65)" : "rgba(255,255,255,0.12)"
-                    }
-                    bg={
-                      selected
-                        ? "rgba(212,175,55,0.10)"
-                        : "rgba(255,255,255,0.03)"
-                    }
-                    transition="all .15s ease"
-                    _hover={{
-                      borderColor: "rgba(212,175,55,0.45)",
-                      bg: "rgba(255,255,255,0.05)",
-                    }}
-                    boxShadow={
-                      selected
-                        ? "0 0 0 1px rgba(212,175,55,0.45), 0 0 16px rgba(212,175,55,0.18)"
-                        : "none"
-                    }
-                  >
-                    <HStack spacing={3} align="center">
-                      <Box
-                        w="18px"
-                        h="18px"
-                        borderRadius="full"
-                        border="1.5px solid"
-                        borderColor={
-                          selected ? "var(--color-accent-gold)" : "rgba(255,255,255,0.4)"
-                        }
-                        display="flex"
-                        alignItems="center"
-                        justifyContent="center"
-                      >
-                        {selected ? (
-                          <Box
-                            w="8px"
-                            h="8px"
-                            borderRadius="full"
-                            bg="var(--color-accent-gold)"
-                          />
-                        ) : null}
-                      </Box>
-                      <VisuallyHidden>
-                        <input
-                          type="radio"
-                          name={question.id}
-                          value={opt}
-                          checked={selected}
-                          onChange={() => onChange(opt)}
-                        />
-                      </VisuallyHidden>
-                      <Text
-                        className="inter-semibold"
-                        fontSize="md"
-                        color="var(--color-text-primary)"
-                        flex="1"
-                      >
-                        {BUDGET_LABELS[opt] ?? opt}
-                      </Text>
-                    </HStack>
-                  </Box>
-                );
-              })}
+            <Stack spacing={3} role="radiogroup" aria-label={question.question}>
+              {(question.options ?? []).map((opt) => (
+                <OptionCard
+                  key={opt}
+                  name={question.id}
+                  value={opt}
+                  checked={value === opt}
+                  onSelect={() => onChange(opt)}
+                >
+                  {BUDGET_LABELS[opt] ?? opt}
+                </OptionCard>
+              ))}
+              {stepError ? <FieldError>{stepError}</FieldError> : null}
             </Stack>
           ) : question.type === "textarea" ? (
             <FormControl isInvalid={Boolean(stepError)}>
               <Textarea
-                {...inputStyles}
+                {...funnelFieldProps}
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 placeholder={question.placeholder}
@@ -599,30 +452,27 @@ function QuestionStep(props: {
                 autoFocus
               />
               {question.helper ? (
-                <FormHelperText color="rgba(255,255,255,0.4)" fontSize="xs">
-                  {question.helper}
-                </FormHelperText>
+                <FormHelperText {...funnelHelperProps}>{question.helper}</FormHelperText>
               ) : null}
               {question.minLength ? (
                 <CharCounter value={value} min={question.minLength} />
               ) : null}
-              <FormErrorMessage>{stepError}</FormErrorMessage>
+              <FormErrorMessage {...funnelErrorProps}>{stepError}</FormErrorMessage>
             </FormControl>
           ) : (
             <FormControl isInvalid={Boolean(stepError)}>
               <Input
-                {...inputStyles}
+                {...funnelFieldProps}
+                h="48px"
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 placeholder={question.placeholder}
                 autoFocus
               />
               {question.helper ? (
-                <FormHelperText color="rgba(255,255,255,0.4)" fontSize="xs">
-                  {question.helper}
-                </FormHelperText>
+                <FormHelperText {...funnelHelperProps}>{question.helper}</FormHelperText>
               ) : null}
-              <FormErrorMessage>{stepError}</FormErrorMessage>
+              <FormErrorMessage {...funnelErrorProps}>{stepError}</FormErrorMessage>
             </FormControl>
           )}
 
@@ -630,34 +480,19 @@ function QuestionStep(props: {
             <Box ref={turnstileContainerRef} display="flex" justifyContent="center" />
           ) : null}
 
-          {serverError ? (
-            <Alert status="error" variant="subtle" bg="rgba(229,72,77,0.10)" borderRadius="12px">
-              <AlertIcon />
-              <Text fontSize="sm" className="inter">{serverError}</Text>
-            </Alert>
-          ) : null}
+          {serverError ? <FunnelAlert>{serverError}</FunnelAlert> : null}
 
-          <HStack justify="space-between" pt={2} spacing={3} flexWrap="wrap">
-            <Button
-              variant="outline"
-              onClick={onBack}
-              isDisabled={isFirst || submitting}
-              borderColor="rgba(255,255,255,0.12)"
-              color="var(--color-text-secondary)"
-              _hover={{
-                bg: "rgba(255,255,255,0.04)",
-                borderColor: "rgba(212,175,55,0.4)",
-              }}
-              className="inter"
-            >
+          <HStack justify="space-between" pt={2} spacing={3} flexWrap="wrap" rowGap={3}>
+            <Button variant="line" h="44px" onClick={onBack} isDisabled={isFirst || submitting}>
               ← Zurück
             </Button>
 
             <Button
-              {...glassPrimaryButtonProps}
-              w="auto"
+              variant="gold"
+              h="44px"
               minW="180px"
               px={6}
+              flex={{ base: "1", sm: "0 0 auto" }}
               onClick={onNext}
               isLoading={submitting}
               loadingText="Senden…"
@@ -667,7 +502,7 @@ function QuestionStep(props: {
             </Button>
           </HStack>
         </Stack>
-      </GlassPanel>
+      </FormCard>
     </Stack>
   );
 }
@@ -676,11 +511,12 @@ function CharCounter({ value, min }: { value: string; min: number }) {
   const len = value.trim().length;
   const ok = len >= min;
   return (
-    <HStack justify="flex-end" mt={1}>
+    <HStack justify="flex-end" mt={1.5}>
       <Text
-        fontSize="xs"
-        className="inter"
-        color={ok ? "rgba(212,175,55,0.85)" : "rgba(255,255,255,0.35)"}
+        className="cc-num"
+        fontSize="12px"
+        fontWeight={ok ? 600 : 400}
+        color={ok ? "var(--cc-gold-light)" : "var(--cc-text-3)"}
       >
         {len} / {min}
       </Text>

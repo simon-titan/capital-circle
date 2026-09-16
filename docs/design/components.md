@@ -1,97 +1,91 @@
-# Komponenten
+# Komponenten (v3.2 „Champagner auf Graphit“)
 
-← zurück zum [Index](./README.md) · Werte-Quelle: [`DESIGN.json`](../../DESIGN.json) `components.*`
+← zurück zum [Index](./README.md) · Werte: [`DESIGN.json`](../../DESIGN.json) `components`
 
-> Spezifikationen distilliert aus `DESIGN.json`, ergänzt um die **real existierenden** Helfer im Code.
-> Bevorzugt vorhandene Komponenten/Klassen nutzen statt neu bauen.
+> Wiederverwenden statt neu bauen. Primitives:
+> [`components/platform/dashboard/primitives.tsx`](../../components/platform/dashboard/primitives.tsx).
+> Für Funnel, Landing, Onboarding und Admin: [Geteilte Bausteine](#geteilte-bausteine-aus-der-migration).
 
-## Button
+## Button (`theme/index.ts`)
 
-Basis: `font-body`, `14px`, `weight 500`, `radius 10px`, `transition all 150ms cubic-bezier(0.16,1,0.3,1)`,
-`inline-flex`, `gap 8px`.
+| Variante | Aussehen | Einsatz |
+|----------|----------|---------|
+| `variant="gold"` | Champagner-Verlauf, Text `#1a140c`, Glow, Hover-Lift | Hauptaktionen (Weiterlernen, Beitreten, Jetzt bewerben) |
+| `variant="line"` | Haarlinie auf leichtem Glas, Hover mit Gold-Kante | alles Sekundäre |
 
-**Sizes:** `xs 28h/12px` · `sm 34h/13px` · `md 40h/14px` · `lg 48h/15px` · `xl 56h/16px`.
+Fokus: Chakra-`outline` ist gold; Links/Buttons unter `[data-platform]` bekommen `:focus-visible` in Gold.
 
-**Varianten:**
-| Variante | Kurz |
-|----------|------|
-| **primary** | Gold-Gradient `linear-gradient(135deg,#D4AF37,#A67C00)`, weiße Schrift, Gold-Glow. Einziger farbiger Button. |
-| **secondary** | `rgba(255,255,255,0.06)`, Border `0.09`, hellt bei Hover auf. |
-| **ghost** | transparent, Text `#9A9AA4` → `#F0F0F2` bei Hover. |
-| **outline** | transparent, Gold-Border `0.40`, Text Gold. |
-| **danger** | `rgba(239,68,68,0.10)`, roter Text/Border. |
-| **white** | `rgba(255,255,255,0.09)`, blur(8px). |
+## Karte — `DashCard`
 
-**States:** `disabled` opacity 0.30 / `not-allowed`; `loading` opacity 0.65.
+Klasse `.cc-card`: graphitgraues Glas (94 %) mit Blur, Rahmen 7 % Weiß, Radius 12px, Gold-Kante oben, Schatten, Hover hebt an und glüht leicht gold.
+`hero` → `.cc-card--hero` (Gold-Rahmen, Gold-Schein, atmender Glow, Titel in Gold). Pflicht-Props `label`
+(wird zur 13px-Versal-h2) und `labelId`; optional `action`.
 
-**Marketing-CTA (Code):** Der goldene Funnel-Button ist als `goldCtaSx` in
-`components/landing/InsightLandingPageClient.tsx` definiert — Gradient `135deg #E8C547→#D4AF37→#A67C00`,
-Glow + Hover-Lift. Für neue Funnel-CTAs wiederverwenden.
+> **Sticky-Falle:** `.cc-card` setzt `position: relative` und überschreibt damit Chakras `position="sticky"` am
+> selben Element. Klebende Karten in eine äußere `Box` mit `position="sticky"` (plus `top`) legen, die `.cc-card` liegt darin.
 
-## Card
+## Inhalte
 
-Basis: `rgba(255,255,255,0.04)`, blur(16px), Border `0.08`, `radius 16px`, `padding 20px`,
-`shadow card`. Varianten: `default`, `flat` (kein Glass), `elevated`, `interactive` (Hover-Lift `-2px`),
-`accentBorder` (Gold-Rahmen, sparsam), `locked` (opacity 0.40, grayscale).
+- **`CardValue` / `Meta` / `TitleWithMeta`** — Wert 17/18px, Meta 14px; Titel · Meta in einer Zeile ohne verwaisten Punkt.
+- **`IconTile`** — 56px, neutral wie im Kunden-Mockup: Haarlinie `--cc-line-strong`, helles Icon, Radius 12px.
+- **`ProgressBar`** — 8px, füllt sich einmal. `tone="gold"` (Standard, z. B. Lernseite): Gold-Balken mit Glow; `tone="ink"` (Dashboard, `ContinueCard`): Datentinte `--cc-ink` ohne Glow.
+- **Segmentbalken** (`ProgressCard`) — 10 Segmente à 10 %, gefüllt in Datentinte `--cc-ink`, offen = 1px-Kontur 14 % Weiß; Prozent in `--cc-text`.
+- **Streak** (`StreakCard`) — warme Flammen-Kachel (pulsiert), erledigte Tage als Kreise in Datentinte mit dunklem Haken, offen = 1.5px-Kreis; heute in Text 600, offen mit Gold-Haarlinie.
+- **Play-Button** (`ContinueCard`) — 64px Gold-Verlauf mit Glow.
+- **Live-Punkt** (`LiveCard`) — Gold mit Glow, Ring solange live.
+- **`LockedNote`** — Gold-Schloss + „Nur für Mitglieder“, ein Satz, `line`-Button.
+- **`StatusLine`** — `dl` über einer Haarlinie.
+- Zeilen klammern mit `clampLines(n)` (nicht Chakras `noOfLines`).
 
-**Real im Code:** [`components/ui/GlassCard.tsx`](../../components/ui/GlassCard.tsx) —
-`<GlassCard />` mit Boolean-Props:
-| Prop | Klasse | Einsatz |
-|------|--------|---------|
-| (default) | `.glass-card` | Standard-Glass-Karte |
-| `highlight` | `.glass-card-highlight` | Dashboard, höhere Deckkraft + Gold-Linie |
-| `spotlight` | `.glass-card-spotlight` | Hausaufgabe/Events, extra betont |
-| `hero` | `.glass-card-hero` | Welcome-Hero (siehe [hero-glass.md](./hero-glass.md)) |
-| `dashboard` | `.glass-card-dashboard` | Hero-Subcard-Familie (Rings/Lernzeit) |
+## Navigation (`components/platform/shell/`)
 
-## Input
+- **Sidebar** (ab lg, 264px, Glas mit Blur): Wortmarke, fünf Bereiche aus `nav.ts` (52px-Zeilen, Icons 24px).
+  Aktiv: Gold-Verlauf-Wash, Gold-Linie, Glow, Gold-Text. Unterpunkte mit leuchtendem Gold-Segment.
+  An der Kante: Lichtlinie mit wanderndem Funken.
+- **Mobil**: 56px-Kopfzeile → Drawer von links.
+- **Leiste** (48px, sticky ab lg): Apex-Promo mit Gold-Punkt und Code in Gold als Laufband über die volle Breite (kein TradingView-Ticker mehr).
+- **Wortmarke** (`components/brand/Logo.tsx`): Text „CAPITAL CIRCLE“ in Inter 400, versal, 0.32em; `compact` = Monogramm „CC“. Ersetzt das frühere Serif-Logo-Bild (`height`/`priority` sind ohne Wirkung).
 
-`rgba(255,255,255,0.04)`, Border `0.09`, `radius 10px`, `40px` Höhe, Text `#F0F0F2`,
-Placeholder `#3A3A40`. **Focus:** Gold-Border `0.65` + `0 0 0 3px rgba(212,175,55,0.12)`.
-Error/Success analog mit Rot/Grün. Chakra: `focusBorderColor="brand.500"`.
+## Seitenmuster
 
-## Badge
+- **Seitenkopf:** `components/journal/PageHeader.tsx` — Titel 28/36px, Untertitel, auslaufende Gold-Linie. Für alle Unterseiten wiederverwenden (Journal, Institut, Positionsrechner).
+- **Trading Journal** (`components/journal/*`): `Panel` = `.cc-card cc-card--still` (Diagramme/Tabellen heben sich beim Hover nicht an), `raised` = Hero-Karte. `SectionCard` mit Versaltitel. Journal-Navigation als Glas-Karte mit Gold-Aktivzustand. Diagramme: neutrale Reihen (Equity, Radar) in Gold, Tages-P&L und Drawdown grün/rot; Legenden explizit aus. Die `--j-*`-Tokens in `globals.css` sind nur eine Brücke auf `--cc-*`.
+- **Lernseite** (`ModuleLearningClient`): links Kursleiste 340px (sticky, eigene Scrollfläche) mit „Zurück zur Übersicht“, Modultitel, Modulinhalt (Lektionen-Badge, Prozent, Goldbalken) und Lektionsliste (`VideoPlaylist`: Thumbnail, Titel, Minuten; aktiv = Gold-Wash + Gold-Kante, erledigt = Gold-Haken, gesperrt = Schloss). Rechts Player (`GlassVideoPlayer`, Rahmen in Gold) und eine Tab-Karte: Notizen (`ModuleNotes` mit Zeitstempel-Button), Anhänge, Beschreibung. Mobil: Titel → Player → Tabs → Lektionen. Breite über `data-learning-wide` (max. 1600px).
+- **Institut-Übersicht** (`InstitutAccordion`): jeder Kurs eine Glas-Karte mit Gold-Icon-Kachel, geöffnet mit Gold-Kante; Module als Innenzeilen mit Status-Pills (Neu / In Arbeit / Abgeschlossen / Gesperrt) und Goldbalken. Keine Kursfarben mehr — alles Gold.
 
-`11px`, `weight 500`, `radius 6px`, `padding 3px 8px`. Varianten:
-`default` (grau), `gold`, `success`, `error`, `warning`, `white`, `locked`, `new` (Gold, Pill).
+## Geteilte Bausteine aus der Migration
 
-## ProgressBar
+| Datei | Inhalt | Einsatz |
+|-------|--------|---------|
+| `components/marketing/funnel-ui.tsx` | Typo: `FunnelEyebrow`, `FunnelHeadline`, `GoldWord`, `FunnelLead`, `FunnelFinePrint`, `CardLabel`. Formular: `OptionCard`, `CharCounterPill`, `FieldError`, `FunnelAlert`, `FunnelNotice`, Presets `funnelFieldProps`, `funnelSelectSx`, `funnelLabelProps`, `funnelHelperProps`, `funnelErrorProps`. Ablauf: `FunnelProgress`, `FunnelStepIndicator`, `FunnelWarningOverlay`, `FunnelThanks`, `SuccessMark`. Modal: `funnelOverlayProps`, `funnelModalContentProps`, `FunnelModalTopBar`, `funnelBackButtonProps`. Video: `FunnelVideoFrame`, `VideoPlaceholder`. Motion: `rise`, `noMotion` | Funnels, Bewerbung (`/apply`, `/free`, `/survey`, `/bewerbung/danke`) |
+| `components/landing/landing-ui.tsx` | `Reveal`, `heroRise`, `Eyebrow`, `DisplayHeading`, `Accent`, `GoldIconTile`, `OfferCard`, `CardRail`, `VideoStage`, `LandingSplash`, `LandingChromeStyles`, `LandingFooter` | Landing `/` und `/insight` |
+| `components/landing/DiscordFunnelChrome.tsx` | `FunnelPageStyles`, `FunnelGround`, `FunnelHeroGlow`, `FunnelSplash`, `FunnelEyebrow`, `FunnelVideoHeadline`, `FunnelVideoPlaceholder`, `GoldWord`, `GoldIconTile`, `FunnelFooter`, `funnelLabelProps` | Discord-Funnel und Einzelseiten (`/discord`, `/termin`, `/video`) |
+| `components/onboarding/OnboardingParts.tsx` | `OnboardingHeading`, `AcceptanceCheck` | Onboarding-Schritte (Codex, Intro-Video, Nutzungsvereinbarung) |
+| `components/admin/adminUi.tsx` | `AdminPageHeader`, `AdminCardTitle`, `AdminLabel`, `AdminCount`, `StatusPill`, `StatusDot`, `ADMIN_TONES`, `ADMIN_CARD_CLASS`, Presets `adminInputProps`, `adminFormLabelProps`, `adminSwitchSx`, `adminTableSx`, `adminRowProps`, `adminModalProps`, `adminAlertProps`, `ADMIN_CHART` … | Admin (`/admin/**`) |
+| `components/admin/AdminSidebar.tsx` → `AdminFrame` | Admin-Shell (Sidebar + Inhalt), eingebunden in `app/(admin)/layout.tsx` | Admin |
+| `components/support/TicketStatusDot.tsx` | Statuspunkt für Support-Tickets (Farben aus `lib/support/shared.ts`) | `SupportTicketsList`, `TicketThread` |
 
-Track `#1A1B1F`, `radius full`. Fill: `linear-gradient(90deg,#A67C00,#D4AF37)` + Gold-Glow,
-`transition width 600ms`. Sizes `xs 3 / sm 5 / md 8 / lg 12` px. Varianten: `default` (gold),
-`mono` (weiß, kein Glow), `success`, `quiz` (3px).
+Achtung: `GoldWord`, `FunnelEyebrow`, `GoldIconTile` und `funnelLabelProps` gibt es namensgleich in mehreren Dateien —
+den Import-Pfad passend zur Seite wählen, nicht mischen.
 
-## Modal
+## Statusfarben
 
-Overlay `rgba(0,0,0,0.75)` + blur(4px), `zIndex 100`. Container `rgba(10,11,14,0.96)`,
-blur(32px), Border `0.09`, `radius 24px`, `padding 32px`, `maxWidth 520px`.
-**Codex-Acceptance-Flow:** Sonderfall, nicht überspringbar, `zIndex 9999`, Gold-Scrollbar.
+- **Support-Tickets** (`lib/support/shared.ts` → `STATUS_COLORS`, dargestellt mit `TicketStatusDot`): offen `#e8c094`
+  (Gold hell), wartet auf Antwort `#b8935f` (Gold dunkel), in Bearbeitung `#d1d0d4` (Datentinte), gelöst `#4ade80`
+  (Grün), geschlossen `rgba(255,255,255,0.45)` (Grau).
+- **Events** (`config/event-colors.ts`): Farbwähler im `AdminEventsManager` mit fünf Markentönen — Champagner
+  (Standard), Champagner hell, Bronze, Silber, Graphit. Der Mitglieder-Kalender färbt die Chips über `ev-tone-<key>`
+  (`eventsCalendar.theme.css`); Alt-Farben werden per `resolveEventColor()` auf den nächsten Markenton abgebildet.
 
-## StatWidget
+## E-Mails
 
-`rgba(20,21,25,0.82)`, blur(20px) saturate(1.6), Border `0.09`, `radius 20px`, `padding 18px 20px`.
-Label: `11px`, uppercase, `letter-spacing 0.08em`, `#606068`. Value: **JetBrains Mono**, `28px`,
-`weight 700`. Change: grün/rot/neutral, Mono `12px`. (Genutzt u.a. in `components/admin/AnalyticsDashboard.tsx`.)
+`lib/email/layout/` — `styles.ts` (Tokens als Hex), `components.tsx` (`EmailEyebrow`, `EmailHeading`, `EmailSubheading`,
+`EmailText`, `EmailSmall`, `EmailButton`, `EmailCard`, `EmailHighlight`, `EmailDivider`, `EmailLink`), `BaseEmail.tsx`
+(Graphit-Rahmen, Text-Wortmarke, Champagner-Lichtkante, optionaler Footer). Templates schreiben keine eigenen Farben,
+sondern nutzen diese Bausteine; die Migrations-Kampagne hat eigene Bausteine im selben Look.
 
-## Navigation
+## Entfernt
 
-- **Sidebar:** `240px` (collapsed `64px`), `rgba(7,8,10,0.96)` blur(20px), Border-right `0.06`.
-- **Item:** `40px`, `radius 10px`. Active: `rgba(212,175,55,0.10)`, Text `#E8C547`, `border-left 2px #D4AF37`.
-- **Topbar:** `64px`, `rgba(7,8,10,0.92)` blur(20px), Border-bottom `0.06`.
-
-## Admin-Table
-
-Container `#0C0D10`, Border `0.07`, `radius 12px`. Header: `11px` uppercase `#3A3A40`,
-`rgba(255,255,255,0.02)`. Row-Hover `rgba(255,255,255,0.03)`. Cell `14px` `#9A9AA4`.
-
-## Iconography
-
-**Library:** `lucide-react`. Stroke: `default 1.5` (thin 1.25 / bold 2.0).
-Sizes: `xs 14 · sm 16 · md 20 · lg 24 · xl 32 · 2xl 48` px.
-Semantik-Mapping siehe `DESIGN.json iconography.semantic` (z. B. `lock → Lock`, `complete → CheckCircle2`).
-
-## Skeleton / Toast
-
-- **Skeleton:** `rgba(255,255,255,0.05)`, `radius 6px`, `shimmer 1.8s` Gradient-Sweep.
-- **Toast:** `rgba(18,19,24,0.96)` blur(16px), `radius 12px`, farbiger `border-left 3px`
-  je nach success/error/warning/info (info = Gold).
+`components/ui/GlassCard.tsx`, `GlowButton.tsx`, `CardLockOverlay.tsx`, `PageTransition.tsx` und die
+`.glass-card*`-Klassen sind gelöscht. Karten sind `.cc-card` (`DashCard`, `Panel`, `ADMIN_CARD_CLASS`), gesperrte
+Inhalte `LockedNote`, Hauptaktionen `variant="gold"`.

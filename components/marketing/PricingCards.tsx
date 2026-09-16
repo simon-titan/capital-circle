@@ -1,75 +1,63 @@
 "use client";
 
-import {
-  Box,
-  Button,
-  Flex,
-  HStack,
-  Stack,
-  Text,
-  useToast,
-} from "@chakra-ui/react";
-import { CheckCircle2 } from "lucide-react";
+import { Box, Button, Flex, Heading, HStack, Stack, Text, useToast } from "@chakra-ui/react";
+import { Check, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { preiskarten } from "@/config/landing-membership";
+import type { MembershipPlan } from "@/lib/stripe/plan-map";
 
-type Tier = "free" | "monthly" | "lifetime" | "ht_1on1";
-type Plan = "monthly" | "lifetime";
+/** Alle Stufen, die ein Profil tragen kann — auch die nicht mehr verkäuflichen. */
+type Tier = "free" | MembershipPlan | "lifetime" | "ht_1on1";
 
 type PricingCardsProps = {
   isLoggedIn: boolean;
   membershipTier: Tier;
 };
 
-const monthlyFeatures = [
-  "Täglicher Market-Bias",
-  "Live-Sessions 3× pro Woche",
-  "Kompletter Kursbereich",
-  "Private Community",
-  "Tradingplan-Vorlagen",
-];
-
-const lifetimeFeatures = [
-  ...monthlyFeatures,
-  "Lebenslanger Zugang",
-  "Alle zukünftigen Updates",
-  "Priority Support",
+/**
+ * Laufzeit-Auswahl für **eingeloggte** Nutzer (Upgrade aus `/billing`).
+ *
+ * Sie führt über den eingebetteten Checkout, nicht über `/go/<plan>`: Hier ist
+ * bekannt, wer kauft, und ein Gast-Checkout würde den Nutzer zwingen, seine
+ * Adresse erneut einzutippen — mit einem Tippfehler entstünde ein zweites
+ * Konto. Auf der Landing ist es genau umgekehrt, dort gibt es noch kein Konto.
+ *
+ * Die Leistungen stehen bewusst **einmal** unter den Karten statt dreimal
+ * darin: Die drei Laufzeiten unterscheiden sich ausschließlich im Preis, und
+ * dieselbe Liste in drei Spalten lässt den einen Unterschied untergehen.
+ */
+const LEISTUNGEN = [
+  "Institut: 10 Module, 114 Videos",
+  "Live-Sessions vier Mal pro Woche",
+  "Trading Journal mit Auswertung",
+  "Wochenaufgaben und Fortschritt",
+  "Discord-Community",
 ];
 
 /**
- * Liefert Beschriftung & Disabled-State für einen Plan-Button basierend auf
- * dem aktuellen Membership-Tier des Users. Zentral hier statt in JSX,
- * damit beide Cards die gleiche Logik nutzen.
+ * Beschriftung und Zustand eines Knopfes. Zentral hier statt im JSX, damit
+ * alle drei Karten dieselbe Logik nutzen.
  */
-function buttonStateFor(plan: Plan, tier: Tier): { label: string; disabled: boolean } {
-  if (tier === "lifetime") {
-    return { label: "Du hast Lifetime ⚡", disabled: true };
-  }
-  if (tier === "ht_1on1") {
-    return { label: "Du bist im 1:1-Mentoring", disabled: true };
-  }
-  if (plan === "monthly" && tier === "monthly") {
-    return { label: "Dein aktueller Plan", disabled: true };
-  }
-  if (plan === "monthly") return { label: "Jetzt starten", disabled: false };
-  return { label: "Lifetime sichern", disabled: false };
+function knopfZustand(plan: MembershipPlan, tier: Tier): { label: string; disabled: boolean } {
+  if (tier === "lifetime") return { label: "Du hast Lifetime ⚡", disabled: true };
+  if (tier === "ht_1on1") return { label: "Du bist im 1:1-Mentoring", disabled: true };
+  if (tier === plan) return { label: "Dein aktueller Plan", disabled: true };
+  return { label: "Jetzt starten", disabled: false };
 }
 
 export function PricingCards({ isLoggedIn, membershipTier }: PricingCardsProps) {
   const router = useRouter();
   const toast = useToast();
-  const [loadingPlan, setLoadingPlan] = useState<Plan | null>(null);
+  const [laufenderPlan, setLaufenderPlan] = useState<MembershipPlan | null>(null);
 
-  const monthlyState = buttonStateFor("monthly", membershipTier);
-  const lifetimeState = buttonStateFor("lifetime", membershipTier);
-
-  async function handleSelectPlan(plan: Plan) {
+  async function planWaehlen(plan: MembershipPlan) {
     if (!isLoggedIn) {
-      router.push(`/login?next=/pricing&plan=${plan}`);
+      router.push(`/login?next=/billing&plan=${plan}`);
       return;
     }
 
-    setLoadingPlan(plan);
+    setLaufenderPlan(plan);
     try {
       const res = await fetch("/api/stripe/create-checkout-session", {
         method: "POST",
@@ -79,7 +67,6 @@ export function PricingCards({ isLoggedIn, membershipTier }: PricingCardsProps) 
       const json = (await res.json()) as {
         ok?: boolean;
         clientSecret?: string;
-        sessionId?: string;
         error?: string;
       };
 
@@ -87,13 +74,11 @@ export function PricingCards({ isLoggedIn, membershipTier }: PricingCardsProps) 
         throw new Error(json.error ?? "checkout_failed");
       }
 
-      // Wir übergeben das clientSecret per Query-Param an /checkout.
-      // /checkout instantiiert dann den Embedded-Stripe-Checkout damit.
-      const cs = encodeURIComponent(json.clientSecret);
-      router.push(`/checkout?plan=${plan}&cs=${cs}`);
+      // Das clientSecret wandert per Query an /checkout, das daraus den
+      // eingebetteten Stripe-Checkout aufbaut.
+      router.push(`/checkout?plan=${plan}&cs=${encodeURIComponent(json.clientSecret)}`);
     } catch (error) {
-      const msg =
-        error instanceof Error && error.message ? error.message : "Unbekannter Fehler";
+      const msg = error instanceof Error && error.message ? error.message : "Unbekannter Fehler";
       toast({
         title: "Checkout konnte nicht gestartet werden",
         description: msg,
@@ -101,247 +86,154 @@ export function PricingCards({ isLoggedIn, membershipTier }: PricingCardsProps) 
         duration: 6000,
         isClosable: true,
       });
-      setLoadingPlan(null);
+      setLaufenderPlan(null);
     }
   }
 
   return (
-    <Box w="full" maxW="900px" mx="auto">
-      <Flex
-        direction={{ base: "column-reverse", md: "row" }}
-        gap={{ base: 6, md: 8 }}
-        align={{ base: "stretch", md: "stretch" }}
-        justify="center"
-        position="relative"
-      >
-        {/* Monthly */}
-        <PricingCardShell variant="ghost" w={{ base: "full", md: "360px" }}>
-          <PricingCardContent
-            label="Monatlich"
-            priceMain="97 €"
-            priceSuffix="/ Monat"
-            savingsLine={null}
-            features={monthlyFeatures}
-          >
-            <Button
-              variant="unstyled"
-              w="full"
-              minH="48px"
-              borderRadius="10px"
-              borderWidth="1px"
-              borderStyle="solid"
-              borderColor="rgba(212,175,55,0.40)"
-              color={monthlyState.disabled ? "rgba(255,255,255,0.45)" : "var(--color-accent-gold)"}
-              bg="transparent"
-              fontWeight={600}
-              fontSize="15px"
-              className="inter-semibold"
-              transition="all 150ms cubic-bezier(0.16, 1, 0.3, 1)"
-              _hover={
-                monthlyState.disabled
-                  ? undefined
-                  : {
-                      bg: "rgba(212,175,55,0.10)",
-                      borderColor: "rgba(212,175,55,0.65)",
-                      transform: "translateY(-1px)",
-                    }
-              }
-              _active={{ transform: "translateY(0)" }}
-              onClick={() => handleSelectPlan("monthly")}
-              isDisabled={monthlyState.disabled}
-              isLoading={loadingPlan === "monthly"}
-              loadingText="Wird vorbereitet…"
-              opacity={monthlyState.disabled ? 0.55 : 1}
-              cursor={monthlyState.disabled ? "not-allowed" : "pointer"}
+    <Stack w="full" maxW="960px" mx="auto" spacing={8}>
+      <Flex direction={{ base: "column", md: "row" }} gap={{ base: 8, md: 5 }} align="stretch" justify="center" pt={4}>
+        {preiskarten.map((karte) => {
+          const zustand = knopfZustand(karte.plan, membershipTier);
+          return (
+            <Box
+              key={karte.plan}
+              className={karte.beliebt ? "cc-card cc-card--hero" : "cc-card"}
+              flex="1"
+              minW={0}
+              p={{ base: 6, md: 7 }}
             >
-              {monthlyState.label}
-            </Button>
-          </PricingCardContent>
-        </PricingCardShell>
+              {karte.beliebt ? (
+                <HStack
+                  position="absolute"
+                  top="-13px"
+                  left="50%"
+                  transform="translateX(-50%)"
+                  zIndex={2}
+                  spacing={1.5}
+                  h="26px"
+                  px="12px"
+                  borderRadius="full"
+                  bg="var(--cc-gold)"
+                  bgImage="var(--cc-gold-grad)"
+                  color="var(--cc-on-gold)"
+                  whiteSpace="nowrap"
+                  fontSize="11px"
+                  fontWeight={600}
+                  letterSpacing="0.12em"
+                  textTransform="uppercase"
+                  boxShadow="0 6px 18px rgba(212, 176, 128, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.35)"
+                >
+                  <Sparkles size={12} strokeWidth={2} aria-hidden />
+                  <Text as="span">Beliebteste Wahl</Text>
+                </HStack>
+              ) : null}
 
-        {/* Lifetime — hervorgehoben */}
-        <PricingCardShell variant="featured" w={{ base: "full", md: "360px" }}>
-          <PricingCardContent
-            label="Lifetime"
-            priceMain="699 €"
-            priceSuffix="einmalig"
-            savingsLine="Spare 465 € im 1. Jahr"
-            features={lifetimeFeatures}
-          >
-            <Button
-              variant="unstyled"
-              w="full"
-              minH="48px"
-              borderRadius="10px"
-              border="none"
-              fontWeight={600}
-              fontSize="15px"
-              color="#FFFFFF"
-              className="inter-semibold"
-              bg="linear-gradient(135deg, #D4AF37 0%, #A67C00 100%)"
-              boxShadow="0 0 20px rgba(212,175,55,0.20), inset 0 1px 0 rgba(255,255,255,0.12)"
-              transition="all 150ms cubic-bezier(0.16, 1, 0.3, 1)"
-              _hover={
-                lifetimeState.disabled
-                  ? undefined
-                  : {
-                      bg: "linear-gradient(135deg, #E8C547 0%, #D4AF37 100%)",
-                      boxShadow:
-                        "0 0 32px rgba(212,175,55,0.35), inset 0 1px 0 rgba(255,255,255,0.16)",
-                      transform: "translateY(-1px)",
-                    }
-              }
-              _active={{ transform: "translateY(0)" }}
-              onClick={() => handleSelectPlan("lifetime")}
-              isDisabled={lifetimeState.disabled}
-              isLoading={loadingPlan === "lifetime"}
-              loadingText="Wird vorbereitet…"
-              opacity={lifetimeState.disabled ? 0.55 : 1}
-              cursor={lifetimeState.disabled ? "not-allowed" : "pointer"}
-            >
-              {lifetimeState.label}
-            </Button>
-          </PricingCardContent>
-        </PricingCardShell>
-      </Flex>
-    </Box>
-  );
-}
+              <Stack spacing={6} h="full">
+                <Stack spacing={3}>
+                  <Heading
+                    as="h3"
+                    fontSize="13px"
+                    lineHeight="18px"
+                    fontWeight={500}
+                    letterSpacing="0.12em"
+                    textTransform="uppercase"
+                    color={karte.beliebt ? "var(--cc-gold-light)" : "var(--cc-text-soft)"}
+                  >
+                    {karte.laufzeit}
+                  </Heading>
+                  <HStack align="baseline" spacing={2} flexWrap="wrap">
+                    <Text
+                      className="cc-num"
+                      fontSize={{ base: "38px", md: "42px" }}
+                      fontWeight={600}
+                      lineHeight={1}
+                      letterSpacing="-0.02em"
+                      color="var(--cc-text)"
+                    >
+                      {karte.preis}
+                    </Text>
+                    <Text fontSize="14px" color="var(--cc-text-2)">
+                      {karte.periode}
+                    </Text>
+                  </HStack>
+                  <Text
+                    className="cc-num"
+                    fontSize="13px"
+                    lineHeight="20px"
+                    color={karte.beliebt ? "var(--cc-gold-light)" : "var(--cc-text-3)"}
+                    fontWeight={karte.beliebt ? 600 : 400}
+                  >
+                    {karte.hinweis}
+                  </Text>
+                </Stack>
 
-/**
- * Optisches Gerüst für eine Pricing-Card. Variant `featured` setzt den Gold-
- * Glow + Badge + leichten Scale-Effekt (nur Desktop). Variant `ghost` ist die
- * monochrome Glassmorphism-Variante.
- */
-function PricingCardShell({
-  variant,
-  children,
-  ...rest
-}: {
-  variant: "ghost" | "featured";
-  children: React.ReactNode;
-} & React.ComponentProps<typeof Box>) {
-  const isFeatured = variant === "featured";
-  return (
-    <Box
-      position="relative"
-      borderRadius="16px"
-      p={{ base: 7, md: 8 }}
-      sx={{
-        background: "rgba(255,255,255,0.05)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-        border: isFeatured
-          ? "2px solid rgba(212, 175, 55, 0.40)"
-          : "1px solid rgba(255, 255, 255, 0.09)",
-        boxShadow: isFeatured
-          ? "0 0 60px rgba(212, 175, 55, 0.20), 0 8px 32px rgba(0,0,0,0.60), inset 0 1px 0 rgba(255,255,255,0.07)"
-          : "0 8px 32px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.05)",
-        transform: isFeatured ? { base: "none", md: "scale(1.05)" } : undefined,
-        transition: "transform 220ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 220ms ease",
-      }}
-      {...rest}
-    >
-      {isFeatured ? (
-        <Box
-          position="absolute"
-          top="-16px"
-          left="50%"
-          transform="translateX(-50%)"
-          px="14px"
-          py="4px"
-          borderRadius="9999px"
-          color="#07080A"
-          whiteSpace="nowrap"
-          sx={{
-            background: "linear-gradient(135deg, #D4AF37 0%, #A67C00 100%)",
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: "11px",
-            fontWeight: 700,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            boxShadow: "0 4px 14px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.32)",
-          }}
-        >
-          ⭐ Beliebteste Wahl
-        </Box>
-      ) : null}
-      {children}
-    </Box>
-  );
-}
+                <Box flex="1" />
 
-function PricingCardContent({
-  label,
-  priceMain,
-  priceSuffix,
-  savingsLine,
-  features,
-  children,
-}: {
-  label: string;
-  priceMain: string;
-  priceSuffix: string;
-  savingsLine: string | null;
-  features: string[];
-  children: React.ReactNode;
-}) {
-  return (
-    <Stack spacing={6} h="full">
-      <Stack spacing={2}>
-        <Text
-          className="inter-semibold"
-          fontSize="xs"
-          letterSpacing="0.22em"
-          textTransform="uppercase"
-          color="rgba(255,255,255,0.55)"
-        >
-          {label}
-        </Text>
-        <HStack align="baseline" spacing={2}>
-          <Text
-            sx={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: "36px",
-              fontWeight: 700,
-              lineHeight: 1,
-              color: "var(--color-text-primary)",
-            }}
-          >
-            {priceMain}
-          </Text>
-          <Text className="inter" fontSize="14px" color="rgba(255,255,255,0.55)">
-            {priceSuffix}
-          </Text>
-        </HStack>
-        {savingsLine ? (
-          <Text
-            className="inter-semibold"
-            fontSize="14px"
-            color="var(--color-accent-gold-light)"
-          >
-            {savingsLine}
-          </Text>
-        ) : (
-          // Platzhalter, damit beide Cards die gleiche vertikale Höhe haben
-          <Box h="20px" />
-        )}
-      </Stack>
-
-      <Stack spacing={3} flex={1}>
-        {features.map((feature) => (
-          <HStack key={feature} spacing={3} align="flex-start">
-            <Box pt="2px" color="var(--color-accent-gold)" flexShrink={0}>
-              <CheckCircle2 size={16} strokeWidth={2} />
+                <Button
+                  variant={karte.beliebt ? "gold" : "line"}
+                  w="full"
+                  h="48px"
+                  fontSize="15px"
+                  color={karte.beliebt ? undefined : "var(--cc-gold-light)"}
+                  borderColor={karte.beliebt ? undefined : "rgba(232, 192, 148, 0.35)"}
+                  onClick={() => void planWaehlen(karte.plan)}
+                  isDisabled={zustand.disabled}
+                  isLoading={laufenderPlan === karte.plan}
+                  loadingText="Wird vorbereitet…"
+                >
+                  {zustand.label}
+                </Button>
+              </Stack>
             </Box>
-            <Text className="inter" fontSize="15px" color="#E8E8EA" lineHeight="1.45">
-              {feature}
-            </Text>
-          </HStack>
-        ))}
-      </Stack>
+          );
+        })}
+      </Flex>
 
-      {children}
+      <Box className="cc-card cc-card--still" p={{ base: 5, md: 6 }}>
+        <Heading
+          as="h3"
+          fontSize="13px"
+          lineHeight="18px"
+          fontWeight={500}
+          letterSpacing="0.12em"
+          textTransform="uppercase"
+          color="var(--cc-text-soft)"
+          mb={4}
+        >
+          In jeder Laufzeit enthalten
+        </Heading>
+        <Stack
+          as="ul"
+          listStyleType="none"
+          spacing={3}
+          sx={{ columnCount: { base: 1, md: 2 }, columnGap: "24px" }}
+        >
+          {LEISTUNGEN.map((leistung) => (
+            <HStack as="li" key={leistung} spacing={3} align="flex-start" sx={{ breakInside: "avoid" }}>
+              <Box
+                mt="2px"
+                w="18px"
+                h="18px"
+                flexShrink={0}
+                borderRadius="full"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                color="var(--cc-gold-light)"
+                bg="var(--cc-gold-wash)"
+                border="1px solid rgba(232, 192, 148, 0.35)"
+                aria-hidden
+              >
+                <Check size={11} strokeWidth={2.5} />
+              </Box>
+              <Text fontSize="15px" color="var(--cc-text-soft)" lineHeight={1.45}>
+                {leistung}
+              </Text>
+            </HStack>
+          ))}
+        </Stack>
+      </Box>
     </Stack>
   );
 }

@@ -6,10 +6,10 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Capital Circle Monthly = 97 € (siehe Master-Prompt §6).
+ * Capital Circle Monthly = 99 € (siehe Master-Prompt §6).
  * Falls dieser Preis sich ändert, hier UND in Stripe synchron halten.
  */
-const MONTHLY_PRICE_EUR = 97;
+const MONTHLY_PRICE_EUR = 99;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

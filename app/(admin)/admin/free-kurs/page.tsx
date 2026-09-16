@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { Badge, Box, Button, Divider, HStack, Stack, Text } from "@chakra-ui/react";
+import { Box, Button, Divider, HStack, Stack, Text } from "@chakra-ui/react";
 import { createClient } from "@/lib/supabase/server";
 import { CourseModulesDraggable } from "@/components/admin/CourseModulesDraggable";
 import { FreeKursScan } from "@/components/admin/FreeKursScan";
+import { AdminPageHeader, ADMIN_CARD_CLASS, adminCardPadding, StatusPill } from "@/components/admin/adminUi";
 import {
   AUFZEICHNUNGEN_COURSE_ID,
   FREE_KURS_COURSE_ID,
@@ -78,102 +79,71 @@ export default async function AdminFreeKursPage() {
   ];
 
   return (
-    <Stack gap={8} maxW="var(--adminMaxWidth, 1440px)" mx="auto" px={{ base: 4, md: 6 }} py={{ base: 6, md: 8 }}>
-      <Stack spacing={2}>
-        <Text as="h1" className="radley-regular" fontSize={{ base: "2xl", md: "3xl" }} color="whiteAlpha.900">
-          Free Kurs Verwaltung
-        </Text>
-        <Text className="inter" fontSize="sm" color="gray.500">
-          Verwaltung des kostenlosen Kurs-Bereichs. Beide Kurse sind fuer alle eingeloggten
-          Nutzer sichtbar (auch ohne Paid-Mitgliedschaft).
-        </Text>
-      </Stack>
+    <Box maxW="var(--adminMaxWidth, 1440px)" mx="auto">
+      <AdminPageHeader
+        title="Free Kurs Verwaltung"
+        subtitle="Verwaltung des kostenlosen Kurs-Bereichs. Beide Kurse sind für alle eingeloggten Nutzer sichtbar (auch ohne Paid-Mitgliedschaft)."
+      />
 
-      <FreeKursScan />
+      <Stack spacing={8}>
+        <FreeKursScan />
 
-      {sections.map((section) => (
-        <Stack
-          key={section.id}
-          spacing={5}
-          p={{ base: 4, md: 6 }}
-          borderRadius="20px"
-          borderWidth="1px"
-          borderColor="rgba(212,175,55,0.22)"
-          bg="rgba(212,175,55,0.04)"
-        >
-          <Stack spacing={2}>
+        {sections.map((section) => (
+          <Stack key={section.id} spacing={5} className={ADMIN_CARD_CLASS} p={adminCardPadding}>
+            <Stack spacing={2}>
+              <HStack spacing={3} flexWrap="wrap">
+                <Text as="h2" fontSize={{ base: "17px", md: "18px" }} fontWeight={600} color="var(--cc-text)">
+                  {section.title}
+                </Text>
+                <StatusPill tone="attention">is_free = true</StatusPill>
+                <StatusPill tone="neutral">{section.bucketPrefix}</StatusPill>
+              </HStack>
+              {section.description ? (
+                <Text fontSize="14px" color="var(--cc-text-2)">
+                  {section.description}
+                </Text>
+              ) : null}
+              <Text fontSize="13px" color="var(--cc-text-3)">
+                Slug:{" "}
+                <Box as="span" color="var(--cc-text-2)">
+                  {section.slug}
+                </Box>
+              </Text>
+            </Stack>
+
+            <Divider borderColor="var(--cc-line)" />
+
             <HStack spacing={3} flexWrap="wrap">
-              <Text className="inter-semibold" fontSize={{ base: "lg", md: "xl" }} color="whiteAlpha.900">
-                {section.title}
-              </Text>
-              <Badge
-                px={2}
-                py={0.5}
-                borderRadius="md"
-                variant="subtle"
-                colorScheme="yellow"
-                fontSize="xs"
-                className="inter"
-              >
-                is_free = true
-              </Badge>
-              <Badge
-                px={2}
-                py={0.5}
-                borderRadius="md"
-                variant="subtle"
-                colorScheme="gray"
-                fontSize="xs"
-                className="jetbrains-mono"
-              >
-                {section.bucketPrefix}
-              </Badge>
+              <Link href={`/admin/kurse/${section.id}/module/new`} style={{ textDecoration: "none" }}>
+                <Button variant="gold" size="sm" as="span">
+                  + Neues Modul anlegen
+                </Button>
+              </Link>
+              <Link href={`/admin/kurse/${section.id}`} style={{ textDecoration: "none" }}>
+                <Button variant="line" size="sm" as="span">
+                  In Kurs-Detail öffnen
+                </Button>
+              </Link>
             </HStack>
-            {section.description ? (
-              <Text className="inter" fontSize="sm" color="gray.400">
-                {section.description}
+
+            {section.modules.length === 0 ? (
+              <Text fontSize="14px" color="var(--cc-text-2)">
+                Noch keine Module. Synchronisiere oben den Bucket oder lege ein Modul manuell an.
               </Text>
-            ) : null}
-            <Text className="inter" fontSize="xs" color="gray.500">
-              Slug:{" "}
-              <Box as="span" className="jetbrains-mono" color="gray.400">
-                {section.slug}
-              </Box>
-            </Text>
+            ) : (
+              <CourseModulesDraggable
+                courseId={section.id}
+                initialModules={section.modules.map((m) => ({
+                  id: m.id,
+                  title: m.title,
+                  order_index: m.order_index,
+                }))}
+                allCourses={(allCoursesRows ?? []) as Array<{ id: string; title: string }>}
+              />
+            )}
           </Stack>
-
-          <Divider borderColor="whiteAlpha.100" />
-
-          <HStack spacing={3} flexWrap="wrap">
-            <Link href={`/admin/kurse/${section.id}/module/new`} style={{ textDecoration: "none" }}>
-              <Button colorScheme="blue" size="sm" as="span">
-                + Neues Modul anlegen
-              </Button>
-            </Link>
-            <Link href={`/admin/kurse/${section.id}`} style={{ textDecoration: "none" }}>
-              <Button variant="outline" size="sm" as="span" borderColor="whiteAlpha.300" color="gray.200">
-                In Kurs-Detail oeffnen
-              </Button>
-            </Link>
-          </HStack>
-
-          {section.modules.length === 0 ? (
-            <Text className="inter" fontSize="sm" color="gray.400">
-              Noch keine Module. Synchronisiere oben den Bucket oder lege ein Modul manuell an.
-            </Text>
-          ) : (
-            <CourseModulesDraggable
-              courseId={section.id}
-              initialModules={section.modules.map((m) => ({
-                id: m.id,
-                title: m.title,
-                order_index: m.order_index,
-              }))}
-              allCourses={(allCoursesRows ?? []) as Array<{ id: string; title: string }>}
-            />
-          )}
-        </Stack>
-      ))}
-    </Stack>
+        ))}
+      </Stack>
+    </Box>
   );
 }

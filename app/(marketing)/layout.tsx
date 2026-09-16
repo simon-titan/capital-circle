@@ -3,31 +3,19 @@ import { Box } from "@chakra-ui/react";
 
 /**
  * Marketing-Layout — bewusst minimal: kein Auth-Gate, keine Plattform-Chrome.
- * Wird genutzt für öffentliche Seiten wie /free, /pricing, /apply.
+ * Wird genutzt für öffentliche Seiten wie /free, /apply und /survey. Die
+ * Verkaufsseite liegt seit dem Umbau auf `/` und bringt ihren Himmel selbst mit.
  *
- * Hintergrund: Plattformfarben aus DESIGN.json (Gold-Akzente werden auf
- * Komponentenebene gesetzt). Nutzt ein dezentes radiales Highlight oben
- * rechts — gleicher Stil wie docs/design/hero-glass.md.
+ * Hintergrund wie im Mitgliederbereich (DESIGN.md v3.2): Graphitgrund mit
+ * Sternenfeld (`.cc-stars`) und Champagner-Licht (`.cc-goldlight`), beide
+ * `fixed` hinter dem Inhalt. `overflow-x: clip` statt `hidden`, damit kein
+ * Scroll-Container entsteht.
  */
 export default function MarketingLayout({ children }: { children: ReactNode }) {
   return (
-    <Box
-      minH="100vh"
-      w="full"
-      bg="var(--color-bg)"
-      color="var(--color-text-primary)"
-      position="relative"
-      overflow="hidden"
-      _before={{
-        content: '""',
-        position: "absolute",
-        inset: 0,
-        background:
-          "radial-gradient(ellipse 80% 60% at 80% -10%, rgba(212,175,55,0.18), transparent 60%), radial-gradient(ellipse 60% 50% at 10% 100%, rgba(232,197,71,0.10), transparent 65%)",
-        pointerEvents: "none",
-        zIndex: 0,
-      }}
-    >
+    <Box position="relative" minH="100vh" w="full" bg="var(--cc-bg)" color="var(--cc-text)" overflowX="clip">
+      <Box className="cc-stars" aria-hidden />
+      <Box className="cc-goldlight" aria-hidden />
       <Box position="relative" zIndex={1}>
         {children}
       </Box>

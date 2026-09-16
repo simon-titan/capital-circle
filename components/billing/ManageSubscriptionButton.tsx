@@ -11,6 +11,8 @@ import { useState } from "react";
  * Tab auf die signierte Portal-URL weiter. Kein Redirect im selben Tab, damit
  * der User nach Ende des Portal-Flows wieder bei uns landet, ohne den
  * Plattform-State zu verlieren.
+ *
+ * `primary` = Gold-Button (Theme-Variante `gold`), `outline` = Line-Button.
  */
 export function ManageSubscriptionButton({
   label = "Abo verwalten",
@@ -47,59 +49,16 @@ export function ManageSubscriptionButton({
     }
   }
 
-  if (variant === "outline") {
-    return (
-      <Button
-        onClick={openPortal}
-        isLoading={loading}
-        loadingText="Öffnet…"
-        variant="unstyled"
-        display="inline-flex"
-        alignItems="center"
-        gap="8px"
-        px={5}
-        minH="40px"
-        borderRadius="10px"
-        borderWidth="1px"
-        borderColor="rgba(212,175,55,0.40)"
-        color="var(--color-accent-gold)"
-        className="inter-semibold"
-        fontSize="14px"
-        _hover={{ bg: "rgba(212,175,55,0.10)", borderColor: "rgba(212,175,55,0.65)" }}
-      >
-        {label}
-        <ExternalLink size={14} />
-      </Button>
-    );
-  }
-
   return (
     <Button
       onClick={openPortal}
       isLoading={loading}
       loadingText="Öffnet…"
-      variant="unstyled"
-      display="inline-flex"
-      alignItems="center"
-      gap="8px"
-      px={5}
-      minH="44px"
-      borderRadius="10px"
-      color="#FFFFFF"
-      className="inter-semibold"
-      fontSize="14px"
-      bg="linear-gradient(135deg, #D4AF37 0%, #A67C00 100%)"
-      boxShadow="0 0 20px rgba(212,175,55,0.20), inset 0 1px 0 rgba(255,255,255,0.12)"
-      transition="all 150ms cubic-bezier(0.16, 1, 0.3, 1)"
-      _hover={{
-        bg: "linear-gradient(135deg, #E8C547 0%, #D4AF37 100%)",
-        boxShadow: "0 0 32px rgba(212,175,55,0.35), inset 0 1px 0 rgba(255,255,255,0.16)",
-        transform: "translateY(-1px)",
-      }}
-      _active={{ transform: "translateY(0)" }}
+      variant={variant === "outline" ? "line" : "gold"}
+      rightIcon={<ExternalLink size={14} aria-hidden />}
+      w={{ base: "100%", sm: "auto" }}
     >
       {label}
-      <ExternalLink size={14} />
     </Button>
   );
 }

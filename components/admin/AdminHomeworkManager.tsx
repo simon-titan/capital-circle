@@ -9,6 +9,17 @@ type Homework = {
   due_date: string | null;
 };
 
+const fieldSx = {
+  bg: "rgba(255, 255, 255, 0.03)",
+  border: "1px solid",
+  borderColor: "var(--cc-line-strong)",
+  borderRadius: "8px",
+  color: "var(--cc-text)",
+  _placeholder: { color: "var(--cc-text-3)" },
+  _hover: { borderColor: "rgba(255, 255, 255, 0.22)" },
+  _focusVisible: { borderColor: "var(--cc-gold-line)", boxShadow: "0 0 0 1px var(--cc-gold-line)" },
+} as const;
+
 export function AdminHomeworkManager({ initialHomework }: { initialHomework: Homework[] }) {
   const [items, setItems] = useState(initialHomework);
   const [title, setTitle] = useState("");
@@ -45,25 +56,49 @@ export function AdminHomeworkManager({ initialHomework }: { initialHomework: Hom
   };
 
   return (
-    <Stack gap={4}>
-      <Text fontSize="xl">Hausaufgabe anlegen</Text>
-      <Input placeholder="Titel" value={title} onChange={(e) => setTitle(e.target.value)} />
-      <Textarea placeholder="Beschreibung" value={description} onChange={(e) => setDescription(e.target.value)} />
-      <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-      <Input type="number" value={weekNumber} onChange={(e) => setWeekNumber(Number(e.target.value))} />
-      <Button onClick={createHomework} isLoading={loading} isDisabled={!title}>
-        Hausaufgabe erstellen
-      </Button>
-      {status ? <Text fontSize="sm">{status}</Text> : null}
-
-      <Text mt={4} fontSize="lg">
-        Vorhandene Hausaufgaben
-      </Text>
-      {items.map((hw) => (
-        <Text key={hw.id}>
-          {hw.title} {hw.due_date ? `- faellig am ${new Date(hw.due_date).toLocaleDateString("de-DE")}` : ""}
+    <Stack gap={6}>
+      <Stack gap={4} className="cc-card cc-card--still" p={{ base: 4, md: 5 }}>
+        <Text fontSize="18px" fontWeight={600} color="var(--cc-text)">
+          Hausaufgabe anlegen
         </Text>
-      ))}
+        <Input placeholder="Titel" value={title} onChange={(e) => setTitle(e.target.value)} {...fieldSx} />
+        <Textarea placeholder="Beschreibung" value={description} onChange={(e) => setDescription(e.target.value)} {...fieldSx} />
+        <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="cc-num" {...fieldSx} />
+        <Input type="number" value={weekNumber} onChange={(e) => setWeekNumber(Number(e.target.value))} className="cc-num" {...fieldSx} />
+        <Button variant="gold" alignSelf="flex-start" onClick={createHomework} isLoading={loading} isDisabled={!title}>
+          Hausaufgabe erstellen
+        </Button>
+        {status ? (
+          <Text fontSize="14px" color="var(--cc-text-2)">
+            {status}
+          </Text>
+        ) : null}
+      </Stack>
+
+      <Stack gap={0} className="cc-card cc-card--still" p={{ base: 4, md: 5 }}>
+        <Text fontSize="18px" fontWeight={600} color="var(--cc-text)" mb={2}>
+          Vorhandene Hausaufgaben
+        </Text>
+        {items.map((hw) => (
+          <Text
+            key={hw.id}
+            py={2.5}
+            fontSize="14px"
+            color="var(--cc-text)"
+            borderBottom="1px solid var(--cc-line)"
+            _last={{ borderBottom: "none" }}
+          >
+            {hw.title}{" "}
+            {hw.due_date ? (
+              <Text as="span" className="cc-num" color="var(--cc-text-2)">
+                {`- faellig am ${new Date(hw.due_date).toLocaleDateString("de-DE")}`}
+              </Text>
+            ) : (
+              ""
+            )}
+          </Text>
+        ))}
+      </Stack>
     </Stack>
   );
 }

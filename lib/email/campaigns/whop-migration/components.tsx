@@ -2,12 +2,9 @@ import * as React from "react";
 import { CAMPAIGN_TOKENS as T } from "./styles";
 
 /**
- * Kampagnen-lokale Bausteine (Rot/Weiß, dunkel, Inter) — eigenständig
- * gegenüber den plattformweiten (goldenen, Georgia/Helvetica) Bausteinen in
- * `lib/email/layout/components.tsx`. Diese Kampagne fährt bewusst nur Inter
- * als Schriftart (siehe `styles.ts`), deshalb duplizieren `CampaignHeading`/
- * `CampaignText`/`CampaignSmall` die Typografie-Bausteine lokal statt die
- * Georgia-hartcodierten Originale zu importieren.
+ * Kampagnen-Bausteine der Migrations-Mails — v3.2 „Champagner auf Graphit“,
+ * Inter für alles. Gleiche Sprache wie `lib/email/layout/components.tsx`;
+ * hier zusätzlich Badge, FAQ-Frage und Bild-Platzhalter.
  */
 
 interface ChildrenProps {
@@ -24,7 +21,7 @@ export function CampaignHeading({ children }: ChildrenProps) {
         lineHeight: 1.25,
         fontWeight: 600,
         color: T.text,
-        letterSpacing: "-0.01em",
+        letterSpacing: "-0.02em",
       }}
     >
       {children}
@@ -43,7 +40,7 @@ export function CampaignText({
         fontFamily: T.fontBody,
         fontSize: "15px",
         lineHeight: 1.65,
-        color: muted ? T.textMuted : T.text,
+        color: muted ? T.textMuted : T.textSoft,
       }}
     >
       {children}
@@ -67,7 +64,7 @@ export function CampaignSmall({ children }: ChildrenProps) {
   );
 }
 
-/** Weißer CTA-Button — Akzentfarbe des Journal-Looks, trägt alle Klicks. */
+/** Hauptaktion: Champagner-Verlauf mit Vollton-Fallback, dunkle Schrift. */
 export function CampaignButton({ href, children }: { href: string } & ChildrenProps) {
   return (
     <table role="presentation" cellSpacing={0} cellPadding={0} style={{ margin: "24px auto" }}>
@@ -76,8 +73,10 @@ export function CampaignButton({ href, children }: { href: string } & ChildrenPr
           <td
             align="center"
             style={{
-              borderRadius: "10px",
+              borderRadius: "8px",
               backgroundColor: T.accent,
+              backgroundImage: T.goldGrad,
+              boxShadow: "0 6px 18px rgba(212,176,128,0.22)",
             }}
           >
             <a
@@ -102,10 +101,7 @@ export function CampaignButton({ href, children }: { href: string } & ChildrenPr
   );
 }
 
-/**
- * Hervorhebungs-Box mit rotem Haarlinien-Rand links — die einzige Stelle,
- * an der die Markenfarbe im Layout auftaucht (neben dem Kopf-Divider).
- */
+/** Hinweis-Box: Panel-Fläche mit Champagner-Haarlinie rundum. */
 export function CampaignHighlight({ children }: ChildrenProps) {
   return (
     <table
@@ -114,9 +110,9 @@ export function CampaignHighlight({ children }: ChildrenProps) {
       cellSpacing={0}
       cellPadding={0}
       style={{
-        backgroundColor: T.bgCard,
-        borderLeft: `3px solid ${T.brandRed}`,
-        borderRadius: "6px",
+        backgroundColor: T.bg,
+        border: `1px solid ${T.brandSoft}`,
+        borderRadius: "10px",
         margin: "16px 0",
       }}
     >
@@ -139,7 +135,7 @@ export function CampaignHighlight({ children }: ChildrenProps) {
   );
 }
 
-/** Kleines rotes Eyebrow-Label — z. B. über der Headline. Nur Text, kein Fill. */
+/** Versal-Label über der Headline, Champagner. Nur Text, kein Fill. */
 export function CampaignBadge({ children }: ChildrenProps) {
   return (
     <p
@@ -148,9 +144,9 @@ export function CampaignBadge({ children }: ChildrenProps) {
         fontFamily: T.fontBody,
         fontSize: "12px",
         fontWeight: 600,
-        letterSpacing: "0.08em",
+        letterSpacing: "0.14em",
         textTransform: "uppercase",
-        color: T.brandRed,
+        color: T.brand,
       }}
     >
       {children}
@@ -158,7 +154,7 @@ export function CampaignBadge({ children }: ChildrenProps) {
   );
 }
 
-/** Nummerierte FAQ-Frage für Mail 3 — rote Ziffer, weiße Frage, grauer Antworttext. */
+/** Nummerierte FAQ-Frage — Champagner-Ziffer, weiße Frage, grauer Antworttext. */
 export function CampaignQuestion({
   number,
   question,
@@ -179,7 +175,8 @@ export function CampaignQuestion({
               style={{
                 fontFamily: T.fontHeading,
                 fontSize: "20px",
-                color: T.brandRed,
+                fontWeight: 600,
+                color: T.brand,
               }}
             >
               {number}.
@@ -218,8 +215,8 @@ export function CampaignQuestion({
 /**
  * Platzhalter für ein noch fehlendes Bild-Asset (z. B. Dashboard-Screenshot).
  * Gestrichelter Rahmen macht in der Vorschau sofort sichtbar, dass hier später
- * ein echtes Bild eingesetzt wird — kein `<img>`, damit kein kaputtes
- * Broken-Image-Icon in Postfächern erscheint, solange die Datei fehlt.
+ * ein echtes Bild eingesetzt wird — bewusst ohne Bild-Tag, damit kein kaputtes
+ * Bild-Symbol in Postfächern erscheint, solange die Datei fehlt.
  */
 export function CampaignImagePlaceholder({ label }: { label: string }) {
   return (
@@ -235,8 +232,8 @@ export function CampaignImagePlaceholder({ label }: { label: string }) {
           <td
             align="center"
             style={{
-              border: `1px dashed ${T.border}`,
-              borderRadius: "10px",
+              border: `1px dashed ${T.borderStrong}`,
+              borderRadius: "12px",
               padding: "40px 16px",
               backgroundColor: T.bgCard,
             }}
@@ -246,7 +243,7 @@ export function CampaignImagePlaceholder({ label }: { label: string }) {
                 margin: 0,
                 fontFamily: T.fontBody,
                 fontSize: "12px",
-                letterSpacing: "0.04em",
+                letterSpacing: "0.12em",
                 textTransform: "uppercase",
                 color: T.textMuted,
               }}

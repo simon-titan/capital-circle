@@ -11,17 +11,17 @@ type ArticlePreviewProps = {
 export function ArticlePreview({ content }: ArticlePreviewProps) {
   return (
     <Box>
-      <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.1em" className="inter-semibold" color="gray.500" mb={3}>
+      <Text fontSize="12px" fontWeight={500} textTransform="uppercase" letterSpacing="0.08em" color="var(--cc-text-2)" mb={3}>
         Vorschau
       </Text>
+      {/* Graphitgrund wie auf der Mitgliederseite, damit die Vorschau dem Ergebnis entspricht. */}
       <Box
-        borderWidth="1px"
-        borderRadius="lg"
-        borderColor="whiteAlpha.200"
+        border="1px solid var(--cc-line-strong)"
+        borderRadius="10px"
         p={{ base: 4, md: 5 }}
         maxH={{ base: "50vh", lg: "70vh" }}
         overflowY="auto"
-        bg="rgba(0,0,0,0.35)"
+        bg="var(--cc-bg)"
       >
         <ArticleRenderer content={content} />
       </Box>

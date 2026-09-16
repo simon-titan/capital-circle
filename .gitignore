@@ -42,3 +42,24 @@ next-env.d.ts
 
 # generated exports (enthalten oft PII, z. B. Mitglieder-CSVs) — nie committen
 /exports/
+
+.vercel
+.env*
+
+# lokale Agenten-/Plugin-Zustaende
+/.claude/settings.local.json
+/.claude/scheduled_tasks.lock
+/.impeccable/
+/SUPERVISOR_LOG.md
+
+# generiert von `npm run db:pending` — aus den Einzelmigrationen neu baubar
+/supabase/migrations/_JETZT_EINSPIELEN.sql
+
+# im Repo-Root abgelegte Fremddateien (Rechnungen, Screenshots, Emoji-PNGs).
+# Bilder, die die App braucht, gehoeren nach /public.
+/Rechnung_*.pdf
+/Claude.png
+/images.png
+/ali-2.jpeg
+/founder.webp
+/*_1f*.png

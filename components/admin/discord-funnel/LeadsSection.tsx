@@ -10,6 +10,7 @@ import {
 } from "@chakra-ui/react";
 import { Download, Search, Users } from "lucide-react";
 import { useState } from "react";
+import { adminEmptyProps, adminInputProps, adminOptionStyle } from "@/components/admin/adminUi";
 import type { ExportType, LeadPatchBody, LeadRow } from "./types";
 import { SectionCard } from "./primitives";
 import { LeadCard } from "./LeadCard";
@@ -60,17 +61,14 @@ export function LeadsSection({
             const v = e.target.value;
             if (v !== "placeholder") onExport(v as ExportType);
           }}
-          bg="rgba(255,255,255,0.04)"
-          borderColor="rgba(255,255,255,0.10)"
-          color="var(--color-text-primary)"
-          className="inter"
+          {...adminInputProps}
           icon={<Download size={14} />}
         >
-          <option value="placeholder" disabled>
+          <option value="placeholder" disabled style={adminOptionStyle}>
             CSV-Export…
           </option>
           {EXPORT_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
+            <option key={o.value} value={o.value} style={adminOptionStyle}>
               {o.label}
             </option>
           ))}
@@ -79,8 +77,8 @@ export function LeadsSection({
     >
       <Stack spacing={4}>
         <InputGroup maxW="360px">
-          <InputLeftElement pointerEvents="none">
-            <Search size={16} color="rgba(255,255,255,0.4)" />
+          <InputLeftElement pointerEvents="none" color="var(--cc-text-3)">
+            <Search size={16} />
           </InputLeftElement>
           <Input
             value={search}
@@ -89,30 +87,12 @@ export function LeadsSection({
               if (e.key === "Enter") onSearchSubmit();
             }}
             placeholder="Name oder E-Mail suchen… (Enter)"
-            bg="rgba(255,255,255,0.04)"
-            borderColor="rgba(255,255,255,0.12)"
-            _hover={{ borderColor: "rgba(212,175,55,0.4)" }}
-            _focus={{
-              borderColor: "rgba(212,175,55,0.65)",
-              boxShadow: "0 0 0 1px rgba(212,175,55,0.45)",
-            }}
-            color="var(--color-text-primary)"
-            className="inter"
+            {...adminInputProps}
           />
         </InputGroup>
 
         {leads.length === 0 ? (
-          <Box
-            py={12}
-            textAlign="center"
-            color="var(--color-text-secondary)"
-            className="inter"
-            fontSize="sm"
-            border="1px dashed rgba(255,255,255,0.08)"
-            borderRadius="12px"
-          >
-            Keine Leads in dieser Ansicht.
-          </Box>
+          <Box {...adminEmptyProps}>Keine Leads in dieser Ansicht.</Box>
         ) : (
           <Stack spacing={2}>
             {leads.map((lead) => (

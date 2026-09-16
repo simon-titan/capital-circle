@@ -1,20 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-  Box,
-  Button,
-  Flex,
-  Grid,
-  GridItem,
-  HStack,
-  Stack,
-  Text,
-} from "@chakra-ui/react";
-import { ChakraLinkButton } from "@/components/platform/ChakraLinkButton";
-import { CardLockOverlay } from "@/components/ui/CardLockOverlay";
-import type { LiveSessionCategoryRow, LiveSessionListItem } from "@/lib/server-data";
+import { useMemo, useState, type ReactNode } from "react";
+import { Box, Button, Flex, Grid, Stack, Text } from "@chakra-ui/react";
 import { Calendar, Radio } from "lucide-react";
+import { ChakraLinkButton } from "@/components/platform/ChakraLinkButton";
+import { LockedNote, clampLines } from "@/components/platform/dashboard/primitives";
+import type { LiveSessionCategoryRow, LiveSessionListItem } from "@/lib/server-data";
 
 const FREE_CATEGORY = "weekly outlook";
 
@@ -22,12 +13,138 @@ function isFreeAccessible(s: LiveSessionListItem): boolean {
   return s.category.title.toLowerCase().includes(FREE_CATEGORY);
 }
 
-const BLUE = {
-  line: "linear-gradient(90deg, rgba(74, 144, 217, 0) 0%, rgba(100, 170, 240, 0.95) 45%, rgba(74, 144, 217, 0.25) 100%)",
-  border: "rgba(100, 170, 240, 0.45)",
-  glow: "0 0 22px rgba(74, 144, 217, 0.28)",
-  radial: "radial-gradient(ellipse at 0% 0%, rgba(74, 144, 217, 0.2), transparent 55%)",
+/** Gestaffelter Einstieg (80ms + 70ms je Schritt), gedeckelt, damit lange Listen nicht nachhinken. */
+function riseDelay(i: number) {
+  return { animationDelay: `${80 + Math.min(i, 10) * 70}ms` };
+}
+
+/** Aktiver Filter wie der aktive Nav-Punkt: Gold-Haarlinie, Gold-Verlauf, Text in Gold hell. */
+const CHIP_ACTIVE = {
+  color: "var(--cc-gold-light)",
+  bg: "linear-gradient(90deg, rgba(212, 176, 128, 0.16) 0%, rgba(212, 176, 128, 0.04) 100%)",
+  borderColor: "var(--cc-gold-line)",
+  boxShadow: "0 0 16px rgba(212, 176, 128, 0.1)",
 };
+
+function FilterChip({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <Button
+      size="sm"
+      variant="line"
+      aria-pressed={active}
+      onClick={onClick}
+      {...(active ? { ...CHIP_ACTIVE, _hover: CHIP_ACTIVE } : null)}
+    >
+      {children}
+    </Button>
+  );
+}
+
+function SessionCard({ s, locked }: { s: LiveSessionListItem; locked: boolean }) {
+  const primaryIso = s.event?.start_time ?? s.recorded_at;
+  const caption = s.event ? "Live-Termin" : "Aufzeichnung";
+
+  return (
+    <Flex as="article" direction="column" className="cc-card" h="100%" minW={0}>
+      <Box
+        position="relative"
+        w="100%"
+        aspectRatio="16 / 9"
+        borderTopRadius="11px"
+        borderBottom="1px solid var(--cc-line)"
+        overflow="hidden"
+        bg="radial-gradient(ellipse 70% 65% at 50% 38%, rgba(212, 176, 128, 0.14), transparent 72%), var(--cc-surface-2)"
+        opacity={locked ? 0.55 : 1}
+      >
+        {s.thumbnailSignedUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={s.thumbnailSignedUrl}
+            alt=""
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+          />
+        ) : (
+          <Flex align="center" justify="center" h="100%" color="var(--cc-text-3)">
+            <Radio size={36} strokeWidth={1.5} aria-hidden />
+          </Flex>
+        )}
+        <Box
+          position="absolute"
+          top={3}
+          left={3}
+          maxW="calc(100% - 24px)"
+          px={2.5}
+          py={1}
+          borderRadius="full"
+          bg="rgba(18, 23, 28, 0.78)"
+          border="1px solid var(--cc-line-strong)"
+          backdropFilter="blur(8px)"
+          fontSize="12px"
+          lineHeight="16px"
+          fontWeight={500}
+          color="var(--cc-text-soft)"
+          isTruncated
+        >
+          {s.category.title}
+        </Box>
+      </Box>
+
+      <Stack spacing={3} p={{ base: 5, md: 6 }} flex="1">
+        <Text
+          as="h2"
+          fontSize={{ base: "17px", md: "18px" }}
+          fontWeight={600}
+          lineHeight={1.3}
+          letterSpacing="-0.01em"
+          color="var(--cc-text)"
+          sx={clampLines(2)}
+        >
+          {s.title}
+        </Text>
+        {s.description ? (
+          <Text fontSize="14px" lineHeight={1.55} color="var(--cc-text-2)" sx={clampLines(2)}>
+            {s.description}
+          </Text>
+        ) : null}
+        {primaryIso ? (
+          <Flex align="center" gap={2} wrap="wrap" fontSize="14px" lineHeight={1.5}>
+            <Box as="span" color="var(--cc-text-2)" display="inline-flex">
+              <Calendar size={15} strokeWidth={1.75} aria-hidden />
+            </Box>
+            <Text as="span" color="var(--cc-text-2)">
+              {caption}
+            </Text>
+            <Text as="span" color="var(--cc-text-3)" aria-hidden>
+              ·
+            </Text>
+            <Text as="span" className="cc-num" color="var(--cc-text-soft)">
+              {new Date(primaryIso).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })}
+            </Text>
+          </Flex>
+        ) : null}
+        {s.event ? (
+          <Box pt={3} borderTop="1px solid var(--cc-line)">
+            <Text fontSize="12px" fontWeight={500} letterSpacing="0.12em" textTransform="uppercase" color="var(--cc-text-3)" mb={1}>
+              Kalender-Event
+            </Text>
+            <Text fontSize="14px" lineHeight={1.45} color="var(--cc-text-soft)" sx={clampLines(3)}>
+              {s.event.title}
+            </Text>
+          </Box>
+        ) : null}
+        <Box mt="auto" pt={2}>
+          {locked ? (
+            <LockedNote text="Live Sessions sind exklusiv für vollwertige Capital Circle Mitglieder — Weekly Outlook ist kostenlos verfügbar." />
+          ) : (
+            <ChakraLinkButton href={`/live-session/${s.id}`} size="sm" w="full" variant="line">
+              Ansehen
+            </ChakraLinkButton>
+          )}
+        </Box>
+      </Stack>
+    </Flex>
+  );
+}
 
 type Props = {
   categories: LiveSessionCategoryRow[];
@@ -44,170 +161,34 @@ export function LiveSessionGrid({ categories, sessions, isFreeMember }: Props) {
   }, [sessions, filterId]);
 
   return (
-    <Stack gap={6}>
-      <Flex gap={2} flexWrap="wrap" align="center">
-        <Button
-          size="sm"
-          variant={filterId === null ? "solid" : "outline"}
-          colorScheme={filterId === null ? "blue" : "gray"}
-          borderColor={filterId === null ? undefined : "rgba(255,255,255,0.2)"}
-          onClick={() => setFilterId(null)}
-        >
+    <Stack spacing={6}>
+      <Flex gap={2} wrap="wrap" align="center" className="cc-rise" style={riseDelay(0)}>
+        <FilterChip active={filterId === null} onClick={() => setFilterId(null)}>
           Alle
-        </Button>
+        </FilterChip>
         {categories.map((c) => (
-          <Button
-            key={c.id}
-            size="sm"
-            variant={filterId === c.id ? "solid" : "outline"}
-            colorScheme={filterId === c.id ? "blue" : "gray"}
-            borderColor={filterId === c.id ? undefined : "rgba(255,255,255,0.2)"}
-            onClick={() => setFilterId(c.id)}
-          >
+          <FilterChip key={c.id} active={filterId === c.id} onClick={() => setFilterId(c.id)}>
             {c.title}
-          </Button>
+          </FilterChip>
         ))}
       </Flex>
 
       {filtered.length === 0 ? (
-        <Box
-          className="glass-card-dashboard"
-          borderRadius="xl"
-          p={8}
-          textAlign="center"
-        >
-          <Text className="inter" color="var(--color-text-muted)" fontSize="sm">
+        <Box className="cc-card cc-card--still cc-rise" style={riseDelay(1)} p={{ base: 5, md: 6 }}>
+          <Text fontSize="15px" lineHeight={1.5} color="var(--cc-text-2)">
             Keine Sessions in dieser Kategorie.
           </Text>
         </Box>
       ) : (
-        <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", xl: "repeat(3, 1fr)" }} gap={6}>
-          {filtered.map((s) => {
-            const locked = !!isFreeMember && !isFreeAccessible(s);
-            return (
-              <GridItem key={s.id}>
-                <CardLockOverlay
-                  locked={locked}
-                  description="Live Sessions sind exklusiv für vollwertige Capital Circle Mitglieder — Weekly Outlook ist kostenlos verfügbar."
-                >
-                  <Box
-                    className="glass-card-hero"
-                    borderRadius="xl"
-                    overflow="hidden"
-                    display="flex"
-                    flexDirection="column"
-                    h="full"
-                    position="relative"
-                    borderWidth="1px"
-                    borderColor={BLUE.border}
-                    transition="transform 0.2s ease, box-shadow 0.2s ease"
-                    _hover={locked ? undefined : {
-                      transform: "translateY(-2px)",
-                      boxShadow: BLUE.glow,
-                    }}
-                  >
-                    <Box
-                      position="absolute"
-                      inset={0}
-                      pointerEvents="none"
-                      bg={BLUE.radial}
-                      opacity={0.9}
-                    />
-                    <Box position="relative" h="160px" bg="rgba(15,23,42,0.6)" overflow="hidden">
-                      {s.thumbnailSignedUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={s.thumbnailSignedUrl}
-                          alt=""
-                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                        />
-                      ) : (
-                        <Flex align="center" justify="center" h="full" bg="linear-gradient(145deg, rgba(30,58,138,0.5), rgba(15,23,42,0.9))">
-                          <Radio size={40} strokeWidth={1.5} color="rgba(147,197,253,0.6)" aria-hidden />
-                        </Flex>
-                      )}
-                      <Box
-                        position="absolute"
-                        top={3}
-                        left={3}
-                        px={2}
-                        py={1}
-                        borderRadius="md"
-                        bg="rgba(15,23,42,0.75)"
-                        borderWidth="1px"
-                        borderColor="rgba(100,170,240,0.35)"
-                      >
-                        <Text className="inter-semibold" fontSize="xs" color="rgba(191, 219, 254, 0.95)">
-                          {s.category.title}
-                        </Text>
-                      </Box>
-                    </Box>
-                    <Stack gap={3} p={5} flex={1} position="relative">
-                      <Box h="2px" w="40%" borderRadius="full" bg={BLUE.line} opacity={0.85} />
-                      <Text className="radley-regular" fontSize="lg" color="var(--color-text-primary)" noOfLines={2}>
-                        {s.title}
-                      </Text>
-                      {s.description ? (
-                        <Text className="inter" fontSize="sm" color="var(--color-text-muted)" noOfLines={2} lineHeight={1.55}>
-                          {s.description}
-                        </Text>
-                      ) : null}
-                      {(() => {
-                        const primaryIso = s.event?.start_time ?? s.recorded_at;
-                        if (!primaryIso) return null;
-                        const caption = s.event ? "Live-Termin" : "Aufzeichnung";
-                        return (
-                          <Stack gap={0.5}>
-                            <Text fontSize="10px" letterSpacing="0.08em" textTransform="uppercase" className="inter-semibold" color="rgba(147, 197, 253, 0.75)">
-                              {caption}
-                            </Text>
-                            <HStack spacing={2} color="rgba(147, 197, 253, 0.95)" fontSize="sm" className="inter-semibold">
-                              <Calendar size={16} aria-hidden />
-                              <Text>
-                                {new Date(primaryIso).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })}
-                              </Text>
-                            </HStack>
-                          </Stack>
-                        );
-                      })()}
-                      {s.event ? (
-                        <Box
-                          px={3}
-                          py={2.5}
-                          borderRadius="lg"
-                          borderWidth="1px"
-                          borderColor="rgba(100, 170, 240, 0.5)"
-                          bg="rgba(74, 144, 217, 0.14)"
-                          boxShadow="0 0 20px rgba(74, 144, 217, 0.12)"
-                        >
-                          <Text fontSize="10px" letterSpacing="0.1em" textTransform="uppercase" className="inter-semibold" color="rgba(191, 219, 254, 0.9)" mb={1}>
-                            Kalender-Event
-                          </Text>
-                          <Text className="inter" fontSize="sm" color="rgba(226, 232, 240, 0.98)" fontWeight={500} noOfLines={3} lineHeight={1.45}>
-                            {s.event.title}
-                          </Text>
-                        </Box>
-                      ) : null}
-                      <Box mt="auto" pt={2}>
-                        <ChakraLinkButton
-                          href={`/live-session/${s.id}`}
-                          size="sm"
-                          w="full"
-                          colorScheme="blue"
-                          variant="outline"
-                          borderColor="rgba(100, 170, 240, 0.55)"
-                          color="rgba(191, 219, 254, 0.95)"
-                          _hover={{ bg: "rgba(74, 144, 217, 0.2)" }}
-                        >
-                          Ansehen
-                        </ChakraLinkButton>
-                      </Box>
-                    </Stack>
-                  </Box>
-                </CardLockOverlay>
-              </GridItem>
-            );
-          })}
+        <Grid
+          templateColumns={{ base: "minmax(0, 1fr)", md: "repeat(2, minmax(0, 1fr))", xl: "repeat(3, minmax(0, 1fr))" }}
+          gap={5}
+        >
+          {filtered.map((s, i) => (
+            <Box key={s.id} className="cc-rise" style={riseDelay(i + 1)} minW={0} h="100%">
+              <SessionCard s={s} locked={!!isFreeMember && !isFreeAccessible(s)} />
+            </Box>
+          ))}
         </Grid>
       )}
     </Stack>

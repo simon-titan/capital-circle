@@ -1,8 +1,8 @@
-import { Box, Heading, Stack, Text } from "@chakra-ui/react";
+import { Box, Flex, Stack } from "@chakra-ui/react";
+import { ArrowLeft } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { ChakraLinkButton } from "@/components/platform/ChakraLinkButton";
 import { ArticleRenderer } from "@/components/platform/ArticleRenderer";
-import { GlassCard } from "@/components/ui/GlassCard";
 import { getAnalysisPostById, getCurrentUserAndProfile } from "@/lib/server-data";
 
 type PageProps = {
@@ -26,45 +26,58 @@ export default async function AnalysisArticlePage({ params }: PageProps) {
       : null;
 
   return (
-    <Stack gap={6} alignItems="start" maxW="900px" mx="auto">
+    <Box maxW="46rem" w="100%" mx="auto">
       <ChakraLinkButton
         href="/analysis"
-        variant="ghost"
+        variant="line"
         size="sm"
-        color="var(--color-accent-gold)"
-        className="inter"
+        leftIcon={<ArrowLeft size={15} strokeWidth={1.75} aria-hidden />}
+        mb={{ base: 5, md: 6 }}
       >
-        ← Zurück zur Übersicht
+        Zurück zur Übersicht
       </ChakraLinkButton>
 
-      <GlassCard w="full">
-        <Stack gap={4} mb={coverSrc ? 5 : 3}>
-          <Text
-            fontSize="xs"
-            letterSpacing="0.12em"
-            textTransform="uppercase"
-            className="inter-semibold"
-            color={isWeekly ? "rgba(251, 146, 60, 0.95)" : "rgba(147, 197, 253, 0.95)"}
+      {/* Leseansicht: ruhige Glas-Karte ohne Anheben, lesbare Spalte (~46rem) */}
+      <Box
+        as="article"
+        aria-labelledby="analysis-title"
+        className="cc-card cc-card--still cc-rise"
+        p={{ base: 5, md: 6 }}
+      >
+        <Stack gap={3} mb={coverSrc ? 6 : 5}>
+          <Box
+            as="h1"
+            id="analysis-title"
+            fontSize={{ base: "24px", md: "30px" }}
+            fontWeight={600}
+            lineHeight={1.2}
+            letterSpacing="-0.01em"
+            color="var(--cc-text)"
+            overflowWrap="break-word"
           >
-            {isWeekly ? "Weekly" : "Daily"} · Analyse
-          </Text>
-          <Heading as="h1" size="lg" className="radley-regular" fontWeight={400} color="var(--color-text-primary)">
             {post.title}
-          </Heading>
-          <Text className="inter" fontSize="sm" color="var(--color-text-muted)">
-            {new Date(post.published_at).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })}
-          </Text>
+          </Box>
+          <Box overflow="hidden">
+            <Flex className="cc-meta-row" wrap="wrap" fontSize="14px" lineHeight={1.4} color="var(--cc-text-2)">
+              <Box as="span" className="cc-meta-item">
+                {isWeekly ? "Weekly" : "Daily"} · Analyse
+              </Box>
+              <Box as="time" dateTime={post.published_at} className="cc-meta-item cc-num">
+                {new Date(post.published_at).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })}
+              </Box>
+            </Flex>
+          </Box>
         </Stack>
 
         {coverSrc ? (
-          <Box borderRadius="14px" overflow="hidden" borderWidth="1px" borderColor="rgba(255,255,255,0.1)" mb={6}>
+          <Box borderRadius="10px" overflow="hidden" border="1px solid var(--cc-line-strong)" mb={6}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={coverSrc} alt="" style={{ width: "100%", height: "auto", display: "block", maxHeight: "420px", objectFit: "cover" }} />
           </Box>
         ) : null}
 
         <ArticleRenderer key={post.id} content={post.content} />
-      </GlassCard>
-    </Stack>
+      </Box>
+    </Box>
   );
 }

@@ -74,7 +74,13 @@ export function ArticleRenderer({ content }: ArticleRendererProps) {
   }
 
   return (
-    <Box className="article-body-wrap">
+    <Box
+      className="article-body-wrap"
+      minW={0}
+      overflowWrap="break-word"
+      // Breite Tabellen scrollen in sich statt die Seite (390px) zu verbreitern.
+      sx={{ "& table": { display: "block", maxWidth: "100%", overflowX: "auto" } }}
+    >
       <EditorContent editor={editor} />
     </Box>
   );

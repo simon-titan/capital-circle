@@ -3,7 +3,6 @@
 import {
   Alert,
   AlertIcon,
-  Badge,
   Box,
   Button,
   Collapse,
@@ -17,6 +16,19 @@ import {
 import { Check, ChevronDown, ChevronUp, Flame, MessageCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { HT_QUESTIONS, BUDGET_LABELS } from "@/config/ht-questions";
+import {
+  ADMIN_CARD_CLASS,
+  AdminCount,
+  AdminLabel,
+  StatusPill,
+  adminAlertIconColor,
+  adminAlertProps,
+  adminChipProps,
+  adminEmptyProps,
+  adminInputProps,
+  adminOptionStyle,
+  type AdminTone,
+} from "@/components/admin/adminUi";
 
 type Outcome = "pending" | "closed_won" | "closed_lost" | "no_show";
 type BudgetTier = "under_2000" | "over_2000";
@@ -51,6 +63,13 @@ const OUTCOME_LABELS: Record<Outcome, string> = {
   closed_won: "Closed Won",
   closed_lost: "Closed Lost",
   no_show: "No-Show",
+};
+
+const OUTCOME_TONE: Record<Outcome, AdminTone> = {
+  pending: "attention",
+  closed_won: "success",
+  closed_lost: "danger",
+  no_show: "neutral",
 };
 
 const dateFormatter = new Intl.DateTimeFormat("de-DE", {
@@ -225,28 +244,18 @@ export function HTApplicationsManager() {
       />
 
       {error && (
-        <Alert status="error" variant="subtle" bg="rgba(229,72,77,0.10)" borderRadius="12px">
-          <AlertIcon />
-          <Text fontSize="sm" className="inter">{error}</Text>
+        <Alert status="error" variant="subtle" {...adminAlertProps("error")}>
+          <AlertIcon color={adminAlertIconColor("error")} />
+          <Text fontSize="sm">{error}</Text>
         </Alert>
       )}
 
       {loading ? (
         <HStack py={12} justify="center">
-          <Spinner color="var(--color-accent-gold)" />
+          <Spinner color="var(--cc-gold)" />
         </HStack>
       ) : sortedItems.length === 0 ? (
-        <Box
-          py={12}
-          textAlign="center"
-          color="var(--color-text-secondary)"
-          className="inter"
-          fontSize="sm"
-          border="1px dashed rgba(255,255,255,0.08)"
-          borderRadius="12px"
-        >
-          Keine HT-Bewerbungen für diesen Filter.
-        </Box>
+        <Box {...adminEmptyProps}>Keine HT-Bewerbungen für diesen Filter.</Box>
       ) : (
         <Stack spacing={3}>
           {sortedItems.map((row) => (
@@ -295,9 +304,7 @@ function FilterBar(props: {
   return (
     <Stack spacing={3}>
       <Stack spacing={2}>
-        <Text fontSize="xs" letterSpacing="0.18em" textTransform="uppercase" className="inter-semibold" color="var(--color-text-secondary)">
-          Budget
-        </Text>
+        <AdminLabel>Budget</AdminLabel>
         <HStack spacing={2} flexWrap="wrap">
           {budgetTabs.map((t) => (
             <FilterPill
@@ -312,9 +319,7 @@ function FilterBar(props: {
       </Stack>
 
       <Stack spacing={2}>
-        <Text fontSize="xs" letterSpacing="0.18em" textTransform="uppercase" className="inter-semibold" color="var(--color-text-secondary)">
-          Outcome
-        </Text>
+        <AdminLabel>Outcome</AdminLabel>
         <HStack spacing={2} flexWrap="wrap">
           {outcomeTabs.map((t) => (
             <FilterPill
@@ -339,29 +344,9 @@ function FilterPill(props: {
 }) {
   const { active, onClick, label, count } = props;
   return (
-    <Button
-      size="sm"
-      variant="outline"
-      onClick={onClick}
-      bg={active ? "rgba(212,175,55,0.14)" : "transparent"}
-      borderColor={active ? "rgba(212,175,55,0.55)" : "rgba(255,255,255,0.12)"}
-      color={active ? "var(--color-accent-gold-light)" : "var(--color-text-secondary)"}
-      _hover={{
-        bg: "rgba(255,255,255,0.06)",
-        borderColor: "rgba(212,175,55,0.45)",
-      }}
-      className="inter"
-    >
+    <Button {...adminChipProps(active)} onClick={onClick}>
       {label}
-      <Badge
-        ml={2}
-        bg={active ? "rgba(212,175,55,0.22)" : "rgba(255,255,255,0.06)"}
-        color={active ? "var(--color-accent-gold-light)" : "var(--color-text-secondary)"}
-        borderRadius="full"
-        px={2}
-      >
-        {count}
-      </Badge>
+      <AdminCount active={active}>{count}</AdminCount>
     </Button>
   );
 }
@@ -405,46 +390,43 @@ function HTApplicationCard(props: {
 
   return (
     <Box
-      borderRadius="14px"
-      border="1px solid"
-      borderColor={isPriority ? "rgba(212,175,55,0.45)" : "rgba(255,255,255,0.09)"}
-      bg={isPriority ? "rgba(212,175,55,0.04)" : "rgba(255,255,255,0.04)"}
-      overflow="hidden"
-      transition="border-color .2s ease, background .2s ease"
-      boxShadow={isPriority ? "0 0 0 1px rgba(212,175,55,0.25), 0 8px 24px rgba(212,175,55,0.10)" : undefined}
-      _hover={{
-        borderColor: isPriority ? "rgba(212,175,55,0.65)" : "rgba(212,175,55,0.30)",
-      }}
+      className={ADMIN_CARD_CLASS}
+      // Priority-Leads: Gold-Haarlinie als Rahmen (inline, damit sie über `.cc-card` liegt)
+      style={isPriority ? { borderColor: "var(--cc-gold-line)" } : undefined}
     >
       <HStack
         as="button"
         onClick={onToggle}
         w="full"
-        p={4}
+        px={4}
+        py={3.5}
         spacing={4}
         align="center"
         justifyContent="space-between"
         textAlign="left"
-        _hover={{ bg: "rgba(255,255,255,0.02)" }}
+        borderTopRadius="12px"
+        borderBottomRadius={isOpen ? 0 : "12px"}
+        transition="background-color 120ms ease"
+        _hover={{ bg: "rgba(255, 255, 255, 0.02)" }}
       >
         <HStack spacing={3} align="center" flex="1" minW={0}>
           {isPriority ? (
-            <Box color="var(--color-accent-gold)" flexShrink={0}>
-              <Flame size={18} />
+            <Box color="var(--cc-gold-light)" flexShrink={0}>
+              <Flame size={18} strokeWidth={1.75} />
             </Box>
           ) : (
             <Box w="18px" h="18px" flexShrink={0} />
           )}
-          <Stack spacing={0} flex="1" minW={0}>
+          <Stack spacing={0.5} flex="1" minW={0}>
             <HStack spacing={2}>
-              <Text className="inter-semibold" color="var(--color-text-primary)" noOfLines={1}>
+              <Text fontWeight={600} color="var(--cc-text)" noOfLines={1}>
                 {row.name || "(Kein Name)"}
               </Text>
-              <Text fontSize="xs" className="inter" color="var(--color-text-secondary)">
+              <Text fontSize="xs" className="cc-num" color="var(--cc-text-2)" flexShrink={0}>
                 · {relativeTime(row.createdAt)}
               </Text>
             </HStack>
-            <Text fontSize="xs" className="inter" color="var(--color-text-secondary)" noOfLines={1}>
+            <Text fontSize="xs" color="var(--cc-text-2)" noOfLines={1}>
               {row.email}
             </Text>
           </Stack>
@@ -453,17 +435,17 @@ function HTApplicationCard(props: {
         <HStack spacing={2}>
           <BudgetBadge tier={row.budgetTier} />
           <OutcomeBadge outcome={row.outcome} />
-          <Box color="var(--color-text-secondary)">
+          <Box color="var(--cc-text-2)">
             {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </Box>
         </HStack>
       </HStack>
 
       <Collapse in={isOpen} animateOpacity>
-        <Box px={5} pb={5} pt={2} borderTop="1px solid rgba(255,255,255,0.06)">
+        <Box px={5} pb={5} pt={4} borderTop="1px solid var(--cc-line)">
           <Stack spacing={5}>
             {/* Quick Actions Bar */}
-            <HStack spacing={2} flexWrap="wrap">
+            <HStack spacing={3} flexWrap="wrap">
               {wa ? (
                 <Button
                   as="a"
@@ -471,19 +453,17 @@ function HTApplicationCard(props: {
                   target="_blank"
                   rel="noopener noreferrer"
                   size="sm"
-                  variant="outline"
-                  borderColor="rgba(37,211,102,0.45)"
-                  color="#34D399"
-                  bg="rgba(37,211,102,0.08)"
-                  _hover={{ bg: "rgba(37,211,102,0.18)" }}
+                  variant="line"
                   leftIcon={<MessageCircle size={14} />}
-                  className="inter"
                 >
-                  WhatsApp: {row.whatsappNumber}
+                  WhatsApp: <Box as="span" className="cc-num" ml={1}>{row.whatsappNumber}</Box>
                 </Button>
               ) : null}
-              <Text fontSize="xs" color="var(--color-text-secondary)" className="inter">
-                Eingegangen: {formatDate(row.createdAt)}
+              <Text fontSize="xs" color="var(--cc-text-2)">
+                Eingegangen:{" "}
+                <Box as="span" className="cc-num">
+                  {formatDate(row.createdAt)}
+                </Box>
               </Text>
             </HStack>
 
@@ -504,59 +484,31 @@ function HTApplicationCard(props: {
             </Stack>
 
             {/* Outcome + Notes */}
-            <Box
-              borderTop="1px solid rgba(255,255,255,0.06)"
-              pt={4}
-            >
+            <Box borderTop="1px solid var(--cc-line)" pt={4}>
               <Stack spacing={4}>
                 <HStack spacing={3} flexWrap="wrap" align="center">
-                  <Text
-                    fontSize="xs"
-                    letterSpacing="0.14em"
-                    textTransform="uppercase"
-                    color="var(--color-accent-gold)"
-                    className="inter-semibold"
-                  >
-                    Outcome
-                  </Text>
+                  <AdminLabel>Outcome</AdminLabel>
                   <Select
                     size="sm"
                     maxW="200px"
                     value={row.outcome}
                     onChange={(e) => void onChangeOutcome(e.target.value as Outcome)}
                     isDisabled={busy}
-                    bg="rgba(255,255,255,0.04)"
-                    borderColor="rgba(255,255,255,0.12)"
-                    color="var(--color-text-primary)"
-                    sx={{
-                      "& > option": {
-                        background: "#15161B",
-                        color: "var(--color-text-primary)",
-                      },
-                    }}
-                    _hover={{ borderColor: "rgba(212,175,55,0.45)" }}
-                    _focus={{
-                      borderColor: "rgba(212,175,55,0.65)",
-                      boxShadow: "0 0 0 1px rgba(212,175,55,0.45)",
-                    }}
-                    className="inter"
+                    {...adminInputProps}
                   >
-                    <option value="pending">Pending</option>
-                    <option value="closed_won">Closed Won</option>
-                    <option value="closed_lost">Closed Lost</option>
-                    <option value="no_show">No-Show</option>
+                    <option value="pending" style={adminOptionStyle}>Pending</option>
+                    <option value="closed_won" style={adminOptionStyle}>Closed Won</option>
+                    <option value="closed_lost" style={adminOptionStyle}>Closed Lost</option>
+                    <option value="no_show" style={adminOptionStyle}>No-Show</option>
                   </Select>
 
                   {row.outcome === "closed_won" ? (
                     <Button
                       size="sm"
+                      variant="gold"
                       onClick={() => void onActivateAccess()}
                       isDisabled={busy || !row.userId}
-                      bg="linear-gradient(135deg, #D4AF37 0%, #A67C00 100%)"
-                      color="#0a0a0a"
-                      _hover={{ filter: "brightness(1.06)" }}
                       leftIcon={<Check size={14} />}
-                      className="inter-semibold"
                       title={
                         row.userId
                           ? "Setzt membership_tier='ht_1on1' + is_paid=true (idempotent)."
@@ -570,17 +522,9 @@ function HTApplicationCard(props: {
 
                 <Stack spacing={2}>
                   <HStack justify="space-between">
-                    <Text
-                      fontSize="xs"
-                      letterSpacing="0.14em"
-                      textTransform="uppercase"
-                      color="var(--color-accent-gold)"
-                      className="inter-semibold"
-                    >
-                      Interne Notizen
-                    </Text>
+                    <AdminLabel>Interne Notizen</AdminLabel>
                     {savedFlash ? (
-                      <Text fontSize="xs" color="#34D399" className="inter">
+                      <Text fontSize="xs" color="var(--cc-success)">
                         ✓ gespeichert
                       </Text>
                     ) : null}
@@ -591,19 +535,11 @@ function HTApplicationCard(props: {
                     onBlur={saveNotes}
                     placeholder="Notizen zum Call, Einwände, Follow-Up-Datum…"
                     minH="80px"
-                    bg="rgba(255,255,255,0.04)"
-                    borderColor="rgba(255,255,255,0.12)"
-                    color="var(--color-text-primary)"
-                    _placeholder={{ color: "rgba(255,255,255,0.32)" }}
-                    _focus={{
-                      borderColor: "rgba(212,175,55,0.65)",
-                      boxShadow: "0 0 0 1px rgba(212,175,55,0.45)",
-                    }}
+                    {...adminInputProps}
                     isDisabled={savingNotes || busy}
-                    className="inter"
                     fontSize="sm"
                   />
-                  <Text fontSize="xs" color="var(--color-text-secondary)" className="inter">
+                  <Text fontSize="xs" color="var(--cc-text-2)">
                     Speichern beim Verlassen des Felds.
                   </Text>
                 </Stack>
@@ -619,22 +555,8 @@ function HTApplicationCard(props: {
 function AnswerBlock({ label, value }: { label: string; value: string }) {
   return (
     <Stack spacing={1}>
-      <Text
-        fontSize="xs"
-        letterSpacing="0.10em"
-        textTransform="uppercase"
-        color="var(--color-text-secondary)"
-        className="inter-semibold"
-      >
-        {label}
-      </Text>
-      <Text
-        fontSize="sm"
-        color="var(--color-text-primary)"
-        className="inter"
-        whiteSpace="pre-wrap"
-        lineHeight="1.6"
-      >
+      <AdminLabel>{label}</AdminLabel>
+      <Text fontSize="sm" color="var(--cc-text)" whiteSpace="pre-wrap" lineHeight="1.6">
         {value}
       </Text>
     </Stack>
@@ -643,76 +565,11 @@ function AnswerBlock({ label, value }: { label: string; value: string }) {
 
 function BudgetBadge({ tier }: { tier: BudgetTier }) {
   if (tier === "over_2000") {
-    return (
-      <Badge
-        bg="rgba(212,175,55,0.14)"
-        color="var(--color-accent-gold)"
-        border="1px solid rgba(212,175,55,0.45)"
-        borderRadius="full"
-        px={2}
-        py={0.5}
-        textTransform="none"
-        fontWeight={500}
-        className="inter"
-      >
-        🔥 {BUDGET_LABELS.over_2000}
-      </Badge>
-    );
+    return <StatusPill tone="attention">🔥 {BUDGET_LABELS.over_2000}</StatusPill>;
   }
-  return (
-    <Badge
-      bg="rgba(255,255,255,0.06)"
-      color="var(--color-text-secondary)"
-      border="1px solid rgba(255,255,255,0.12)"
-      borderRadius="full"
-      px={2}
-      py={0.5}
-      textTransform="none"
-      fontWeight={500}
-      className="inter"
-    >
-      {BUDGET_LABELS.under_2000}
-    </Badge>
-  );
+  return <StatusPill tone="neutral">{BUDGET_LABELS.under_2000}</StatusPill>;
 }
 
 function OutcomeBadge({ outcome }: { outcome: Outcome }) {
-  const map: Record<Outcome, { bg: string; color: string; border: string }> = {
-    pending: {
-      bg: "rgba(245,200,74,0.14)",
-      color: "#F5C84A",
-      border: "rgba(245,200,74,0.4)",
-    },
-    closed_won: {
-      bg: "rgba(52,211,153,0.14)",
-      color: "#34D399",
-      border: "rgba(52,211,153,0.4)",
-    },
-    closed_lost: {
-      bg: "rgba(248,113,113,0.14)",
-      color: "#F87171",
-      border: "rgba(248,113,113,0.4)",
-    },
-    no_show: {
-      bg: "rgba(154,154,164,0.14)",
-      color: "#9A9AA4",
-      border: "rgba(154,154,164,0.4)",
-    },
-  };
-  const s = map[outcome];
-  return (
-    <Badge
-      bg={s.bg}
-      color={s.color}
-      border={`1px solid ${s.border}`}
-      borderRadius="full"
-      px={2}
-      py={0.5}
-      textTransform="none"
-      fontWeight={500}
-      className="inter"
-    >
-      {OUTCOME_LABELS[outcome]}
-    </Badge>
-  );
+  return <StatusPill tone={OUTCOME_TONE[outcome]}>{OUTCOME_LABELS[outcome]}</StatusPill>;
 }

@@ -2,6 +2,7 @@
 
 import { Box, HStack, SimpleGrid, Stack, Text } from "@chakra-ui/react";
 import { PlayCircle } from "lucide-react";
+import { adminInsetProps } from "@/components/admin/adminUi";
 import type { TopOfFunnelVideo, VideoEngagement, VideoSource } from "./types";
 import { DistChart, MiniStat, pctFmt, SectionCard } from "./primitives";
 
@@ -45,11 +46,11 @@ export function VideoEngagementPanel({
           <DistChart title="Views nach Quelle" dist={{ options: bySource }} />
         </Box>
 
-        <Box bg="#0C0D10" border="1px solid rgba(255,255,255,0.07)" borderRadius="16px" p={5}>
-          <Text className="inter-semibold" fontSize="sm" color="var(--color-accent-gold-light, #E8C547)" mb={1}>
+        <Box {...adminInsetProps} p={5}>
+          <Text fontSize="14px" fontWeight={600} color="var(--cc-text)" mb={1}>
             Top-of-Funnel /video
           </Text>
-          <Text fontSize="xs" color="var(--color-text-secondary)" className="inter" mb={4}>
+          <Text fontSize="12px" color="var(--cc-text-2)" mb={4}>
             Anonyme VSL-Seite (vor Lead-Erfassung).
           </Text>
           <Stack spacing={3}>
@@ -58,16 +59,16 @@ export function VideoEngagementPanel({
             <TofRow label="Completed" value={tof?.completed ?? 0} />
             <HStack
               justify="space-between"
-              bg="rgba(212,175,55,0.08)"
-              border="1px solid rgba(212,175,55,0.20)"
-              borderRadius="10px"
+              bg="rgba(255, 255, 255, 0.03)"
+              border="1px solid var(--cc-line)"
+              borderRadius="8px"
               px={3}
               py={2}
             >
-              <Text fontSize="xs" color="var(--color-text-secondary)" className="inter">
+              <Text fontSize="12px" color="var(--cc-text-2)">
                 Completion-Rate
               </Text>
-              <Text className="inter-semibold" fontSize="sm" color="#E8C547" fontWeight={700}>
+              <Text className="cc-num" fontSize="14px" fontWeight={600} color="var(--cc-text)">
                 {pctFmt(tofCompletionPct)}
               </Text>
             </HStack>
@@ -80,11 +81,11 @@ export function VideoEngagementPanel({
 
 function TofRow({ label, value }: { label: string; value: number }) {
   return (
-    <HStack justify="space-between" py={1.5} borderBottom="1px solid rgba(255,255,255,0.05)">
-      <Text fontSize="xs" color="var(--color-text-secondary)" className="inter">
+    <HStack justify="space-between" py={1.5} borderBottom="1px solid var(--cc-line)">
+      <Text fontSize="12px" color="var(--cc-text-2)">
         {label}
       </Text>
-      <Text className="inter-semibold" fontSize="lg" color="var(--color-text-primary)" fontWeight={700}>
+      <Text className="cc-num" fontSize="18px" fontWeight={600} color="var(--cc-text)">
         {value}
       </Text>
     </HStack>

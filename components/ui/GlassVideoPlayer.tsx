@@ -35,7 +35,7 @@ type GlassVideoPlayerProps = {
   autoPlay?: boolean;
   onEnded?: () => void;
   onProgress?: (seconds: number) => void;
-  /** Akzentfarbe (Hex) — Default Gold. Für den Discord-Funnel z. B. "#47F7DC". */
+  /** Akzentfarbe (Hex) — Default Champagner `#d4b080` (DESIGN.md v3.2). */
   accent?: string;
   /** Akzentfarbe als "r, g, b" für rgba()-Tönungen — Default Gold. */
   accentRgb?: string;
@@ -62,8 +62,8 @@ export function GlassVideoPlayer({
   autoPlay = false,
   onEnded,
   onProgress,
-  accent = "#D4AF37",
-  accentRgb = "212, 175, 55",
+  accent = "#d4b080",
+  accentRgb = "212, 176, 128",
   progressColor,
   progressRgb,
 }: GlassVideoPlayerProps) {
@@ -221,7 +221,7 @@ export function GlassVideoPlayer({
         hls.attachMedia(videoRef.current);
         hls.on(Hls.Events.ERROR, (_evt, data) => {
           if (data.fatal) {
-            setLoadError("Video konnte nicht geladen werden. Netzwerk pruefen.");
+            setLoadError("Video konnte nicht geladen werden. Netzwerk prüfen.");
           }
         });
       } else {
@@ -462,11 +462,14 @@ export function GlassVideoPlayer({
     return (
       <Box
         borderRadius="16px"
-        p={8}
-        bg="rgba(255,255,255,0.03)"
-        border="1px solid rgba(255,255,255,0.08)"
+        aspectRatio="16/9"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        bg="linear-gradient(165deg, rgba(14, 18, 23, 0.92) 0%, rgba(6, 8, 11, 0.96) 100%)"
+        border={`1px solid rgba(${accentRgb}, 0.3)`}
       >
-        <Text className="inter" color="gray.500" fontSize="sm">
+        <Text className="inter" color="var(--cc-text-2)" fontSize="sm">
           Kein Video hinterlegt.
         </Text>
       </Box>
@@ -482,8 +485,8 @@ export function GlassVideoPlayer({
       zIndex={2}
       borderRadius="16px"
       overflow="hidden"
-      border="1px solid rgba(148, 163, 184, 0.28)"
-      bg="linear-gradient(165deg, rgba(15, 23, 42, 0.55) 0%, rgba(8, 10, 14, 0.72) 100%)"
+      border={`1px solid rgba(${accentRgb}, 0.3)`}
+      bg="linear-gradient(165deg, rgba(14, 18, 23, 0.92) 0%, rgba(6, 8, 11, 0.96) 100%)"
       transform="translateZ(0)"
       willChange="transform"
       backdropFilter="blur(12px) saturate(1.2)"
@@ -532,7 +535,7 @@ export function GlassVideoPlayer({
           pointerEvents: "auto",
         },
       }}
-      boxShadow={`0 16px 56px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(${accentRgb}, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1)`}
+      boxShadow={`0 16px 56px rgba(0, 0, 0, 0.55), 0 0 36px rgba(${accentRgb}, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)`}
     >
       <Box className="cc-video-stage" position="relative" w="full" pt="56.25%">
         <video
@@ -599,7 +602,7 @@ export function GlassVideoPlayer({
             }
           }}
           onError={() => {
-            setLoadError("Video konnte nicht geladen werden. URL oder Netzwerk pruefen.");
+            setLoadError("Video konnte nicht geladen werden. URL oder Netzwerk prüfen.");
           }}
         />
 
@@ -741,7 +744,7 @@ export function GlassVideoPlayer({
             />
             <Box w="88px" minW="48px">
               <Slider
-                aria-label="Lautstaerke"
+                aria-label="Lautstärke"
                 value={volumePct}
                 min={0}
                 max={100}
@@ -778,7 +781,7 @@ export function GlassVideoPlayer({
                 onPointerDown={(e) => e.stopPropagation()}
               >
                 <Slider
-                  aria-label="Lautstaerke"
+                  aria-label="Lautstärke"
                   orientation="vertical"
                   min={0}
                   max={100}
@@ -804,7 +807,7 @@ export function GlassVideoPlayer({
             <IconButton
               aria-label={
                 isMobileControls
-                  ? "Stumm / Lautstaerke: kurz tippen oder laenger druecken fuer Regler"
+                  ? "Stumm / Lautstärke: kurz tippen oder länger drücken für Regler"
                   : muted
                     ? "Ton ein"
                     : "Stumm"

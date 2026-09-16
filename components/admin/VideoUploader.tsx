@@ -104,13 +104,7 @@ export function VideoUploader({ courseId, moduleId, subcategoryId, onUploaded, d
   const isError = !busy && !!status && (status.includes("fehlgeschlagen") || status.includes("Fehler") || status.includes("Bitte"));
 
   return (
-    <Box
-      p={4}
-      borderRadius="12px"
-      borderWidth="1px"
-      borderColor="whiteAlpha.200"
-      bg="rgba(255,255,255,0.04)"
-    >
+    <Box p={4} borderRadius="10px" border="1px solid var(--cc-line)" bg="rgba(255, 255, 255, 0.02)">
       <input
         ref={inputRef}
         type="file"
@@ -118,20 +112,19 @@ export function VideoUploader({ courseId, moduleId, subcategoryId, onUploaded, d
         hidden
         onChange={(ev) => void onChange(ev)}
       />
-      <Text fontSize="xs" className="inter" textTransform="uppercase" letterSpacing="0.06em" color="gray.400" mb={2}>
+      <Text fontSize="12px" fontWeight={500} textTransform="uppercase" letterSpacing="0.08em" color="var(--cc-text-2)" mb={2}>
         Neues Video hochladen
       </Text>
       <Button
         size="md"
-        colorScheme="blue"
-        variant="solid"
+        variant="gold"
         onClick={() => void onPick()}
         isLoading={busy}
         isDisabled={disabled || busy}
       >
         Videodatei auswählen (z. B. MP4)
       </Button>
-      <Text mt={2} fontSize="sm" className="inter" color="gray.400">
+      <Text mt={2} fontSize="sm" color="var(--cc-text-2)">
         Upload läuft über diese App zum Object Storage (kein direkter Browser-Zugriff auf den Bucket nötig). Danach
         erscheint das Video in der Liste oben.
       </Text>
@@ -141,20 +134,19 @@ export function VideoUploader({ courseId, moduleId, subcategoryId, onUploaded, d
           mt={3}
           p={3}
           borderRadius="10px"
-          borderWidth="1px"
-          borderColor="rgba(59, 130, 246, 0.4)"
-          bg="rgba(30, 58, 138, 0.15)"
+          border="1px solid rgba(212, 176, 128, 0.25)"
+          bg="rgba(212, 176, 128, 0.06)"
         >
           <HStack justify="space-between" mb={1} flexWrap="wrap" gap={1}>
-            <Text fontSize="sm" className="inter-semibold" color="blue.200" noOfLines={1} maxW="75%">
+            <Text fontSize="sm" fontWeight={600} color="var(--cc-text)" noOfLines={1} maxW="75%">
               {fileName ?? "Video…"}
             </Text>
-            <Text fontSize="sm" className="jetbrains-mono" color="blue.300" flexShrink={0}>
+            <Text fontSize="sm" fontWeight={600} className="cc-num" color="var(--cc-gold-light)" flexShrink={0}>
               {progress}%
             </Text>
           </HStack>
           {fileSize ? (
-            <Text fontSize="xs" color="gray.400" className="inter" mb={2}>
+            <Text fontSize="xs" color="var(--cc-text-2)" className="cc-num" mb={2}>
               {(fileSize / 1024 / 1024).toFixed(1)} MB
               {progress > 0 && progress < 100
                 ? ` — ${((fileSize / 1024 / 1024) * (progress / 100)).toFixed(1)} MB übertragen`
@@ -164,18 +156,17 @@ export function VideoUploader({ courseId, moduleId, subcategoryId, onUploaded, d
           <Progress
             value={progress}
             size="sm"
+            aria-label="Upload-Fortschritt"
             borderRadius="full"
-            colorScheme="blue"
-            bg="whiteAlpha.100"
-            hasStripe={progress < 100}
-            isAnimated={progress < 100}
+            bg="rgba(255, 255, 255, 0.07)"
+            sx={{ "& > div": { bg: "var(--cc-gold-bar)" } }}
           />
           {status ? (
-            <Text fontSize="xs" color="blue.300" className="inter" mt={2}>{status}</Text>
+            <Text fontSize="xs" color="var(--cc-text-2)" mt={2}>{status}</Text>
           ) : null}
         </Box>
       ) : status ? (
-        <Text mt={2} fontSize="sm" className="inter" color={isError ? "red.300" : "green.300"}>
+        <Text mt={2} fontSize="sm" color={isError ? "var(--cc-danger)" : "var(--cc-success)"}>
           {status}
         </Text>
       ) : null}

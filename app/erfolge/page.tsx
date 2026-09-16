@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Erfolge unserer Mitglieder — Capital Circle Institut",
-  description: "Ausgewaehlte, von unseren Mitgliedern eingereichte und freigegebene Trading-Nachweise.",
+  description: "Ausgewählte, von unseren Mitgliedern eingereichte und freigegebene Trading-Nachweise.",
 };
 
 type CertificateRow = {
@@ -26,6 +26,15 @@ function firstName(fullName: string | null): string | null {
   if (!trimmed) return null;
   return trimmed.split(/\s+/)[0];
 }
+
+/** Zeilen begrenzen, ohne Wörter zu zerhacken (Chakras `noOfLines` setzt `word-break: break-all`). */
+const clampThreeLines = {
+  display: "-webkit-box",
+  WebkitLineClamp: 3,
+  WebkitBoxOrient: "vertical" as const,
+  overflow: "hidden",
+  overflowWrap: "break-word" as const,
+};
 
 export default async function ErfolgePage() {
   const service = createServiceClient();
@@ -56,66 +65,95 @@ export default async function ErfolgePage() {
   );
 
   return (
-    <Box minH="100vh" bg="#080808" px={{ base: 4, md: 8 }} py={{ base: 10, md: 16 }}>
-      <Stack maxW="1200px" mx="auto" gap={10}>
-        <Stack gap={3} textAlign="center" align="center">
+    <Box
+      position="relative"
+      minH="100vh"
+      bg="var(--cc-bg)"
+      color="var(--cc-text)"
+      px={{ base: 4, md: 8 }}
+      py={{ base: 10, md: 16 }}
+      overflowX="clip"
+    >
+      {/* Graphitgrund mit Sternenfeld und Champagner-Licht (DESIGN.md v3.2) */}
+      <Box className="cc-stars" aria-hidden />
+      <Box className="cc-goldlight" aria-hidden />
+
+      <Stack position="relative" zIndex={1} maxW="1200px" mx="auto" gap={10}>
+        <Stack gap={3} textAlign="center" align="center" className="cc-rise">
           <Text
-            fontSize="xs"
-            letterSpacing="0.14em"
+            fontSize="13px"
+            lineHeight="18px"
+            fontWeight={500}
+            letterSpacing="0.12em"
             textTransform="uppercase"
-            className="inter-semibold"
-            color="#D4AF37"
+            color="var(--cc-gold-light)"
           >
             Capital Circle Institut
           </Text>
-          <Box as="h1" className="radley-regular" fontSize="clamp(2rem, 5vw, 3rem)" color="#F0F0F2">
-            Erfolge unserer Mitglieder
+          <Box
+            as="h1"
+            fontSize={{ base: "30px", md: "44px" }}
+            fontWeight={600}
+            lineHeight={1.12}
+            letterSpacing="-0.01em"
+            color="var(--cc-text)"
+          >
+            Erfolge unserer{" "}
+            <Box as="span" color="var(--cc-gold-light)">
+              Mitglieder
+            </Box>
           </Box>
           <Box
-            h="2px"
-            w="min(320px, 100%)"
-            borderRadius="full"
-            bg="linear-gradient(90deg, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.95) 45%, rgba(212, 175, 55, 0.1) 100%)"
-            boxShadow="0 0 20px rgba(212, 175, 55, 0.15)"
+            aria-hidden
+            h="1px"
+            w="min(240px, 100%)"
+            bg="linear-gradient(90deg, transparent, rgba(232, 192, 148, 0.7), transparent)"
           />
-          <Text className="inter" fontSize="sm" color="rgba(240,240,242,0.6)" maxW="36rem">
-            Von unserer Community selbst eingereicht und vom Team geprueft — echte Trading-Nachweise aus dem
+          <Text fontSize={{ base: "15px", md: "16px" }} lineHeight={1.6} color="var(--cc-text-2)" maxW="36rem">
+            Von unserer Community selbst eingereicht und vom Team geprüft — echte Trading-Nachweise aus dem
             Capital Circle Institut.
           </Text>
         </Stack>
 
         {items.length === 0 ? (
-          <Text textAlign="center" fontSize="sm" color="rgba(240,240,242,0.4)" className="inter">
+          <Text textAlign="center" fontSize="15px" color="var(--cc-text-3)">
             Aktuell sind noch keine Erfolge freigegeben.
           </Text>
         ) : (
-          <Grid templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }} gap={6}>
-            {items.map((item) => (
+          <Grid
+            as="ul"
+            listStyleType="none"
+            m={0}
+            p={0}
+            templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }}
+            gap={5}
+          >
+            {items.map((item, index) => (
               <Box
+                as="li"
                 key={item.id}
-                borderRadius="16px"
-                borderWidth="1px"
-                borderColor="rgba(255,255,255,0.08)"
-                bg="rgba(255,255,255,0.04)"
-                backdropFilter="blur(16px)"
-                overflow="hidden"
-                boxShadow="0 4px 16px rgba(0,0,0,0.60)"
+                className="cc-card cc-rise"
+                style={{ animationDelay: `${150 + Math.min(index, 8) * 70}ms` }}
               >
+                {/* Bild bündig oben; die Gold-Kante der Karte liegt auf dem Rand darüber */}
                 <Box
+                  role="img"
+                  aria-label={`Trading-Nachweis von ${item.firstName ?? "Mitglied"}`}
                   w="100%"
                   h="220px"
-                  bg="rgba(0,0,0,0.3)"
+                  borderTopRadius="11px"
+                  bg="rgba(255, 255, 255, 0.02)"
                   backgroundImage={`url(${item.imageUrl})`}
                   backgroundSize="cover"
                   backgroundPosition="center"
                 />
-                <Stack p={4} gap={2}>
+                <Stack p={5} gap={2}>
                   {item.caption ? (
-                    <Text fontSize="sm" color="#F0F0F2" className="inter" noOfLines={3}>
+                    <Text fontSize="15px" lineHeight={1.5} color="var(--cc-text)" sx={clampThreeLines}>
                       {item.caption}
                     </Text>
                   ) : null}
-                  <Text fontSize="xs" color="#D4AF37" className="inter-medium">
+                  <Text fontSize="13px" fontWeight={500} color="var(--cc-gold-light)">
                     {item.firstName ?? "Mitglied"}
                   </Text>
                 </Stack>

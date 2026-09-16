@@ -20,6 +20,15 @@ export function analysisArticleExtensions(opts: AnalysisTiptapOptions = {}): Any
       heading: { levels: [1, 2, 3] },
       bulletList: { keepMarks: true },
       orderedList: { keepMarks: true },
+      /**
+       * StarterKit bringt seit v3 `Link` und `Underline` selbst mit. Ohne das
+       * Abschalten liegen beide Marks doppelt im Schema — Tiptap warnt dann
+       * („Duplicate extension names found") und es haengen zwei ProseMirror-
+       * Plugins am selben Namen. `Link` brauchen wir mit eigenen Optionen,
+       * deshalb hier aus und unten bewusst einmal hinzugefuegt.
+       */
+      link: false,
+      underline: false,
     }),
     Underline,
     Link.configure({

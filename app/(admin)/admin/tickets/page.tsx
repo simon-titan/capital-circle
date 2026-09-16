@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
-import { Stack, Text } from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
 import { requireAdmin } from "@/lib/supabase/admin-auth";
+import { AdminPageHeader } from "@/components/admin/adminUi";
 import { AdminTicketsManager } from "@/components/admin/AdminTicketsManager";
 
 export const dynamic = "force-dynamic";
@@ -12,17 +13,12 @@ export default async function AdminTicketsPage() {
   }
 
   return (
-    <Stack gap={8} maxW="var(--adminMaxWidth, 1440px)" mx="auto">
-      <Stack spacing={2}>
-        <Text as="h1" className="radley-regular" fontSize={{ base: "xl", md: "2xl" }} color="whiteAlpha.900">
-          Support-Tickets
-        </Text>
-        <Text className="inter" fontSize="sm" color="gray.500">
-          Alle Anfragen der Mitglieder, gefiltert nach Status &amp; Priorität. Die Antwortzeit misst die Zeit bis zur
-          ersten Admin-Antwort.
-        </Text>
-      </Stack>
+    <Box maxW="var(--adminMaxWidth, 1440px)" mx="auto">
+      <AdminPageHeader
+        title="Support-Tickets"
+        subtitle="Alle Anfragen der Mitglieder, gefiltert nach Status & Priorität. Die Antwortzeit misst die Zeit bis zur ersten Admin-Antwort."
+      />
       <AdminTicketsManager />
-    </Stack>
+    </Box>
   );
 }

@@ -2,10 +2,9 @@
 
 import { Box, Flex, Stack, Text } from "@chakra-ui/react";
 import Image from "next/image";
-import { motion } from "framer-motion";
 import { CodexPillarsScroll } from "@/components/codex/CodexPillarsScroll";
 import { coreLaws, executionLaws, mindsetLaws } from "@/components/onboarding/codexLaws";
-const MotionBox = motion(Box);
+import { Meta } from "@/components/platform/dashboard/primitives";
 
 const PILLAR_TEXT_INSET = {
   top: "22.14%",
@@ -14,7 +13,8 @@ const PILLAR_TEXT_INSET = {
   bottom: "18.04%",
 };
 
-const pillarGlassBoxSx = {
+/** Textfläche im Säulenschaft: deckendes Graphit mit Haarlinie, damit die Regeln auf der hellen Säule lesbar bleiben. */
+const pillarPanelSx = {
   w: "full",
   h: "full",
   maxH: "100%",
@@ -24,13 +24,10 @@ const pillarGlassBoxSx = {
   justifyContent: "center",
   overflow: "hidden",
   p: { base: 2, md: 2.5 },
-  borderRadius: "16px",
-  border: "1px solid rgba(148, 163, 184, 0.22)",
-  bg: "linear-gradient(145deg, rgba(212, 175, 55, 0.12) 0%, rgba(60, 45, 10, 0.08) 100%)",
-  backdropFilter: "blur(16px) saturate(1.12)",
-  WebkitBackdropFilter: "blur(16px) saturate(1.12)",
-  boxShadow:
-    "0 2px 18px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -1px 0 rgba(212, 175, 55, 0.08)",
+  borderRadius: "10px",
+  border: "1px solid var(--cc-line-strong)",
+  bg: "linear-gradient(180deg, rgba(27, 32, 38, 0.9) 0%, rgba(24, 29, 34, 0.9) 100%)",
+  boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.06)",
 };
 
 function splitRomanLawLine(rule: string): { numeral: string; body: string } | null {
@@ -43,8 +40,7 @@ function LawRuleLine({ rule }: { rule: string }) {
   const parts = splitRomanLawLine(rule);
   const textProps = {
     fontSize: { base: "11px", md: "12px" },
-    className: "inter",
-    color: "rgba(248, 250, 252, 0.94)",
+    color: "var(--cc-text-soft)",
     lineHeight: "1.45",
     textAlign: "center" as const,
   };
@@ -55,13 +51,7 @@ function LawRuleLine({ rule }: { rule: string }) {
 
   return (
     <Text {...textProps}>
-      <Text
-        as="span"
-        fontWeight="700"
-        letterSpacing="0.06em"
-        color="rgba(253, 230, 138, 0.98)"
-        textShadow="0 0 20px rgba(212, 175, 55, 0.35)"
-      >
+      <Text as="span" fontWeight={600} letterSpacing="0.04em" color="var(--cc-gold-light)">
         {parts.numeral}
       </Text>{" "}
       {parts.body}
@@ -77,18 +67,19 @@ function PillarColumn({ title, rules }: { title: string; rules: string[] }) {
       w={{ base: "min(88vw, 360px)", lg: "full" }}
       maxW={{ base: "360px", lg: "none" }}
     >
-      <Text
+      <Box
+        as="h2"
         textAlign="center"
-        fontSize={{ base: "xl", md: "2xl" }}
-        fontWeight="400"
-        className="radley-regular"
+        fontSize={{ base: "13px", md: "14px" }}
+        lineHeight="18px"
+        fontWeight={500}
         letterSpacing="0.12em"
         textTransform="uppercase"
-        color="rgba(240, 240, 242, 0.95)"
+        color="var(--cc-gold-light)"
         mb={3}
       >
         {title}
-      </Text>
+      </Box>
 
       <Box position="relative" w="full" mx="auto">
         <Box position="relative" w="full" lineHeight={0}>
@@ -122,10 +113,12 @@ function PillarColumn({ title, rules }: { title: string; rules: string[] }) {
           justifyContent="center"
           pointerEvents="auto"
         >
-          <Box sx={pillarGlassBoxSx}>
-            <Stack gap={{ base: 1.5, md: 2 }} w="full" justify="center" textAlign="center">
+          <Box sx={pillarPanelSx}>
+            <Stack as="ol" listStyleType="none" gap={{ base: 1.5, md: 2 }} w="full" justify="center" textAlign="center">
               {rules.map((rule) => (
-                <LawRuleLine key={rule} rule={rule} />
+                <Box as="li" key={rule}>
+                  <LawRuleLine rule={rule} />
+                </Box>
               ))}
             </Stack>
           </Box>
@@ -138,25 +131,23 @@ function PillarColumn({ title, rules }: { title: string; rules: string[] }) {
 export function CodexReferenceView() {
   return (
     <Stack gap={{ base: 6, md: 8 }} w="full">
-      <MotionBox initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-        <Flex justify="center" mb={2}>
-          <Box position="relative" w="full" maxW={{ base: "300px", md: "400px" }}>
-            <Image
-              src="/logo/codex-new.png"
-              alt="Capital Circle Codex"
-              width={760}
-              height={280}
-              priority
-              style={{
-                width: "100%",
-                height: "auto",
-                objectFit: "contain",
-                display: "block",
-              }}
-            />
-          </Box>
-        </Flex>
-      </MotionBox>
+      <Flex justify="center">
+        <Box position="relative" w="full" maxW={{ base: "300px", md: "400px" }}>
+          <Image
+            src="/logo/codex-new.png"
+            alt="Capital Circle Codex"
+            width={760}
+            height={280}
+            priority
+            style={{
+              width: "100%",
+              height: "auto",
+              objectFit: "contain",
+              display: "block",
+            }}
+          />
+        </Box>
+      </Flex>
 
       <CodexPillarsScroll>
         <PillarColumn title="Core Law" rules={coreLaws} />
@@ -164,9 +155,9 @@ export function CodexReferenceView() {
         <PillarColumn title="Mindset Laws" rules={mindsetLaws} />
       </CodexPillarsScroll>
 
-      <Text fontSize="sm" className="inter" color="var(--color-text-muted)" textAlign="center" maxW="lg" mx="auto">
+      <Meta textAlign="center" maxW="lg" mx="auto">
         Diese Regeln bilden das Rückgrat deiner Arbeit im Institut. Halte sie jederzeit im Blick.
-      </Text>
+      </Meta>
     </Stack>
   );
 }

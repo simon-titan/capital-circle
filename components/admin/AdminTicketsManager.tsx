@@ -19,10 +19,19 @@ import {
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  ADMIN_CARD_CLASS,
+  ADMIN_TONES,
+  StatusDot,
+  adminCardPadding,
+  adminEmptyProps,
+  adminInputProps,
+  adminOptionStyle,
+  adminTableSx,
+  type AdminTone,
+} from "@/components/admin/adminUi";
+import {
   CATEGORY_LABELS,
-  PRIORITY_COLORS,
   PRIORITY_LABELS,
-  STATUS_COLORS,
   STATUS_LABELS,
   formatDateTime,
   formatDuration,
@@ -31,6 +40,21 @@ import {
   type TicketPriority,
   type TicketStatus,
 } from "@/lib/support/shared";
+
+/** Offen = Champagner (zu tun), gelöst = grün, alles andere neutral. */
+const STATUS_TONE: Record<TicketStatus, AdminTone> = {
+  open: "attention",
+  in_progress: "neutral",
+  waiting_on_user: "neutral",
+  resolved: "success",
+  closed: "neutral",
+};
+
+const PRIORITY_TONE: Record<TicketPriority, AdminTone> = {
+  low: "neutral",
+  normal: "neutral",
+  high: "attention",
+};
 
 interface AdminTicketRow {
   id: string;
@@ -120,133 +144,135 @@ export function AdminTicketsManager() {
       <HStack gap={3} flexWrap="wrap">
         <Select
           w="auto"
+          size="sm"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as "all" | TicketStatus)}
-          bg="whiteAlpha.50"
+          {...adminInputProps}
         >
-          <option value="all">Alle Status</option>
+          <option value="all" style={adminOptionStyle}>
+            Alle Status
+          </option>
           {(Object.keys(STATUS_LABELS) as TicketStatus[]).map((s) => (
-            <option key={s} value={s}>
+            <option key={s} value={s} style={adminOptionStyle}>
               {STATUS_LABELS[s]}
             </option>
           ))}
         </Select>
         <Select
           w="auto"
+          size="sm"
           value={priorityFilter}
           onChange={(e) => setPriorityFilter(e.target.value as "all" | TicketPriority)}
-          bg="whiteAlpha.50"
+          {...adminInputProps}
         >
-          <option value="all">Alle Prioritäten</option>
+          <option value="all" style={adminOptionStyle}>
+            Alle Prioritäten
+          </option>
           {(Object.keys(PRIORITY_LABELS) as TicketPriority[]).map((p) => (
-            <option key={p} value={p}>
+            <option key={p} value={p} style={adminOptionStyle}>
               {PRIORITY_LABELS[p]}
             </option>
           ))}
         </Select>
         <Input
+          size="sm"
           placeholder="Suche nach Betreff oder Nutzer..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          bg="whiteAlpha.50"
           maxW="320px"
+          {...adminInputProps}
         />
       </HStack>
 
       {error ? (
-        <Text color="red.300" fontSize="sm">
+        <Text color="var(--cc-danger)" fontSize="sm">
           {error}
         </Text>
       ) : null}
 
       {loading ? (
         <HStack py={10} justify="center">
-          <Spinner size="sm" color="yellow.400" />
-          <Text fontSize="sm" color="gray.400">
+          <Spinner size="sm" color="var(--cc-gold)" />
+          <Text fontSize="sm" color="var(--cc-text-2)">
             Tickets werden geladen...
           </Text>
         </HStack>
       ) : filtered.length === 0 ? (
-        <Text fontSize="sm" color="gray.500" py={6}>
-          Keine Tickets gefunden.
-        </Text>
+        <Box {...adminEmptyProps}>Keine Tickets gefunden.</Box>
       ) : (
-        <Box overflowX="auto">
-          <Table variant="unstyled" size="sm">
-            <Thead>
-              <Tr>
-                <AdminTh>Betreff</AdminTh>
-                <AdminTh>Nutzer</AdminTh>
-                <AdminTh>Kategorie</AdminTh>
-                <AdminTh>Status</AdminTh>
-                <AdminTh>Priorität</AdminTh>
-                <AdminTh>Antwortzeit</AdminTh>
-                <AdminTh>Erstellt</AdminTh>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {filtered.map((t) => {
-                const response = formatResponseTime(t.createdAt, t.firstResponseAt);
-                return (
-                  <Tr
-                    key={t.id}
-                    onClick={() => router.push(`/admin/tickets/${t.id}`)}
-                    cursor="pointer"
-                    _hover={{ bg: "whiteAlpha.50" }}
-                    transition="background 120ms ease"
-                  >
-                    <AdminTd>
-                      <Text className="inter-medium" color="whiteAlpha.900" isTruncated maxW="260px">
-                        {t.subject}
-                      </Text>
-                    </AdminTd>
-                    <AdminTd>
-                      <Text fontSize="sm" color="whiteAlpha.800">
-                        {t.userName ?? t.userEmail}
-                      </Text>
-                      {t.userName ? (
-                        <Text fontSize="xs" color="gray.500">
-                          {t.userEmail}
+        <Box className={ADMIN_CARD_CLASS} px={{ base: 2, md: 3 }} py={2}>
+          <Box overflowX="auto">
+            <Table variant="unstyled" size="sm" sx={adminTableSx}>
+              <Thead>
+                <Tr>
+                  <Th>Betreff</Th>
+                  <Th>Nutzer</Th>
+                  <Th>Kategorie</Th>
+                  <Th>Status</Th>
+                  <Th>Priorität</Th>
+                  <Th>Antwortzeit</Th>
+                  <Th>Erstellt</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {filtered.map((t) => {
+                  const response = formatResponseTime(t.createdAt, t.firstResponseAt);
+                  return (
+                    <Tr key={t.id} onClick={() => router.push(`/admin/tickets/${t.id}`)} cursor="pointer">
+                      <Td>
+                        <Text fontWeight={500} color="var(--cc-text)" isTruncated maxW="260px">
+                          {t.subject}
                         </Text>
-                      ) : null}
-                    </AdminTd>
-                    <AdminTd>
-                      <Text fontSize="sm" color="gray.400">
-                        {t.category ? CATEGORY_LABELS[t.category as TicketCategory] ?? t.category : "—"}
-                      </Text>
-                    </AdminTd>
-                    <AdminTd>
-                      <HStack spacing={2}>
-                        <Box w="8px" h="8px" borderRadius="full" bg={STATUS_COLORS[t.status]} flexShrink={0} />
-                        <Text fontSize="13px" color="whiteAlpha.800">
-                          {STATUS_LABELS[t.status]}
+                      </Td>
+                      <Td>
+                        <Text fontSize="sm" color="var(--cc-text-soft)">
+                          {t.userName ?? t.userEmail}
                         </Text>
-                      </HStack>
-                    </AdminTd>
-                    <AdminTd>
-                      <Text fontSize="13px" color={PRIORITY_COLORS[t.priority]} className="inter-medium">
-                        {PRIORITY_LABELS[t.priority]}
-                      </Text>
-                    </AdminTd>
-                    <AdminTd>
-                      <Text
-                        fontFamily="var(--font-mono)"
-                        fontSize="xs"
-                        color={response.isPending ? "var(--color-accent-gold-light)" : "whiteAlpha.700"}
-                      >
-                        {response.label}
-                      </Text>
-                    </AdminTd>
-                    <AdminTd>
-                      <Text fontSize="xs" color="gray.500">
-                        {formatDateTime(t.createdAt)}
-                      </Text>
-                    </AdminTd>
-                  </Tr>
-                );
-              })}
-            </Tbody>
-          </Table>
+                        {t.userName ? (
+                          <Text fontSize="xs" color="var(--cc-text-3)">
+                            {t.userEmail}
+                          </Text>
+                        ) : null}
+                      </Td>
+                      <Td>
+                        <Text fontSize="sm" color="var(--cc-text-2)">
+                          {t.category ? CATEGORY_LABELS[t.category as TicketCategory] ?? t.category : "—"}
+                        </Text>
+                      </Td>
+                      <Td>
+                        <HStack spacing={2}>
+                          <StatusDot tone={STATUS_TONE[t.status]} />
+                          <Text fontSize="13px" color="var(--cc-text-soft)" whiteSpace="nowrap">
+                            {STATUS_LABELS[t.status]}
+                          </Text>
+                        </HStack>
+                      </Td>
+                      <Td>
+                        <Text fontSize="13px" fontWeight={500} color={ADMIN_TONES[PRIORITY_TONE[t.priority]].color}>
+                          {PRIORITY_LABELS[t.priority]}
+                        </Text>
+                      </Td>
+                      <Td>
+                        <Text
+                          className="cc-num"
+                          fontSize="xs"
+                          color={response.isPending ? "var(--cc-gold-light)" : "var(--cc-text-2)"}
+                          whiteSpace="nowrap"
+                        >
+                          {response.label}
+                        </Text>
+                      </Td>
+                      <Td>
+                        <Text className="cc-num" fontSize="xs" color="var(--cc-text-3)" whiteSpace="nowrap">
+                          {formatDateTime(t.createdAt)}
+                        </Text>
+                      </Td>
+                    </Tr>
+                  );
+                })}
+              </Tbody>
+            </Table>
+          </Box>
         </Box>
       )}
     </Stack>
@@ -255,54 +281,25 @@ export function AdminTicketsManager() {
 
 function KpiTile({ label, value, hint, accent }: { label: string; value: string; hint?: string; accent?: boolean }) {
   return (
-    <Box
-      p={4}
-      borderRadius="14px"
-      borderWidth="1px"
-      borderColor={accent ? "rgba(212,175,55,0.35)" : "whiteAlpha.200"}
-      bg={accent ? "rgba(212,175,55,0.06)" : "whiteAlpha.50"}
-    >
-      <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em" color="gray.500" mb={1}>
+    <Box className={ADMIN_CARD_CLASS} p={adminCardPadding}>
+      <Text
+        fontSize="12px"
+        fontWeight={500}
+        textTransform="uppercase"
+        letterSpacing="0.06em"
+        color={accent ? "var(--cc-gold-light)" : "var(--cc-text-2)"}
+        mb={1.5}
+      >
         {label}
       </Text>
-      <Text
-        fontFamily="var(--font-mono)"
-        fontSize="2xl"
-        fontWeight={600}
-        color={accent ? "var(--color-accent-gold-light)" : "whiteAlpha.900"}
-      >
+      <Text className="cc-num" fontSize="26px" fontWeight={600} lineHeight={1.15} color="var(--cc-text)">
         {value}
       </Text>
       {hint ? (
-        <Text fontSize="xs" color="gray.500" mt={1}>
+        <Text className="cc-num" fontSize="xs" color="var(--cc-text-2)" mt={1}>
           {hint}
         </Text>
       ) : null}
     </Box>
-  );
-}
-
-function AdminTh({ children }: { children: React.ReactNode }) {
-  return (
-    <Th
-      borderBottom="1px solid rgba(255,255,255,0.08)"
-      color="gray.500"
-      className="inter-semibold"
-      fontSize="11px"
-      letterSpacing="0.06em"
-      textTransform="uppercase"
-      px={3}
-      py={3}
-    >
-      {children}
-    </Th>
-  );
-}
-
-function AdminTd({ children }: { children: React.ReactNode }) {
-  return (
-    <Td borderBottom="1px solid rgba(255,255,255,0.05)" px={3} py={3}>
-      {children}
-    </Td>
   );
 }

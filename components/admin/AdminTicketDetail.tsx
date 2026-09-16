@@ -4,6 +4,14 @@ import { Box, Button, Flex, HStack, Select, Spinner, Stack, Text, Textarea, useT
 import { Send } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
+  ADMIN_CARD_CLASS,
+  AdminCardTitle,
+  AdminLabel,
+  adminCardPadding,
+  adminInputProps,
+  adminOptionStyle,
+} from "@/components/admin/adminUi";
+import {
   CATEGORY_LABELS,
   PRIORITY_LABELS,
   PRIORITY_OPTIONS,
@@ -123,8 +131,8 @@ export function AdminTicketDetail({ ticketId }: { ticketId: string }) {
   if (loading && !ticket) {
     return (
       <HStack py={10} justify="center">
-        <Spinner size="sm" color="yellow.400" />
-        <Text fontSize="sm" color="gray.400">
+        <Spinner size="sm" color="var(--cc-gold)" />
+        <Text fontSize="sm" color="var(--cc-text-2)">
           Ticket wird geladen...
         </Text>
       </HStack>
@@ -133,7 +141,7 @@ export function AdminTicketDetail({ ticketId }: { ticketId: string }) {
 
   if (error || !ticket) {
     return (
-      <Text color="red.300" fontSize="sm">
+      <Text color="var(--cc-danger)" fontSize="sm">
         {error ?? "Ticket nicht gefunden."}
       </Text>
     );
@@ -143,26 +151,26 @@ export function AdminTicketDetail({ ticketId }: { ticketId: string }) {
 
   return (
     <Stack gap={6}>
-      <Box p={5} borderRadius="14px" borderWidth="1px" borderColor="whiteAlpha.200" bg="whiteAlpha.50">
+      <Box className={ADMIN_CARD_CLASS} p={adminCardPadding}>
         <Flex justify="space-between" align="flex-start" gap={4} flexWrap="wrap">
-          <Stack spacing={1.5}>
-            <Text className="inter-semibold" color="whiteAlpha.900" fontSize="lg">
+          <Stack spacing={1.5} minW={0}>
+            <Text fontWeight={600} color="var(--cc-text)" fontSize="18px" lineHeight={1.3}>
               {ticket.subject}
             </Text>
-            <Text fontSize="sm" color="gray.400">
+            <Text fontSize="sm" color="var(--cc-text-2)">
               {ticket.userName ? `${ticket.userName} · ` : ""}
               {ticket.userEmail}
             </Text>
-            <HStack spacing={2} fontSize="xs" color="gray.500" className="inter">
+            <HStack spacing={2} fontSize="xs" color="var(--cc-text-3)" flexWrap="wrap">
               {ticket.category ? (
                 <>
                   <Text>{CATEGORY_LABELS[ticket.category as TicketCategory] ?? ticket.category}</Text>
                   <Text>·</Text>
                 </>
               ) : null}
-              <Text>Erstellt {formatDateTime(ticket.created_at)}</Text>
+              <Text className="cc-num">Erstellt {formatDateTime(ticket.created_at)}</Text>
               <Text>·</Text>
-              <Text color={response.isPending ? "var(--color-accent-gold-light)" : "gray.500"}>
+              <Text className="cc-num" color={response.isPending ? "var(--cc-gold-light)" : "var(--cc-text-3)"}>
                 {response.isPending ? response.label : `Erste Antwort nach ${response.label}`}
               </Text>
             </HStack>
@@ -170,36 +178,32 @@ export function AdminTicketDetail({ ticketId }: { ticketId: string }) {
 
           <HStack spacing={3}>
             <Box>
-              <Text fontSize="10px" color="gray.500" mb={1} textTransform="uppercase" letterSpacing="0.06em">
-                Status
-              </Text>
+              <AdminLabel mb={1.5}>Status</AdminLabel>
               <Select
                 size="sm"
                 value={ticket.status}
                 isDisabled={savingStatus}
                 onChange={(e) => void updateField({ status: e.target.value })}
-                bg="whiteAlpha.50"
+                {...adminInputProps}
               >
                 {STATUS_OPTIONS.map((s) => (
-                  <option key={s} value={s}>
+                  <option key={s} value={s} style={adminOptionStyle}>
                     {STATUS_LABELS[s]}
                   </option>
                 ))}
               </Select>
             </Box>
             <Box>
-              <Text fontSize="10px" color="gray.500" mb={1} textTransform="uppercase" letterSpacing="0.06em">
-                Priorität
-              </Text>
+              <AdminLabel mb={1.5}>Priorität</AdminLabel>
               <Select
                 size="sm"
                 value={ticket.priority}
                 isDisabled={savingPriority}
                 onChange={(e) => void updateField({ priority: e.target.value })}
-                bg="whiteAlpha.50"
+                {...adminInputProps}
               >
                 {PRIORITY_OPTIONS.map((p) => (
-                  <option key={p} value={p}>
+                  <option key={p} value={p} style={adminOptionStyle}>
                     {PRIORITY_LABELS[p]}
                   </option>
                 ))}
@@ -215,28 +219,26 @@ export function AdminTicketDetail({ ticketId }: { ticketId: string }) {
         ))}
       </Stack>
 
-      <Box p={5} borderRadius="14px" borderWidth="1px" borderColor="whiteAlpha.200" bg="whiteAlpha.50">
+      <Box className={ADMIN_CARD_CLASS} p={adminCardPadding}>
         <Stack spacing={3}>
-          <Text className="inter-semibold" fontSize="sm" color="whiteAlpha.900">
-            Antworten
-          </Text>
+          <AdminCardTitle>Antworten</AdminCardTitle>
           <Textarea
             value={reply}
             onChange={(e) => setReply(e.target.value)}
             placeholder="Deine Antwort an den Nutzer..."
             rows={5}
-            bg="whiteAlpha.50"
+            {...adminInputProps}
           />
-          <Text fontSize="xs" color="gray.500">
+          <Text fontSize="xs" color="var(--cc-text-2)">
             Der Nutzer erhält automatisch eine E-Mail-Benachrichtigung.
           </Text>
           <Button
             alignSelf="flex-end"
+            variant="gold"
             leftIcon={<Send size={16} />}
             onClick={() => void submitReply()}
             isLoading={sending}
             isDisabled={reply.trim().length === 0}
-            colorScheme="yellow"
           >
             Antwort senden
           </Button>
@@ -253,26 +255,26 @@ function AdminMessageBubble({ message }: { message: TicketMessageRow }) {
       <Box
         maxW={{ base: "90%", md: "75%" }}
         p={4}
-        borderRadius="14px"
-        bg={isAdmin ? "rgba(212,175,55,0.08)" : "whiteAlpha.50"}
-        borderWidth="1px"
-        borderColor={isAdmin ? "rgba(212,175,55,0.28)" : "whiteAlpha.200"}
+        borderRadius="12px"
+        bg={isAdmin ? "var(--cc-gold-wash)" : "rgba(255, 255, 255, 0.03)"}
+        border="1px solid"
+        borderColor={isAdmin ? "rgba(212, 176, 128, 0.22)" : "var(--cc-line)"}
       >
         <HStack spacing={2} mb={2}>
           <Text
-            fontSize="10px"
+            fontSize="11px"
             letterSpacing="0.08em"
             textTransform="uppercase"
-            className="inter-semibold"
-            color={isAdmin ? "var(--color-accent-gold-light)" : "gray.400"}
+            fontWeight={600}
+            color={isAdmin ? "var(--cc-gold-light)" : "var(--cc-text-2)"}
           >
             {isAdmin ? "Admin" : "Nutzer"}
           </Text>
-          <Text fontSize="10px" color="gray.500" className="inter">
+          <Text className="cc-num" fontSize="11px" color="var(--cc-text-3)">
             {formatDateTime(message.created_at)}
           </Text>
         </HStack>
-        <Text className="inter" fontSize="sm" color="whiteAlpha.900" whiteSpace="pre-wrap">
+        <Text fontSize="sm" color="var(--cc-text)" whiteSpace="pre-wrap" lineHeight={1.6}>
           {message.body}
         </Text>
       </Box>

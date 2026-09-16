@@ -1,5 +1,6 @@
-import { Stack, Text } from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
 import { createClient } from "@/lib/supabase/server";
+import { AdminPageHeader } from "@/components/admin/adminUi";
 import { LiveSessionManager } from "@/components/admin/LiveSessionManager";
 
 export default async function AdminLiveSessionsPage() {
@@ -17,16 +18,12 @@ export default async function AdminLiveSessionsPage() {
   }>;
 
   return (
-    <Stack gap={8} maxW="var(--adminMaxWidth, 1440px)" mx="auto">
-      <Stack spacing={2}>
-        <Text as="h1" className="radley-regular" fontSize={{ base: "xl", md: "2xl" }} color="whiteAlpha.900">
-          Live Session Replays
-        </Text>
-        <Text className="inter" fontSize="sm" color="gray.500">
-          Replays vergangener Live Calls — optional mit Event aus dem Kalender verknüpfen.
-        </Text>
-      </Stack>
+    <Box maxW="var(--adminMaxWidth, 1440px)" mx="auto">
+      <AdminPageHeader
+        title="Live Session Replays"
+        subtitle="Replays vergangener Live Calls — optional mit Event aus dem Kalender verknüpfen."
+      />
       <LiveSessionManager initialEvents={initialEvents} />
-    </Stack>
+    </Box>
   );
 }

@@ -12,14 +12,14 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { Check, Circle, Lock, Play } from "lucide-react";
+import { Check, Lock, Play } from "lucide-react";
+import { clampLines } from "@/components/platform/dashboard/primitives";
 import { isPlaylistVideoDone, type PlaylistVideoRow } from "@/lib/module-video";
 
-function formatDur(sec: number | null | undefined) {
+/** „11 Min.“ wie in der Kursleiste der Vorlage; unter einer Minute „1 Min.“. */
+function formatMinutes(sec: number | null | undefined) {
   if (sec == null || !Number.isFinite(sec) || sec <= 0) return "—";
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return `${m}:${s.toString().padStart(2, "0")}`;
+  return `${Math.max(1, Math.round(sec / 60))} Min.`;
 }
 
 /** Index freigeschaltet: erstes Video oder vorheriges vollständig gesehen. */
@@ -107,6 +107,81 @@ function buildPlaylistBlocks(playlist: PlaylistVideoRow[]): PlaylistBlock[] {
   return blocks;
 }
 
+/** Vorschaubild der Lektion mit Zustand: Schloss, läuft gerade, erledigt. */
+function LessonThumb({
+  v,
+  active,
+  done,
+  locked,
+}: {
+  v: PlaylistVideoRow;
+  active: boolean;
+  done: boolean;
+  locked: boolean;
+}) {
+  return (
+    <Box
+      flexShrink={0}
+      w="80px"
+      h="46px"
+      borderRadius="6px"
+      overflow="hidden"
+      position="relative"
+      bg="var(--cc-surface-2)"
+      border="1px solid"
+      borderColor={active ? "var(--cc-gold-line)" : "rgba(255, 255, 255, 0.1)"}
+      aria-hidden
+    >
+      {v.thumbnailSignedUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={v.thumbnailSignedUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+      ) : null}
+      {locked ? (
+        <Box position="absolute" inset={0} bg="rgba(0,0,0,0.6)" display="flex" alignItems="center" justifyContent="center" color="var(--cc-text-2)">
+          <Lock size={14} strokeWidth={2} />
+        </Box>
+      ) : active ? (
+        <Box position="absolute" inset={0} bg="rgba(0,0,0,0.35)" display="flex" alignItems="center" justifyContent="center">
+          <Box
+            w="24px"
+            h="24px"
+            borderRadius="full"
+            bg="var(--cc-gold-grad)"
+            color="var(--cc-on-gold)"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            boxShadow="0 0 14px rgba(212, 176, 128, 0.6)"
+          >
+            <Play size={11} fill="currentColor" strokeWidth={0} style={{ marginLeft: 1 }} />
+          </Box>
+        </Box>
+      ) : !v.thumbnailSignedUrl ? (
+        <Box position="absolute" inset={0} display="flex" alignItems="center" justifyContent="center" color="var(--cc-text-3)">
+          <Play size={14} strokeWidth={2} />
+        </Box>
+      ) : null}
+      {done && !locked ? (
+        <Box
+          position="absolute"
+          right="3px"
+          bottom="3px"
+          w="16px"
+          h="16px"
+          borderRadius="full"
+          bg="var(--cc-gold-grad)"
+          color="var(--cc-on-gold)"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <Check size={10} strokeWidth={3} />
+        </Box>
+      ) : null}
+    </Box>
+  );
+}
+
 export function VideoPlaylist({ playlist, activeIndex, progressMap, onSelect }: VideoPlaylistProps) {
   const blocks = useMemo(() => buildPlaylistBlocks(playlist), [playlist]);
 
@@ -125,137 +200,46 @@ export function VideoPlaylist({ playlist, activeIndex, progressMap, onSelect }: 
         textAlign="left"
         px={3}
         py={2.5}
-        borderRadius="12px"
-        borderWidth="1px"
-        borderColor={
-          locked
-            ? "rgba(255,255,255,0.05)"
-            : active
-              ? "rgba(212, 175, 55, 0.45)"
-              : "rgba(255,255,255,0.08)"
-        }
-        bg={
-          locked
-            ? "rgba(0,0,0,0.2)"
-            : active
-              ? "rgba(212, 175, 55, 0.08)"
-              : "rgba(255,255,255,0.03)"
-        }
         spacing={3}
+        borderRadius="10px"
+        border="1px solid"
+        borderColor={active ? "var(--cc-gold-line)" : "transparent"}
+        bg={active ? "linear-gradient(90deg, rgba(212, 176, 128, 0.14) 0%, rgba(212, 176, 128, 0.03) 100%)" : "transparent"}
+        boxShadow={active ? "0 0 18px rgba(212, 176, 128, 0.1)" : "none"}
         cursor={locked ? "not-allowed" : "pointer"}
         opacity={locked ? 0.55 : 1}
-        transition="border-color 0.2s, background 0.2s, opacity 0.2s"
-        _hover={
-          locked
-            ? {}
-            : { borderColor: "rgba(212, 175, 55, 0.35)", bg: "rgba(255,255,255,0.05)" }
-        }
+        transition="background-color 150ms var(--cc-ease), border-color 150ms var(--cc-ease)"
+        _hover={locked || active ? {} : { bg: "rgba(255, 255, 255, 0.04)" }}
         onClick={() => {
           if (!unlocked) return;
           onSelect(idx);
         }}
         aria-disabled={locked}
+        aria-current={active ? "true" : undefined}
       >
-        {v.thumbnailSignedUrl ? (
-          <Box
-            flexShrink={0}
-            w="44px"
-            h="44px"
-            borderRadius="8px"
-            overflow="hidden"
-            borderWidth="1px"
-            borderColor={
-              locked
-                ? "rgba(255,255,255,0.06)"
-                : active
-                  ? "rgba(212,175,55,0.45)"
-                  : "rgba(255,255,255,0.12)"
-            }
-            position="relative"
-            aria-hidden
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={v.thumbnailSignedUrl}
-              alt=""
-              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-            />
-            {locked && (
-              <Box
-                position="absolute"
-                inset={0}
-                bg="rgba(0,0,0,0.55)"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                color="rgba(240,240,242,0.7)"
-              >
-                <Lock size={14} strokeWidth={2} />
-              </Box>
-            )}
-            {!locked && done && (
-              <Box
-                position="absolute"
-                inset={0}
-                bg="rgba(0,0,0,0.45)"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                color="rgba(74,222,128,0.95)"
-              >
-                <Check size={14} strokeWidth={2.5} />
-              </Box>
-            )}
-            {!locked && !done && active && (
-              <Box
-                position="absolute"
-                inset={0}
-                bg="rgba(0,0,0,0.35)"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                color="var(--color-accent-gold)"
-              >
-                <Play size={14} strokeWidth={2} />
-              </Box>
-            )}
-          </Box>
-        ) : (
-          <Box
-            color={
-              locked
-                ? "rgba(240,240,242,0.35)"
-                : active
-                  ? "var(--color-accent-gold)"
-                  : "rgba(240,240,242,0.5)"
-            }
-            flexShrink={0}
-            aria-hidden
-          >
-            {locked ? (
-              <Lock size={18} strokeWidth={2} />
-            ) : done ? (
-              <Check size={18} strokeWidth={2} />
-            ) : active ? (
-              <Play size={18} strokeWidth={2} />
-            ) : (
-              <Circle size={18} strokeWidth={1.5} />
-            )}
-          </Box>
-        )}
+        <LessonThumb v={v} active={active} done={done} locked={locked} />
         <Box flex={1} minW={0}>
           <Text
-            className="inter-medium"
-            fontSize="sm"
-            color={locked ? "var(--color-text-muted)" : "var(--color-text-primary)"}
-            noOfLines={2}
+            fontSize="14px"
+            lineHeight={1.35}
+            fontWeight={active ? 600 : 500}
+            color={active ? "var(--cc-gold-light)" : locked ? "var(--cc-text-3)" : "var(--cc-text-soft)"}
+            sx={clampLines(2)}
           >
             {v.title}
           </Text>
+          <HStack spacing={1.5} mt={1} fontSize="12px" color="var(--cc-text-3)" className="cc-num">
+            <span>{formatMinutes(v.duration_seconds)}</span>
+            {done && !locked ? (
+              <>
+                <span aria-hidden>·</span>
+                <Box as="span" color="var(--cc-gold-light)">
+                  erledigt
+                </Box>
+              </>
+            ) : null}
+          </HStack>
         </Box>
-        <Text className="jetbrains-mono" fontSize="xs" color="rgba(240,240,242,0.55)" flexShrink={0}>
-          {formatDur(v.duration_seconds)}
-        </Text>
       </HStack>
     );
   };
@@ -265,42 +249,28 @@ export function VideoPlaylist({ playlist, activeIndex, progressMap, onSelect }: 
   }
 
   return (
-    <VStack align="stretch" spacing={4}>
-      <Text className="inter" fontSize="xs" textTransform="uppercase" letterSpacing="0.08em" color="var(--color-text-muted)">
-        Inhalt
-      </Text>
+    <VStack align="stretch" spacing={1}>
       {blocks.map((block, bi) => {
         if (block.kind === "videos") {
           return (
-            <VStack key={`videos-${bi}`} align="stretch" spacing={2}>
+            <VStack key={`videos-${bi}`} align="stretch" spacing={1}>
               {block.items.map(({ idx, v }) => row(idx, v))}
             </VStack>
           );
         }
         return (
-          <Accordion
-            key={`sub-${block.subcategoryId}-${bi}`}
-            allowToggle
-            defaultIndex={0}
-          >
-            <AccordionItem border="none" mb={2}>
-              <AccordionButton
-                borderRadius="12px"
-                bg="rgba(255,255,255,0.04)"
-                borderWidth="1px"
-                borderColor="rgba(255,255,255,0.08)"
-                _hover={{ bg: "rgba(255,255,255,0.06)" }}
-                py={3}
-              >
+          <Accordion key={`sub-${block.subcategoryId}-${bi}`} allowToggle defaultIndex={0}>
+            <AccordionItem border="none">
+              <AccordionButton px={3} py={2.5} borderRadius="8px" _hover={{ bg: "rgba(255, 255, 255, 0.04)" }}>
                 <Box flex="1" textAlign="left">
-                  <Text className="inter-semibold" fontSize="sm" color="var(--color-text-primary)">
+                  <Text fontSize="12px" fontWeight={500} letterSpacing="0.12em" textTransform="uppercase" color="var(--cc-text-2)">
                     {block.title}
                   </Text>
                 </Box>
-                <AccordionIcon color="var(--color-accent-gold)" />
+                <AccordionIcon color="var(--cc-gold-light)" />
               </AccordionButton>
-              <AccordionPanel px={0} pt={2} pb={0}>
-                <VStack align="stretch" spacing={2}>
+              <AccordionPanel px={0} pt={1} pb={1}>
+                <VStack align="stretch" spacing={1}>
                   {block.items.map(({ idx, v }) => row(idx, v))}
                 </VStack>
               </AccordionPanel>

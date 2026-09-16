@@ -1,6 +1,14 @@
 import type { Metadata } from "next";
-import { Box, Stack, Text } from "@chakra-ui/react";
+import { Box, Stack } from "@chakra-ui/react";
 import { HTApplicationForm } from "@/components/marketing/HTApplicationForm";
+import {
+  FunnelEyebrow,
+  FunnelFinePrint,
+  FunnelHeadline,
+  FunnelLead,
+  GoldWord,
+  rise,
+} from "@/components/marketing/funnel-ui";
 import { Logo } from "@/components/brand/Logo";
 import { createClient } from "@/lib/supabase/server";
 
@@ -41,63 +49,45 @@ export default async function ApplyPage() {
   const videoPoster = process.env.NEXT_PUBLIC_HT_INTRO_VIDEO_POSTER?.trim() || undefined;
 
   return (
-    <Box as="main" minH="100vh" w="full" py={{ base: 8, md: 14 }} px={{ base: 4, md: 8 }}>
+    <Box as="main" minH="100vh" w="full" py={{ base: 10, md: 16 }} px={{ base: 4, md: 8 }}>
       <Stack spacing={{ base: 8, md: 10 }}>
-        <Box maxW="200px" mx="auto">
+        <Box maxW="180px" mx="auto" {...rise(0)}>
           <Logo variant="onDark" priority />
         </Box>
 
-        <Stack spacing={3} maxW="720px" mx="auto" textAlign="center">
-          <Text
-            fontSize="xs"
-            letterSpacing="0.22em"
-            textTransform="uppercase"
-            color="var(--color-accent-gold)"
-            className="inter-semibold"
-          >
-            High-Ticket · 1:1 Mentoring
-          </Text>
-          <Text
-            as="h1"
-            className="radley-regular"
-            fontWeight={400}
-            fontSize={{ base: "3xl", md: "5xl" }}
-            lineHeight="1.1"
-            color="var(--color-text-primary)"
-          >
-            Bereit für den nächsten Schritt?
-          </Text>
-          <Text
-            fontSize={{ base: "md", md: "lg" }}
-            color="rgba(255,255,255,0.62)"
-            className="inter"
-          >
+        <Stack spacing={5} maxW="720px" mx="auto" textAlign="center" align="center" {...rise(1)}>
+          <FunnelEyebrow>High-Ticket · 1:1 Mentoring</FunnelEyebrow>
+          <FunnelHeadline>
+            Bereit für den <GoldWord>nächsten Schritt</GoldWord>?
+          </FunnelHeadline>
+          <FunnelLead maxW="600px">
             8 kurze Fragen. Wir melden uns innerhalb von 2 Stunden persönlich
             per WhatsApp — keine automatisierten Emails, keine Funnels.
-          </Text>
+          </FunnelLead>
         </Stack>
 
-        <HTApplicationForm
-          videoSrc={videoSrc}
-          videoPoster={videoPoster}
-          prefillEmail={prefill.email}
-          prefillName={prefill.name}
-        />
+        <Box w="full" {...rise(2)}>
+          <HTApplicationForm
+            videoSrc={videoSrc}
+            videoPoster={videoPoster}
+            prefillEmail={prefill.email}
+            prefillName={prefill.name}
+          />
+        </Box>
 
-        <Text
-          fontSize="xs"
-          color="rgba(255,255,255,0.32)"
-          textAlign="center"
-          className="inter"
-          maxW="520px"
-          mx="auto"
-        >
+        <FunnelFinePrint textAlign="center" maxW="520px" mx="auto">
           Mit dem Abschicken stimmst du unserer{" "}
-          <Box as="a" href="/datenschutz" color="var(--color-accent-gold)" textDecoration="underline">
+          <Box
+            as="a"
+            href="/datenschutz"
+            color="var(--cc-gold-light)"
+            textDecoration="underline"
+            textUnderlineOffset="2px"
+          >
             Datenschutzerklärung
           </Box>{" "}
           zu. Trading birgt Verlustrisiken — Ergebnisse aus der Vergangenheit sind keine Garantie.
-        </Text>
+        </FunnelFinePrint>
       </Stack>
     </Box>
   );

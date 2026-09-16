@@ -12,6 +12,7 @@ import {
   VStack,
   useDisclosure,
 } from "@chakra-ui/react";
+import { ChevronDown } from "lucide-react";
 import { useMemo, useState } from "react";
 
 const ASSETS = {
@@ -31,21 +32,52 @@ function fmt(v: number): string {
   return new Intl.NumberFormat("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
 }
 
+/** Abschnittstitel wie Kartentitel: klein, gesperrt, versal. */
 const secLabelSx = {
-  fontSize: "11px",
+  fontSize: "13px",
+  lineHeight: "18px",
   fontWeight: 500,
-  letterSpacing: "0.08em",
+  letterSpacing: "0.12em",
   textTransform: "uppercase" as const,
-  color: "var(--color-text-tertiary)",
-  mb: 2,
+  color: "var(--cc-text-soft)",
+  mb: 3,
 };
 
-const inputWrapSx = {
-  border: "1px solid rgba(255,255,255,0.09)",
-  borderRadius: "10px",
-  bg: "rgba(255,255,255,0.04)",
-  _focusWithin: { borderColor: "rgba(212, 175, 55, 0.55)", boxShadow: "0 0 0 1px rgba(212, 175, 55, 0.12)" },
+const inputSx = {
+  bg: "rgba(255, 255, 255, 0.03)",
+  borderColor: "var(--cc-line-strong)",
+  borderRadius: "8px",
+  _hover: { borderColor: "var(--cc-gold-line)" },
+  _focusVisible: { borderColor: "var(--cc-gold)", boxShadow: "0 0 0 1px var(--cc-gold)" },
 };
+
+const fieldLabelProps = {
+  fontSize: "13px",
+  fontWeight: 500,
+  color: "var(--cc-text-2)",
+  mb: 1.5,
+};
+
+/** Umschalter: aktiv mit Gold-Verlauf von links und Gold-Haarlinie, inaktiv transparent. */
+const toggleSx = (active: boolean) => ({
+  variant: "outline" as const,
+  fontWeight: 500,
+  borderRadius: "8px",
+  borderColor: active ? "var(--cc-gold-line)" : "var(--cc-line-strong)",
+  bg: active ? "linear-gradient(90deg, rgba(212, 176, 128, 0.16), rgba(212, 176, 128, 0.03))" : "transparent",
+  color: active ? "var(--cc-gold-light)" : "var(--cc-text-2)",
+  _hover: active
+    ? { bg: "linear-gradient(90deg, rgba(212, 176, 128, 0.2), rgba(212, 176, 128, 0.05))", borderColor: "var(--cc-gold-line)" }
+    : { bg: "rgba(255, 255, 255, 0.04)", borderColor: "var(--cc-gold-line)", color: "var(--cc-text)" },
+  _active: { bg: "rgba(212, 176, 128, 0.12)" },
+});
+
+/** Segment-Umschalter ohne eigene Kontur (die trägt der Rahmen darum). */
+const segmentSx = (active: boolean) => ({
+  ...toggleSx(active),
+  borderColor: active ? "var(--cc-gold-line)" : "transparent",
+  boxShadow: active ? "0 0 14px rgba(212, 176, 128, 0.1)" : "none",
+});
 
 export function PositionCalculator() {
   const [cur, setCur] = useState<AssetKey>("NQ");
@@ -133,147 +165,98 @@ export function PositionCalculator() {
   };
 
   const resultBox = (label: string, value: string, valueColor?: string) => (
-    <Box
-      bg="rgba(255,255,255,0.04)"
-      borderRadius="10px"
-      border="1px solid rgba(255,255,255,0.08)"
-      p={4}
-    >
-      <Text fontSize="12px" color="var(--color-text-tertiary)" mb={1.5}>
+    <Box bg="rgba(255, 255, 255, 0.03)" borderRadius="10px" border="1px solid var(--cc-line)" p={4}>
+      <Text fontSize="12px" color="var(--cc-text-2)" mb={1.5}>
         {label}
       </Text>
-      <Text fontSize="xl" fontWeight={500} color={valueColor ?? "var(--color-text-primary)"} className="jetbrains-mono">
+      <Text fontSize="xl" fontWeight={600} letterSpacing="-0.01em" color={valueColor ?? "var(--cc-text)"} className="cc-num">
         {value}
       </Text>
     </Box>
   );
 
+  const groupToggle = (label: string, open: boolean, onToggle: () => void) => (
+    <Button
+      w="100%"
+      justifyContent="space-between"
+      size="sm"
+      variant="line"
+      onClick={onToggle}
+      rightIcon={
+        <Box
+          as="span"
+          display="inline-flex"
+          color="var(--cc-text-2)"
+          transform={open ? "rotate(180deg)" : undefined}
+          transition="transform 0.2s"
+        >
+          <ChevronDown size={16} strokeWidth={1.75} />
+        </Box>
+      }
+      mb={2}
+    >
+      {label}
+    </Button>
+  );
+
+  const assetTile = (key: AssetKey) => (
+    <Button
+      key={key}
+      size="sm"
+      py={2.5}
+      flexDirection="column"
+      h="auto"
+      {...toggleSx(cur === key)}
+      onClick={() => setCur(key)}
+    >
+      {key}
+      <Text
+        as="span"
+        fontSize="10px"
+        fontWeight={400}
+        color={cur === key ? "var(--cc-text-2)" : "var(--cc-text-3)"}
+        display="block"
+        mt={0.5}
+        className="cc-num"
+      >
+        ${ASSETS[key].tickVal} / tick
+      </Text>
+    </Button>
+  );
+
   return (
-    <VStack align="stretch" spacing={0} maxW="620px" py={6} w="100%" mx="auto">
+    <VStack align="stretch" spacing={0} maxW="620px" w="100%" mx="auto">
       <Text {...secLabelSx}>Instrument</Text>
 
-      <Button
-        w="100%"
-        justifyContent="space-between"
-        size="sm"
-        variant="outline"
-        borderColor="rgba(255,255,255,0.09)"
-        bg="rgba(255,255,255,0.03)"
-        onClick={miniOpen.onToggle}
-        rightIcon={
-          <Text as="span" fontSize="10px" transform={miniOpen.isOpen ? "rotate(180deg)" : undefined} transition="transform 0.2s">
-            ▼
-          </Text>
-        }
-        className="inter-medium"
-        mb={1.5}
-      >
-        Minis
-      </Button>
+      {groupToggle("Minis", miniOpen.isOpen, miniOpen.onToggle)}
       <Collapse in={miniOpen.isOpen} animateOpacity>
-        <Grid templateColumns="repeat(4, 1fr)" gap={2} mb={2.5}>
-          {(["NQ", "ES", "GC", "CL"] as const).map((key) => (
-            <Button
-              key={key}
-              size="sm"
-              py={2.5}
-              variant="outline"
-              flexDirection="column"
-              h="auto"
-              borderWidth={cur === key ? "2px" : "1px"}
-              borderColor={cur === key ? "rgba(212, 175, 55, 0.65)" : "rgba(255,255,255,0.09)"}
-              bg={cur === key ? "rgba(212, 175, 55, 0.08)" : "rgba(255,255,255,0.03)"}
-              color={cur === key ? "var(--color-text-primary)" : "var(--color-text-secondary)"}
-              onClick={() => setCur(key)}
-              className="inter-medium"
-            >
-              {key}
-              <Text as="span" fontSize="10px" fontWeight={400} color="var(--color-text-tertiary)" display="block" mt={0.5}>
-                ${ASSETS[key].tickVal} / tick
-              </Text>
-            </Button>
-          ))}
+        <Grid templateColumns="repeat(4, 1fr)" gap={2} mb={3}>
+          {(["NQ", "ES", "GC", "CL"] as const).map(assetTile)}
         </Grid>
       </Collapse>
 
-      <Button
-        w="100%"
-        justifyContent="space-between"
-        size="sm"
-        variant="outline"
-        borderColor="rgba(255,255,255,0.09)"
-        bg="rgba(255,255,255,0.03)"
-        onClick={microOpen.onToggle}
-        rightIcon={
-          <Text as="span" fontSize="10px" transform={microOpen.isOpen ? "rotate(180deg)" : undefined} transition="transform 0.2s">
-            ▼
-          </Text>
-        }
-        className="inter-medium"
-        mb={1.5}
-      >
-        Mikros
-      </Button>
+      {groupToggle("Mikros", microOpen.isOpen, microOpen.onToggle)}
       <Collapse in={microOpen.isOpen} animateOpacity>
-        <Grid templateColumns="repeat(4, 1fr)" gap={2} mb={2.5}>
-          {(["MNQ", "MES", "MGC", "MCL"] as const).map((key) => (
-            <Button
-              key={key}
-              size="sm"
-              py={2.5}
-              variant="outline"
-              flexDirection="column"
-              h="auto"
-              borderWidth={cur === key ? "2px" : "1px"}
-              borderColor={cur === key ? "rgba(212, 175, 55, 0.65)" : "rgba(255,255,255,0.09)"}
-              bg={cur === key ? "rgba(212, 175, 55, 0.08)" : "rgba(255,255,255,0.03)"}
-              color={cur === key ? "var(--color-text-primary)" : "var(--color-text-secondary)"}
-              onClick={() => setCur(key)}
-              className="inter-medium"
-            >
-              {key}
-              <Text as="span" fontSize="10px" fontWeight={400} color="var(--color-text-tertiary)" display="block" mt={0.5}>
-                ${ASSETS[key].tickVal} / tick
-              </Text>
-            </Button>
-          ))}
+        <Grid templateColumns="repeat(4, 1fr)" gap={2} mb={3}>
+          {(["MNQ", "MES", "MGC", "MCL"] as const).map(assetTile)}
         </Grid>
       </Collapse>
 
-      <Box borderTop="1px solid rgba(255,255,255,0.06)" my={5} />
+      <Box borderTop="1px solid var(--cc-line)" my={5} />
 
       <Text {...secLabelSx}>Modus</Text>
-      <HStack gap={2} mb={5}>
-        <Button
-          flex={1}
-          size="sm"
-          variant={mode === 1 ? "solid" : "outline"}
-          {...(mode === 1
-            ? {
-                bg: "linear-gradient(135deg, #D4AF37 0%, #A67C00 100%)",
-                color: "white",
-                _hover: { bg: "linear-gradient(135deg, #E8C547 0%, #D4AF37 100%)" },
-              }
-            : { borderColor: "rgba(255,255,255,0.09)" })}
-          onClick={() => setMode(1)}
-          className="inter-medium"
-        >
+      <HStack
+        gap={1}
+        p={1}
+        mb={5}
+        border="1px solid var(--cc-line)"
+        borderRadius="10px"
+        bg="rgba(255, 255, 255, 0.02)"
+      >
+        <Button flex={1} size="sm" {...segmentSx(mode === 1)} onClick={() => setMode(1)}>
           Ticks eingeben
         </Button>
-        <Button
-          flex={1}
-          size="sm"
-          variant={mode === 2 ? "solid" : "outline"}
-          {...(mode === 2
-            ? {
-                bg: "linear-gradient(135deg, #D4AF37 0%, #A67C00 100%)",
-                color: "white",
-                _hover: { bg: "linear-gradient(135deg, #E8C547 0%, #D4AF37 100%)" },
-              }
-            : { borderColor: "rgba(255,255,255,0.09)" })}
-          onClick={() => setMode(2)}
-          className="inter-medium"
-        >
+        <Button flex={1} size="sm" {...segmentSx(mode === 2)} onClick={() => setMode(2)}>
           Account-basiert rechnen
         </Button>
       </HStack>
@@ -282,51 +265,43 @@ export function PositionCalculator() {
         <>
           <Grid templateColumns="1fr 1fr" gap={3} mb={5}>
             <GridItem>
-              <Text fontSize="sm" color="var(--color-text-secondary)" mb={1.5}>
-                Kontrakte
-              </Text>
+              <Text {...fieldLabelProps}>Kontrakte</Text>
               <Input
                 type="number"
                 min={1}
                 step={1}
                 value={contracts1}
                 onChange={(e) => setContracts1(e.target.value)}
-                sx={inputWrapSx}
-                className="jetbrains-mono"
+                {...inputSx}
+                className="cc-num"
               />
             </GridItem>
             <GridItem>
-              <Text fontSize="sm" color="var(--color-text-secondary)" mb={1.5}>
-                Stop Loss (Ticks)
-              </Text>
+              <Text {...fieldLabelProps}>Stop Loss (Ticks)</Text>
               <Input
                 type="number"
                 min={1}
                 step={1}
                 value={sl1}
                 onChange={(e) => setSl1(e.target.value)}
-                sx={inputWrapSx}
-                className="jetbrains-mono"
+                {...inputSx}
+                className="cc-num"
               />
             </GridItem>
             <GridItem>
-              <Text fontSize="sm" color="var(--color-text-secondary)" mb={1.5}>
-                Take Profit (Ticks)
-              </Text>
+              <Text {...fieldLabelProps}>Take Profit (Ticks)</Text>
               <Input
                 type="number"
                 min={1}
                 step={1}
                 value={tp1}
                 onChange={(e) => setTp1(e.target.value)}
-                sx={inputWrapSx}
-                className="jetbrains-mono"
+                {...inputSx}
+                className="cc-num"
               />
             </GridItem>
             <GridItem>
-              <Text fontSize="sm" color="var(--color-text-secondary)" mb={1.5}>
-                RR eingeben → TP Ticks berechnen
-              </Text>
+              <Text {...fieldLabelProps}>RR eingeben → TP Ticks berechnen</Text>
               <HStack>
                 <Input
                   type="number"
@@ -336,8 +311,8 @@ export function PositionCalculator() {
                   value={rrIn}
                   onChange={(e) => setRrIn(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && calcFromRR()}
-                  sx={inputWrapSx}
-                  className="jetbrains-mono"
+                  {...inputSx}
+                  className="cc-num"
                 />
               </HStack>
             </GridItem>
@@ -347,67 +322,57 @@ export function PositionCalculator() {
         <>
           <Grid templateColumns={{ base: "1fr", sm: "repeat(3, 1fr)" }} gap={3} mb={5}>
             <GridItem>
-              <Text fontSize="sm" color="var(--color-text-secondary)" mb={1.5}>
-                Account Größe ($)
-              </Text>
+              <Text {...fieldLabelProps}>Account Größe ($)</Text>
               <Input
                 type="number"
                 min={1}
                 step={100}
                 value={acc}
                 onChange={(e) => setAcc(e.target.value)}
-                sx={inputWrapSx}
-                className="jetbrains-mono"
+                {...inputSx}
+                className="cc-num"
               />
             </GridItem>
             <GridItem>
-              <Text fontSize="sm" color="var(--color-text-secondary)" mb={1.5}>
-                Risiko (%)
-              </Text>
+              <Text {...fieldLabelProps}>Risiko (%)</Text>
               <Input
                 type="number"
                 min={0.01}
                 step={0.01}
                 value={riskPct}
                 onChange={(e) => setRiskPct(e.target.value)}
-                sx={inputWrapSx}
-                className="jetbrains-mono"
+                {...inputSx}
+                className="cc-num"
               />
             </GridItem>
             <GridItem>
-              <Text fontSize="sm" color="var(--color-text-secondary)" mb={1.5}>
-                Kontrakte
-              </Text>
+              <Text {...fieldLabelProps}>Kontrakte</Text>
               <Input
                 type="number"
                 min={1}
                 step={1}
                 value={contracts2}
                 onChange={(e) => setContracts2(e.target.value)}
-                sx={inputWrapSx}
-                className="jetbrains-mono"
+                {...inputSx}
+                className="cc-num"
               />
             </GridItem>
           </Grid>
           <Grid templateColumns="1fr 1fr" gap={3} mb={5}>
             <GridItem>
-              <Text fontSize="sm" color="var(--color-text-secondary)" mb={1.5}>
-                Take Profit (Ticks)
-              </Text>
+              <Text {...fieldLabelProps}>Take Profit (Ticks)</Text>
               <Input
                 type="number"
                 min={1}
                 step={1}
                 value={tp2}
                 onChange={(e) => setTp2(e.target.value)}
-                sx={inputWrapSx}
-                className="jetbrains-mono"
+                {...inputSx}
+                className="cc-num"
               />
             </GridItem>
             <GridItem>
-              <Text fontSize="sm" color="var(--color-text-secondary)" mb={1.5}>
-                RR eingeben → TP Ticks berechnen
-              </Text>
+              <Text {...fieldLabelProps}>RR eingeben → TP Ticks berechnen</Text>
               <Input
                 type="number"
                 min={0.1}
@@ -416,8 +381,8 @@ export function PositionCalculator() {
                 value={rrIn2}
                 onChange={(e) => setRrIn2(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && calcFromRR2()}
-                sx={inputWrapSx}
-                className="jetbrains-mono"
+                {...inputSx}
+                className="cc-num"
               />
             </GridItem>
           </Grid>
@@ -429,34 +394,34 @@ export function PositionCalculator() {
         gap={4}
         py={2.5}
         px={3.5}
-        bg="rgba(255,255,255,0.04)"
+        bg="rgba(255, 255, 255, 0.03)"
         borderRadius="10px"
-        border="1px solid rgba(255,255,255,0.06)"
+        border="1px solid var(--cc-line)"
         mb={5}
         fontSize="sm"
-        color="var(--color-text-secondary)"
+        color="var(--cc-text-2)"
       >
         <Box>
           Asset:{" "}
-          <Text as="span" color="var(--color-text-primary)" fontWeight={500} className="jetbrains-mono">
+          <Text as="span" color="var(--cc-text)" fontWeight={500}>
             {cur}
           </Text>
         </Box>
         <Box>
           Tick-Größe:{" "}
-          <Text as="span" color="var(--color-text-primary)" fontWeight={500} className="jetbrains-mono">
+          <Text as="span" color="var(--cc-text)" fontWeight={500} className="cc-num">
             {a.tickSize}
           </Text>
         </Box>
         <Box>
           Tick-Wert:{" "}
-          <Text as="span" color="var(--color-text-primary)" fontWeight={500} className="jetbrains-mono">
+          <Text as="span" color="var(--cc-text)" fontWeight={500} className="cc-num">
             ${a.tickVal.toFixed(2)}
           </Text>
         </Box>
         <Box>
           Wert je Kontrakt/Tick:{" "}
-          <Text as="span" color="var(--color-text-primary)" fontWeight={500} className="jetbrains-mono">
+          <Text as="span" color="var(--cc-text)" fontWeight={500} className="cc-num">
             ${fmt(derived.perTick)}
           </Text>
         </Box>
@@ -465,7 +430,7 @@ export function PositionCalculator() {
       <Grid templateColumns="repeat(3, 1fr)" gap={3} mb={3}>
         {resultBox("Risiko (SL)", `$${fmt(derived.loss)}`, "var(--color-loss)")}
         {resultBox("Potenz. Gewinn (TP)", `$${fmt(derived.profit)}`, "var(--color-profit)")}
-        {resultBox("RR Ratio", derived.rrStr, "rgba(212, 175, 55, 0.95)")}
+        {resultBox("RR Ratio", derived.rrStr, "var(--cc-gold-light)")}
       </Grid>
 
       <Grid templateColumns="repeat(3, 1fr)" gap={3} mb={3}>
@@ -477,7 +442,7 @@ export function PositionCalculator() {
       {mode === 2 && derived.maxRisk != null && derived.slTicksCalc != null ? (
         <Grid templateColumns="repeat(2, 1fr)" gap={3} mb={2}>
           {resultBox("Max. Risiko in $", `$${fmt(derived.maxRisk)}`, "var(--color-loss)")}
-          {resultBox("Empfohlener SL", `${derived.slTicksCalc} Ticks`, "var(--color-warning)")}
+          {resultBox("Empfohlener SL", `${derived.slTicksCalc} Ticks`, "var(--cc-gold-light)")}
         </Grid>
       ) : null}
     </VStack>

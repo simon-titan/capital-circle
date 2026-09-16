@@ -3,7 +3,6 @@
 import {
   Alert,
   AlertIcon,
-  Badge,
   Box,
   Button,
   Flex,
@@ -18,6 +17,16 @@ import {
 } from "@chakra-ui/react";
 import { Save } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ADMIN_CARD_CLASS,
+  AdminCardTitle,
+  StatusPill,
+  adminAlertIconColor,
+  adminAlertProps,
+  adminCardPadding,
+  adminInputProps,
+  adminSwitchSx,
+} from "@/components/admin/adminUi";
 
 export type AdminMaintenanceSettings = {
   enabled: boolean;
@@ -79,108 +88,69 @@ export function AdminWartungManager({ initial }: Props) {
   }, [enabled, message]);
 
   return (
-    <Box
-      borderRadius="16px"
-      borderWidth="1px"
-      borderColor="var(--color-border-default)"
-      bg="rgba(15, 18, 24, 0.7)"
-      backdropFilter="blur(16px)"
-      p={{ base: 5, md: 6 }}
-    >
+    <Box className={ADMIN_CARD_CLASS} p={adminCardPadding}>
       <Stack gap={5}>
         <Flex justify="space-between" align="center" flexWrap="wrap" gap={3}>
           <HStack gap={3}>
-            <Text className="radley-regular" fontSize="lg" color="whiteAlpha.950">
-              Aktueller Status
-            </Text>
+            <AdminCardTitle>Aktueller Status</AdminCardTitle>
             {enabled ? (
-              <Badge
-                variant="subtle"
-                colorScheme="red"
-                px={3}
-                py={1}
-                borderRadius="full"
-                className="inter-semibold"
-                fontSize="xs"
-                textTransform="uppercase"
-                letterSpacing="0.08em"
-              >
-                Wartung aktiv
-              </Badge>
+              <StatusPill tone="attention">Wartung aktiv</StatusPill>
             ) : (
-              <Badge
-                variant="subtle"
-                colorScheme="green"
-                px={3}
-                py={1}
-                borderRadius="full"
-                className="inter-semibold"
-                fontSize="xs"
-                textTransform="uppercase"
-                letterSpacing="0.08em"
-              >
-                Online
-              </Badge>
+              <StatusPill tone="success">Online</StatusPill>
             )}
           </HStack>
         </Flex>
 
         {updatedAt ? (
-          <Text fontSize="xs" color="var(--color-text-tertiary)" className="inter">
-            Zuletzt geaendert: {new Date(updatedAt).toLocaleString("de-DE")}
+          <Text className="cc-num" fontSize="xs" color="var(--cc-text-3)">
+            Zuletzt geändert: {new Date(updatedAt).toLocaleString("de-DE")}
           </Text>
         ) : null}
 
         {feedback ? (
-          <Alert status={feedback.kind === "success" ? "success" : "error"} borderRadius="md" variant="left-accent">
-            <AlertIcon />
-            <Text fontSize="sm" className="inter">
-              {feedback.msg}
-            </Text>
+          <Alert status={feedback.kind === "success" ? "success" : "error"} {...adminAlertProps(feedback.kind)}>
+            <AlertIcon color={adminAlertIconColor(feedback.kind)} />
+            <Text fontSize="sm">{feedback.msg}</Text>
           </Alert>
         ) : null}
 
         <FormControl display="flex" alignItems="center" justifyContent="space-between" gap={4}>
           <Box>
-            <FormLabel htmlFor="maintenance-switch" mb={1} className="inter-semibold" color="whiteAlpha.900">
+            <FormLabel htmlFor="maintenance-switch" mb={1} fontWeight={600} color="var(--cc-text)">
               Wartungsmodus aktiv
             </FormLabel>
-            <Text fontSize="xs" color="var(--color-text-muted)" className="inter">
+            <Text fontSize="xs" color="var(--cc-text-2)">
               Wenn aktiv: alle Nutzer außer Admins werden auf /wartung umgeleitet.
             </Text>
           </Box>
           <Switch
             id="maintenance-switch"
             size="lg"
-            colorScheme="red"
+            sx={adminSwitchSx}
             isChecked={enabled}
             onChange={(e) => setEnabled(e.target.checked)}
           />
         </FormControl>
 
         <FormControl>
-          <FormLabel className="inter-semibold" color="whiteAlpha.900">
+          <FormLabel fontWeight={600} color="var(--cc-text)">
             Nachricht (optional)
           </FormLabel>
           <Textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="z. B. Wir spielen gerade ein Update ein und sind in ca. 30 Minuten zurueck."
-            className="inter"
-            bg="rgba(0,0,0,0.3)"
-            borderColor="var(--color-border-default)"
-            color="whiteAlpha.950"
-            _placeholder={{ color: "whiteAlpha.400" }}
+            placeholder="z. B. Wir spielen gerade ein Update ein und sind in ca. 30 Minuten zurück."
             rows={4}
+            {...adminInputProps}
           />
-          <FormHelperText color="var(--color-text-muted)" className="inter" fontSize="xs">
+          <FormHelperText color="var(--cc-text-2)" fontSize="xs">
             Wird auf /wartung angezeigt. Leer = Standardtext.
           </FormHelperText>
         </FormControl>
 
         <Flex justify="flex-end" gap={3}>
           {dirty ? (
-            <Text fontSize="xs" alignSelf="center" color="rgba(234, 179, 8, 0.9)" className="inter">
+            <Text fontSize="xs" alignSelf="center" color="var(--cc-gold-light)">
               Ungespeicherte Aenderungen
             </Text>
           ) : null}
@@ -189,10 +159,9 @@ export function AdminWartungManager({ initial }: Props) {
             isLoading={saving}
             loadingText="Speichert"
             leftIcon={<Save size={14} />}
-            colorScheme="yellow"
-            variant="solid"
+            variant="gold"
           >
-            Uebernehmen
+            Übernehmen
           </Button>
         </Flex>
       </Stack>

@@ -63,16 +63,56 @@ type AttRow = {
   arsenal_category_id: string | null;
 };
 
-const adminSelectStyles = {
-  bg: "rgba(7, 8, 10, 0.85)",
-  borderColor: "rgba(212, 175, 55, 0.35)",
-  color: "gray.100",
+/** Eingabefelder im Admin (DESIGN.md v3.2): Haarlinie, Fokus in Champagner. */
+const fieldSx = {
+  bg: "rgba(255, 255, 255, 0.03)",
+  border: "1px solid",
+  borderColor: "var(--cc-line-strong)",
+  borderRadius: "8px",
+  color: "var(--cc-text)",
+  _placeholder: { color: "var(--cc-text-3)" },
+  _hover: { borderColor: "rgba(255, 255, 255, 0.22)" },
+  _focusVisible: { borderColor: "var(--cc-gold-line)", boxShadow: "0 0 0 1px var(--cc-gold-line)" },
+} as const;
+
+const optionSx = { "& option": { background: "var(--cc-panel-solid)", color: "var(--cc-text)" } };
+
+const adminSelectStyles = { ...fieldSx, sx: optionSx };
+
+const labelProps = { fontSize: "12px", fontWeight: 500, color: "var(--cc-text-2)" } as const;
+
+const sectionTitleProps = { fontSize: "16px", fontWeight: 600, color: "var(--cc-text)" } as const;
+
+/** Listenzeile im Admin: leichte Fläche, Haarlinie. */
+const rowProps = {
   borderRadius: "10px",
-  h: "40px",
-  _hover: { borderColor: "rgba(212, 175, 55, 0.5)" },
-  _focusVisible: { borderColor: "rgba(212, 175, 55, 0.65)", boxShadow: "0 0 0 1px rgba(212, 175, 55, 0.25)" },
-  sx: { "& option": { bg: "#0c0d10" } },
-};
+  border: "1px solid",
+  borderColor: "var(--cc-line)",
+  bg: "rgba(255, 255, 255, 0.02)",
+} as const;
+
+const dangerIconBtn = {
+  variant: "line",
+  color: "var(--cc-danger)",
+  _hover: { bg: "rgba(248, 113, 113, 0.08)", borderColor: "rgba(248, 113, 113, 0.45)", boxShadow: "none" },
+} as const;
+
+const tabProps = {
+  fontSize: "14px",
+  fontWeight: 500,
+  color: "var(--cc-text-2)",
+  px: 4,
+  py: 2,
+  borderRadius: "8px",
+  border: "1px solid transparent",
+  transition: "background-color 150ms var(--cc-ease), border-color 150ms var(--cc-ease), color 150ms var(--cc-ease)",
+  _hover: { color: "var(--cc-text)", bg: "rgba(255, 255, 255, 0.04)" },
+  _selected: {
+    color: "var(--cc-gold-light)",
+    bg: "var(--cc-gold-wash)",
+    borderColor: "var(--cc-gold-line)",
+  },
+} as const;
 
 async function uploadAttachmentForVideo(
   file: File,
@@ -96,6 +136,13 @@ const LOGO_BG_OPTIONS = [
   { value: "white", label: "Logo-Hintergrund: hell" },
   { value: "dark", label: "Logo-Hintergrund: dunkel" },
 ] as const;
+
+/** Gleiche Werte wie die Mitglieder-Ansicht (`ArsenalCardsSection`), damit die Vorschau stimmt. */
+function adminLogoBg(key: string | null | undefined) {
+  if (key === "white") return "rgba(255, 255, 255, 0.98)";
+  if (key === "dark") return "var(--cc-bg)";
+  return "rgba(255, 255, 255, 0.02)";
+}
 
 function CardsPanel({
   category,
@@ -367,17 +414,11 @@ function CardsPanel({
 
   if (loading) {
     return (
-      <Text fontSize="sm" color="gray.400">
+      <Text fontSize="sm" color="var(--cc-text-2)">
         Lädt…
       </Text>
     );
   }
-
-  const adminLogoBg = (key: string | null | undefined) => {
-    if (key === "white") return "rgba(255,255,255,0.98)";
-    if (key === "dark") return "rgba(10,10,12,0.96)";
-    return "transparent";
-  };
 
   const renderCardRow = (c: ArsenalCard, dragHandle?: ReactNode) => (
     <Stack w="100%" spacing={0}>
@@ -387,20 +428,22 @@ function CardsPanel({
         flexWrap="wrap"
         gap={3}
         p={3}
-        borderRadius="md"
-        borderWidth="1px"
-        borderColor={c.is_featured ? "rgba(212, 175, 55, 0.45)" : "whiteAlpha.200"}
-        bg="blackAlpha.300"
+        {...rowProps}
+        borderColor={c.is_featured ? "var(--cc-gold-line)" : "var(--cc-line)"}
+        bg={c.is_featured ? "var(--cc-gold-wash)" : rowProps.bg}
       >
-        {dragHandle ? <Box flexShrink={0}>{dragHandle}</Box> : null}
+        {dragHandle ? (
+          <Box flexShrink={0} color="var(--cc-text-3)">
+            {dragHandle}
+          </Box>
+        ) : null}
         <HStack align="flex-start" gap={3} minW={0} flex="1">
           <Box
             w="120px"
             h="56px"
             position="relative"
-            borderRadius="md"
-            borderWidth="1px"
-            borderColor="rgba(212, 175, 55, 0.42)"
+            borderRadius="8px"
+            border="1px solid var(--cc-line-strong)"
             bg={adminLogoBg(c.logo_bg)}
             overflow="hidden"
             flexShrink={0}
@@ -421,17 +464,17 @@ function CardsPanel({
                 }}
               />
             ) : (
-              <Text fontSize="xs" color="gray.600" position="absolute" inset={0} display="flex" alignItems="center" justifyContent="center">
+              <Text fontSize="xs" color="var(--cc-text-3)" position="absolute" inset={0} display="flex" alignItems="center" justifyContent="center">
                 —
               </Text>
             )}
           </Box>
           <Box minW={0}>
-            <Text fontWeight="600" noOfLines={2}>
+            <Text fontWeight={600} color="var(--cc-text)" noOfLines={2}>
               {c.title}
             </Text>
             {c.external_url ? (
-              <Text fontSize="xs" color="gray.400" noOfLines={1}>
+              <Text fontSize="xs" color="var(--cc-text-2)" noOfLines={1}>
                 {c.external_url}
               </Text>
             ) : null}
@@ -441,13 +484,15 @@ function CardsPanel({
           <IconButton
             aria-label={c.is_featured ? "Hervorhebung entfernen" : "Als Empfohlen markieren"}
             size="sm"
-            variant={c.is_featured ? "solid" : "outline"}
-            colorScheme="yellow"
+            variant="line"
+            color={c.is_featured ? "var(--cc-gold-light)" : "var(--cc-text-2)"}
+            borderColor={c.is_featured ? "var(--cc-gold-line)" : "var(--cc-line-strong)"}
+            bg={c.is_featured ? "rgba(212, 176, 128, 0.12)" : undefined}
             icon={<Star size={16} fill={c.is_featured ? "currentColor" : "none"} />}
             isDisabled={busy}
             onClick={() => void toggleFeatured(c)}
           />
-          <Button size="xs" variant="outline" isDisabled={busy} onClick={() => startEdit(c)}>
+          <Button size="xs" variant="line" isDisabled={busy} onClick={() => startEdit(c)}>
             Bearbeiten
           </Button>
           <input
@@ -463,43 +508,34 @@ function CardsPanel({
           />
           <Button
             size="xs"
-            variant="outline"
+            variant="line"
             isDisabled={busy}
             onClick={() => document.getElementById(`arsenal-card-logo-${c.id}`)?.click()}
           >
             Logo ändern
           </Button>
           {c.logo_storage_key?.trim() ? (
-            <Button size="xs" variant="ghost" isDisabled={busy} onClick={() => void clearCardLogo(c.id)}>
+            <Button size="xs" variant="ghost" color="var(--cc-text-2)" isDisabled={busy} onClick={() => void clearCardLogo(c.id)}>
               Logo entfernen
             </Button>
           ) : null}
           <IconButton
             aria-label="Löschen"
             size="sm"
-            variant="outline"
-            colorScheme="red"
+            {...dangerIconBtn}
             icon={<Trash2 size={16} />}
             onClick={() => void remove(c.id)}
           />
         </HStack>
       </HStack>
       {editingId === c.id ? (
-        <Stack
-          p={4}
-          borderRadius="md"
-          borderWidth="1px"
-          borderColor="whiteAlpha.200"
-          bg="blackAlpha.500"
-          spacing={3}
-          mt={2}
-        >
-          <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} bg="whiteAlpha.50" placeholder="Titel" />
-          <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} bg="whiteAlpha.50" placeholder="Beschreibung" />
-          <Input value={editExternalUrl} onChange={(e) => setEditExternalUrl(e.target.value)} bg="whiteAlpha.50" placeholder="Externe URL" />
+        <Stack p={4} {...rowProps} borderColor="var(--cc-line-strong)" spacing={3} mt={2}>
+          <Input {...fieldSx} value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Titel" />
+          <Textarea {...fieldSx} value={editDescription} onChange={(e) => setEditDescription(e.target.value)} placeholder="Beschreibung" />
+          <Input {...fieldSx} value={editExternalUrl} onChange={(e) => setEditExternalUrl(e.target.value)} placeholder="Externe URL" />
           <Box>
-            <FormLabel fontSize="sm">Logo-Hintergrund (Mitglieder-Ansicht)</FormLabel>
-            <Select value={editLogoBg} onChange={(e) => setEditLogoBg(e.target.value)} bg="whiteAlpha.50" maxW="280px">
+            <FormLabel {...labelProps}>Logo-Hintergrund (Mitglieder-Ansicht)</FormLabel>
+            <Select {...adminSelectStyles} value={editLogoBg} onChange={(e) => setEditLogoBg(e.target.value)} maxW="280px">
               {LOGO_BG_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
@@ -508,14 +544,14 @@ function CardsPanel({
             </Select>
           </Box>
           <Box>
-            <FormLabel fontSize="sm">Feature-Zeilen (eine pro Zeile)</FormLabel>
-            <Textarea value={editBulletsText} onChange={(e) => setEditBulletsText(e.target.value)} bg="whiteAlpha.50" rows={4} />
+            <FormLabel {...labelProps}>Feature-Zeilen (eine pro Zeile)</FormLabel>
+            <Textarea {...fieldSx} value={editBulletsText} onChange={(e) => setEditBulletsText(e.target.value)} rows={4} />
           </Box>
           <HStack>
-            <Button colorScheme="blue" size="sm" onClick={() => void saveEdit()} isLoading={busy} isDisabled={!editTitle.trim()}>
+            <Button variant="gold" size="sm" onClick={() => void saveEdit()} isLoading={busy} isDisabled={!editTitle.trim()}>
               Speichern
             </Button>
-            <Button size="sm" variant="ghost" onClick={cancelEdit}>
+            <Button size="sm" variant="ghost" color="var(--cc-text-2)" onClick={cancelEdit}>
               Abbrechen
             </Button>
           </HStack>
@@ -526,23 +562,20 @@ function CardsPanel({
 
   return (
     <Stack gap={6}>
-      <Text fontSize="lg" className="inter-semibold">
-        {label} — Karten
-      </Text>
-      <Stack gap={3} maxW="640px">
-        <Input placeholder="Titel" value={title} onChange={(e) => setTitle(e.target.value)} bg="whiteAlpha.50" />
+      <Stack gap={3} maxW="640px" p={{ base: 4, md: 5 }} className="cc-card cc-card--still">
+        <Text {...sectionTitleProps}>{label} — Karten</Text>
+        <Input {...fieldSx} placeholder="Titel" value={title} onChange={(e) => setTitle(e.target.value)} />
         <Box>
-          <FormLabel fontSize="sm">Logo / Bild (optional, Hetzner)</FormLabel>
+          <FormLabel {...labelProps}>Logo / Bild (optional, Hetzner)</FormLabel>
           <HStack flexWrap="wrap" gap={3} align="flex-start">
             <Box
               w="200px"
               maxW="100%"
               h="56px"
               position="relative"
-              borderRadius="md"
-              borderWidth="1px"
-              borderColor="rgba(212, 175, 55, 0.42)"
-              bg={newLogoBg === "white" ? "rgba(255,255,255,0.98)" : newLogoBg === "dark" ? "rgba(10,10,12,0.96)" : "transparent"}
+              borderRadius="8px"
+              border="1px solid var(--cc-line-strong)"
+              bg={adminLogoBg(newLogoBg)}
               overflow="hidden"
               flexShrink={0}
             >
@@ -564,7 +597,7 @@ function CardsPanel({
               ) : (
                 <Text
                   fontSize="xs"
-                  color="gray.500"
+                  color="var(--cc-text-3)"
                   position="absolute"
                   inset={0}
                   display="flex"
@@ -580,7 +613,7 @@ function CardsPanel({
             <Stack gap={2}>
               <Button
                 size="sm"
-                variant="outline"
+                variant="line"
                 onClick={() => {
                   const el = document.getElementById(`arsenal-new-card-logo-${category}`) as HTMLInputElement | null;
                   el?.click();
@@ -589,7 +622,7 @@ function CardsPanel({
                 Datei wählen
               </Button>
               {pendingLogoFile ? (
-                <Button size="sm" variant="ghost" onClick={() => setPendingLogoFile(null)}>
+                <Button size="sm" variant="ghost" color="var(--cc-text-2)" onClick={() => setPendingLogoFile(null)}>
                   Auswahl zurücksetzen
                 </Button>
               ) : null}
@@ -608,24 +641,24 @@ function CardsPanel({
           </HStack>
         </Box>
         <Textarea
+          {...fieldSx}
           placeholder="Beschreibung (optional)"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          bg="whiteAlpha.50"
         />
         <Input
+          {...fieldSx}
           placeholder="Externe URL (optional)"
           value={externalUrl}
           onChange={(e) => setExternalUrl(e.target.value)}
-          bg="whiteAlpha.50"
         />
         <Box>
-          <FormLabel fontSize="sm">Feature-Zeilen (eine pro Zeile)</FormLabel>
-          <Textarea value={bulletsText} onChange={(e) => setBulletsText(e.target.value)} bg="whiteAlpha.50" rows={4} />
+          <FormLabel {...labelProps}>Feature-Zeilen (eine pro Zeile)</FormLabel>
+          <Textarea {...fieldSx} value={bulletsText} onChange={(e) => setBulletsText(e.target.value)} rows={4} />
         </Box>
         <Box>
-          <FormLabel fontSize="sm">Logo-Hintergrund (Mitglieder-Ansicht)</FormLabel>
-          <Select value={newLogoBg} onChange={(e) => setNewLogoBg(e.target.value)} bg="whiteAlpha.50" maxW="320px">
+          <FormLabel {...labelProps}>Logo-Hintergrund (Mitglieder-Ansicht)</FormLabel>
+          <Select {...adminSelectStyles} value={newLogoBg} onChange={(e) => setNewLogoBg(e.target.value)} maxW="320px">
             {LOGO_BG_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
@@ -633,11 +666,11 @@ function CardsPanel({
             ))}
           </Select>
         </Box>
-        <Button colorScheme="blue" onClick={() => void addCard()} isLoading={busy} isDisabled={!title.trim()}>
+        <Button variant="gold" onClick={() => void addCard()} isLoading={busy} isDisabled={!title.trim()}>
           Karte hinzufügen
         </Button>
         {status ? (
-          <Text fontSize="sm" color="green.300">
+          <Text fontSize="sm" color="var(--cc-text-soft)" role="status">
             {status}
           </Text>
         ) : null}
@@ -704,59 +737,54 @@ function CategoriesPanel() {
 
   return (
     <Stack gap={6} maxW="720px">
-      <Text fontSize="sm" color="gray.400">
-        Kategorien gelten für Templates und PDFs im Arsenal. Über „Gültig für“ steuerst du, wo die Kategorie im Admin beim
-        Upload wählbar ist.
-      </Text>
-      <HStack flexWrap="wrap" gap={3} align="flex-end">
-        <Box flex={1} minW="200px">
-          <FormLabel fontSize="xs">Name</FormLabel>
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="z. B. TradingView" bg="whiteAlpha.50" />
-        </Box>
-        <Box minW="160px">
-          <FormLabel fontSize="xs">Gültig für</FormLabel>
-          <Select
-            value={kindScope}
-            onChange={(e) => setKindScope(e.target.value as "both" | "template" | "pdf")}
-            bg="whiteAlpha.50"
-          >
-            <option value="both">Templates & PDFs</option>
-            <option value="template">Nur Templates</option>
-            <option value="pdf">Nur PDFs</option>
-          </Select>
-        </Box>
-        <Button colorScheme="yellow" onClick={() => void add()} isLoading={busy} isDisabled={!name.trim()}>
-          Hinzufügen
-        </Button>
-      </HStack>
-      {status ? (
-        <Text fontSize="sm" color="green.300">
-          {status}
+      <Stack gap={4} p={{ base: 4, md: 5 }} className="cc-card cc-card--still">
+        <Text fontSize="sm" color="var(--cc-text-2)">
+          Kategorien gelten für Templates und PDFs im Arsenal. Über „Gültig für“ steuerst du, wo die Kategorie im Admin beim
+          Upload wählbar ist.
         </Text>
-      ) : null}
+        <HStack flexWrap="wrap" gap={3} align="flex-end">
+          <Box flex={1} minW="200px">
+            <FormLabel {...labelProps}>Name</FormLabel>
+            <Input {...fieldSx} value={name} onChange={(e) => setName(e.target.value)} placeholder="z. B. TradingView" />
+          </Box>
+          <Box minW="160px">
+            <FormLabel {...labelProps}>Gültig für</FormLabel>
+            <Select
+              {...adminSelectStyles}
+              value={kindScope}
+              onChange={(e) => setKindScope(e.target.value as "both" | "template" | "pdf")}
+            >
+              <option value="both">Templates & PDFs</option>
+              <option value="template">Nur Templates</option>
+              <option value="pdf">Nur PDFs</option>
+            </Select>
+          </Box>
+          <Button variant="gold" onClick={() => void add()} isLoading={busy} isDisabled={!name.trim()}>
+            Hinzufügen
+          </Button>
+        </HStack>
+        {status ? (
+          <Text fontSize="sm" color="var(--cc-text-soft)" role="status">
+            {status}
+          </Text>
+        ) : null}
+      </Stack>
 
       <Stack gap={2}>
         {items.map((c) => (
-          <HStack
-            key={c.id}
-            justify="space-between"
-            p={3}
-            borderRadius="md"
-            borderWidth="1px"
-            borderColor="whiteAlpha.200"
-            bg="blackAlpha.400"
-          >
+          <HStack key={c.id} justify="space-between" p={3} {...rowProps}>
             <Box>
-              <Text fontWeight="600">{c.name}</Text>
-              <Text fontSize="xs" color="gray.500">
+              <Text fontWeight={600} color="var(--cc-text)">
+                {c.name}
+              </Text>
+              <Text fontSize="xs" color="var(--cc-text-3)">
                 {c.kind_scope === "both" ? "Templates & PDFs" : c.kind_scope === "template" ? "Nur Templates" : "Nur PDFs"}
               </Text>
             </Box>
             <IconButton
               aria-label="Löschen"
               size="sm"
-              variant="outline"
-              colorScheme="red"
+              {...dangerIconBtn}
               icon={<Trash2 size={16} />}
               onClick={() => void remove(c.id)}
             />
@@ -919,82 +947,73 @@ function AttachmentsPanel({ kind, label }: { kind: "template" | "pdf"; label: st
 
   return (
     <Stack gap={6}>
-      <Text fontSize="lg" className="inter-semibold">
-        {label} — Dateien (erscheinen unter Arsenal für Mitglieder)
-      </Text>
-      <HStack flexWrap="wrap" gap={3} align="flex-end" maxW="900px">
-        <Box flex="1" minW="240px">
-          <FormLabel fontSize="xs" color="gray.400">
-            Modul (Kurs in Klammern)
-          </FormLabel>
-          <Select
-            placeholder="Modul wählen"
-            value={moduleId}
-            onChange={(e) => {
-              setModuleId(e.target.value);
-              setVideoId("");
-            }}
-            className="inter"
-            {...adminSelectStyles}
-          >
-            <option value="">—</option>
-            {modules.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.title} ({m.course_title})
-              </option>
-            ))}
-          </Select>
-        </Box>
-        <Box flex="1" minW="200px">
-          <FormLabel fontSize="xs" color="gray.400">
-            Video
-          </FormLabel>
-          <Select
-            placeholder="Video"
-            value={videoId}
-            onChange={(e) => setVideoId(e.target.value)}
-            isDisabled={!moduleId}
-            className="inter"
-            {...adminSelectStyles}
-          >
-            <option value="">—</option>
-            {videos.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.title}
-              </option>
-            ))}
-          </Select>
-        </Box>
-        <Box flex="1" minW="200px">
-          <FormLabel fontSize="xs" color="gray.400">
-            Kategorie (optional)
-          </FormLabel>
-          <Select
-            value={uploadCategoryId}
-            onChange={(e) => setUploadCategoryId(e.target.value)}
-            className="inter"
-            {...adminSelectStyles}
-          >
-            <option value="">Keine Kategorie</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
-        </Box>
-      </HStack>
-      <Button maxW="280px" colorScheme="teal" onClick={() => void onUpload()} isLoading={busy} isDisabled={!moduleId || !videoId}>
-        Datei hochladen ({kind})
-      </Button>
-      {status ? (
-        <Text fontSize="sm" color="blue.200">
-          {status}
-        </Text>
-      ) : null}
+      <Stack gap={4} maxW="900px" p={{ base: 4, md: 5 }} className="cc-card cc-card--still">
+        <Text {...sectionTitleProps}>{label} — Dateien (erscheinen unter Arsenal für Mitglieder)</Text>
+        <HStack flexWrap="wrap" gap={3} align="flex-end">
+          <Box flex="1" minW="240px">
+            <FormLabel {...labelProps}>Modul (Kurs in Klammern)</FormLabel>
+            <Select
+              placeholder="Modul wählen"
+              value={moduleId}
+              onChange={(e) => {
+                setModuleId(e.target.value);
+                setVideoId("");
+              }}
+              {...adminSelectStyles}
+            >
+              <option value="">—</option>
+              {modules.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.title} ({m.course_title})
+                </option>
+              ))}
+            </Select>
+          </Box>
+          <Box flex="1" minW="200px">
+            <FormLabel {...labelProps}>Video</FormLabel>
+            <Select
+              placeholder="Video"
+              value={videoId}
+              onChange={(e) => setVideoId(e.target.value)}
+              isDisabled={!moduleId}
+              {...adminSelectStyles}
+            >
+              <option value="">—</option>
+              {videos.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.title}
+                </option>
+              ))}
+            </Select>
+          </Box>
+          <Box flex="1" minW="200px">
+            <FormLabel {...labelProps}>Kategorie (optional)</FormLabel>
+            <Select
+              value={uploadCategoryId}
+              onChange={(e) => setUploadCategoryId(e.target.value)}
+              {...adminSelectStyles}
+            >
+              <option value="">Keine Kategorie</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </Select>
+          </Box>
+        </HStack>
+        <Button maxW="280px" variant="gold" onClick={() => void onUpload()} isLoading={busy} isDisabled={!moduleId || !videoId}>
+          Datei hochladen ({kind})
+        </Button>
+        {status ? (
+          <Text fontSize="sm" color="var(--cc-text-soft)" role="status">
+            {status}
+          </Text>
+        ) : null}
+      </Stack>
 
       <Stack gap={2}>
-        <Text fontSize="sm" color="gray.400">
+        <Text fontSize="12px" fontWeight={500} letterSpacing="0.08em" textTransform="uppercase" color="var(--cc-text-2)">
           Alle {label}-Anhänge
         </Text>
         {items.map((a) => (
@@ -1005,11 +1024,9 @@ function AttachmentsPanel({ kind, label }: { kind: "template" | "pdf"; label: st
             flexWrap="wrap"
             gap={2}
             p={3}
-            borderWidth="1px"
-            borderRadius="md"
-            borderColor="whiteAlpha.150"
+            {...rowProps}
           >
-            <Text fontSize="sm" noOfLines={2} maxW={{ base: "100%", md: "40%" }}>
+            <Text fontSize="sm" color="var(--cc-text)" noOfLines={2} maxW={{ base: "100%", md: "40%" }}>
               {a.filename}
             </Text>
             <Select
@@ -1017,7 +1034,6 @@ function AttachmentsPanel({ kind, label }: { kind: "template" | "pdf"; label: st
               maxW="220px"
               value={a.arsenal_category_id ?? ""}
               onChange={(e) => void setCategory(a.id, e.target.value)}
-              className="inter"
               {...adminSelectStyles}
               h="32px"
             >
@@ -1031,8 +1047,7 @@ function AttachmentsPanel({ kind, label }: { kind: "template" | "pdf"; label: st
             <IconButton
               aria-label="Löschen"
               size="xs"
-              variant="outline"
-              colorScheme="red"
+              {...dangerIconBtn}
               icon={<Trash2 size={14} />}
               onClick={() => void remove(a.id)}
             />
@@ -1045,28 +1060,28 @@ function AttachmentsPanel({ kind, label }: { kind: "template" | "pdf"; label: st
 
 export function ArsenalManager() {
   return (
-    <Tabs variant="enclosed" colorScheme="yellow">
-      <TabList flexWrap="wrap">
-        <Tab>Tools</Tab>
-        <Tab>Fremdkapital</Tab>
-        <Tab>Kategorien</Tab>
-        <Tab>Templates</Tab>
-        <Tab>PDFs</Tab>
+    <Tabs variant="unstyled">
+      <TabList flexWrap="wrap" gap={1} pb={3} mb={2} borderBottom="1px solid var(--cc-line)">
+        <Tab {...tabProps}>Tools</Tab>
+        <Tab {...tabProps}>Fremdkapital</Tab>
+        <Tab {...tabProps}>Kategorien</Tab>
+        <Tab {...tabProps}>Templates</Tab>
+        <Tab {...tabProps}>PDFs</Tab>
       </TabList>
       <TabPanels>
-        <TabPanel>
+        <TabPanel px={0}>
           <CardsPanel category="tools" label="Tools & Software" enableReorder />
         </TabPanel>
-        <TabPanel>
+        <TabPanel px={0}>
           <CardsPanel category="fremdkapital" label="Fremdkapital" enableReorder />
         </TabPanel>
-        <TabPanel>
+        <TabPanel px={0}>
           <CategoriesPanel />
         </TabPanel>
-        <TabPanel>
+        <TabPanel px={0}>
           <AttachmentsPanel kind="template" label="Templates" />
         </TabPanel>
-        <TabPanel>
+        <TabPanel px={0}>
           <AttachmentsPanel kind="pdf" label="PDFs" />
         </TabPanel>
       </TabPanels>

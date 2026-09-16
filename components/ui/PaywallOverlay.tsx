@@ -1,69 +1,73 @@
 "use client";
 
 import { type ReactNode } from "react";
-import { Box, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, Text } from "@chakra-ui/react";
 import { Lock } from "lucide-react";
+import NextLink from "next/link";
 
 interface PaywallOverlayProps {
   active: boolean;
   children: ReactNode;
 }
 
+/**
+ * Seiten-Paywall (v3.2): Der Seiteninhalt bleibt sichtbar, ist aber `inert`.
+ * Darüber liegt ein ruhiger Graphit-Schleier; mittig eine Glas-Karte mit
+ * Champagner-Schloss und Gold-Button zur Bewerbung. Sidebar und Navigation
+ * liegen außerhalb und bleiben bedienbar (der Schleier lässt Klicks durch).
+ */
 export function PaywallOverlay({ active, children }: PaywallOverlayProps) {
   if (!active) return <>{children}</>;
 
   return (
     <div style={{ position: "relative" }}>
-      {/* Page content — visible but completely non-interactive */}
-      <div
-        style={{ pointerEvents: "none", userSelect: "none" }}
-        aria-hidden="true"
-      >
+      {/* Seiteninhalt — sichtbar, aber weder klick- noch fokussierbar */}
+      <div inert aria-hidden="true" style={{ pointerEvents: "none", userSelect: "none" }}>
         {children}
       </div>
 
-      {/* Dimming layer */}
-      <Box
-        position="fixed"
-        inset={0}
-        bg="rgba(7, 8, 10, 0.55)"
-        zIndex={9998}
-        pointerEvents="none"
-      />
+      {/* Graphit-Schleier */}
+      <Box position="fixed" inset={0} bg="rgba(18, 23, 28, 0.62)" zIndex={9998} pointerEvents="none" />
 
-      {/* Lock badge */}
+      {/* Hinweis-Karte */}
       <Box
-        role="status"
-        aria-label="Nur für vollwertige Member"
         position="fixed"
         left="50%"
         top="50%"
         transform="translate(-50%, -50%)"
         zIndex={9999}
-        pointerEvents="none"
-        display="flex"
-        flexDirection="column"
-        alignItems="center"
-        gap={3}
-        sx={{ animation: "paywall-enter 0.35s ease-out both" }}
+        w="min(340px, calc(100vw - 32px))"
+        sx={{ animation: "paywall-enter 0.35s var(--cc-ease) both" }}
       >
-        <Box
-          p={4}
-          borderRadius="full"
-          bg="rgba(212, 175, 55, 0.12)"
-          border="1px solid rgba(212, 175, 55, 0.35)"
-          boxShadow="0 0 32px rgba(212, 175, 55, 0.15)"
-        >
-          <Lock size={32} color="rgba(212, 175, 55, 0.9)" strokeWidth={1.8} />
-        </Box>
-        <Text
-          className="inter-semibold"
-          fontSize="sm"
-          color="var(--color-text-primary)"
+        <Flex
+          className="cc-card cc-card--still"
+          direction="column"
+          align="center"
+          gap={4}
           textAlign="center"
+          px={6}
+          py={7}
         >
-          Nur für vollwertige Member
-        </Text>
+          <Flex
+            align="center"
+            justify="center"
+            w="56px"
+            h="56px"
+            borderRadius="full"
+            bg="var(--cc-gold-wash)"
+            border="1px solid rgba(212, 176, 128, 0.4)"
+            color="var(--cc-gold-light)"
+            boxShadow="0 0 28px rgba(212, 176, 128, 0.2)"
+          >
+            <Lock size={24} strokeWidth={1.75} aria-hidden />
+          </Flex>
+          <Text role="status" fontSize="16px" fontWeight={600} color="var(--cc-text)">
+            Nur für vollwertige Member
+          </Text>
+          <Button as={NextLink} href="/bewerbung" variant="gold" w="full">
+            Jetzt Mitglied werden
+          </Button>
+        </Flex>
       </Box>
     </div>
   );

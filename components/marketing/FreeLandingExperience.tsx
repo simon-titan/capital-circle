@@ -2,10 +2,10 @@
 
 import { Box, Button, Stack, Text } from "@chakra-ui/react";
 import { useState } from "react";
-import { glassPrimaryButtonProps } from "@/components/ui/glassButtonStyles";
 import { FreeFunnelVideo } from "./FreeFunnelVideo";
 import { EmreStats } from "./EmreStats";
 import { FreeApplicationModal } from "./FreeApplicationModal";
+import { FunnelEyebrow, FunnelFinePrint, FunnelHeadline, FunnelLead, GoldWord, rise } from "./funnel-ui";
 
 /**
  * Client-Wrapper für die Free-Funnel-Landing-Page.
@@ -16,86 +16,72 @@ export function FreeLandingExperience() {
 
   return (
     <>
-      <Stack spacing={{ base: 10, md: 16 }} align="center" w="full">
+      <Stack spacing={{ base: 12, md: 16 }} align="center" w="full">
         {/* Hero-Text + erster CTA */}
-        <Stack spacing={6} maxW="680px" mx="auto" textAlign="center" align="center">
-          <Text
-            fontSize="xs"
-            letterSpacing="0.22em"
-            textTransform="uppercase"
-            color="var(--color-accent-gold)"
-            className="inter-semibold"
-          >
-            Capital Circle Institut
-          </Text>
+        <Stack spacing={6} maxW="720px" mx="auto" textAlign="center" align="center" {...rise(1)}>
+          <FunnelEyebrow>Capital Circle Institut</FunnelEyebrow>
 
-          <Text
-            as="h1"
-            className="radley-regular"
-            fontWeight={400}
-            fontSize={{ base: "3xl", md: "5xl" }}
-            lineHeight="1.1"
-            color="var(--color-text-primary)"
-          >
-            Trete dem inneren Zirkel bei.
-          </Text>
+          <FunnelHeadline>
+            Trete dem <GoldWord>inneren Zirkel</GoldWord> bei.
+          </FunnelHeadline>
 
-          <Text
-            fontSize={{ base: "md", md: "lg" }}
-            color="rgba(255,255,255,0.62)"
-            className="inter"
-            maxW="520px"
-          >
+          <FunnelLead maxW="560px">
             Lerne in unserem kostenlosen 5-Tage-Onboarding, wie professionelles Trading wirklich funktioniert.
             Nur für ausgewählte Trader — Bewerbung in 3 kurzen Schritten.
-          </Text>
+          </FunnelLead>
 
           <Button
-            {...glassPrimaryButtonProps}
+            variant="gold"
+            size="lg"
             w={{ base: "full", sm: "auto" }}
+            h="52px"
             px={10}
-            minH="52px"
-            fontSize="md"
+            fontSize="16px"
             onClick={() => setIsModalOpen(true)}
           >
             Jetzt bewerben — kostenlos
           </Button>
 
-          <Text fontSize="xs" color="rgba(255,255,255,0.30)" className="inter">
-            Keine Kreditkarte erforderlich · Kostenloser Kurs
-          </Text>
+          <FunnelFinePrint>Keine Kreditkarte erforderlich · Kostenloser Kurs</FunnelFinePrint>
         </Stack>
 
         {/* Video */}
-        <Box w="full" maxW="768px" mx="auto">
+        <Box w="full" maxW="768px" mx="auto" {...rise(2)}>
           <FreeFunnelVideo />
         </Box>
 
         {/* Emre-Stats */}
         <EmreStats />
 
-        {/* Zweiter, prominenterer CTA */}
-        <Stack spacing={3} align="center" textAlign="center">
-          <Button
-            {...glassPrimaryButtonProps}
-            w={{ base: "full", sm: "auto" }}
-            px={12}
-            minH="56px"
-            fontSize="lg"
-            onClick={() => setIsModalOpen(true)}
+        {/* Zweiter, prominenterer CTA — Hero-Karte für den nächsten Schritt */}
+        <Box w="full" maxW="768px" mx="auto" {...rise(8)}>
+          <Stack
+            className="cc-card cc-card--hero"
+            spacing={3}
+            align="center"
+            textAlign="center"
+            px={{ base: 5, md: 8 }}
+            py={{ base: 7, md: 9 }}
           >
-            Jetzt bewerben
-          </Button>
-          <Text fontSize="xs" color="rgba(255,255,255,0.30)" className="inter">
-            Bewerbung dauert unter 5 Minuten
-          </Text>
-        </Stack>
+            <Button
+              variant="gold"
+              size="lg"
+              w={{ base: "full", sm: "auto" }}
+              h="56px"
+              px={12}
+              fontSize="17px"
+              onClick={() => setIsModalOpen(true)}
+            >
+              Jetzt bewerben
+            </Button>
+            <Text fontSize="13px" color="var(--cc-text-2)">
+              Bewerbung dauert unter 5 Minuten
+            </Text>
+          </Stack>
+        </Box>
       </Stack>
 
-      <FreeApplicationModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
+      <FreeApplicationModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </>
   );
 }

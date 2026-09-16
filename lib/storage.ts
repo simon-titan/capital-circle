@@ -1,5 +1,6 @@
 import {
   GetObjectCommand,
+  HeadObjectCommand,
   ListObjectsV2Command,
   PutObjectCommand,
   type PutObjectCommandInput,
@@ -7,14 +8,28 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
+/**
+ * Objektspeicher der Plattform: **Cloudflare R2** (S3-kompatibel).
+ *
+ * Vorher lief das auf Hetzner Object Storage. Der Bucket dort ist am 16.09.2026
+ * nicht mehr erreichbar gewesen (`NoSuchBucket` in allen Regionen, die Keys
+ * liefern `InvalidAccessKeyId`) — die Ablösung ist damit keine Optimierung
+ * mehr, sondern die Reparatur.
+ *
+ * Die Schlüssel (`storage_key` in der Datenbank) bleiben unverändert: R2 nutzt
+ * dieselbe Struktur, sodass wiederhergestellte oder neu hochgeladene Dateien
+ * unter demselben Pfad liegen.
+ *
+ * Ist `HETZNER_*` noch gesetzt, dient Hetzner nur als Lese-Rückfallebene für
+ * Altbestände (`STORAGE_LEGACY_FALLBACK=1`). Geschrieben wird ausschließlich
+ * nach R2.
+ */
+
 /** Trimmt .env-Werte: BOM, literal `\n`-Platzhalter, Anführungszeichen, Inline-`#`-Kommentare, Rest nach Leerzeichen. */
-function normalizeHetznerEndpoint(raw: string | undefined): string {
+function normalizeEndpoint(raw: string | undefined): string {
   if (!raw) return "";
-  let s = raw.replace(/^\uFEFF/, "").replace(/\\n/g, "").trim();
-  if (
-    (s.startsWith('"') && s.endsWith('"')) ||
-    (s.startsWith("'") && s.endsWith("'"))
-  ) {
+  let s = raw.replace(/^﻿/, "").replace(/\\n/g, "").trim();
+  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
     s = s.slice(1, -1).trim();
   }
   const hash = s.indexOf("#");
@@ -24,48 +39,91 @@ function normalizeHetznerEndpoint(raw: string | undefined): string {
   return s;
 }
 
-const hetznerEndpoint = normalizeHetznerEndpoint(process.env.HETZNER_ENDPOINT);
+function env(name: string): string {
+  return normalizeEndpoint(process.env[name]);
+}
 
+const r2Endpoint = env("R2_ENDPOINT");
+const bucket = env("R2_BUCKET_NAME");
+
+/**
+ * `region: "auto"` ist bei R2 Pflicht — jede andere Region lässt die
+ * SigV4-Signatur scheitern.
+ */
 export const storageClient = new S3Client({
-  endpoint: hetznerEndpoint || undefined,
-  region: "eu-central-1",
+  endpoint: r2Endpoint || undefined,
+  region: "auto",
   credentials: {
-    accessKeyId: process.env.HETZNER_ACCESS_KEY ?? "",
-    secretAccessKey: process.env.HETZNER_SECRET_KEY ?? "",
+    accessKeyId: env("R2_ACCESS_KEY_ID"),
+    secretAccessKey: env("R2_SECRET_ACCESS_KEY"),
   },
 });
 
-const bucket = process.env.HETZNER_BUCKET_NAME ?? "";
+/** Lese-Rückfallebene auf den Altbestand — nur aktiv, wenn ausdrücklich eingeschaltet. */
+const legacyFallbackAktiv =
+  process.env.STORAGE_LEGACY_FALLBACK === "1" &&
+  Boolean(env("HETZNER_ENDPOINT")) &&
+  Boolean(env("HETZNER_BUCKET_NAME"));
 
-/**
- * Prüft S3-Konfiguration für List/Presign (nicht identisch mit öffentlicher Object-Storage-URL fürs Intro).
- */
-export function getHetznerStorageMisconfiguration(): string | null {
-  if (!process.env.HETZNER_BUCKET_NAME?.trim()) {
-    return "HETZNER_BUCKET_NAME fehlt in der Umgebung (.env.local).";
-  }
-  const ep = normalizeHetznerEndpoint(process.env.HETZNER_ENDPOINT);
-  if (!ep) {
-    return "HETZNER_ENDPOINT fehlt. Verwende die S3-API-URL (z. B. https://nbg1.your-objectstorage.com), nicht die öffentliche HTTPS-URL einzelner Dateien.";
+const legacyClient = legacyFallbackAktiv
+  ? new S3Client({
+      endpoint: env("HETZNER_ENDPOINT"),
+      region: "eu-central-1",
+      credentials: {
+        accessKeyId: env("HETZNER_ACCESS_KEY"),
+        secretAccessKey: env("HETZNER_SECRET_KEY"),
+      },
+    })
+  : null;
+
+const legacyBucket = env("HETZNER_BUCKET_NAME");
+
+/** Prüft die S3-Konfiguration für List/Presign/Upload. */
+export function getStorageMisconfiguration(): string | null {
+  if (!bucket) return "R2_BUCKET_NAME fehlt in der Umgebung (.env.local).";
+  if (!r2Endpoint) {
+    return "R2_ENDPOINT fehlt. Format: https://<ACCOUNT_ID>.r2.cloudflarestorage.com — bei einem Bucket in der EU-Jurisdiktion mit `.eu.` im Host.";
   }
   try {
-    // eslint-disable-next-line no-new
-    new URL(ep);
+    new URL(r2Endpoint);
   } catch {
-    return `HETZNER_ENDPOINT ist keine gültige URL (nach Normalisierung: "${ep.slice(0, 80)}${ep.length > 80 ? "…" : ""}"). Prüfe Anführungszeichen, Leerzeichen oder # am Zeilenende in .env.`;
+    return `R2_ENDPOINT ist keine gültige URL (nach Normalisierung: "${r2Endpoint.slice(0, 80)}${r2Endpoint.length > 80 ? "…" : ""}"). Prüfe Anführungszeichen, Leerzeichen oder # am Zeilenende in .env.`;
   }
-  if (!process.env.HETZNER_ACCESS_KEY?.trim() || !process.env.HETZNER_SECRET_KEY?.trim()) {
-    return "HETZNER_ACCESS_KEY oder HETZNER_SECRET_KEY fehlt.";
+  if (!env("R2_ACCESS_KEY_ID") || !env("R2_SECRET_ACCESS_KEY")) {
+    return "R2_ACCESS_KEY_ID oder R2_SECRET_ACCESS_KEY fehlt.";
   }
   return null;
 }
 
-export async function getPresignedGetUrl(storageKey: string) {
-  const cmd = new GetObjectCommand({
-    Bucket: bucket,
-    Key: storageKey,
-  });
-  return getSignedUrl(storageClient, cmd, { expiresIn: 60 * 15 });
+/**
+ * Alter Name, damit bestehende Aufrufer weiterlaufen.
+ * @deprecated `getStorageMisconfiguration()` verwenden — der Speicher ist R2, nicht Hetzner.
+ */
+export const getHetznerStorageMisconfiguration = getStorageMisconfiguration;
+
+/** Liegt der Schlüssel in R2? Ergebnis wird im Prozess gemerkt (Keys ändern sich nicht rückwirkend). */
+const r2TrefferCache = new Map<string, boolean>();
+
+async function existiertInR2(storageKey: string): Promise<boolean> {
+  const gemerkt = r2TrefferCache.get(storageKey);
+  if (gemerkt !== undefined) return gemerkt;
+  try {
+    await storageClient.send(new HeadObjectCommand({ Bucket: bucket, Key: storageKey }));
+    r2TrefferCache.set(storageKey, true);
+    return true;
+  } catch {
+    r2TrefferCache.set(storageKey, false);
+    return false;
+  }
+}
+
+export async function getPresignedGetUrl(storageKey: string, expiresIn = 60 * 15) {
+  if (legacyClient && !(await existiertInR2(storageKey))) {
+    return getSignedUrl(legacyClient, new GetObjectCommand({ Bucket: legacyBucket, Key: storageKey }), {
+      expiresIn,
+    });
+  }
+  return getSignedUrl(storageClient, new GetObjectCommand({ Bucket: bucket, Key: storageKey }), { expiresIn });
 }
 
 export async function getPresignedPutUrl(storageKey: string, contentType: string) {
@@ -82,10 +140,10 @@ export async function putObjectBody(
   storageKey: string,
   body: PutObjectCommandInput["Body"],
   contentType: string,
-  /** Optional: für S3-kompatible Stores (z. B. Hetzner) zuverlässiger als reiner Stream ohne Länge. */
+  /** Optional: für S3-kompatible Stores zuverlässiger als reiner Stream ohne Länge. */
   contentLength?: number,
 ) {
-  const cfgErr = getHetznerStorageMisconfiguration();
+  const cfgErr = getStorageMisconfiguration();
   if (cfgErr) {
     throw new Error(cfgErr);
   }
@@ -98,13 +156,14 @@ export async function putObjectBody(
       ...(contentLength !== undefined ? { ContentLength: contentLength } : {}),
     }),
   );
+  r2TrefferCache.set(storageKey, true);
 }
 
 export type ListedObject = { key: string; size?: number };
 
 /** Listet alle Objekt-Keys unter einem Prefix (paginiert). */
 export async function listObjectKeysUnderPrefix(prefix: string): Promise<ListedObject[]> {
-  const cfgErr = getHetznerStorageMisconfiguration();
+  const cfgErr = getStorageMisconfiguration();
   if (cfgErr) {
     throw new Error(cfgErr);
   }
@@ -134,7 +193,7 @@ export async function listObjectKeysUnderPrefix(prefix: string): Promise<ListedO
  * z. B. Prefix "modules/" liefert ["modules/ModA/", "modules/ModB/"].
  */
 export async function listFolderPrefixes(prefix: string): Promise<string[]> {
-  const cfgErr = getHetznerStorageMisconfiguration();
+  const cfgErr = getStorageMisconfiguration();
   if (cfgErr) {
     throw new Error(cfgErr);
   }

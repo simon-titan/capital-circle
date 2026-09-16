@@ -14,18 +14,32 @@ interface Props {
   firstName: string;
   email: string;
   userId: string;
-  /** z. B. `monthly`, `lifetime` — beeinflusst die Begrüßungs-Copy. */
-  tier?: "monthly" | "lifetime" | "ht_1on1";
+  /** Beeinflusst die Begrüßungs-Copy. `lifetime` ist nur noch Bestand, kein Verkaufsweg. */
+  tier?: "monthly" | "quarterly" | "yearly" | "lifetime" | "ht_1on1";
+  /**
+   * Nur beim Gast-Checkout gesetzt: Das Konto ist gerade entstanden und hat
+   * noch kein Passwort. Dann führt der Knopf zum Setzen des Passworts statt
+   * ins Dashboard — ein Dashboard-Link wäre für dieses Konto eine Sackgasse.
+   */
+  setPasswordUrl?: string;
 }
 
-export default function WelcomePaidEmail({ firstName, tier }: Pick<Props, "firstName" | "tier">) {
+export default function WelcomePaidEmail({
+  firstName,
+  tier,
+  setPasswordUrl,
+}: Pick<Props, "firstName" | "tier" | "setPasswordUrl">) {
   const appUrl = getAppUrl();
   const tierLabel =
     tier === "lifetime"
       ? "Lifetime-Zugang"
       : tier === "ht_1on1"
         ? "1-on-1-Coaching"
-        : "Mitgliedschaft";
+        : tier === "quarterly"
+          ? "Mitgliedschaft (vierteljährlich)"
+          : tier === "yearly"
+            ? "Mitgliedschaft (jährlich)"
+            : "Mitgliedschaft";
 
   return (
     <BaseEmail previewText={`Dein Capital-Circle-${tierLabel} ist aktiv`}>
@@ -36,14 +50,16 @@ export default function WelcomePaidEmail({ firstName, tier }: Pick<Props, "first
 
       <EmailSubheading>Was du jetzt tun solltest</EmailSubheading>
       <EmailHighlight>
-        1. Vervollständige dein Profil im Dashboard
+        {setPasswordUrl ? "1. Setz dein Passwort über den Knopf unten" : "1. Vervollständige dein Profil im Dashboard"}
         <br />
         2. Tritt unserem Discord-Server bei (Link im Dashboard)
         <br />
         3. Schau in den Live-Session-Kalender und blockiere dir den nächsten Termin
       </EmailHighlight>
 
-      <EmailButton href={`${appUrl}/dashboard`}>Zum Dashboard</EmailButton>
+      <EmailButton href={setPasswordUrl ?? `${appUrl}/dashboard`}>
+        {setPasswordUrl ? "Passwort setzen" : "Zum Dashboard"}
+      </EmailButton>
 
       <EmailText muted>
         Eine Rechnung erhältst du separat von unserem Zahlungs-Provider. Bei
@@ -61,6 +77,7 @@ export async function sendWelcomePaid(props: Props): Promise<SendResult> {
       <WelcomePaidEmail
         firstName={props.firstName}
         tier={props.tier}
+        setPasswordUrl={props.setPasswordUrl}
       />
     ),
     log: {

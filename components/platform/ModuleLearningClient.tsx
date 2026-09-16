@@ -1,7 +1,25 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Badge, Box, Button, Grid, GridItem, HStack, Stack, Text, Tooltip } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Flex,
+  Grid,
+  GridItem,
+  Heading,
+  HStack,
+  Stack,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
+  Text,
+  Tooltip,
+} from "@chakra-ui/react";
+import { AlignLeft, ArrowLeft, ArrowRight, Download, FileText } from "lucide-react";
+import NextLink from "next/link";
 import { GlassVideoPlayer } from "@/components/ui/GlassVideoPlayer";
 import { QuizModal, type QuizMode, type QuizQuestion } from "@/components/platform/QuizModal";
 import { VideoPlaylist, isPlaylistIndexUnlocked } from "@/components/platform/VideoPlaylist";
@@ -9,11 +27,15 @@ import { isPlaylistVideoDone } from "@/lib/module-video";
 import { VideoDescription } from "@/components/platform/VideoDescription";
 import { VideoAttachments, type VideoAttachmentItem } from "@/components/platform/VideoAttachments";
 import { ModuleNotes } from "@/components/platform/ModuleNotes";
-import { ChakraLinkButton } from "@/components/platform/ChakraLinkButton";
+import { ProgressBar, clampLines } from "@/components/platform/dashboard/primitives";
 import type { PlaylistVideoRow } from "@/lib/module-video";
 
 export type ModuleLearningClientProps = {
   moduleId: string;
+  /** Titel und Kontext für die Kursleiste */
+  moduleTitle: string;
+  courseTitle?: string | null;
+  moduleDescription?: string | null;
   playlist: PlaylistVideoRow[];
   initialVideoId: string | null;
   initialProgressMap: Record<string, number>;
@@ -46,8 +68,57 @@ function pickStartIndex(playlist: PlaylistVideoRow[], initialVideoId: string | n
   return 0;
 }
 
+const sectionLabel = {
+  fontSize: "12px",
+  lineHeight: "16px",
+  fontWeight: 500,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase" as const,
+  color: "var(--cc-text-2)",
+};
+
+const tabProps = {
+  px: 4,
+  py: 2,
+  borderRadius: "8px",
+  fontSize: "14px",
+  fontWeight: 500,
+  color: "var(--cc-text-2)",
+  border: "1px solid transparent",
+  transition: "color 150ms var(--cc-ease), background-color 150ms var(--cc-ease), border-color 150ms var(--cc-ease)",
+  _hover: { color: "var(--cc-text)" },
+  _selected: {
+    color: "var(--cc-gold-light)",
+    bg: "linear-gradient(90deg, rgba(212, 176, 128, 0.16) 0%, rgba(212, 176, 128, 0.04) 100%)",
+    borderColor: "var(--cc-gold-line)",
+    boxShadow: "0 0 16px rgba(212, 176, 128, 0.1)",
+  },
+};
+
+function BackLink() {
+  return (
+    <Button
+      as={NextLink}
+      href="/ausbildung"
+      variant="ghost"
+      size="sm"
+      h="auto"
+      px={0}
+      leftIcon={<ArrowLeft size={15} strokeWidth={2} />}
+      color="var(--cc-text-2)"
+      fontWeight={500}
+      _hover={{ color: "var(--cc-gold-light)", bg: "transparent" }}
+    >
+      Zurück zur Übersicht
+    </Button>
+  );
+}
+
 export function ModuleLearningClient({
   moduleId,
+  moduleTitle,
+  courseTitle = null,
+  moduleDescription = null,
   playlist,
   initialVideoId,
   initialProgressMap,
@@ -78,6 +149,8 @@ export function ModuleLearningClient({
   const onPlayerProgress = useCallback((seconds: number) => {
     lastProgressRef.current = Math.floor(seconds);
   }, []);
+  /** Für den Zeitstempel in den Notizen — liest den Ref, löst selbst kein Rendern aus. */
+  const getTimestamp = useCallback(() => lastProgressRef.current, []);
   const [progressMap, setProgressMap] = useState<Record<string, number>>(() => ({ ...initialProgressMap }));
   const progressMapRef = useRef(progressMap);
   useEffect(() => {
@@ -92,6 +165,13 @@ export function ModuleLearningClient({
     if (!playlist.length) return true;
     return playlist.every((v) => isPlaylistVideoDone(v, progressMap));
   }, [playlist, progressMap]);
+
+  /** Fortschritt der Kursleiste: erledigte Lektionen / alle Lektionen. */
+  const doneCount = useMemo(
+    () => playlist.filter((v) => isPlaylistVideoDone(v, progressMap)).length,
+    [playlist, progressMap],
+  );
+  const modulePct = playlist.length ? Math.round((doneCount / playlist.length) * 100) : 0;
 
   /** Manueller Quiz-Start nur, wenn alle Videos durchgesehen oder Modul bereits abgeschlossen (Wiederholung). */
   const quizStartBlocked = hasQuiz && !allVideosWatched && !moduleCompleted;
@@ -263,249 +343,304 @@ export function ModuleLearningClient({
         ? "Nicht bestanden"
         : "Offen";
 
+  const quizBadge = quizStatusLabel ? (
+    <Box
+      as="span"
+      px={2}
+      py="2px"
+      borderRadius="6px"
+      fontSize="11px"
+      fontWeight={600}
+      bg={quizPassed ? "rgba(74, 222, 128, 0.12)" : quizLastScore !== null ? "rgba(212, 176, 128, 0.14)" : "rgba(255, 255, 255, 0.06)"}
+      color={quizPassed ? "var(--cc-success)" : quizLastScore !== null ? "var(--cc-gold-light)" : "var(--cc-text-2)"}
+    >
+      {quizStatusLabel}
+    </Box>
+  ) : null;
+
+  const quizButton = (fullWidth: boolean) => (
+    <Tooltip label="Schau zuerst alle Videos dieses Moduls zu Ende." isDisabled={!quizStartBlocked} hasArrow openDelay={200}>
+      <span style={{ width: fullWidth ? "100%" : "fit-content", display: fullWidth ? "block" : "inline-block" }}>
+        <Button
+          variant="line"
+          size="sm"
+          w={fullWidth ? "full" : "fit-content"}
+          isDisabled={quizStartBlocked}
+          onClick={() => setQuizOpen(true)}
+          color="var(--cc-gold-light)"
+          borderColor="var(--cc-gold-line)"
+        >
+          {quizPassed ? "Test wiederholen" : quizLastScore !== null ? "Erneut versuchen" : "Test starten"}
+        </Button>
+      </span>
+    </Tooltip>
+  );
+
+  const quizModal = quizOpen ? (
+    <QuizModal
+      isOpen
+      onClose={() => setQuizOpen(false)}
+      questions={questions}
+      quizMode={quizMode}
+      passThreshold={passThreshold}
+      onQuizResult={onQuizResult}
+      nextModuleHref={nextModuleHref}
+    />
+  ) : null;
+
+  const completedBanner = moduleCompleted ? (
+    <Flex
+      className="cc-card cc-card--hero"
+      p={{ base: 5, md: 6 }}
+      direction={{ base: "column", md: "row" }}
+      align={{ base: "stretch", md: "center" }}
+      justify="space-between"
+      gap={4}
+    >
+      <Box>
+        <Text fontSize="18px" fontWeight={600} color="var(--cc-text)">
+          Modul abgeschlossen
+        </Text>
+        <Text fontSize="14px" color="var(--cc-text-2)" mt={1}>
+          {nextModuleHref ? "Weiter geht es mit dem nächsten Modul." : "Du hast alle Lektionen dieses Moduls gesehen."}
+        </Text>
+      </Box>
+      <Stack direction={{ base: "column", sm: "row" }} spacing={3}>
+        {nextModuleHref ? (
+          <Button as={NextLink} href={nextModuleHref} variant="gold" rightIcon={<ArrowRight size={16} />}>
+            Zum nächsten Modul
+          </Button>
+        ) : null}
+        <Button as={NextLink} href="/ausbildung" variant="line">
+          Zur Instituts-Übersicht
+        </Button>
+      </Stack>
+    </Flex>
+  ) : null;
+
+  const notes = <ModuleNotes moduleId={moduleId} initialContent={initialNoteContent} getTimestamp={getTimestamp} />;
+
   if (!playlist.length) {
     const introFallback = process.env.NEXT_PUBLIC_INTRO_VIDEO_URL ?? "";
     return (
-      <Box pb={{ base: 4, md: 0 }}>
-        <Text className="inter" color="gray.500" fontSize="sm" mb={4} px={{ base: 4, md: 0 }}>
-          Kein veröffentlichtes Video in diesem Modul. Platzhalter-Intro wird angezeigt, falls konfiguriert.
-        </Text>
-        {introFallback ? (
-          <GlassVideoPlayer src={introFallback} onProgress={onPlayerProgress} />
-        ) : null}
+      <Stack spacing={5} data-learning-wide>
+        <Box>
+          <BackLink />
+          <Heading as="h1" fontSize={{ base: "24px", md: "30px" }} fontWeight={600} color="var(--cc-text)" mt={3}>
+            {moduleTitle}
+          </Heading>
+          <Text fontSize="14px" color="var(--cc-text-2)" mt={2}>
+            Kein veröffentlichtes Video in diesem Modul. Platzhalter-Intro wird angezeigt, falls konfiguriert.
+          </Text>
+        </Box>
+        {introFallback ? <GlassVideoPlayer src={introFallback} onProgress={onPlayerProgress} /> : null}
         {hasQuiz ? (
-          <Stack spacing={3} mt={4} mb={6} maxW="md" px={{ base: 4, md: 0 }}>
-            <Text
-              className="inter"
-              fontSize="xs"
-              textTransform="uppercase"
-              letterSpacing="0.08em"
-              color="var(--color-text-muted)"
-            >
-              Modul-Test
-            </Text>
-            {quizStatusLabel ? (
-              <Badge
-                px={2}
-                py={0.5}
-                borderRadius="md"
-                fontSize="xs"
-                className="inter-medium"
-                w="fit-content"
-                colorScheme={quizPassed ? "green" : quizLastScore !== null ? "yellow" : "gray"}
-              >
-                {quizStatusLabel}
-              </Badge>
-            ) : null}
-            <Tooltip
-              label="Schau zuerst alle Videos dieses Moduls zu Ende."
-              isDisabled={!quizStartBlocked}
-              hasArrow
-              openDelay={200}
-            >
-              <span style={{ width: "fit-content", display: "inline-block" }}>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  w="fit-content"
-                  isDisabled={quizStartBlocked}
-                  onClick={() => setQuizOpen(true)}
-                  borderColor="rgba(212,175,55,0.45)"
-                  color="var(--color-accent-gold-light)"
-                >
-                  {quizPassed ? "Test wiederholen" : quizLastScore !== null ? "Erneut versuchen" : "Test starten"}
-                </Button>
-              </span>
-            </Tooltip>
+          <Stack spacing={3} className="cc-card cc-card--still" p={5} maxW="md">
+            <HStack justify="space-between">
+              <Text {...sectionLabel}>Modul-Test</Text>
+              {quizBadge}
+            </HStack>
+            {quizButton(false)}
             {quizStartBlocked ? (
-              <Text className="inter" fontSize="xs" color="var(--color-text-muted)">
+              <Text fontSize="12px" color="var(--cc-text-3)">
                 Der Test ist verfügbar, sobald alle Videos vollständig angesehen sind.
               </Text>
             ) : null}
           </Stack>
         ) : null}
-        {quizOpen ? (
-          <QuizModal
-            isOpen
-            onClose={() => setQuizOpen(false)}
-            questions={questions}
-            quizMode={quizMode}
-            passThreshold={passThreshold}
-            onQuizResult={onQuizResult}
-            nextModuleHref={nextModuleHref}
-          />
-        ) : null}
-        {moduleCompleted ? (
-          <Box
-            mt={4}
-            mx={{ base: 4, md: 0 }}
-            p={5}
-            borderRadius="16px"
-            borderWidth="1px"
-            borderColor="rgba(212,175,55,0.35)"
-            bg="rgba(212,175,55,0.06)"
-          >
-            <Text className="radley-regular" fontSize="lg" mb={3} color="var(--color-text-primary)">
-              Modul abgeschlossen
-            </Text>
-            <Stack direction={{ base: "column", sm: "row" }} spacing={3}>
-              {nextModuleHref ? (
-                <ChakraLinkButton href={nextModuleHref} colorScheme="yellow" size="md">
-                  Zum nächsten Modul
-                </ChakraLinkButton>
-              ) : null}
-              <ChakraLinkButton
-                href="/ausbildung"
-                variant="outline"
-                borderColor="rgba(212,175,55,0.45)"
-                color="var(--color-accent-gold)"
-                size="md"
-              >
-                Zur Instituts-Übersicht
-              </ChakraLinkButton>
-            </Stack>
-          </Box>
-        ) : null}
-        <Box px={{ base: 4, md: 0 }}>
-          <ModuleNotes moduleId={moduleId} initialContent={initialNoteContent} />
+        {completedBanner}
+        <Box className="cc-card cc-card--still" p={{ base: 4, md: 6 }}>
+          {notes}
         </Box>
-      </Box>
+        {quizModal}
+      </Stack>
     );
   }
 
   return (
-    <Box pb={{ base: 4, md: 0 }}>
-      <Grid
-        templateColumns={{ base: "1fr", lg: "minmax(0, 5fr) minmax(280px, 2fr)" }}
-        gap={{ base: 6, lg: 8 }}
-        alignItems="start"
-      >
-        <GridItem minW={0}>
-          <Stack spacing={6}>
-            <GlassVideoPlayer
-              key={current.id}
-              storageKey={current.storage_key}
-              startAtSeconds={startAtSeconds}
-              onProgress={onPlayerProgress}
-              onEnded={onVideoEnded}
-            />
-            <Box px={{ base: 4, md: 0 }}>
-              {moduleCompleted ? (
-                <Box
-                  mb={4}
-                  p={5}
-                  borderRadius="16px"
-                  borderWidth="1px"
-                  borderColor="rgba(212,175,55,0.35)"
-                  bg="rgba(212,175,55,0.06)"
-                >
-                  <Text className="radley-regular" fontSize="lg" mb={3} color="var(--color-text-primary)">
-                    Modul abgeschlossen
-                  </Text>
-                  <Stack direction={{ base: "column", sm: "row" }} spacing={3}>
-                    {nextModuleHref ? (
-                      <ChakraLinkButton href={nextModuleHref} colorScheme="yellow" size="md">
-                        Zum nächsten Modul
-                      </ChakraLinkButton>
-                    ) : null}
-                    <ChakraLinkButton
-                      href="/ausbildung"
-                      variant="outline"
-                      borderColor="rgba(212,175,55,0.45)"
-                      color="var(--color-accent-gold)"
-                      size="md"
-                    >
-                      Zur Instituts-Übersicht
-                    </ChakraLinkButton>
-                  </Stack>
-                </Box>
-              ) : null}
-              <VideoDescription description={current.description} />
-              <VideoAttachments attachments={currentAttachments} />
-              <ModuleNotes moduleId={moduleId} initialContent={initialNoteContent} />
-            </Box>
-          </Stack>
-        </GridItem>
-        <GridItem px={{ base: 4, md: 0 }}>
-          <Box
-            position={{ base: "relative", lg: "sticky" }}
-            top={{ lg: "80px" }}
-            maxH={{ lg: "calc(100vh - 100px)" }}
-            overflowY={{ lg: "auto" }}
-            pr={{ lg: 1 }}
+    <Box data-learning-wide>
+      {/* Mobil: Titel über dem Player — die Kursleiste folgt darunter. */}
+      <Box display={{ base: "block", lg: "none" }} mb={4}>
+        <BackLink />
+        <Heading as="h1" fontSize="22px" fontWeight={600} lineHeight={1.3} color="var(--cc-text)" mt={3}>
+          {moduleTitle}
+        </Heading>
+      </Box>
+
+      <Grid templateColumns={{ base: "minmax(0, 1fr)", lg: "340px minmax(0, 1fr)" }} gap={{ base: 5, lg: 6 }} alignItems="start">
+        {/* Kursleiste: Titel, Fortschritt, Lektionen — klebt und scrollt für sich. */}
+        <GridItem order={{ base: 2, lg: 1 }} minW={0} position={{ lg: "sticky" }} top={{ lg: "calc(var(--cc-strip-h) + 24px)" }}>
+          <Flex
+            className="cc-card cc-card--still"
+            direction="column"
+            overflow="hidden"
+            maxH={{ lg: "calc(100dvh - var(--cc-strip-h) - 48px)" }}
           >
-            <VideoPlaylist
-              playlist={playlist}
-              activeIndex={activeIndex}
-              progressMap={progressMap}
-              onSelect={onSelectVideo}
-            />
-            {hasQuiz ? (
-              <Stack spacing={3} mt={6} pt={6} borderTopWidth="1px" borderColor="rgba(255,255,255,0.08)">
-                <Text
-                  className="inter"
-                  fontSize="xs"
-                  textTransform="uppercase"
-                  letterSpacing="0.08em"
-                  color="var(--color-text-muted)"
+            <Box px={5} pt={5} pb={4} flexShrink={0}>
+              <Box display={{ base: "none", lg: "block" }}>
+                <BackLink />
+                {courseTitle ? (
+                  <Text fontSize="12px" color="var(--cc-text-3)" mt={4} isTruncated>
+                    {courseTitle}
+                  </Text>
+                ) : null}
+                <Heading
+                  as="h1"
+                  fontSize="20px"
+                  fontWeight={600}
+                  lineHeight={1.3}
+                  color="var(--cc-text)"
+                  mt={courseTitle ? 1 : 4}
+                  sx={clampLines(2)}
                 >
-                  Modul-Test
-                </Text>
-                <HStack spacing={2} flexWrap="wrap">
-                  {quizStatusLabel ? (
-                    <Badge
-                      px={2}
-                      py={0.5}
-                      borderRadius="md"
-                      fontSize="xs"
-                      className="inter-medium"
-                      colorScheme={quizPassed ? "green" : quizLastScore !== null ? "yellow" : "gray"}
-                    >
-                      {quizStatusLabel}
-                    </Badge>
-                  ) : null}
+                  {moduleTitle}
+                </Heading>
+                {moduleDescription ? (
+                  <Text fontSize="13px" lineHeight={1.5} color="var(--cc-text-2)" mt={2} sx={clampLines(3)}>
+                    {moduleDescription}
+                  </Text>
+                ) : null}
+              </Box>
+              <Flex align="center" justify="space-between" gap={3} mt={{ base: 0, lg: 5 }}>
+                <Text {...sectionLabel}>Modulinhalt</Text>
+                <HStack spacing={2}>
+                  <Box
+                    as="span"
+                    className="cc-num"
+                    px={2}
+                    py="2px"
+                    borderRadius="full"
+                    bg="var(--cc-gold-grad)"
+                    color="var(--cc-on-gold)"
+                    fontSize="11px"
+                    fontWeight={600}
+                    boxShadow="0 0 12px rgba(212, 176, 128, 0.35)"
+                  >
+                    {playlist.length} {playlist.length === 1 ? "Lektion" : "Lektionen"}
+                  </Box>
+                  <Text className="cc-num" fontSize="13px" fontWeight={600} color="var(--cc-gold-light)">
+                    {modulePct}%
+                  </Text>
                 </HStack>
-                <Tooltip
-                  label="Schau zuerst alle Videos dieses Moduls zu Ende."
-                  isDisabled={!quizStartBlocked}
-                  hasArrow
-                  openDelay={200}
-                >
-                  <span style={{ width: "100%", display: "block" }}>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      w="full"
-                      isDisabled={quizStartBlocked}
-                      onClick={() => setQuizOpen(true)}
-                      borderColor="rgba(212,175,55,0.45)"
-                      color="var(--color-accent-gold-light)"
-                    >
-                      {quizPassed ? "Test wiederholen" : quizLastScore !== null ? "Erneut versuchen" : "Test starten"}
-                    </Button>
-                  </span>
-                </Tooltip>
+              </Flex>
+              <ProgressBar value={modulePct} label={`Modul-Fortschritt ${modulePct} Prozent`} mt={3} maxW="none" />
+            </Box>
+
+            <Flex px={5} py={3} align="center" justify="space-between" borderTop="1px solid var(--cc-line)" flexShrink={0}>
+              <Text {...sectionLabel}>Lektionen</Text>
+              <Box
+                as="span"
+                className="cc-num"
+                minW="22px"
+                h="22px"
+                px="6px"
+                borderRadius="6px"
+                bg="rgba(255, 255, 255, 0.06)"
+                color="var(--cc-text-2)"
+                fontSize="11px"
+                display="inline-flex"
+                alignItems="center"
+                justifyContent="center"
+              >
+                {playlist.length}
+              </Box>
+            </Flex>
+
+            <Box px={2} pb={3} overflowY="auto" flex="1" minH={0} maxH={{ base: "420px", lg: "none" }}>
+              <VideoPlaylist playlist={playlist} activeIndex={activeIndex} progressMap={progressMap} onSelect={onSelectVideo} />
+            </Box>
+
+            {hasQuiz ? (
+              <Stack spacing={3} px={5} py={4} borderTop="1px solid var(--cc-line)" flexShrink={0}>
+                <HStack justify="space-between">
+                  <Text {...sectionLabel}>Modul-Test</Text>
+                  {quizBadge}
+                </HStack>
+                {quizButton(true)}
                 {quizStartBlocked ? (
-                  <Text className="inter" fontSize="xs" color="var(--color-text-muted)">
+                  <Text fontSize="12px" color="var(--cc-text-3)">
                     Der Test ist verfügbar, sobald alle Videos vollständig angesehen sind.
                   </Text>
                 ) : null}
               </Stack>
             ) : null}
-          </Box>
+          </Flex>
+        </GridItem>
+
+        {/* Player, Abschluss-Hinweis, Notizen/Anhänge/Beschreibung */}
+        <GridItem order={{ base: 1, lg: 2 }} minW={0}>
+          <Stack spacing={5}>
+            <GlassVideoPlayer
+              key={current.id}
+              accent="#d4b080"
+              accentRgb="212, 176, 128"
+              storageKey={current.cloudflare_uid ?? current.storage_key}
+              startAtSeconds={startAtSeconds}
+              onProgress={onPlayerProgress}
+              onEnded={onVideoEnded}
+            />
+            {completedBanner}
+            <Box className="cc-card cc-card--still" p={{ base: 4, md: 6 }}>
+              <Tabs variant="unstyled">
+                <TabList
+                  gap={1}
+                  p={1}
+                  w="fit-content"
+                  maxW="100%"
+                  overflowX="auto"
+                  borderRadius="10px"
+                  border="1px solid var(--cc-line)"
+                  bg="rgba(255, 255, 255, 0.03)"
+                >
+                  <Tab {...tabProps}>
+                    <HStack spacing={2}>
+                      <FileText size={15} strokeWidth={2} aria-hidden />
+                      <span>Notizen</span>
+                    </HStack>
+                  </Tab>
+                  <Tab {...tabProps}>
+                    <HStack spacing={2}>
+                      <Download size={15} strokeWidth={2} aria-hidden />
+                      <span>Anhänge</span>
+                      {currentAttachments.length > 0 ? (
+                        <Box as="span" className="cc-num" fontSize="11px" px="6px" borderRadius="full" bg="rgba(212, 176, 128, 0.16)" color="var(--cc-gold-light)">
+                          {currentAttachments.length}
+                        </Box>
+                      ) : null}
+                    </HStack>
+                  </Tab>
+                  {current.description?.trim() ? (
+                    <Tab {...tabProps}>
+                      <HStack spacing={2}>
+                        <AlignLeft size={15} strokeWidth={2} aria-hidden />
+                        <span>Beschreibung</span>
+                      </HStack>
+                    </Tab>
+                  ) : null}
+                </TabList>
+                <TabPanels mt={5}>
+                  <TabPanel p={0}>{notes}</TabPanel>
+                  <TabPanel p={0}>
+                    {currentAttachments.length > 0 ? (
+                      <VideoAttachments attachments={currentAttachments} />
+                    ) : (
+                      <Text fontSize="14px" color="var(--cc-text-2)">
+                        Für diese Lektion gibt es keine Anhänge.
+                      </Text>
+                    )}
+                  </TabPanel>
+                  {current.description?.trim() ? (
+                    <TabPanel p={0}>
+                      <VideoDescription description={current.description} />
+                    </TabPanel>
+                  ) : null}
+                </TabPanels>
+              </Tabs>
+            </Box>
+          </Stack>
         </GridItem>
       </Grid>
-      {quizOpen ? (
-        <QuizModal
-          isOpen
-          onClose={() => setQuizOpen(false)}
-          questions={questions}
-          quizMode={quizMode}
-          passThreshold={passThreshold}
-          onQuizResult={onQuizResult}
-          nextModuleHref={nextModuleHref}
-        />
-      ) : null}
+      {quizModal}
     </Box>
   );
 }

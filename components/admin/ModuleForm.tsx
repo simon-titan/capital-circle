@@ -14,11 +14,12 @@ import {
   Text,
   Textarea,
 } from "@chakra-ui/react";
-import { ImagePlus } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { uploadSmallFilePresigned } from "@/lib/admin-upload-presigned";
+import { ImageDropZone } from "@/components/admin/ImageDropZone";
 import { ModuleContentManager } from "@/components/admin/ModuleContentManager";
 import type { SubcategoryRow } from "@/components/admin/SubcategoryManager";
 import type { VideoRow } from "@/components/admin/VideoManager";
@@ -39,20 +40,42 @@ type ModuleFormProps = {
 };
 
 const fieldStyles = {
-  bg: "rgba(255,255,255,0.06)",
-  borderColor: "whiteAlpha.300",
-  color: "gray.100",
-  _placeholder: { color: "gray.500" },
-  _focus: { borderColor: "blue.400", boxShadow: "0 0 0 1px rgba(59,130,246,0.45)" },
+  bg: "rgba(255, 255, 255, 0.03)",
+  border: "1px solid",
+  borderColor: "var(--cc-line-strong)",
+  borderRadius: "8px",
+  color: "var(--cc-text)",
+  _placeholder: { color: "var(--cc-text-3)" },
+  _hover: { borderColor: "rgba(255, 255, 255, 0.22)" },
+  _focusVisible: { borderColor: "var(--cc-gold-line)", boxShadow: "0 0 0 1px var(--cc-gold-line)" },
 } as const;
 
 const labelStyles = {
-  className: "inter" as const,
-  fontSize: "xs" as const,
-  textTransform: "uppercase" as const,
-  letterSpacing: "0.07em" as const,
-  color: "gray.300" as const,
+  fontSize: "13px" as const,
+  fontWeight: 500 as const,
+  color: "var(--cc-text-2)" as const,
 };
+
+const switchSx = {
+  ".chakra-switch__track": { bg: "var(--cc-track)", boxShadow: "inset 0 0 0 1px var(--cc-line-strong)" },
+  ".chakra-switch__track[data-checked]": { bg: "var(--cc-gold)", boxShadow: "none" },
+} as const;
+
+const pillBase = {
+  borderRadius: "full",
+  px: 2.5,
+  py: 1,
+  fontSize: "12px",
+  fontWeight: 500,
+  textTransform: "none",
+  letterSpacing: "normal",
+} as const;
+
+const dangerButton = {
+  variant: "line",
+  color: "var(--cc-danger)",
+  _hover: { bg: "rgba(248, 113, 113, 0.08)", borderColor: "rgba(248, 113, 113, 0.45)", boxShadow: "none" },
+} as const;
 
 export function ModuleForm({ courseId, moduleId, initialModule }: ModuleFormProps) {
   const router = useRouter();
@@ -68,6 +91,7 @@ export function ModuleForm({ courseId, moduleId, initialModule }: ModuleFormProp
   const [status, setStatus] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [thumbUploading, setThumbUploading] = useState(false);
+  const [thumbRemoving, setThumbRemoving] = useState(false);
 
   // ── Zentraler Video- und Subkategorie-State ──
   const [allVideos, setAllVideos] = useState<VideoRow[]>([]);
@@ -149,15 +173,16 @@ export function ModuleForm({ courseId, moduleId, initialModule }: ModuleFormProp
     }
   }, [courseId, moduleId, router]);
 
-  const onUploadThumbnail = () => {
-    if (!moduleId) return;
-    const picker = document.createElement("input");
-    picker.type = "file";
-    picker.accept = "image/jpeg,image/png,image/webp";
-    picker.onchange = async () => {
-      const file = picker.files?.[0];
-      if (!file) return;
+  /**
+   * Nimmt die Datei entgegen — egal ob hereingezogen oder über den Knopf
+   * ausgewählt. Der Dateidialog wird hier bewusst nicht mehr selbst geöffnet;
+   * das übernimmt `ImageDropZone`, damit beide Wege dieselbe Logik teilen.
+   */
+  const onThumbnailDatei = useCallback(
+    async (file: File) => {
+      if (!moduleId) return;
       setThumbUploading(true);
+      setStatus(null);
       try {
         const storageKey = await uploadSmallFilePresigned(file, { folder: "covers", moduleId, courseId });
         const patch = await fetch("/api/admin/modules", {
@@ -165,88 +190,127 @@ export function ModuleForm({ courseId, moduleId, initialModule }: ModuleFormProp
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: moduleId, updates: { thumbnail_storage_key: storageKey } }),
         });
-        const pj = (await patch.json()) as { ok?: boolean };
-        if (pj.ok) {
-          setThumbnailStorageKey(storageKey);
-          setStatus("Thumbnail gespeichert.");
-          router.refresh();
+        const pj = (await patch.json()) as { ok?: boolean; error?: string };
+        if (!pj.ok) {
+          setStatus(pj.error ?? "Vorschaubild konnte nicht gespeichert werden.");
+          return;
         }
+        setThumbnailStorageKey(storageKey);
+        setStatus("Vorschaubild gespeichert.");
+        router.refresh();
       } catch (e) {
-        setStatus(e instanceof Error ? e.message : "Fehler beim Thumbnail-Upload.");
+        setStatus(e instanceof Error ? e.message : "Fehler beim Hochladen des Vorschaubilds.");
       } finally {
         setThumbUploading(false);
       }
-    };
-    picker.click();
+    },
+    [courseId, moduleId, router],
+  );
+
+  /**
+   * Vorschaubild entfernen. Nur der Verweis in der Datenbank wird geleert — die
+   * Datei bleibt in R2 liegen. Absicht: Ein versehentliches Löschen ist so ohne
+   * erneuten Upload rückgängig zu machen, und dieselbe Datei kann an mehreren
+   * Stellen verwendet werden.
+   */
+  const onRemoveThumbnail = async () => {
+    if (!moduleId || !thumbnailStorageKey) return;
+    if (!confirm("Vorschaubild entfernen? Das Modul zeigt danach wieder die Standard-Ansicht.")) return;
+    setThumbRemoving(true);
+    try {
+      const patch = await fetch("/api/admin/modules", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: moduleId, updates: { thumbnail_storage_key: null } }),
+      });
+      const pj = (await patch.json()) as { ok?: boolean; error?: string };
+      if (!pj.ok) {
+        setStatus(pj.error ?? "Vorschaubild konnte nicht entfernt werden.");
+        return;
+      }
+      setThumbnailStorageKey("");
+      setStatus("Vorschaubild entfernt.");
+      router.refresh();
+    } catch (e) {
+      setStatus(e instanceof Error ? e.message : "Fehler beim Entfernen des Vorschaubilds.");
+    } finally {
+      setThumbRemoving(false);
+    }
   };
 
   return (
-    <Stack spacing={8} maxW="960px">
+    <Stack spacing={8} w="full">
       {/* ── Metadaten-Karte ── */}
-      <Stack
-        spacing={5}
-        p={{ base: 4, md: 6 }}
-        borderRadius="20px"
-        borderWidth="1px"
-        borderColor="whiteAlpha.200"
-        bg="rgba(255,255,255,0.04)"
-      >
+      {/*
+        Nur das Formular bleibt schmal: Eingabefelder über die volle Schirmbreite
+        sind unlesbar. Der Modul-Inhalt darunter nimmt dagegen die ganze Breite,
+        weil dort Inhaltsliste und Stapel nebeneinander stehen.
+      */}
+      <Stack spacing={5} maxW="960px" className="cc-card cc-card--still" p={{ base: 4, md: 6 }}>
         <Box>
-          <Text className="radley-regular" fontSize="xl" color="whiteAlpha.950">
+          <Text fontSize="18px" fontWeight={600} color="var(--cc-text)">
             Modul-Metadaten
           </Text>
-          <Text mt={1} fontSize="sm" className="inter" color="gray.400">
+          <Text mt={1} fontSize="14px" color="var(--cc-text-2)">
             Titel, Beschreibung, Slug und Vorschaubild für die Akademie-Karte.
           </Text>
         </Box>
 
-        <Divider borderColor="whiteAlpha.150" />
+        <Divider borderColor="var(--cc-line)" opacity={1} />
 
         <FormControl>
           <FormLabel {...labelStyles} mb={1}>
             Vorschaubild (Modul-Karte im Dashboard)
           </FormLabel>
-          <Text fontSize="sm" color="gray.500" className="inter" mb={3}>
+          <Text fontSize="13px" color="var(--cc-text-3)" mb={3}>
             Wird als großes 16:9-Bild auf der Akademie-Karte angezeigt.
             {!moduleId && (
-              <Text as="span" color="yellow.400">
+              <Text as="span" color="var(--cc-gold-light)">
                 {" "}Erst nach dem Anlegen des Moduls verfügbar.
               </Text>
             )}
           </Text>
-          <Box position="relative" w="100%" maxW="400px" borderRadius="xl" overflow="hidden">
-            <Box position="relative" w="100%" pt="56.25%" bg="rgba(0,0,0,0.35)">
-              {thumbnailStorageKey ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={`/api/admin/storage-url?key=${encodeURIComponent(thumbnailStorageKey)}`}
-                  alt=""
-                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                />
-              ) : (
-                <Box
-                  position="absolute" inset={0} display="flex" alignItems="center" justifyContent="center"
-                  bg="linear-gradient(145deg, rgba(212,175,55,0.15) 0%, rgba(15,23,42,0.9) 60%)"
-                >
-                  <Text fontSize="sm" textAlign="center" px={4} color="gray.400" className="inter">
-                    Noch kein Vorschaubild
-                  </Text>
-                </Box>
-              )}
-              <Box position="absolute" top={2} right={2} px={2} py={1} borderRadius="md" bg="rgba(8,10,14,0.75)" borderWidth="1px" borderColor="whiteAlpha.200">
-                <Text fontSize="10px" className="inter-medium" color="gray.300" textTransform="uppercase">16:9 wie im Dashboard</Text>
+          <ImageDropZone
+            previewUrl={
+              thumbnailStorageKey
+                ? `/api/admin/storage-url?key=${encodeURIComponent(thumbnailStorageKey)}`
+                : null
+            }
+            onFile={onThumbnailDatei}
+            busy={thumbUploading}
+            disabled={!moduleId}
+            platzhalter={moduleId ? "Vorschaubild hierher ziehen" : "Erst das Modul anlegen"}
+            ecke={
+              <Box px={2} py={1} borderRadius="6px" bg="var(--cc-bg-raised)" border="1px solid var(--cc-line-strong)">
+                <Text fontSize="10px" fontWeight={500} letterSpacing="0.06em" color="var(--cc-text-2)" textTransform="uppercase">
+                  16:9 wie im Institut
+                </Text>
               </Box>
-            </Box>
-          </Box>
-          <Button mt={3} size="md" colorScheme="blue" leftIcon={<ImagePlus size={18} />} onClick={onUploadThumbnail} isLoading={thumbUploading} isDisabled={!moduleId || thumbUploading}>
-            Vorschaubild hochladen oder ersetzen
-          </Button>
+            }
+            aktionen={
+              thumbnailStorageKey ? (
+                <Button
+                  size="md"
+                  variant="line"
+                  leftIcon={<Trash2 size={16} />}
+                  onClick={() => void onRemoveThumbnail()}
+                  isLoading={thumbRemoving}
+                  isDisabled={thumbUploading}
+                  color="var(--cc-danger)"
+                  borderColor="rgba(248, 113, 113, 0.4)"
+                  _hover={{ bg: "rgba(248, 113, 113, 0.08)", borderColor: "rgba(248, 113, 113, 0.6)", boxShadow: "none" }}
+                >
+                  Entfernen
+                </Button>
+              ) : null
+            }
+          />
           {thumbnailStorageKey && (
-            <Text mt={2} fontSize="xs" className="jetbrains-mono" color="gray.600" noOfLines={1}>{thumbnailStorageKey}</Text>
+            <Text mt={2} fontSize="12px" className="cc-num" color="var(--cc-text-3)" noOfLines={1}>{thumbnailStorageKey}</Text>
           )}
         </FormControl>
 
-        <Divider borderColor="whiteAlpha.150" />
+        <Divider borderColor="var(--cc-line)" opacity={1} />
 
         <FormControl>
           <FormLabel {...labelStyles}>Titel</FormLabel>
@@ -255,56 +319,62 @@ export function ModuleForm({ courseId, moduleId, initialModule }: ModuleFormProp
 
         <FormControl>
           <FormLabel {...labelStyles}>URL-Slug (optional)</FormLabel>
-          <Input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="z. B. trading-grundlagen" {...fieldStyles} className="jetbrains-mono" fontSize="sm" />
+          <Input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="z. B. trading-grundlagen" {...fieldStyles} fontSize="sm" />
         </FormControl>
 
         <FormControl>
           <FormLabel {...labelStyles}>Beschreibung</FormLabel>
-          <Textarea value={description} onChange={(e) => setDescription(e.target.value)} minH="100px" {...fieldStyles} className="inter" />
+          <Textarea value={description} onChange={(e) => setDescription(e.target.value)} minH="100px" {...fieldStyles} />
         </FormControl>
 
-        <Divider borderColor="whiteAlpha.150" />
+        <Divider borderColor="var(--cc-line)" opacity={1} />
 
         <HStack spacing={6} align="center" flexWrap="wrap">
           <FormControl maxW="140px">
             <FormLabel {...labelStyles}>Reihenfolge</FormLabel>
-            <Input type="number" min={1} value={orderIndex} onChange={(e) => setOrderIndex(Number(e.target.value))} {...fieldStyles} />
+            <Input type="number" min={1} value={orderIndex} onChange={(e) => setOrderIndex(Number(e.target.value))} className="cc-num" {...fieldStyles} />
           </FormControl>
           <FormControl display="flex" alignItems="center" w="auto" pt={5}>
-            <FormLabel mb={0} className="inter" fontSize="sm" color="gray.200">Veröffentlicht</FormLabel>
-            <Switch ml={3} size="lg" isChecked={isPublished} onChange={(e) => setIsPublished(e.target.checked)} colorScheme="blue" />
+            <FormLabel mb={0} fontSize="14px" color="var(--cc-text-soft)">Veröffentlicht</FormLabel>
+            <Switch ml={3} size="lg" isChecked={isPublished} onChange={(e) => setIsPublished(e.target.checked)} sx={switchSx} />
           </FormControl>
           <FormControl display="flex" alignItems="center" w="auto" pt={5}>
-            <FormLabel mb={0} className="inter" fontSize="sm" color="gray.200">
+            <FormLabel mb={0} fontSize="14px" color="var(--cc-text-soft)">
               Modul sperren
             </FormLabel>
-            <Switch ml={3} size="lg" isChecked={isLocked} onChange={(e) => setIsLocked(e.target.checked)} colorScheme="orange" />
+            <Switch ml={3} size="lg" isChecked={isLocked} onChange={(e) => setIsLocked(e.target.checked)} sx={switchSx} />
           </FormControl>
           {moduleId && (
-            <Badge alignSelf="flex-end" mb={1} px={3} py={1.5} borderRadius="md" colorScheme={isPublished ? "green" : "gray"} variant="subtle" fontSize="sm" className="inter">
+            <Badge
+              alignSelf="flex-end"
+              mb={1}
+              {...pillBase}
+              bg={isPublished ? "rgba(74, 222, 128, 0.12)" : "rgba(255, 255, 255, 0.06)"}
+              color={isPublished ? "var(--cc-success)" : "var(--cc-text-2)"}
+            >
               {isPublished ? "Sichtbar für Mitglieder" : "Versteckt"}
             </Badge>
           )}
         </HStack>
 
-        <Divider borderColor="whiteAlpha.150" />
+        <Divider borderColor="var(--cc-line)" opacity={1} />
 
         <HStack spacing={3} flexWrap="wrap">
-          <Button size="md" colorScheme="blue" onClick={() => void onSave()} isLoading={saving}>
+          <Button size="md" variant="gold" onClick={() => void onSave()} isLoading={saving}>
             {moduleId ? "Änderungen speichern" : "Modul anlegen"}
           </Button>
-          <Button as={Link} href={`/admin/kurse/${courseId}`} variant="outline" size="md" borderColor="whiteAlpha.300" color="gray.200">
+          <Button as={Link} href={`/admin/kurse/${courseId}`} variant="line" size="md">
             Zurück zur Kursübersicht
           </Button>
           {moduleId && (
-            <Button size="md" variant="outline" colorScheme="red" borderWidth="2px" borderColor="red.400" color="red.100" _hover={{ bg: "rgba(254,178,178,0.1)" }} onClick={() => void onDelete()}>
+            <Button size="md" {...dangerButton} onClick={() => void onDelete()}>
               Modul löschen
             </Button>
           )}
         </HStack>
 
         {status && (
-          <Text fontSize="sm" className="inter" color={status.includes("fehler") || status.includes("Fehler") ? "red.300" : "blue.200"}>
+          <Text fontSize="14px" color={status.includes("fehler") || status.includes("Fehler") ? "var(--cc-danger)" : "var(--cc-text-2)"}>
             {status}
           </Text>
         )}
@@ -312,14 +382,7 @@ export function ModuleForm({ courseId, moduleId, initialModule }: ModuleFormProp
 
       {/* ── Modul-Inhalt: Videos + Subkategorien (einheitliches Drag & Drop) ── */}
       {moduleId && contentLoaded && (
-        <Stack
-          spacing={5}
-          p={{ base: 4, md: 6 }}
-          borderRadius="20px"
-          borderWidth="1px"
-          borderColor="whiteAlpha.200"
-          bg="rgba(255,255,255,0.04)"
-        >
+        <Stack spacing={5} className="cc-card cc-card--still" p={{ base: 4, md: 6 }}>
           <ModuleContentManager
             courseId={courseId}
             moduleId={moduleId}

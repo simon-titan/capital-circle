@@ -1,9 +1,39 @@
 "use client";
 
-import { Box, Button, Checkbox, FormLabel, HStack, Input, Select, Stack, Text, Textarea } from "@chakra-ui/react";
+import { Box, Button, Checkbox, FormLabel, HStack, Input, Select, Stack, Text, Textarea, Tooltip } from "@chakra-ui/react";
+import { Check } from "lucide-react";
 import { useState } from "react";
+import { DEFAULT_EVENT_COLOR, EVENT_COLORS, resolveEventColor } from "@/config/event-colors";
 
-const EVENT_COLORS = ["#D4AF37", "#4A90D9", "#4ADE80", "#F87171", "#A78BFA"] as const;
+const fieldSx = {
+  bg: "rgba(255, 255, 255, 0.03)",
+  border: "1px solid",
+  borderColor: "var(--cc-line-strong)",
+  borderRadius: "8px",
+  color: "var(--cc-text)",
+  _placeholder: { color: "var(--cc-text-3)" },
+  _hover: { borderColor: "rgba(255, 255, 255, 0.22)" },
+  _focusVisible: { borderColor: "var(--cc-gold-line)", boxShadow: "0 0 0 1px var(--cc-gold-line)" },
+} as const;
+
+const optionStyle = { background: "var(--cc-panel-solid)" };
+
+const checkboxSx = {
+  ".chakra-checkbox__control": { borderColor: "var(--cc-line-strong)", bg: "rgba(255, 255, 255, 0.03)" },
+  ".chakra-checkbox__control[data-checked]": {
+    bg: "var(--cc-gold)",
+    borderColor: "var(--cc-gold)",
+    color: "var(--cc-on-gold)",
+  },
+  ".chakra-checkbox__control[data-checked]:hover": { bg: "var(--cc-gold-hover)", borderColor: "var(--cc-gold-hover)" },
+  ".chakra-checkbox__label": { fontSize: "14px", color: "var(--cc-text-soft)" },
+} as const;
+
+const dangerButton = {
+  variant: "line",
+  color: "var(--cc-danger)",
+  _hover: { bg: "rgba(248, 113, 113, 0.08)", borderColor: "rgba(248, 113, 113, 0.45)", boxShadow: "none" },
+} as const;
 
 type EventItem = {
   id: string;
@@ -23,7 +53,7 @@ export function AdminEventsManager({ initialEvents }: { initialEvents: EventItem
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [eventType, setEventType] = useState("Q&A");
-  const [eventColor, setEventColor] = useState<string>("#D4AF37");
+  const [eventColor, setEventColor] = useState<string>(DEFAULT_EVENT_COLOR.value);
   const [externalUrl, setExternalUrl] = useState("");
   const [weeklyRepeat, setWeeklyRepeat] = useState(false);
   const [recurrenceEndDate, setRecurrenceEndDate] = useState("");
@@ -87,7 +117,7 @@ export function AdminEventsManager({ initialEvents }: { initialEvents: EventItem
         deleteMode = "single";
       }
     } else {
-      const confirmed = window.confirm("Dieses Event wirklich loeschen?");
+      const confirmed = window.confirm("Dieses Event wirklich löschen?");
       if (!confirmed) return;
     }
 
@@ -102,7 +132,7 @@ export function AdminEventsManager({ initialEvents }: { initialEvents: EventItem
     setLoading(false);
 
     if (!json.ok) {
-      setStatus(json.error || "Event konnte nicht geloescht werden.");
+      setStatus(json.error || "Event konnte nicht gelöscht werden.");
       return;
     }
 
@@ -119,74 +149,133 @@ export function AdminEventsManager({ initialEvents }: { initialEvents: EventItem
     }
 
     setEvents((prev) => prev.filter((event) => event.id !== id));
-    setStatus("Event geloescht.");
+    setStatus("Event gelöscht.");
   };
 
   return (
-    <Stack gap={4}>
-      <Text fontSize="xl">Event anlegen</Text>
-      <Input placeholder="Titel" value={title} onChange={(e) => setTitle(e.target.value)} />
-      <Textarea placeholder="Beschreibung" value={description} onChange={(e) => setDescription(e.target.value)} />
-      <Input type="datetime-local" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
-      <Input type="datetime-local" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
-      <Input placeholder="Externer Link (optional)" value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} />
-      <Select value={eventType} onChange={(e) => setEventType(e.target.value)}>
-        <option value="Q&A">Q&A</option>
-        <option value="Livetrading">Livetrading</option>
-        <option value="BIAS">BIAS</option>
-      </Select>
-      <Stack spacing={2}>
-        <Text fontSize="sm">Event-Farbe</Text>
-        <HStack spacing={2}>
-          {EVENT_COLORS.map((color) => (
-            <Box
-              key={color}
-              as="button"
-              type="button"
-              onClick={() => setEventColor(color)}
-              w="30px"
-              h="30px"
-              borderRadius="full"
-              border={eventColor === color ? "2px solid #fff" : "1px solid rgba(255,255,255,0.22)"}
-              boxShadow={eventColor === color ? "0 0 0 2px rgba(212, 175, 55, 0.28)" : "none"}
-              bg={color}
-            />
-          ))}
-        </HStack>
-      </Stack>
-      <Checkbox isChecked={weeklyRepeat} onChange={(e) => setWeeklyRepeat(e.target.checked)}>
-        Wöchentlich wiederholen (bis zu 9 Termine; optional mit Enddatum begrenzen)
-      </Checkbox>
-      {weeklyRepeat ? (
-        <Box>
-          <FormLabel fontSize="sm">Wiederholung endet am (optional)</FormLabel>
-          <Input
-            type="date"
-            value={recurrenceEndDate}
-            onChange={(e) => setRecurrenceEndDate(e.target.value)}
-            maxW="280px"
-          />
-        </Box>
-      ) : null}
-      <Button onClick={createEvent} isLoading={loading} isDisabled={!title || !startTime}>
-        Event erstellen
-      </Button>
-      {status ? <Text fontSize="sm">{status}</Text> : null}
-
-      <Text mt={4} fontSize="lg">
-        Vorhandene Events
-      </Text>
-      {events.map((event) => (
-        <HStack key={event.id} justify="space-between" align="center">
-          <Text>
-            {event.title} - {new Date(event.start_time).toLocaleString("de-DE")} ({event.event_type}
-            {event.recurrence_group_id ? ", Serie" : ""})
+    <Stack gap={6}>
+      <Stack gap={4} className="cc-card cc-card--still" p={{ base: 4, md: 5 }}>
+        <Text fontSize="18px" fontWeight={600} color="var(--cc-text)">
+          Event anlegen
+        </Text>
+        <Input placeholder="Titel" value={title} onChange={(e) => setTitle(e.target.value)} {...fieldSx} />
+        <Textarea placeholder="Beschreibung" value={description} onChange={(e) => setDescription(e.target.value)} {...fieldSx} />
+        <Input type="datetime-local" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="cc-num" {...fieldSx} />
+        <Input type="datetime-local" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="cc-num" {...fieldSx} />
+        <Input placeholder="Externer Link (optional)" value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} {...fieldSx} />
+        <Select value={eventType} onChange={(e) => setEventType(e.target.value)} {...fieldSx}>
+          <option value="Q&A" style={optionStyle}>Q&A</option>
+          <option value="Livetrading" style={optionStyle}>Livetrading</option>
+          <option value="BIAS" style={optionStyle}>BIAS</option>
+        </Select>
+        <Stack spacing={2}>
+          <Text id="event-color-label" fontSize="13px" fontWeight={500} color="var(--cc-text-2)">
+            Event-Farbe im Kalender:{" "}
+            <Text as="span" color="var(--cc-text)">
+              {resolveEventColor(eventColor).label}
+            </Text>
           </Text>
-          <Button size="sm" colorScheme="red" variant="outline" onClick={() => deleteEvent(event.id)} isLoading={loading}>
-            Loeschen
-          </Button>
-        </HStack>
-      ))}
+          {/* Nur Markentöne (config/event-colors.ts) — der Mitglieder-Kalender färbt die Chips damit. */}
+          <HStack spacing={3} role="radiogroup" aria-labelledby="event-color-label" flexWrap="wrap">
+            {EVENT_COLORS.map((c) => {
+              const active = eventColor === c.value;
+              return (
+                <Tooltip key={c.key} label={c.label} placement="top" openDelay={200}>
+                  <Box
+                    as="button"
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    aria-label={c.label}
+                    onClick={() => setEventColor(c.value)}
+                    w="32px"
+                    h="32px"
+                    borderRadius="full"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    bg={c.value}
+                    color="var(--cc-on-gold)"
+                    border="1px solid rgba(255, 255, 255, 0.18)"
+                    boxShadow={active ? "0 0 0 2px var(--cc-panel-solid), 0 0 0 4px var(--cc-gold-line)" : "none"}
+                    transition="box-shadow 150ms var(--cc-ease), transform 150ms var(--cc-ease)"
+                    _hover={{ transform: "scale(1.08)" }}
+                    _focusVisible={{ outline: "2px solid var(--cc-gold-line)", outlineOffset: "4px" }}
+                  >
+                    {active ? <Check size={15} strokeWidth={2.5} aria-hidden /> : null}
+                  </Box>
+                </Tooltip>
+              );
+            })}
+          </HStack>
+        </Stack>
+        <Checkbox isChecked={weeklyRepeat} onChange={(e) => setWeeklyRepeat(e.target.checked)} sx={checkboxSx}>
+          Wöchentlich wiederholen (bis zu 9 Termine; optional mit Enddatum begrenzen)
+        </Checkbox>
+        {weeklyRepeat ? (
+          <Box>
+            <FormLabel fontSize="13px" fontWeight={500} color="var(--cc-text-2)">
+              Wiederholung endet am (optional)
+            </FormLabel>
+            <Input
+              type="date"
+              value={recurrenceEndDate}
+              onChange={(e) => setRecurrenceEndDate(e.target.value)}
+              maxW="280px"
+              className="cc-num"
+              {...fieldSx}
+            />
+          </Box>
+        ) : null}
+        <Button variant="gold" alignSelf="flex-start" onClick={createEvent} isLoading={loading} isDisabled={!title || !startTime}>
+          Event erstellen
+        </Button>
+        {status ? (
+          <Text fontSize="14px" color="var(--cc-text-2)">
+            {status}
+          </Text>
+        ) : null}
+      </Stack>
+
+      <Stack gap={0} className="cc-card cc-card--still" p={{ base: 4, md: 5 }}>
+        <Text fontSize="18px" fontWeight={600} color="var(--cc-text)" mb={2}>
+          Vorhandene Events
+        </Text>
+        {events.map((event) => (
+          <HStack
+            key={event.id}
+            justify="space-between"
+            align="center"
+            spacing={4}
+            py={3}
+            borderBottom="1px solid var(--cc-line)"
+            _last={{ borderBottom: "none" }}
+          >
+            <Text fontSize="14px" color="var(--cc-text)">
+              <Box
+                as="span"
+                display="inline-block"
+                w="10px"
+                h="10px"
+                mr={2.5}
+                borderRadius="full"
+                verticalAlign="middle"
+                bg={resolveEventColor(event.color).value}
+                title={resolveEventColor(event.color).label}
+                aria-hidden
+              />
+              {event.title}{" "}
+              <Text as="span" color="var(--cc-text-2)">
+                - <Text as="span" className="cc-num">{new Date(event.start_time).toLocaleString("de-DE")}</Text> ({event.event_type}
+                {event.recurrence_group_id ? ", Serie" : ""})
+              </Text>
+            </Text>
+            <Button size="sm" flexShrink={0} {...dangerButton} onClick={() => deleteEvent(event.id)} isLoading={loading}>
+              Löschen
+            </Button>
+          </HStack>
+        ))}
+      </Stack>
     </Stack>
   );
 }

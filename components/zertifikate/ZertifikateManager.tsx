@@ -1,8 +1,9 @@
 "use client";
 
-import { Badge, Box, Button, Grid, HStack, Image, Stack, Text, Textarea } from "@chakra-ui/react";
+import { Box, Button, Flex, Image, SimpleGrid, Stack, Text, Textarea, VisuallyHiddenInput } from "@chakra-ui/react";
 import { UploadCloud } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
+import { DashCard, Meta, clampLines } from "@/components/platform/dashboard/primitives";
 
 export type CertificateStatus = "pending" | "approved" | "rejected";
 
@@ -30,56 +31,66 @@ function formatDate(iso: string): string {
   }
 }
 
+/** Eingabefeld im Schema v3.2: Haarlinie, Gold-Kante bei Fokus. */
+const fieldSx = {
+  bg: "rgba(255, 255, 255, 0.03)",
+  borderColor: "var(--cc-line-strong)",
+  borderRadius: "8px",
+  color: "var(--cc-text)",
+  fontSize: "15px",
+  _placeholder: { color: "var(--cc-text-3)" },
+  _hover: { borderColor: "rgba(212, 176, 128, 0.35)" },
+  _focusVisible: { borderColor: "var(--cc-gold-line)", boxShadow: "0 0 0 1px var(--cc-gold-line)" },
+};
+
+/** Freigabe/Ablehnung sind Bedeutung (Grün/Rot); „In Prüfung“ bleibt neutral. */
+const STATUS: Record<CertificateStatus, { label: string; color: string; border: string; bg: string }> = {
+  approved: {
+    label: "Freigegeben",
+    color: "var(--cc-success)",
+    border: "rgba(74, 222, 128, 0.35)",
+    bg: "rgba(74, 222, 128, 0.08)",
+  },
+  rejected: {
+    label: "Abgelehnt",
+    color: "var(--cc-danger)",
+    border: "rgba(248, 113, 113, 0.35)",
+    bg: "rgba(248, 113, 113, 0.08)",
+  },
+  pending: {
+    label: "In Prüfung",
+    color: "var(--cc-text-soft)",
+    border: "var(--cc-line-strong)",
+    bg: "rgba(255, 255, 255, 0.03)",
+  },
+};
+
 function StatusBadge({ status }: { status: CertificateStatus }) {
-  if (status === "approved") {
-    return (
-      <Badge
-        bg="rgba(52,211,153,0.14)"
-        color="#34D399"
-        border="1px solid rgba(52,211,153,0.4)"
-        borderRadius="full"
-        px={2}
-        py={0.5}
-        textTransform="none"
-        fontWeight={500}
-        className="inter"
-      >
-        Freigegeben
-      </Badge>
-    );
-  }
-  if (status === "rejected") {
-    return (
-      <Badge
-        bg="rgba(248,113,113,0.14)"
-        color="#F87171"
-        border="1px solid rgba(248,113,113,0.4)"
-        borderRadius="full"
-        px={2}
-        py={0.5}
-        textTransform="none"
-        fontWeight={500}
-        className="inter"
-      >
-        Abgelehnt
-      </Badge>
-    );
-  }
+  const s = STATUS[status];
   return (
-    <Badge
-      bg="rgba(245,200,74,0.14)"
-      color="#F5C84A"
-      border="1px solid rgba(245,200,74,0.4)"
-      borderRadius="full"
-      px={2}
+    <Box
+      as="span"
+      display="inline-flex"
+      alignItems="center"
+      px={2.5}
       py={0.5}
-      textTransform="none"
+      borderRadius="full"
+      border="1px solid"
+      borderColor={s.border}
+      bg={s.bg}
+      color={s.color}
+      fontSize="12px"
+      lineHeight="18px"
       fontWeight={500}
-      className="inter"
+      whiteSpace="nowrap"
     >
-      In Pruefung
-    </Badge>
+      {s.label}
+    </Box>
   );
+}
+
+function riseDelay(i: number) {
+  return { animationDelay: `${80 + Math.min(i, 10) * 70}ms` };
 }
 
 async function fetchPresign(file: File): Promise<{ presignedUrl: string; storageKey: string }> {
@@ -129,7 +140,7 @@ export function ZertifikateManager({ initial }: Props) {
 
   const submit = useCallback(async () => {
     if (!file) {
-      setFeedback({ kind: "error", msg: "Bitte zuerst ein Bild auswaehlen." });
+      setFeedback({ kind: "error", msg: "Bitte zuerst ein Bild auswählen." });
       return;
     }
     setBusy(true);
@@ -153,7 +164,7 @@ export function ZertifikateManager({ initial }: Props) {
       pickFile(null);
       setCaption("");
       if (fileInputRef.current) fileInputRef.current.value = "";
-      setFeedback({ kind: "success", msg: "Nachweis eingereicht. Das Team prueft ihn zeitnah." });
+      setFeedback({ kind: "success", msg: "Nachweis eingereicht. Das Team prüft ihn zeitnah." });
     } catch (e) {
       setFeedback({ kind: "error", msg: e instanceof Error ? e.message : "Unbekannter Fehler." });
     } finally {
@@ -163,140 +174,138 @@ export function ZertifikateManager({ initial }: Props) {
 
   return (
     <Stack gap={8}>
-      <Box
-        borderRadius="16px"
-        borderWidth="1px"
-        borderColor="var(--color-border, rgba(255,255,255,0.08))"
-        bg="rgba(255,255,255,0.04)"
-        backdropFilter="blur(16px)"
-        p={{ base: 5, md: 6 }}
-      >
-        <Stack gap={4}>
-          <Text className="radley-regular" fontSize="lg" color="var(--color-text-primary, #F0F0F2)">
-            Neuen Nachweis einreichen
-          </Text>
+      <DashCard label="Neuen Nachweis einreichen" labelId="cert-submit" className="cc-card--still cc-rise" style={riseDelay(0)}>
+        <Flex direction={{ base: "column", sm: "row" }} align={{ base: "stretch", sm: "flex-start" }} gap={5}>
+          {/* Die Kachel ist das Label des (visuell versteckten, aber fokussierbaren) Datei-Inputs. */}
+          <Box
+            as="label"
+            htmlFor="certificate-file-input"
+            cursor="pointer"
+            w={{ base: "100%", sm: "160px" }}
+            h="160px"
+            flexShrink={0}
+            borderRadius="10px"
+            border="1px dashed var(--cc-line-strong)"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            overflow="hidden"
+            bg="rgba(255, 255, 255, 0.02)"
+            transition="border-color 180ms var(--cc-ease), background-color 180ms var(--cc-ease)"
+            _hover={{ borderColor: "var(--cc-gold-line)", bg: "var(--cc-gold-wash)" }}
+            _focusWithin={{ outline: "2px solid var(--cc-gold-line)", outlineOffset: "2px" }}
+          >
+            {preview ? (
+              <Image src={preview} alt="Vorschau" w="100%" h="100%" objectFit="cover" />
+            ) : (
+              <Stack align="center" gap={1.5} color="var(--cc-text-2)">
+                <UploadCloud size={22} strokeWidth={1.5} aria-hidden />
+                <Text fontSize="13px">Bild wählen</Text>
+              </Stack>
+            )}
+            <VisuallyHiddenInput
+              id="certificate-file-input"
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => pickFile(e.target.files?.[0] ?? null)}
+            />
+          </Box>
 
-          <HStack align="flex-start" gap={5} flexWrap="wrap">
-            <Box
-              as="label"
-              htmlFor="certificate-file-input"
-              cursor="pointer"
-              w="160px"
-              h="160px"
-              flexShrink={0}
-              borderRadius="12px"
-              borderWidth="1px"
-              borderStyle="dashed"
-              borderColor="rgba(212,175,55,0.4)"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              overflow="hidden"
-              bg="rgba(0,0,0,0.25)"
-              _hover={{ borderColor: "rgba(212,175,55,0.7)" }}
-            >
-              {preview ? (
-                <Image src={preview} alt="Vorschau" w="100%" h="100%" objectFit="cover" />
-              ) : (
-                <Stack align="center" gap={1} color="rgba(212,175,55,0.8)">
-                  <UploadCloud size={22} />
-                  <Text fontSize="xs" className="inter">
-                    Bild waehlen
-                  </Text>
-                </Stack>
-              )}
-              <input
-                id="certificate-file-input"
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={(e) => pickFile(e.target.files?.[0] ?? null)}
-              />
-            </Box>
-
-            <Stack flex="1" minW="240px" gap={3}>
-              <Textarea
-                placeholder="Kurze Beschreibung (optional) — z. B. welcher Zeitraum, welches Setup"
-                value={caption}
-                onChange={(e) => setCaption(e.target.value)}
-                bg="rgba(0,0,0,0.25)"
-                borderColor="var(--color-border, rgba(255,255,255,0.08))"
-                color="var(--color-text-primary, #F0F0F2)"
-                _placeholder={{ color: "rgba(255,255,255,0.35)" }}
-                rows={4}
-                className="inter"
-              />
-              <HStack>
-                <Button
-                  onClick={() => void submit()}
-                  isLoading={busy}
-                  loadingText="Wird eingereicht"
-                  colorScheme="yellow"
-                  isDisabled={!file}
-                >
-                  Nachweis einreichen
-                </Button>
-              </HStack>
-              {feedback ? (
-                <Text
-                  fontSize="sm"
-                  className="inter"
-                  color={feedback.kind === "success" ? "#34D399" : "#F87171"}
-                >
-                  {feedback.msg}
-                </Text>
-              ) : null}
-            </Stack>
-          </HStack>
-        </Stack>
-      </Box>
-
-      <Stack gap={4}>
-        <Text className="radley-regular" fontSize="lg" color="var(--color-text-primary, #F0F0F2)">
-          Deine Einreichungen
-        </Text>
-        {items.length === 0 ? (
-          <Text fontSize="sm" color="var(--color-text-muted, rgba(255,255,255,0.4))" className="inter">
-            Noch keine Nachweise eingereicht.
-          </Text>
-        ) : (
-          <Grid templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }} gap={4}>
-            {items.map((item) => (
-              <Box
-                key={item.id}
-                borderRadius="14px"
-                borderWidth="1px"
-                borderColor="var(--color-border, rgba(255,255,255,0.08))"
-                bg="rgba(255,255,255,0.03)"
-                overflow="hidden"
+          <Stack flex="1" minW={0} gap={3}>
+            <Textarea
+              aria-label="Kurze Beschreibung (optional)"
+              placeholder="Kurze Beschreibung (optional) — z. B. welcher Zeitraum, welches Setup"
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              rows={4}
+              {...fieldSx}
+            />
+            <Box>
+              <Button
+                variant="gold"
+                onClick={() => void submit()}
+                isLoading={busy}
+                loadingText="Wird eingereicht"
+                isDisabled={!file}
               >
-                <Box w="100%" h="160px" bg="rgba(0,0,0,0.3)">
+                Nachweis einreichen
+              </Button>
+            </Box>
+            {feedback ? (
+              <Text
+                role={feedback.kind === "error" ? "alert" : "status"}
+                fontSize="14px"
+                color={feedback.kind === "success" ? "var(--cc-success)" : "var(--cc-danger)"}
+              >
+                {feedback.msg}
+              </Text>
+            ) : null}
+          </Stack>
+        </Flex>
+      </DashCard>
+
+      <Box as="section" aria-labelledby="cert-list-title">
+        <Box
+          as="h2"
+          id="cert-list-title"
+          fontSize="13px"
+          lineHeight="18px"
+          fontWeight={500}
+          letterSpacing="0.12em"
+          textTransform="uppercase"
+          color="var(--cc-text-soft)"
+          mb={4}
+        >
+          Deine Einreichungen
+        </Box>
+        {items.length === 0 ? (
+          <Meta>Noch keine Nachweise eingereicht.</Meta>
+        ) : (
+          <SimpleGrid columns={{ base: 1, sm: 2, lg: 3 }} spacing={5}>
+            {items.map((item, i) => (
+              <Box
+                as="article"
+                key={item.id}
+                className="cc-card cc-card--still cc-rise"
+                style={riseDelay(i + 1)}
+                display="flex"
+                flexDirection="column"
+                minW={0}
+              >
+                {/* Bild oben; die Gold-Kante der Karte bleibt sichtbar (overflow nur am Bild). */}
+                <Box
+                  h="160px"
+                  borderTopRadius="11px"
+                  overflow="hidden"
+                  borderBottom="1px solid var(--cc-line)"
+                  bg="var(--cc-surface-2)"
+                >
                   <Image src={item.imageUrl} alt={item.caption ?? "Nachweis"} w="100%" h="100%" objectFit="cover" />
                 </Box>
-                <Stack p={3} gap={2}>
-                  <HStack justify="space-between" align="flex-start">
+                <Stack p={4} gap={2}>
+                  <Flex justify="space-between" align="center" gap={2}>
                     <StatusBadge status={item.status} />
                     {item.status === "approved" && item.isPublic ? (
-                      <Text fontSize="xs" color="#D4AF37" className="inter">
-                        oeffentlich
+                      <Text fontSize="12px" fontWeight={500} color="var(--cc-gold-light)">
+                        öffentlich
                       </Text>
                     ) : null}
-                  </HStack>
+                  </Flex>
                   {item.caption ? (
-                    <Text fontSize="sm" color="var(--color-text-primary, #F0F0F2)" className="inter" noOfLines={3}>
+                    <Text fontSize="15px" lineHeight={1.5} color="var(--cc-text)" sx={clampLines(3)}>
                       {item.caption}
                     </Text>
                   ) : null}
-                  <Text fontSize="xs" color="var(--color-text-muted, rgba(255,255,255,0.4))" className="inter">
+                  <Meta fontSize="13px" className="cc-num">
                     Eingereicht: {formatDate(item.submittedAt)}
-                  </Text>
+                  </Meta>
                 </Stack>
               </Box>
             ))}
-          </Grid>
+          </SimpleGrid>
         )}
-      </Stack>
+      </Box>
     </Stack>
   );
 }

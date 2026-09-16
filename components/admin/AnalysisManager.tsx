@@ -14,6 +14,7 @@ import {
   Textarea,
 } from "@chakra-ui/react";
 import { uploadSmallFilePresigned } from "@/lib/admin-upload-presigned";
+import { ImageDropZone } from "@/components/admin/ImageDropZone";
 import { ArticlePreview } from "@/components/admin/ArticlePreview";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { createClient } from "@/lib/supabase/client";
@@ -32,6 +33,52 @@ type PostRow = {
   analysis_date: string | null;
   published_at: string;
 };
+
+/* v3.2 „Champagner auf Graphit“ (DESIGN.md) — Admin-Formular: Felder, Labels, Zeilen */
+const fieldSx = {
+  bg: "rgba(255, 255, 255, 0.03)",
+  border: "1px solid",
+  borderColor: "var(--cc-line-strong)",
+  borderRadius: "8px",
+  color: "var(--cc-text)",
+  _placeholder: { color: "var(--cc-text-3)" },
+  _hover: { borderColor: "rgba(255, 255, 255, 0.22)" },
+  _focusVisible: { borderColor: "var(--cc-gold-line)", boxShadow: "0 0 0 1px var(--cc-gold-line)" },
+} as const;
+
+const optionSx = { "& option": { background: "var(--cc-panel-solid)", color: "var(--cc-text)" } } as const;
+
+const labelSx = { fontSize: "12px", fontWeight: 500, color: "var(--cc-text-2)", mb: 1 } as const;
+
+/** Kartentitel im Label-Schnitt (13px, versal, gesperrt). */
+const cardTitleSx = {
+  fontSize: "13px",
+  lineHeight: "18px",
+  fontWeight: 500,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+  color: "var(--cc-text-soft)",
+} as const;
+
+const ghostSx = {
+  color: "var(--cc-text-2)",
+  _hover: { bg: "rgba(255, 255, 255, 0.06)", color: "var(--cc-text)" },
+} as const;
+
+const dangerIconSx = {
+  color: "var(--cc-danger)",
+  _hover: { bg: "rgba(248, 113, 113, 0.08)", borderColor: "rgba(248, 113, 113, 0.5)", boxShadow: "none" },
+} as const;
+
+const rowSx = {
+  p: 3,
+  borderRadius: "8px",
+  border: "1px solid",
+  borderColor: "var(--cc-line)",
+  bg: "rgba(255, 255, 255, 0.02)",
+  transition: "border-color 150ms var(--cc-ease)",
+  _hover: { borderColor: "rgba(255, 255, 255, 0.14)" },
+} as const;
 
 async function uploadCover(file: File): Promise<string> {
   return uploadSmallFilePresigned(file, { folder: "covers" });
@@ -99,25 +146,22 @@ export function AnalysisManager() {
     setCoverKey(p.cover_image_storage_key);
   };
 
-  const pickCover = async () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-    input.onchange = async () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      setCoverBusy(true);
-      setStatus(null);
-      try {
-        const key = await uploadCover(file);
-        setCoverKey(key);
-        setStatus("Titelbild hochgeladen.");
-      } catch (e) {
-        setStatus(e instanceof Error ? e.message : "Upload-Fehler.");
-      }
-      setCoverBusy(false);
-    };
-    input.click();
+  /**
+   * Nimmt die Datei entgegen — hereingezogen oder über den Knopf ausgewählt.
+   * Den Dateidialog öffnet `ImageDropZone`, damit beide Wege dieselbe Logik
+   * teilen und das Ziehen den Dialog ganz umgehen kann.
+   */
+  const onCoverDatei = async (file: File) => {
+    setCoverBusy(true);
+    setStatus(null);
+    try {
+      const key = await uploadCover(file);
+      setCoverKey(key);
+      setStatus("Titelbild hochgeladen.");
+    } catch (e) {
+      setStatus(e instanceof Error ? e.message : "Upload-Fehler.");
+    }
+    setCoverBusy(false);
   };
 
   const savePost = async () => {
@@ -194,87 +238,103 @@ export function AnalysisManager() {
   };
 
   return (
-    <Stack gap={10} maxW="1400px">
+    <Stack gap={8} maxW="1400px">
       <SimpleGrid columns={{ base: 1, xl: 2 }} spacing={{ base: 8, xl: 10 }} alignItems="start">
-        <Stack gap={4}>
+        <Stack gap={4} className="cc-card cc-card--still" p={{ base: 5, md: 6 }}>
           <HStack justify="space-between" flexWrap="wrap" gap={2}>
-            <Text fontSize="xl" className="inter-semibold">
+            <Text as="h2" fontSize="18px" fontWeight={600} lineHeight={1.3} color="var(--cc-text)">
               {editingId ? "Beitrag bearbeiten" : "Neuer Artikel"}
             </Text>
             {editingId ? (
-              <Button size="sm" variant="ghost" onClick={resetForm}>
+              <Button size="sm" variant="ghost" {...ghostSx} onClick={resetForm}>
                 Neu statt Bearbeiten
               </Button>
             ) : null}
           </HStack>
-          <Input placeholder="Titel" value={title} onChange={(e) => setTitle(e.target.value)} bg="whiteAlpha.50" />
+          <Input placeholder="Titel" value={title} onChange={(e) => setTitle(e.target.value)} {...fieldSx} />
           <Textarea
             placeholder="Kurztext für die Karten-Ansicht (optional)"
             value={excerpt}
             onChange={(e) => setExcerpt(e.target.value)}
-            bg="whiteAlpha.50"
+            {...fieldSx}
             rows={2}
           />
           <HStack flexWrap="wrap" gap={4}>
             <Box minW="160px">
-              <Text fontSize="xs" mb={1} color="gray.400">
-                Typ
-              </Text>
-              <Select value={postType} onChange={(e) => setPostType(e.target.value as "weekly" | "daily")} bg="whiteAlpha.50">
+              <Text {...labelSx}>Typ</Text>
+              <Select
+                value={postType}
+                onChange={(e) => setPostType(e.target.value as "weekly" | "daily")}
+                {...fieldSx}
+                sx={optionSx}
+              >
                 <option value="weekly">Weekly</option>
                 <option value="daily">Daily</option>
               </Select>
             </Box>
             <Box minW="180px">
-              <Text fontSize="xs" mb={1} color="gray.400">
-                Analyse-Datum (Sortierung)
-              </Text>
+              <Text {...labelSx}>Analyse-Datum (Sortierung)</Text>
               <Input
                 type="date"
                 value={analysisDate}
                 onChange={(e) => setAnalysisDate(e.target.value)}
-                bg="whiteAlpha.50"
+                {...fieldSx}
+                className="cc-num"
                 placeholder="JJJJ-MM-TT"
               />
             </Box>
             <Box minW="200px">
-              <Text fontSize="xs" mb={1} color="gray.400">
-                Veröffentlicht am (leer = jetzt)
-              </Text>
-              <Input type="datetime-local" value={publishedAt} onChange={(e) => setPublishedAt(e.target.value)} bg="whiteAlpha.50" />
+              <Text {...labelSx}>Veröffentlicht am (leer = jetzt)</Text>
+              <Input
+                type="datetime-local"
+                value={publishedAt}
+                onChange={(e) => setPublishedAt(e.target.value)}
+                {...fieldSx}
+                className="cc-num"
+              />
             </Box>
           </HStack>
           <Box>
-            <FormLabel fontSize="xs">Titelbild (Karte + Kopf in der Detailansicht)</FormLabel>
-            <HStack gap={3}>
-              <Button size="sm" variant="outline" onClick={() => void pickCover()} isLoading={coverBusy}>
-                Bild wählen
-              </Button>
-              {coverKey ? (
-                <Text fontSize="xs" color="green.300">
-                  Bild gesetzt
-                </Text>
-              ) : (
-                <Text fontSize="xs" color="gray.500">
-                  Kein Titelbild
-                </Text>
-              )}
-            </HStack>
+            <FormLabel {...labelSx}>Titelbild (Karte + Kopf in der Detailansicht)</FormLabel>
+            <ImageDropZone
+              previewUrl={coverKey ? `/api/cover-url?key=${encodeURIComponent(coverKey)}` : null}
+              onFile={onCoverDatei}
+              busy={coverBusy}
+              platzhalter="Titelbild hierher ziehen"
+              aktionen={
+                coverKey ? (
+                  <Button
+                    size="md"
+                    variant="line"
+                    onClick={() => {
+                      setCoverKey(null);
+                      setStatus("Titelbild entfernt — beim Speichern übernommen.");
+                    }}
+                    isDisabled={coverBusy}
+                    color="var(--cc-danger)"
+                    borderColor="rgba(248, 113, 113, 0.4)"
+                    _hover={{ bg: "rgba(248, 113, 113, 0.08)", borderColor: "rgba(248, 113, 113, 0.6)", boxShadow: "none" }}
+                  >
+                    Entfernen
+                  </Button>
+                ) : null
+              }
+            />
           </Box>
 
           <Box>
-            <Text fontSize="sm" className="inter-semibold" mb={2}>
+            <Text {...labelSx} mb={2}>
               Inhalt
             </Text>
             <RichTextEditor key={editingId ?? "new"} value={contentJson} onChange={setContentJson} />
           </Box>
 
           <HStack gap={3}>
-            <Button colorScheme="blue" onClick={() => void savePost()} isLoading={busy} maxW="280px">
+            <Button variant="gold" onClick={() => void savePost()} isLoading={busy} maxW="280px">
               {editingId ? "Speichern" : "Veröffentlichen"}
             </Button>
             {status ? (
-              <Text fontSize="sm" color="green.300">
+              <Text fontSize="sm" color="var(--cc-success)" role="status">
                 {status}
               </Text>
             ) : null}
@@ -284,35 +344,29 @@ export function AnalysisManager() {
         <ArticlePreview content={contentJson} />
       </SimpleGrid>
 
-      <Stack gap={2}>
-        <Text fontSize="lg" className="inter-semibold">
+      <Stack gap={3} className="cc-card cc-card--still" p={{ base: 5, md: 6 }}>
+        <Text as="h2" {...cardTitleSx}>
           Alle Artikel
         </Text>
         {posts.map((p) => (
-          <HStack
-            key={p.id}
-            justify="space-between"
-            p={3}
-            borderRadius="md"
-            borderWidth="1px"
-            borderColor="whiteAlpha.200"
-            align="flex-start"
-          >
+          <HStack key={p.id} justify="space-between" align="flex-start" {...rowSx}>
             <Box minW={0}>
-              <Text fontWeight="600">{p.title}</Text>
-              <Text fontSize="xs" color="gray.500">
+              <Text fontWeight={600} color="var(--cc-text)">
+                {p.title}
+              </Text>
+              <Text fontSize="xs" color="var(--cc-text-3)" className="cc-num">
                 {p.post_type} · {new Date(p.published_at).toLocaleString("de-DE")}
               </Text>
             </Box>
             <HStack>
-              <Button size="sm" variant="outline" leftIcon={<Pencil size={14} />} onClick={() => startEdit(p)}>
+              <Button size="sm" variant="line" leftIcon={<Pencil size={14} />} onClick={() => startEdit(p)}>
                 Bearbeiten
               </Button>
               <IconButton
                 aria-label="Löschen"
                 size="sm"
-                variant="outline"
-                colorScheme="red"
+                variant="line"
+                {...dangerIconSx}
                 icon={<Trash2 size={16} />}
                 onClick={() => void remove(p.id)}
               />

@@ -3,7 +3,6 @@
 import {
   Alert,
   AlertIcon,
-  Badge,
   Box,
   Button,
   Divider,
@@ -26,21 +25,36 @@ import {
 } from "@chakra-ui/react";
 import { History, ShieldCheck } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import {
+  AdminLabel,
+  StatusPill,
+  adminAlertIconColor,
+  adminAlertProps,
+  adminFormLabelProps,
+  adminInputProps,
+  adminInsetProps,
+  adminModalHeaderProps,
+  adminModalProps,
+  adminOptionStyle,
+  adminOverlayProps,
+  type AdminTone,
+} from "@/components/admin/adminUi";
 
 export type Tier = "free" | "monthly" | "lifetime" | "ht_1on1";
 
 const TIER_LABELS: Record<Tier, string> = {
   free: "Free",
-  monthly: "Monthly (97 €)",
+  monthly: "Monthly (99 €)",
   lifetime: "Lifetime",
   ht_1on1: "High-Ticket 1on1",
 };
 
-const TIER_BADGE: Record<Tier, { bg: string; color: string; border: string }> = {
-  free: { bg: "rgba(255,255,255,0.06)", color: "#9A9AA4", border: "rgba(255,255,255,0.10)" },
-  monthly: { bg: "rgba(212,175,55,0.10)", color: "#E8C547", border: "rgba(212,175,55,0.22)" },
-  lifetime: { bg: "rgba(212,175,55,0.18)", color: "#FFD66B", border: "rgba(212,175,55,0.40)" },
-  ht_1on1: { bg: "rgba(132,82,255,0.14)", color: "#C4B5FD", border: "rgba(132,82,255,0.40)" },
+/** Bezahlte Dauer-Tiers in Champagner, alles andere neutral — keine Zusatzfarben. */
+const TIER_TONE: Record<Tier, AdminTone> = {
+  free: "neutral",
+  monthly: "neutral",
+  lifetime: "attention",
+  ht_1on1: "attention",
 };
 
 interface AuditItem {
@@ -184,40 +198,35 @@ export function UserTierOverrideModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} isCentered size="2xl" scrollBehavior="inside">
-      <ModalOverlay backdropFilter="blur(8px)" bg="rgba(0,0,0,0.7)" />
-      <ModalContent
-        bg="rgba(10,11,14,0.97)"
-        border="1px solid rgba(255,255,255,0.09)"
-        borderRadius="20px"
-        color="var(--color-text-primary)"
-      >
-        <ModalHeader className="radley-regular" fontWeight={400}>
+      <ModalOverlay {...adminOverlayProps} />
+      <ModalContent {...adminModalProps}>
+        <ModalHeader {...adminModalHeaderProps}>
           <HStack spacing={2}>
-            <Box color="var(--color-accent-gold-light, #E8C547)">
-              <ShieldCheck size={18} />
+            <Box color="var(--cc-gold-light)">
+              <ShieldCheck size={18} strokeWidth={1.75} />
             </Box>
             <Text>Tier-Override</Text>
           </HStack>
-          <Text fontSize="sm" color="var(--color-text-secondary)" className="inter" mt={1}>
+          <Text fontSize="sm" fontWeight={400} color="var(--cc-text-2)" mt={1}>
             {user.fullName ?? user.email}
           </Text>
         </ModalHeader>
-        <ModalCloseButton />
+        <ModalCloseButton color="var(--cc-text-2)" />
 
         <ModalBody>
           <Stack spacing={6}>
             {initial ? (
               <HStack spacing={3} flexWrap="wrap">
-                <Text fontSize="xs" color="var(--color-text-secondary)" className="inter">
+                <Text fontSize="xs" color="var(--cc-text-2)">
                   Aktuell:
                 </Text>
                 <TierBadge tier={initial.membership_tier} />
                 {initial.access_until ? (
-                  <Text fontSize="xs" className="jetbrains-mono" color="var(--color-text-secondary)">
+                  <Text fontSize="xs" className="cc-num" color="var(--cc-text-2)">
                     bis {dateFmt.format(new Date(initial.access_until))}
                   </Text>
                 ) : (
-                  <Text fontSize="xs" color="var(--color-text-secondary)" className="inter">
+                  <Text fontSize="xs" color="var(--cc-text-2)">
                     kein Ablaufdatum
                   </Text>
                 )}
@@ -226,25 +235,14 @@ export function UserTierOverrideModal({
 
             <Stack spacing={4} direction={{ base: "column", md: "row" }}>
               <FormControl flex={1}>
-                <FormLabel
-                  fontSize="xs"
-                  textTransform="uppercase"
-                  letterSpacing="0.07em"
-                  color="gray.300"
-                  className="inter"
-                >
-                  Neuer Tier
-                </FormLabel>
+                <FormLabel {...adminFormLabelProps}>Neuer Tier</FormLabel>
                 <Select
                   value={tier}
                   onChange={(e) => setTier(e.target.value as Tier)}
-                  bg="rgba(255,255,255,0.04)"
-                  borderColor="rgba(255,255,255,0.12)"
-                  color="var(--color-text-primary)"
-                  className="inter"
+                  {...adminInputProps}
                 >
                   {(Object.keys(TIER_LABELS) as Tier[]).map((t) => (
-                    <option key={t} value={t} style={{ background: "#0c0d10" }}>
+                    <option key={t} value={t} style={adminOptionStyle}>
                       {TIER_LABELS[t]}
                     </option>
                   ))}
@@ -252,41 +250,22 @@ export function UserTierOverrideModal({
               </FormControl>
 
               <FormControl flex={1}>
-                <FormLabel
-                  fontSize="xs"
-                  textTransform="uppercase"
-                  letterSpacing="0.07em"
-                  color="gray.300"
-                  className="inter"
-                >
-                  access_until (optional)
-                </FormLabel>
+                <FormLabel {...adminFormLabelProps}>access_until (optional)</FormLabel>
                 <Input
                   type="date"
                   value={accessUntil}
                   onChange={(e) => setAccessUntil(e.target.value)}
-                  bg="rgba(255,255,255,0.04)"
-                  borderColor="rgba(255,255,255,0.12)"
-                  color="var(--color-text-primary)"
-                  className="inter"
+                  className="cc-num"
+                  {...adminInputProps}
                 />
-                <FormHelperText fontSize="xs" color="var(--color-text-secondary)" className="inter">
+                <FormHelperText fontSize="xs" color="var(--cc-text-2)">
                   Leer lassen → Zugriff unbefristet (bis Tier sich ändert).
                 </FormHelperText>
               </FormControl>
             </Stack>
 
-            <Alert
-              status="info"
-              variant="subtle"
-              bg="rgba(212,175,55,0.06)"
-              borderRadius="10px"
-              border="1px solid rgba(212,175,55,0.18)"
-              fontSize="sm"
-              className="inter"
-              alignItems="flex-start"
-            >
-              <AlertIcon color="var(--color-accent-gold-light, #E8C547)" />
+            <Alert status="info" variant="subtle" {...adminAlertProps("warning")} alignItems="flex-start">
+              <AlertIcon color={adminAlertIconColor("warning")} />
               <Text>
                 Speichern setzt zusätzlich <b>is_paid = {tier === "free" ? "false" : "true"}</b>.
                 Aktion wird im Audit-Log gespeichert.
@@ -294,59 +273,46 @@ export function UserTierOverrideModal({
             </Alert>
 
             {error ? (
-              <Alert status="error" bg="rgba(229,72,77,0.10)" borderRadius="10px">
-                <AlertIcon />
-                <Text fontSize="sm" className="inter">{error}</Text>
+              <Alert status="error" {...adminAlertProps("error")}>
+                <AlertIcon color={adminAlertIconColor("error")} />
+                <Text fontSize="sm">{error}</Text>
               </Alert>
             ) : null}
 
-            <Divider borderColor="rgba(255,255,255,0.07)" />
+            <Divider borderColor="var(--cc-line)" />
 
             <Stack spacing={3}>
-              <HStack spacing={2}>
-                <Box color="var(--color-text-secondary)">
-                  <History size={14} />
-                </Box>
-                <Text
-                  fontSize="11px"
-                  letterSpacing="0.08em"
-                  textTransform="uppercase"
-                  color="var(--color-text-secondary)"
-                  className="inter"
-                >
-                  Audit-Log
-                </Text>
+              <HStack spacing={2} color="var(--cc-text-2)">
+                <History size={14} />
+                <AdminLabel>Audit-Log</AdminLabel>
               </HStack>
 
               {auditLoading ? (
                 <HStack py={4} justify="center">
-                  <Spinner size="sm" color="var(--color-accent-gold)" />
+                  <Spinner size="sm" color="var(--cc-gold)" />
                 </HStack>
               ) : audit.length === 0 ? (
-                <Text fontSize="xs" color="var(--color-text-secondary)" className="inter">
+                <Text fontSize="xs" color="var(--cc-text-2)">
                   Keine bisherigen Admin-Änderungen für diesen User.
                 </Text>
               ) : (
                 <Stack spacing={2}>
                   {audit.map((a) => (
-                    <Box
-                      key={a.id}
-                      borderRadius="8px"
-                      border="1px solid rgba(255,255,255,0.06)"
-                      bg="rgba(255,255,255,0.02)"
-                      p={3}
-                    >
+                    <Box key={a.id} {...adminInsetProps} borderRadius="8px" p={3}>
                       <HStack justify="space-between" mb={1} flexWrap="wrap">
-                        <Text fontSize="xs" color="var(--color-text-primary)" className="inter">
+                        <Text fontSize="xs" color="var(--cc-text)">
                           <b>{a.action}</b>
                           {a.field ? ` · ${a.field}` : ""}
                         </Text>
-                        <Text fontSize="11px" color="var(--color-text-secondary)" className="jetbrains-mono">
+                        <Text fontSize="11px" color="var(--cc-text-2)" className="cc-num">
                           {dateFmt.format(new Date(a.createdAt))}
                         </Text>
                       </HStack>
-                      <Text fontSize="xs" color="var(--color-text-secondary)" className="inter">
-                        {a.oldValue ?? "—"} → <b style={{ color: "#E8C547" }}>{a.newValue ?? "—"}</b>
+                      <Text fontSize="xs" color="var(--cc-text-2)">
+                        {a.oldValue ?? "—"} →{" "}
+                        <Box as="b" color="var(--cc-text)" fontWeight={600}>
+                          {a.newValue ?? "—"}
+                        </Box>
                         {a.adminName ? ` · durch ${a.adminName}` : ""}
                       </Text>
                     </Box>
@@ -358,17 +324,14 @@ export function UserTierOverrideModal({
         </ModalBody>
 
         <ModalFooter gap={2}>
-          <Button variant="ghost" onClick={onClose} className="inter">
+          <Button variant="ghost" color="var(--cc-text-2)" onClick={onClose}>
             Schließen
           </Button>
           <Button
+            variant="gold"
             onClick={() => void save()}
             isLoading={saving}
             isDisabled={!dirty}
-            bg="linear-gradient(135deg, #D4AF37 0%, #A67C00 100%)"
-            color="#0a0a0a"
-            _hover={{ filter: "brightness(1.06)" }}
-            className="inter-semibold"
           >
             Tier speichern
           </Button>
@@ -379,20 +342,5 @@ export function UserTierOverrideModal({
 }
 
 function TierBadge({ tier }: { tier: Tier }) {
-  const v = TIER_BADGE[tier];
-  return (
-    <Badge
-      bg={v.bg}
-      color={v.color}
-      border={`1px solid ${v.border}`}
-      borderRadius="6px"
-      fontSize="11px"
-      px={2}
-      py={0.5}
-      className="inter"
-      textTransform="none"
-    >
-      {TIER_LABELS[tier]}
-    </Badge>
-  );
+  return <StatusPill tone={TIER_TONE[tier]}>{TIER_LABELS[tier]}</StatusPill>;
 }

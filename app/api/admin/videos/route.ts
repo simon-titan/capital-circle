@@ -8,6 +8,23 @@ export async function GET(request: Request) {
   const moduleId = url.searchParams.get("moduleId");
   const subcategoryId = url.searchParams.get("subcategoryId");
   const allForModule = url.searchParams.get("allForModule");
+  const unassigned = url.searchParams.get("unassigned");
+
+  /**
+   * Der Stapel: Videos ohne Modul und ohne Untermodul. Entsteht beim Import aus
+   * Cloudflare Stream und beim Herausziehen aus einem Modul; wird im
+   * Modul-Editor per Drag & Drop geleert. Braucht Migration 070.
+   */
+  if (unassigned === "1") {
+    const { data, error: qErr } = await supabase
+      .from("videos")
+      .select("*")
+      .is("module_id", null)
+      .is("subcategory_id", null)
+      .order("position", { ascending: true });
+    if (qErr) return NextResponse.json({ ok: false, error: qErr.message }, { status: 400 });
+    return NextResponse.json({ ok: true, items: data ?? [] });
+  }
 
   if (!moduleId && !subcategoryId) {
     return NextResponse.json({ ok: false, error: "missing_parent" }, { status: 400 });
@@ -53,7 +70,9 @@ export async function POST(request: Request) {
     title: string;
     description?: string | null;
     position?: number;
-    storage_key: string;
+    storage_key?: string;
+    cloudflare_uid?: string;
+    cloudflare_status?: string;
     thumbnail_key?: string | null;
     duration_seconds?: number | null;
     is_published?: boolean;
@@ -63,11 +82,16 @@ export async function POST(request: Request) {
   if (hasModule === hasSub) {
     return NextResponse.json({ ok: false, error: "exactly_one_parent_required" }, { status: 400 });
   }
+  if (!body.storage_key && !body.cloudflare_uid) {
+    return NextResponse.json({ ok: false, error: "storage_key_or_cloudflare_uid_required" }, { status: 400 });
+  }
   const insertPayload: Record<string, unknown> = {
     title: body.title,
     description: body.description ?? null,
     position: body.position ?? 0,
-    storage_key: body.storage_key,
+    storage_key: body.storage_key ?? null,
+    cloudflare_uid: body.cloudflare_uid ?? null,
+    cloudflare_status: body.cloudflare_status ?? (body.cloudflare_uid ? "processing" : "none"),
     thumbnail_key: body.thumbnail_key ?? null,
     duration_seconds: body.duration_seconds ?? null,
     is_published: body.is_published ?? false,
@@ -94,17 +118,22 @@ export async function PATCH(request: Request) {
         reorder: true;
         moduleId?: string;
         subcategoryId?: string;
+        /** Reihenfolge im Stapel (Videos ohne Modul und ohne Untermodul). */
+        unassigned?: boolean;
         orderedVideoIds: string[];
       };
 
   if ("reorder" in body && body.reorder) {
-    const { moduleId, subcategoryId, orderedVideoIds } = body;
-    if (!Array.isArray(orderedVideoIds) || (!moduleId && !subcategoryId)) {
+    const { moduleId, subcategoryId, unassigned, orderedVideoIds } = body;
+    if (!Array.isArray(orderedVideoIds) || (!moduleId && !subcategoryId && !unassigned)) {
       return NextResponse.json({ ok: false, error: "invalid_reorder_payload" }, { status: 400 });
     }
     for (let i = 0; i < orderedVideoIds.length; i++) {
       let q = supabase.from("videos").update({ position: i }).eq("id", orderedVideoIds[i]);
-      if (subcategoryId) q = q.eq("subcategory_id", subcategoryId);
+      // Die Elternbedingung ist Absicht: Sie verhindert, dass eine veraltete
+      // Liste aus dem Browser Positionen in einem fremden Modul ueberschreibt.
+      if (unassigned) q = q.is("module_id", null).is("subcategory_id", null);
+      else if (subcategoryId) q = q.eq("subcategory_id", subcategoryId);
       else q = q.eq("module_id", moduleId!);
       const { error: uErr } = await q;
       if (uErr) return NextResponse.json({ ok: false, error: uErr.message }, { status: 400 });

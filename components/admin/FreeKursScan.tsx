@@ -61,18 +61,11 @@ export function FreeKursScan() {
   );
 
   return (
-    <Stack
-      spacing={4}
-      p={{ base: 4, md: 6 }}
-      borderRadius="16px"
-      borderWidth="1px"
-      borderColor="whiteAlpha.200"
-      bg="whiteAlpha.50"
-    >
-      <Text className="inter-semibold" fontSize="sm" color="gray.200">
+    <Stack spacing={4} className="cc-card cc-card--still" p={{ base: 4, md: 5 }}>
+      <Text fontSize="15px" fontWeight={600} color="var(--cc-text)">
         Free-Kurs Bucket-Synchronisation
       </Text>
-      <Text className="inter" fontSize="xs" color="gray.500">
+      <Text fontSize="13px" lineHeight={1.5} color="var(--cc-text-2)">
         Scannt die beiden Bucket-Prefixe und gleicht Module, Subkategorien und Videos ab. Neu
         erkannte Module werden automatisch dem jeweiligen Free-Kurs zugeordnet und sofort
         veroeffentlicht. Bestehende Module werden nicht verschoben oder umbenannt; nur neue Videos
@@ -80,7 +73,7 @@ export function FreeKursScan() {
       </Text>
       <HStack spacing={3} flexWrap="wrap">
         <Button
-          colorScheme="yellow"
+          variant="gold"
           size="sm"
           onClick={() => void runScan("free-kurs")}
           isLoading={loading === "free-kurs"}
@@ -89,8 +82,7 @@ export function FreeKursScan() {
           FREE-KURS/FREE-VALUE/ scannen
         </Button>
         <Button
-          colorScheme="yellow"
-          variant="outline"
+          variant="line"
           size="sm"
           onClick={() => void runScan("aufzeichnungen")}
           isLoading={loading === "aufzeichnungen"}
@@ -100,7 +92,7 @@ export function FreeKursScan() {
         </Button>
       </HStack>
       {message ? (
-        <Text className="inter" fontSize="sm" color="gray.400" whiteSpace="pre-wrap">
+        <Text fontSize="13px" className="cc-num" color="var(--cc-text-2)" whiteSpace="pre-wrap">
           {message}
         </Text>
       ) : null}

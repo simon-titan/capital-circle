@@ -29,7 +29,8 @@ const ELAPSED_TICK_MS = 30_000;
  */
 export function StreamRoom({ initialStatus, customerSubdomain }: Props) {
   const [status, setStatus] = useState<StreamStatus>(initialStatus);
-  const [elapsedMin, setElapsedMin] = useState<number>(() => computeElapsedMin(initialStatus.startedAt));
+  // Uhr für die Laufzeit-Anzeige; die Minuten werden daraus abgeleitet (kein setState im Effekt-Körper).
+  const [now, setNow] = useState<number>(() => Date.now());
   // Verhindert State-Update nach Unmount.
   const mountedRef = useRef(true);
 
@@ -50,6 +51,7 @@ export function StreamRoom({ initialStatus, customerSubdomain }: Props) {
         if (!json.ok || !json.status) return;
         if (cancelled || !mountedRef.current) return;
         setStatus(json.status);
+        setNow(Date.now());
       } catch {
         // Netz- / Auth-Fehler ignorieren — naechster Tick versucht's erneut.
       }
@@ -65,13 +67,13 @@ export function StreamRoom({ initialStatus, customerSubdomain }: Props) {
 
   // Elapsed-Timer (grob, nur Minuten-Genauigkeit reicht fuer die Anzeige).
   useEffect(() => {
-    setElapsedMin(computeElapsedMin(status.startedAt));
     if (!status.isLive || !status.startedAt) return;
     const tick = setInterval(() => {
-      setElapsedMin(computeElapsedMin(status.startedAt));
+      setNow(Date.now());
     }, ELAPSED_TICK_MS);
     return () => clearInterval(tick);
   }, [status.isLive, status.startedAt]);
+  const elapsedMin = computeElapsedMin(status.startedAt, now);
 
   const iframeSrc = useMemo(() => {
     if (!status.streamId || !customerSubdomain) return null;
@@ -94,7 +96,7 @@ export function StreamRoom({ initialStatus, customerSubdomain }: Props) {
   const canShowPlayer = status.isLive && Boolean(status.streamId) && !envMissing;
 
   return (
-    <Box w="100%">
+    <Box w="100%" className="cc-rise" style={{ animationDelay: "150ms" }}>
       {canShowPlayer ? (
         <LivePlayer
           src={iframeSrc!}
@@ -110,7 +112,36 @@ export function StreamRoom({ initialStatus, customerSubdomain }: Props) {
   );
 }
 
-/** Live-Player mit 16:9-Glas-Frame und Overlay-Controls. */
+/** Champagner-Punkt mit sich ausbreitendem Ring (`.cc-ping`) — wie auf der Live-Karte im Dashboard. */
+function LiveDot() {
+  return (
+    <Box as="span" position="relative" display="inline-flex" w="8px" h="8px" flexShrink={0} aria-hidden>
+      <Box as="span" className="cc-ping" position="absolute" inset={0} borderRadius="full" bg="var(--cc-gold)" />
+      <Box
+        as="span"
+        position="relative"
+        w="8px"
+        h="8px"
+        borderRadius="full"
+        bg="var(--cc-gold-light)"
+        boxShadow="0 0 10px rgba(232, 192, 148, 0.85)"
+      />
+    </Box>
+  );
+}
+
+/** Glas-Pille über dem Video (Live-Status, Titel). */
+const OVERLAY_PILL = {
+  px: 3,
+  py: 1.5,
+  borderRadius: "full",
+  bg: "rgba(18, 23, 28, 0.72)",
+  backdropFilter: "blur(10px)",
+  borderWidth: "1px",
+  borderStyle: "solid",
+} as const;
+
+/** Live-Player: Medienrahmen (10px) mit Gold-Rand und Gold-Schein, Overlay-Status oben. */
 function LivePlayer({
   src,
   title,
@@ -124,12 +155,11 @@ function LivePlayer({
     <Box
       position="relative"
       w="full"
-      borderRadius="20px"
+      borderRadius="10px"
       overflow="clip"
-      borderWidth="1px"
-      borderColor="rgba(255, 255, 255, 0.09)"
-      boxShadow="0 0 40px rgba(74, 144, 217, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.06)"
-      bg="#000"
+      border="1px solid rgba(212, 176, 128, 0.28)"
+      boxShadow="0 10px 28px rgba(0, 0, 0, 0.45), 0 0 40px rgba(212, 176, 128, 0.14)"
+      bg="var(--cc-bg)"
       sx={{ aspectRatio: "16 / 9" }}
     >
       <iframe
@@ -153,78 +183,37 @@ function LivePlayer({
         left={{ base: 3, md: 4 }}
         align="center"
         gap={2}
-        px={3}
-        py={1.5}
-        borderRadius="999px"
-        bg="rgba(0, 0, 0, 0.55)"
-        backdropFilter="blur(10px)"
-        borderWidth="1px"
-        borderColor="rgba(255, 255, 255, 0.08)"
+        {...OVERLAY_PILL}
+        borderColor="rgba(212, 176, 128, 0.35)"
         pointerEvents="none"
       >
-        <Box
-          w="8px"
-          h="8px"
-          borderRadius="full"
-          bg="#ef4444"
-          boxShadow="0 0 10px rgba(239, 68, 68, 0.8)"
-          sx={{
-            animation: "streamPulse 1.6s ease-in-out infinite",
-            "@keyframes streamPulse": {
-              "0%, 100%": { opacity: 1, transform: "scale(1)" },
-              "50%": { opacity: 0.55, transform: "scale(0.85)" },
-            },
-          }}
-        />
-        <Text
-          fontSize="xs"
-          letterSpacing="0.14em"
-          textTransform="uppercase"
-          className="inter-semibold"
-          color="white"
-        >
+        <LiveDot />
+        <Text fontSize="12px" fontWeight={600} letterSpacing="0.12em" textTransform="uppercase" color="var(--cc-gold-light)">
           Live
         </Text>
-        <Text fontSize="xs" color="rgba(255,255,255,0.55)">
-          •
+        <Text fontSize="12px" color="var(--cc-text-3)" aria-hidden>
+          ·
         </Text>
-        <Text fontSize="xs" className="jetbrains-mono" color="rgba(255,255,255,0.85)">
+        <Text fontSize="12px" className="cc-num" color="var(--cc-text-soft)">
           seit {formatElapsed(elapsedMin)}
         </Text>
       </Flex>
 
       {/* Titel-Chip oben rechts (auf groesseren Screens) */}
-      <Flex
+      <Box
         position="absolute"
         top={{ base: 3, md: 4 }}
         right={{ base: 3, md: 4 }}
-        align="center"
-        gap={2}
-        display={{ base: "none", md: "flex" }}
+        display={{ base: "none", md: "block" }}
+        maxW="320px"
+        {...OVERLAY_PILL}
+        borderColor="var(--cc-line-strong)"
         pointerEvents="none"
       >
-        <Box
-          px={3}
-          py={1.5}
-          borderRadius="999px"
-          bg="rgba(0, 0, 0, 0.55)"
-          backdropFilter="blur(10px)"
-          borderWidth="1px"
-          borderColor="rgba(255, 255, 255, 0.08)"
-          maxW="320px"
-        >
-          <Text
-            fontSize="xs"
-            className="inter-semibold"
-            color="rgba(255,255,255,0.88)"
-            noOfLines={1}
-            title={title}
-          >
-            {title}
-          </Text>
-        </Box>
-      </Flex>
-
+        <Text fontSize="12px" fontWeight={500} color="var(--cc-text-soft)" noOfLines={1} title={title}>
+          {title}
+        </Text>
+      </Box>
     </Box>
   );
 }
@@ -246,83 +235,76 @@ function OfflineCard({ reason }: { reason: "offline" | "no-uid" | "env-missing" 
       : "Sobald Emre live geht, siehst du es hier automatisch — diese Seite aktualisiert sich im Hintergrund alle 15 Sekunden.";
 
   return (
-    <Box
-      position="relative"
+    <Flex
+      className="cc-card cc-card--still"
       w="full"
-      borderRadius="20px"
-      overflow="hidden"
-      borderWidth="1px"
-      borderColor="rgba(255, 255, 255, 0.08)"
-      bg="rgba(15, 18, 24, 0.72)"
-      backdropFilter="blur(16px)"
-      boxShadow="0 0 60px rgba(74, 144, 217, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.04)"
-      sx={{ aspectRatio: "16 / 9" }}
+      direction="column"
+      align="center"
+      justify="center"
+      textAlign="center"
+      gap={5}
+      px={{ base: 5, md: 12 }}
+      py={{ base: 10, md: 12 }}
+      aspectRatio={{ base: "auto", md: "16 / 9" }}
     >
-      {/* Dekorativer Glow */}
+      {/* Weicher Champagner-Schein hinter dem Inhalt */}
       <Box
         position="absolute"
         inset={0}
+        borderRadius="inherit"
         pointerEvents="none"
-        bg="radial-gradient(ellipse at center, rgba(74, 144, 217, 0.10) 0%, rgba(0,0,0,0) 60%)"
+        bg="radial-gradient(ellipse 60% 55% at 50% 45%, rgba(212, 176, 128, 0.08) 0%, transparent 70%)"
+        aria-hidden
       />
       <Flex
-        position="absolute"
-        inset={0}
+        position="relative"
         align="center"
         justify="center"
-        direction="column"
-        textAlign="center"
-        px={{ base: 6, md: 12 }}
-        gap={5}
+        w={{ base: "64px", md: "80px" }}
+        h={{ base: "64px", md: "80px" }}
+        borderRadius="full"
+        border="1px solid var(--cc-line-strong)"
+        bg="rgba(255, 255, 255, 0.02)"
+        boxShadow="inset 0 1px 0 rgba(255, 255, 255, 0.05)"
+        color="var(--cc-text)"
       >
-        <Flex
-          align="center"
-          justify="center"
-          w={{ base: "72px", md: "88px" }}
-          h={{ base: "72px", md: "88px" }}
-          borderRadius="50%"
-          bg="linear-gradient(145deg, rgba(74, 144, 217, 0.30), rgba(30, 58, 138, 0.18))"
-          borderWidth="1px"
-          borderColor="rgba(100, 170, 240, 0.42)"
-          boxShadow="0 0 34px rgba(74, 144, 217, 0.24)"
-        >
-          <Radio size={36} strokeWidth={1.6} aria-hidden style={{ color: "white" }} />
-        </Flex>
-        <Stack gap={2} maxW="520px">
-          <Text
-            as="h2"
-            className="radley-regular"
-            fontSize={{ base: "xl", md: "2xl" }}
-            color="var(--color-text-primary)"
-          >
-            {headline}
-          </Text>
-          <Text className="inter" fontSize="sm" color="var(--color-text-muted)" lineHeight="1.6">
-            {subtext}
-          </Text>
-        </Stack>
-        <Flex align="center" gap={2} color="rgba(255,255,255,0.4)">
-          <RefreshCw
-            size={12}
-            aria-hidden
-            style={{
-              animation: "streamSpin 3s linear infinite",
-            }}
-          />
-          <Text fontSize="xs" className="inter" letterSpacing="0.06em">
-            Auto-Refresh alle 15 s
-          </Text>
-        </Flex>
+        <Radio size={32} strokeWidth={1.5} aria-hidden />
       </Flex>
-      <Box
-        sx={{
-          "@keyframes streamSpin": {
-            "0%": { transform: "rotate(0deg)" },
-            "100%": { transform: "rotate(360deg)" },
-          },
-        }}
-      />
-    </Box>
+      <Stack position="relative" spacing={2} maxW="520px">
+        <Text
+          as="h2"
+          fontSize={{ base: "20px", md: "24px" }}
+          fontWeight={600}
+          lineHeight={1.25}
+          letterSpacing="-0.01em"
+          color="var(--cc-text)"
+        >
+          {headline}
+        </Text>
+        <Text fontSize={{ base: "14px", md: "15px" }} lineHeight={1.6} color="var(--cc-text-2)">
+          {subtext}
+        </Text>
+      </Stack>
+      <Flex position="relative" align="center" gap={2} color="var(--cc-text-3)">
+        <Box
+          as="span"
+          display="inline-flex"
+          sx={{
+            animation: "cc-stream-spin 3s linear infinite",
+            "@keyframes cc-stream-spin": {
+              from: { transform: "rotate(0deg)" },
+              to: { transform: "rotate(360deg)" },
+            },
+            "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+          }}
+        >
+          <RefreshCw size={12} aria-hidden />
+        </Box>
+        <Text fontSize="12px" letterSpacing="0.06em" className="cc-num">
+          Auto-Refresh alle 15 s
+        </Text>
+      </Flex>
+    </Flex>
   );
 }
 
@@ -335,11 +317,11 @@ function formatElapsed(minutes: number): string {
   return m === 0 ? `${h} h` : `${h} h ${m} Min`;
 }
 
-function computeElapsedMin(startedAt: string | null): number {
+function computeElapsedMin(startedAt: string | null, now: number): number {
   if (!startedAt) return 0;
   const start = new Date(startedAt).getTime();
   if (Number.isNaN(start)) return 0;
-  const diffMs = Date.now() - start;
+  const diffMs = now - start;
   if (diffMs < 0) return 0;
   return Math.floor(diffMs / 60_000);
 }

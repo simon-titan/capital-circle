@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { Box, Stack, Text } from "@chakra-ui/react";
+import { Box, Stack } from "@chakra-ui/react";
 import { FreeLandingExperience } from "@/components/marketing/FreeLandingExperience";
+import { FunnelFinePrint, rise } from "@/components/marketing/funnel-ui";
 import { Logo } from "@/components/brand/Logo";
 
 export const metadata: Metadata = {
@@ -11,16 +12,10 @@ export const metadata: Metadata = {
 
 export default function FreePage() {
   return (
-    <Box
-      as="main"
-      minH="100vh"
-      w="full"
-      py={{ base: 8, md: 14 }}
-      px={{ base: 4, md: 8 }}
-    >
+    <Box as="main" minH="100vh" w="full" py={{ base: 10, md: 16 }} px={{ base: 4, md: 8 }}>
       <Stack spacing={{ base: 10, md: 16 }} maxW="1000px" mx="auto">
         {/* Logo */}
-        <Box maxW="180px" mx="auto">
+        <Box maxW="180px" mx="auto" {...rise(0)}>
           <Logo variant="onDark" priority />
         </Box>
 
@@ -28,35 +23,23 @@ export default function FreePage() {
         <FreeLandingExperience />
 
         {/* Footer-Disclaimer */}
-        <Stack spacing={2} textAlign="center" pb={4}>
-          <Text
-            fontSize="xs"
-            color="rgba(255,255,255,0.22)"
-            className="inter"
-            maxW="560px"
-            mx="auto"
-            lineHeight="1.7"
-          >
+        <Stack spacing={2} textAlign="center" pb={4} pt={6} borderTop="1px solid var(--cc-line)">
+          <FunnelFinePrint maxW="560px" mx="auto">
             Mit dem Abschicken der Bewerbung stimmst du unserer{" "}
             <Box
               as="a"
               href="/datenschutz"
-              color="rgba(212,175,55,0.6)"
+              color="var(--cc-gold-light)"
               textDecoration="underline"
+              textUnderlineOffset="2px"
             >
               Datenschutzerklärung
             </Box>{" "}
             zu.{" "}
             Trading und Investitionen sind mit erheblichen Verlustrisiken verbunden.
             Frühere Ergebnisse sind keine Garantie für zukünftige Gewinne.
-          </Text>
-          <Text
-            fontSize="xs"
-            color="rgba(255,255,255,0.15)"
-            className="inter"
-          >
-            © {new Date().getFullYear()} Capital Circle Institut
-          </Text>
+          </FunnelFinePrint>
+          <FunnelFinePrint className="cc-num">© {new Date().getFullYear()} Capital Circle Institut</FunnelFinePrint>
         </Stack>
       </Stack>
     </Box>

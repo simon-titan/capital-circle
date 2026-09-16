@@ -21,7 +21,7 @@ set learning_seconds_by_day = (
   select coalesce(
     jsonb_object_agg(
       e.key,
-      least(2147483647, greatest(0, round((e.value #>> '{}')::numeric * 60))::integer
+      least(2147483647, greatest(0, round((e.value #>> '{}')::numeric * 60))::integer)
     ),
     '{}'::jsonb
   )

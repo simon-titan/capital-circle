@@ -34,15 +34,13 @@ export function getFrom(): string {
 
 /**
  * Öffentliche Basis-URL für alle Email-Links (Logo, CTA, Unsubscribe).
- * Reihenfolge: NEXT_PUBLIC_APP_URL → NEXT_PUBLIC_SITE_URL → Production-Default.
+ *
+ * Wohnt seit dem Gast-Checkout in `lib/site-url.ts`: Stripe-Rückleitungen und
+ * Passwort-Links brauchen dieselbe Angabe, und die aus dem Email-Modul zu
+ * ziehen wäre eine Abhängigkeit in die falsche Richtung. Der Re-Export bleibt,
+ * damit die rund zwei Dutzend bestehenden Template-Importe unverändert laufen.
  */
-export function getAppUrl(): string {
-  const url =
-    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    "https://www.capitalcircletrading.com";
-  return url.replace(/\/$/, "");
-}
+export { getAppUrl } from "@/lib/site-url";
 
 /**
  * Backwards-compat Alias — manche Templates importieren `FROM` direkt.

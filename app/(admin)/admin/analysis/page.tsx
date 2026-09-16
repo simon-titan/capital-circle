@@ -1,18 +1,15 @@
-import { Stack, Text } from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
+import { AdminPageHeader } from "@/components/admin/adminUi";
 import { AnalysisManager } from "@/components/admin/AnalysisManager";
 
 export default function AdminAnalysisPage() {
   return (
-    <Stack gap={8} maxW="var(--adminMaxWidth, 1440px)" mx="auto">
-      <Stack spacing={2}>
-        <Text as="h1" className="radley-regular" fontSize={{ base: "xl", md: "2xl" }} color="whiteAlpha.900">
-          Weekly / Daily Analysis
-        </Text>
-        <Text className="inter" fontSize="sm" color="gray.500">
-          Beiträge mit Bild und Text — erscheinen im Mitglieder-Feed unter Analyse.
-        </Text>
-      </Stack>
+    <Box maxW="var(--adminMaxWidth, 1440px)" mx="auto">
+      <AdminPageHeader
+        title="Weekly / Daily Analysis"
+        subtitle="Beiträge mit Bild und Text — erscheinen im Mitglieder-Feed unter Analyse."
+      />
       <AnalysisManager />
-    </Stack>
+    </Box>
   );
 }

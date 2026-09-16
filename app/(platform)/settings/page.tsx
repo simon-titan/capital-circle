@@ -2,16 +2,12 @@
 
 import {
   Avatar,
-  Badge,
   Box,
   Button,
-  Divider,
   Flex,
   FormControl,
   FormLabel,
   Grid,
-  GridItem,
-  Heading,
   HStack,
   Icon,
   Input,
@@ -19,12 +15,12 @@ import {
   Stack,
   Text,
   useToast,
-  VStack,
 } from "@chakra-ui/react";
-import { CalendarDays, CheckCircle2, Flame, Link2, Link2Off, LogOut, Upload, UserRound } from "lucide-react";
-import { useEffect, useState } from "react";
+import { CalendarDays, CheckCircle2, Flame, Link2, Link2Off, LogOut, Upload } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { PageHeader } from "@/components/journal/PageHeader";
 import { DiscordGlyph } from "@/components/platform/DiscordBanner";
-import { GlassCard } from "@/components/ui/GlassCard";
+import { CardValue, DashCard, IconTile, Meta } from "@/components/platform/dashboard/primitives";
 import { createClient } from "@/lib/supabase/client";
 import { getDiscordAuthUrl } from "@/lib/discord";
 import { resolveTotalLearningSeconds } from "@/lib/learning-daily";
@@ -54,6 +50,69 @@ const formatDate = (dateValue: string | null) => {
   if (Number.isNaN(date.getTime())) return "Nicht verfügbar";
   return new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }).format(date);
 };
+
+/** Eingabefelder auf Glas: Haarlinie, beim Hover Gold-Kante, Fokus in Gold. */
+const FIELD_SX = {
+  bg: "rgba(255, 255, 255, 0.03)",
+  borderColor: "var(--cc-line-strong)",
+  borderRadius: "8px",
+  color: "var(--cc-text)",
+  _placeholder: { color: "var(--cc-text-3)" },
+  _hover: { borderColor: "rgba(212, 176, 128, 0.4)" },
+  _focusVisible: { borderColor: "var(--cc-gold)", boxShadow: "0 0 0 1px var(--cc-gold)" },
+};
+
+const LABEL_PROPS = { fontSize: "14px", fontWeight: 500, color: "var(--cc-text-2)", mb: 1.5 } as const;
+
+/** Gestaffelter Einstieg (80ms + 70ms je Schritt) wie im Dashboard. */
+const rise = (i: number) => ({ animationDelay: `${80 + i * 70}ms` });
+
+type PillTone = "gold" | "neutral" | "success";
+
+const PILL_TONES: Record<PillTone, { color: string; borderColor: string; bg: string }> = {
+  gold: { color: "var(--cc-gold-light)", borderColor: "rgba(212, 176, 128, 0.3)", bg: "var(--cc-gold-wash)" },
+  neutral: { color: "var(--cc-text-2)", borderColor: "var(--cc-line-strong)", bg: "rgba(255, 255, 255, 0.03)" },
+  success: { color: "var(--cc-success)", borderColor: "rgba(74, 222, 128, 0.3)", bg: "rgba(74, 222, 128, 0.07)" },
+};
+
+function Pill({ tone, children }: { tone: PillTone; children: ReactNode }) {
+  return (
+    <Box
+      as="span"
+      display="inline-flex"
+      alignItems="center"
+      gap={1}
+      px="10px"
+      py="3px"
+      borderRadius="full"
+      border="1px solid"
+      fontSize="12px"
+      fontWeight={500}
+      lineHeight="18px"
+      whiteSpace="nowrap"
+      {...PILL_TONES[tone]}
+    >
+      {children}
+    </Box>
+  );
+}
+
+/** Kennzahl-Kachel innerhalb einer Karte (eingelassen, keine eigene Karte). */
+function StatTile({ label, value, icon }: { label: string; value: ReactNode; icon?: ReactNode }) {
+  return (
+    <Box p={{ base: 3, md: 4 }} borderRadius="10px" border="1px solid var(--cc-line)" bg="rgba(255, 255, 255, 0.02)" minW={0}>
+      <HStack spacing={2} color="var(--cc-text-2)" mb={1.5} align="flex-start">
+        {icon}
+        <Text fontSize="12px" fontWeight={500} letterSpacing="0.12em" textTransform="uppercase" lineHeight="16px">
+          {label}
+        </Text>
+      </HStack>
+      <Text className="cc-num" fontSize={{ base: "18px", md: "20px" }} fontWeight={600} lineHeight={1.25} color="var(--cc-text)">
+        {value}
+      </Text>
+    </Box>
+  );
+}
 
 export default function SettingsPage() {
   const supabase = createClient();
@@ -303,101 +362,101 @@ export default function SettingsPage() {
   };
 
   return (
-    <Stack gap={6}>
-      <Heading
-        as="h1"
-        fontFamily="var(--font-heading)"
-        fontWeight={400}
-        fontSize={{ base: "2xl", md: "3xl" }}
-        color="var(--color-text-primary)"
-      >
-        Profil & Einstellungen
-      </Heading>
+    <Box>
+      <PageHeader title="Profil & Einstellungen" />
 
-      <GlassCard highlight>
-        <Flex direction={{ base: "column", md: "row" }} gap={5} align={{ base: "flex-start", md: "center" }} justify="space-between">
-          <HStack spacing={4} align="center">
-            <Avatar
-              size="xl"
-              name={name || username || email || "User"}
-              src={avatarUrl || undefined}
-              border="1px solid rgba(212,175,55,0.35)"
-              bg="rgba(212,175,55,0.12)"
-            />
-            <VStack align="flex-start" spacing={1}>
-              <Text className="inter-medium" color="var(--color-text-primary)" fontSize="lg">
-                {name || "Kein Anzeigename"}
-              </Text>
-              <Text color="var(--color-text-secondary)" fontSize="sm">
-                @{username || "username-fehlt"} · {email || "keine E-Mail"}
-              </Text>
-              <HStack spacing={2} pt={1}>
-                {isPaid ? <Badge colorScheme="yellow">Premium</Badge> : <Badge>Free</Badge>}
-                {isAdmin ? <Badge colorScheme="yellow">Admin</Badge> : null}
-                {isPaid && (discordUsername ? (
-                  <Badge colorScheme="green" display="inline-flex" alignItems="center" gap={1}>
-                    <Icon as={CheckCircle2} boxSize={3} />
-                    Discord verbunden
-                  </Badge>
-                ) : (
-                  <Badge>Discord nicht verbunden</Badge>
-                ))}
-              </HStack>
-            </VStack>
-          </HStack>
-
-          <SimpleGrid columns={2} spacing={3} minW={{ base: "100%", md: "320px" }}>
-            <Box p={3} borderRadius="10px" border="1px solid var(--color-border-default)" bg="rgba(255,255,255,0.03)">
-              <HStack spacing={2} color="var(--color-text-secondary)" mb={1}>
-                <Icon as={Flame} boxSize={4} color="var(--color-accent)" />
-                <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em">
-                  Aktuelle Streak
+      <Stack spacing={5}>
+        {/* Profil-Überblick */}
+        <Box as="section" aria-label="Profil" className="cc-card cc-rise" style={rise(0)} p={{ base: 5, md: 6 }} minW={0}>
+          <Flex
+            direction={{ base: "column", md: "row" }}
+            gap={5}
+            align={{ base: "stretch", md: "center" }}
+            justify="space-between"
+          >
+            <HStack spacing={4} align="center" minW={0}>
+              <Avatar
+                size="xl"
+                flexShrink={0}
+                name={name || username || email || "User"}
+                src={avatarUrl || undefined}
+                bg="var(--cc-surface-2)"
+                color="var(--cc-text)"
+                border="1px solid var(--cc-gold-line)"
+                boxShadow="0 0 24px rgba(212, 176, 128, 0.18)"
+              />
+              <Stack spacing={1} minW={0}>
+                <Text
+                  fontSize={{ base: "18px", md: "20px" }}
+                  fontWeight={600}
+                  letterSpacing="-0.01em"
+                  lineHeight={1.3}
+                  color="var(--cc-text)"
+                  overflowWrap="anywhere"
+                >
+                  {name || "Kein Anzeigename"}
                 </Text>
-              </HStack>
-              <Text fontFamily="var(--font-mono)" fontWeight={700} fontSize="xl" color="var(--color-text-primary)">
-                {streakCurrent} Tage
-              </Text>
-            </Box>
-            <Box p={3} borderRadius="10px" border="1px solid var(--color-border-default)" bg="rgba(255,255,255,0.03)">
-              <HStack spacing={2} color="var(--color-text-secondary)" mb={1}>
-                <Icon as={CalendarDays} boxSize={4} color="var(--color-accent)" />
-                <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em">
-                  Mitglied seit
-                </Text>
-              </HStack>
-              <Text fontFamily="var(--font-mono)" fontWeight={500} fontSize="sm" color="var(--color-text-primary)">
-                {formatDate(memberSince)}
-              </Text>
-            </Box>
-          </SimpleGrid>
-        </Flex>
-      </GlassCard>
+                <Meta overflowWrap="anywhere">
+                  @{username || "username-fehlt"} · {email || "keine E-Mail"}
+                </Meta>
+                <Flex wrap="wrap" gap={2} pt={1}>
+                  {isPaid ? <Pill tone="gold">Premium</Pill> : <Pill tone="neutral">Free</Pill>}
+                  {isAdmin ? <Pill tone="gold">Admin</Pill> : null}
+                  {isPaid &&
+                    (discordUsername ? (
+                      <Pill tone="success">
+                        <Icon as={CheckCircle2} boxSize={3} aria-hidden />
+                        Discord verbunden
+                      </Pill>
+                    ) : (
+                      <Pill tone="neutral">Discord nicht verbunden</Pill>
+                    ))}
+                </Flex>
+              </Stack>
+            </HStack>
 
-      <Grid templateColumns={{ base: "1fr", xl: "1fr 1fr" }} gap={6}>
-        <GridItem>
-          <GlassCard>
+            <SimpleGrid columns={2} spacing={3} w={{ base: "100%", md: "320px" }} flexShrink={0}>
+              <StatTile
+                label="Aktuelle Streak"
+                icon={<Icon as={Flame} boxSize={4} aria-hidden flexShrink={0} />}
+                value={`${streakCurrent} Tage`}
+              />
+              <StatTile
+                label="Mitglied seit"
+                icon={<Icon as={CalendarDays} boxSize={4} aria-hidden flexShrink={0} />}
+                value={formatDate(memberSince)}
+              />
+            </SimpleGrid>
+          </Flex>
+        </Box>
+
+        <Grid templateColumns={{ base: "1fr", xl: "1fr 1fr" }} gap={5}>
+          <DashCard label="Persönliche Daten" labelId="settings-personal" className="cc-card--still cc-rise" style={rise(1)}>
             <Stack spacing={4}>
-              <Text className="inter-semibold" color="var(--color-text-primary)" fontSize="lg">
-                Persönliche Daten
-              </Text>
               <FormControl>
-                <FormLabel color="var(--color-text-secondary)">Anzeigename</FormLabel>
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Dein Name" />
+                <FormLabel {...LABEL_PROPS}>Anzeigename</FormLabel>
+                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Dein Name" sx={FIELD_SX} />
               </FormControl>
               <FormControl>
-                <FormLabel color="var(--color-text-secondary)">Username</FormLabel>
-                <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="dein_username" />
+                <FormLabel {...LABEL_PROPS}>Username</FormLabel>
+                <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="dein_username" sx={FIELD_SX} />
               </FormControl>
               <FormControl>
-                <FormLabel color="var(--color-text-secondary)">Avatar</FormLabel>
+                <FormLabel {...LABEL_PROPS}>Avatar</FormLabel>
                 <Stack direction={{ base: "column", md: "row" }} spacing={3}>
-                  <Input value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} placeholder="Avatar URL oder Storage-Key" />
+                  <Input
+                    value={avatarUrl}
+                    onChange={(e) => setAvatarUrl(e.target.value)}
+                    placeholder="Avatar URL oder Storage-Key"
+                    sx={FIELD_SX}
+                  />
                   <Button
                     leftIcon={<Icon as={Upload} boxSize={4} />}
-                    variant="outline"
+                    variant="line"
                     isLoading={uploadingAvatar}
                     position="relative"
                     overflow="hidden"
+                    flexShrink={0}
                   >
                     Datei wählen
                     <Input
@@ -419,131 +478,71 @@ export default function SettingsPage() {
                   </Button>
                 </Stack>
               </FormControl>
-              <Button onClick={saveProfile} isLoading={savingProfile} colorScheme="yellow" alignSelf="flex-start">
+              <Button onClick={saveProfile} isLoading={savingProfile} variant="gold" alignSelf="flex-start">
                 Profil speichern
               </Button>
             </Stack>
-          </GlassCard>
-        </GridItem>
+          </DashCard>
 
-        <GridItem>
-          <GlassCard>
-            <Stack spacing={4}>
-              <Text className="inter-semibold" color="var(--color-text-primary)" fontSize="lg">
-                Statistiken
-              </Text>
-              <SimpleGrid columns={2} spacing={3}>
-                <Box p={3} borderRadius="10px" border="1px solid var(--color-border-default)">
-                  <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em" color="var(--color-text-secondary)">
-                    Streak aktuell
-                  </Text>
-                  <Text fontFamily="var(--font-mono)" fontSize="2xl" color="var(--color-text-primary)">
-                    {streakCurrent}
-                  </Text>
-                </Box>
-                <Box p={3} borderRadius="10px" border="1px solid var(--color-border-default)">
-                  <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em" color="var(--color-text-secondary)">
-                    Längste Streak
-                  </Text>
-                  <Text fontFamily="var(--font-mono)" fontSize="2xl" color="var(--color-text-primary)">
-                    {streakLongest}
-                  </Text>
-                </Box>
-                <Box p={3} borderRadius="10px" border="1px solid var(--color-border-default)">
-                  <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em" color="var(--color-text-secondary)">
-                    Lernzeit gesamt
-                  </Text>
-                  <Text fontFamily="var(--font-mono)" fontSize="xl" color="var(--color-text-primary)">
-                    {minutesToHours(learningMinutes)}
-                  </Text>
-                </Box>
-                <Box p={3} borderRadius="10px" border="1px solid var(--color-border-default)">
-                  <Text fontSize="xs" textTransform="uppercase" letterSpacing="0.08em" color="var(--color-text-secondary)">
-                    Codex akzeptiert
-                  </Text>
-                  <Text fontFamily="var(--font-mono)" fontSize="sm" color="var(--color-text-primary)">
-                    {formatDate(codexAcceptedAt)}
-                  </Text>
-                </Box>
-              </SimpleGrid>
-            </Stack>
-          </GlassCard>
-        </GridItem>
+          <DashCard label="Statistiken" labelId="settings-stats" className="cc-card--still cc-rise" style={rise(2)}>
+            <SimpleGrid columns={2} spacing={3}>
+              <StatTile label="Streak aktuell" value={streakCurrent} />
+              <StatTile label="Längste Streak" value={streakLongest} />
+              <StatTile label="Lernzeit gesamt" value={minutesToHours(learningMinutes)} />
+              <StatTile label="Codex akzeptiert" value={formatDate(codexAcceptedAt)} />
+            </SimpleGrid>
+          </DashCard>
 
-        {isPaid && (
-          <GridItem>
-            <GlassCard highlight>
+          {isPaid && (
+            <DashCard label="Community" labelId="settings-discord" className="cc-card--still cc-rise" style={rise(3)}>
               <Stack spacing={5}>
-                <Flex direction={{ base: "column", sm: "row" }} gap={4} align={{ base: "flex-start", sm: "flex-start" }}>
-                  <Flex
-                    align="center"
-                    justify="center"
-                    w="52px"
-                    h="52px"
-                    borderRadius="14px"
-                    flexShrink={0}
-                    bg="rgba(88, 101, 242, 0.18)"
-                    border="1px solid rgba(88, 101, 242, 0.45)"
-                    color="#5865F2"
-                  >
-                    <DiscordGlyph size={28} />
-                  </Flex>
-                  <VStack align="flex-start" spacing={1} flex={1}>
-                    <Text
-                      className="inter-medium"
-                      fontSize="xs"
-                      letterSpacing="0.1em"
-                      textTransform="uppercase"
-                      color="rgba(255,255,255,0.45)"
-                    >
-                      Community
-                    </Text>
-                    <Text className="inter-semibold" color="var(--color-text-primary)" fontSize="xl">
-                      Discord
-                    </Text>
-                    <Text className="inter" color="var(--color-text-secondary)" fontSize="sm" lineHeight="tall">
+                <Flex gap={4} align="flex-start">
+                  <IconTile>
+                    <DiscordGlyph size={26} />
+                  </IconTile>
+                  <Stack spacing={1} minW={0}>
+                    <CardValue>Discord</CardValue>
+                    <Meta lineHeight={1.6}>
                       {discordUsername
                         ? "Dein Account ist mit Discord verknüpft. Du kannst die Verknüpfung jederzeit trennen und neu verbinden."
                         : "Verbinde deinen Discord Account, um Zugang zum exklusiven Community-Server zu erhalten."}
-                    </Text>
-                  </VStack>
+                    </Meta>
+                  </Stack>
                 </Flex>
 
                 {discordUsername ? (
-                  <Box
-                    p={4}
-                    borderRadius="14px"
-                    border="1px solid rgba(34, 197, 94, 0.35)"
-                    bg="linear-gradient(165deg, rgba(34, 197, 94, 0.1) 0%, rgba(8, 8, 8, 0.45) 55%)"
-                  >
-                    <Stack spacing={3}>
+                  <Box p={4} borderRadius="10px" border="1px solid var(--cc-line)" bg="rgba(255, 255, 255, 0.02)">
+                    <Stack spacing={2.5}>
                       <HStack spacing={2}>
-                        <Icon as={CheckCircle2} boxSize={5} color="rgb(34, 197, 94)" />
-                        <Text className="inter-semibold" color="var(--color-text-primary)" fontSize="md">
+                        <Icon as={CheckCircle2} boxSize={4} color="var(--cc-success)" aria-hidden />
+                        <Text fontSize="14px" fontWeight={500} color="var(--cc-text-soft)">
                           Verbunden
                         </Text>
                       </HStack>
-                      <Text className="jetbrains-mono" fontSize="lg" color="rgba(34, 197, 94, 0.95)">
+                      <Text fontSize="17px" fontWeight={600} color="var(--cc-text)" overflowWrap="anywhere">
                         {discordUsername.startsWith("@") ? discordUsername : `@${discordUsername}`}
                       </Text>
                       {discordUserId ? (
-                        <Text fontSize="xs" className="jetbrains-mono" color="var(--color-text-muted)">
+                        <Text className="cc-num" fontSize="12px" color="var(--cc-text-3)" overflowWrap="anywhere">
                           ID: {discordUserId}
                         </Text>
                       ) : null}
                       {discordConnectedAt ? (
-                        <Text fontSize="sm" className="inter" color="var(--color-text-secondary)">
-                          Verbunden seit {formatDate(discordConnectedAt)}
-                        </Text>
+                        <Meta>
+                          Verbunden seit{" "}
+                          <Box as="span" className="cc-num">
+                            {formatDate(discordConnectedAt)}
+                          </Box>
+                        </Meta>
                       ) : null}
                       <Button
-                        variant="outline"
-                        colorScheme="red"
+                        variant="line"
+                        size="sm"
                         leftIcon={<Icon as={Link2Off} boxSize={4} />}
                         onClick={disconnectDiscord}
                         isLoading={disconnectingDiscord}
                         alignSelf="flex-start"
-                        borderRadius="10px"
+                        mt={1}
                       >
                         Verknüpfung trennen
                       </Button>
@@ -553,70 +552,62 @@ export default function SettingsPage() {
                   <Button
                     as="a"
                     href={getDiscordAuthUrl()}
+                    variant="gold"
                     leftIcon={<Icon as={Link2} boxSize={4} />}
                     alignSelf="flex-start"
-                    borderRadius="10px"
-                    bg="linear-gradient(135deg, var(--color-accent-gold-dark) 0%, var(--color-accent-gold-light) 100%)"
-                    color="#0a0a0a"
-                    _hover={{ filter: "brightness(1.06)", boxShadow: "0 0 24px rgba(212, 175, 55, 0.35)" }}
                   >
                     Discord verbinden
                   </Button>
                 )}
               </Stack>
-            </GlassCard>
-          </GridItem>
-        )}
+            </DashCard>
+          )}
 
-        <GridItem>
-          <GlassCard>
+          <DashCard label="Passwort ändern" labelId="settings-password" className="cc-card--still cc-rise" style={rise(4)}>
             <Stack spacing={4}>
-              <Text className="inter-semibold" color="var(--color-text-primary)" fontSize="lg">
-                Passwort ändern
-              </Text>
               <FormControl>
-                <FormLabel color="var(--color-text-secondary)">Neues Passwort</FormLabel>
-                <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                <FormLabel {...LABEL_PROPS}>Neues Passwort</FormLabel>
+                <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} sx={FIELD_SX} />
               </FormControl>
               <FormControl>
-                <FormLabel color="var(--color-text-secondary)">Passwort bestätigen</FormLabel>
-                <Input type="password" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} />
+                <FormLabel {...LABEL_PROPS}>Passwort bestätigen</FormLabel>
+                <Input
+                  type="password"
+                  value={passwordConfirm}
+                  onChange={(e) => setPasswordConfirm(e.target.value)}
+                  sx={FIELD_SX}
+                />
               </FormControl>
-              <Button onClick={updatePassword} isLoading={savingPassword} colorScheme="yellow" alignSelf="flex-start">
+              <Button onClick={updatePassword} isLoading={savingPassword} variant="gold" alignSelf="flex-start">
                 Passwort aktualisieren
               </Button>
             </Stack>
-          </GlassCard>
-        </GridItem>
-      </Grid>
+          </DashCard>
+        </Grid>
 
-      <GlassCard spotlight borderColor="rgba(239,68,68,0.35)">
-        <Stack spacing={4}>
-          <Text className="inter-semibold" color="var(--color-text-primary)" fontSize="lg">
-            Gefahrenzone
-          </Text>
-          <Text color="var(--color-text-secondary)" fontSize="sm">
-            Du wirst aus deinem Konto abgemeldet und zur Login-Seite zurückgeleitet.
-          </Text>
-          <Divider borderColor="rgba(255,255,255,0.08)" />
-          <Button
-            leftIcon={<Icon as={LogOut} boxSize={4} />}
-            onClick={signOut}
-            isLoading={signingOut}
-            colorScheme="red"
-            variant="outline"
-            alignSelf="flex-start"
-          >
-            Jetzt abmelden
-          </Button>
-        </Stack>
-      </GlassCard>
+        <DashCard
+          label="Gefahrenzone"
+          labelId="settings-danger"
+          className="cc-card--still cc-rise"
+          style={rise(5)}
+          action={
+            <Button
+              variant="line"
+              color="var(--cc-danger)"
+              leftIcon={<Icon as={LogOut} boxSize={4} />}
+              onClick={signOut}
+              isLoading={signingOut}
+              w={{ base: "100%", sm: "auto" }}
+            >
+              Jetzt abmelden
+            </Button>
+          }
+        >
+          <Meta>Du wirst aus deinem Konto abgemeldet und zur Login-Seite zurückgeleitet.</Meta>
+        </DashCard>
 
-      {loadingProfile ? (
-        <Text fontSize="sm" color="var(--color-text-secondary)">
-          Profil wird geladen...
-        </Text>
-      ) : null}
-    </Stack>
+        {loadingProfile ? <Meta role="status">Profil wird geladen...</Meta> : null}
+      </Stack>
+    </Box>
   );
 }

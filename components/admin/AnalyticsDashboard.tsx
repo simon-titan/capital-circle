@@ -3,7 +3,6 @@
 import {
   Alert,
   AlertIcon,
-  Badge,
   Box,
   Button,
   Grid,
@@ -28,6 +27,21 @@ import {
   XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ADMIN_CARD_CLASS,
+  ADMIN_CHART,
+  AdminCardTitle,
+  AdminLabel,
+  StatusPill,
+  adminAlertIconColor,
+  adminAlertProps,
+  adminCardPadding,
+  adminChipProps,
+  adminInputProps,
+  adminInsetProps,
+  adminOptionStyle,
+  type AdminTone,
+} from "@/components/admin/adminUi";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -131,6 +145,33 @@ const PAYMENT_STATUS_FILTERS = [
 
 type PaymentFilter = (typeof PAYMENT_STATUS_FILTERS)[number]["id"];
 
+/** Kopfzeile der Grid-Tabellen (Payments, Email-Performance). */
+const gridHeadProps = {
+  gap: 0,
+  px: 4,
+  py: 2.5,
+  fontSize: "12px",
+  fontWeight: 500,
+  letterSpacing: "0.06em",
+  textTransform: "uppercase",
+  color: "var(--cc-text-2)",
+  borderBottom: "1px solid var(--cc-line-strong)",
+  display: { base: "none", md: "grid" },
+} as const;
+
+/** Datenzeile der Grid-Tabellen. */
+const gridRowProps = {
+  px: 4,
+  py: 3,
+  borderBottom: "1px solid var(--cc-line)",
+  fontSize: "14px",
+  color: "var(--cc-text-soft)",
+  alignItems: "center",
+  transition: "background-color 120ms ease",
+  _hover: { bg: "rgba(255, 255, 255, 0.03)" },
+  _last: { borderBottom: "none" },
+} as const;
+
 // ── Main Component ─────────────────────────────────────────────────────────
 
 export function AnalyticsDashboard() {
@@ -168,18 +209,18 @@ export function AnalyticsDashboard() {
   if (loading && !data) {
     return (
       <HStack py={20} justify="center">
-        <Spinner color="var(--color-accent-gold)" />
+        <Spinner color="var(--cc-gold)" />
       </HStack>
     );
   }
 
   if (error) {
     return (
-      <Alert status="error" variant="subtle" bg="rgba(229,72,77,0.10)" borderRadius="12px">
-        <AlertIcon />
+      <Alert status="error" variant="subtle" {...adminAlertProps("error")}>
+        <AlertIcon color={adminAlertIconColor("error")} />
         <Stack spacing={1}>
-          <Text fontSize="sm" className="inter">{error}</Text>
-          <Button size="xs" variant="ghost" onClick={() => void load()}>
+          <Text fontSize="sm">{error}</Text>
+          <Button size="xs" variant="line" alignSelf="flex-start" onClick={() => void load()}>
             Erneut versuchen
           </Button>
         </Stack>
@@ -190,21 +231,17 @@ export function AnalyticsDashboard() {
   if (!data) return null;
 
   return (
-    <Stack spacing={8}>
+    <Stack spacing={6}>
       <HStack justify="space-between" flexWrap="wrap" gap={3}>
-        <Text fontSize="xs" color="var(--color-text-secondary)" className="inter">
+        <Text fontSize="12px" color="var(--cc-text-2)" className="cc-num">
           Letzte Aktualisierung: {dateFmt.format(new Date(data.generatedAt))}
         </Text>
         <Button
           size="sm"
-          variant="outline"
+          variant="line"
           leftIcon={<RefreshCw size={14} />}
           onClick={() => void load()}
           isLoading={loading}
-          borderColor="rgba(212,175,55,0.45)"
-          color="var(--color-accent-gold-light, #E8C547)"
-          _hover={{ bg: "rgba(212,175,55,0.10)" }}
-          className="inter"
         >
           Aktualisieren
         </Button>
@@ -226,19 +263,19 @@ function KpiRow({ data }: { data: AnalyticsResponse }) {
   return (
     <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={4}>
       <StatWidget
-        icon={<Wallet size={18} />}
+        icon={<Wallet size={16} strokeWidth={1.75} />}
         label="MRR (Monthly Recurring)"
         value={eurFmt.format(data.mrr.mrrEur)}
         sublabel={`${data.mrr.monthlyActiveSubs} aktive Monats-Abos · ${eurFmt.format(data.mrr.monthlyPriceEur)} / Monat`}
       />
       <StatWidget
-        icon={<Wallet size={18} />}
+        icon={<Wallet size={16} strokeWidth={1.75} />}
         label="Lifetime-Umsatz · 30d"
         value={eurFmt.format(data.mrr.lifetimeRevenue30dEur)}
         sublabel={`${data.mrr.lifetimeActive} aktive Lifetime-Mitglieder gesamt`}
       />
       <StatWidget
-        icon={<TrendingDown size={18} />}
+        icon={<TrendingDown size={16} strokeWidth={1.75} />}
         label="Churn-Rate · 30d"
         value={`${data.churn.churnRate30dPct.toFixed(1)} %`}
         sublabel={`${data.churn.canceled30d} Kündigungen · Basis: ${data.churn.activeAtStart} aktive`}
@@ -246,7 +283,7 @@ function KpiRow({ data }: { data: AnalyticsResponse }) {
         trendInverted
       />
       <StatWidget
-        icon={<Users size={18} />}
+        icon={<Users size={16} strokeWidth={1.75} />}
         label="Registrierungen · 30d"
         value={String(data.funnel["30d"].registrations)}
         sublabel={`${data.funnel["7d"].registrations} in den letzten 7 Tagen`}
@@ -269,35 +306,16 @@ function StatWidget(props: {
   let trendColor: string | undefined;
   if (trend) {
     const positive = trendInverted ? trend === "down" : trend === "up";
-    trendColor = positive ? "#4ADE80" : "#F87171";
+    trendColor = positive ? "var(--cc-success)" : "var(--cc-danger)";
   }
 
   return (
-    <Box
-      // statWidget.base aus DESIGN.json
-      bg="rgba(20, 21, 25, 0.82)"
-      backdropFilter="blur(20px) saturate(1.6)"
-      border="1px solid rgba(255,255,255,0.09)"
-      borderRadius="20px"
-      p="18px 20px"
-      boxShadow="0 8px 32px rgba(0,0,0,0.60), inset 0 1px 0 rgba(255,255,255,0.06)"
-      position="relative"
-      overflow="hidden"
-    >
+    <Box className={ADMIN_CARD_CLASS} p={adminCardPadding}>
       <Stack spacing={3}>
         <HStack justify="space-between">
-          <HStack spacing={2} color="var(--color-accent-gold-light, #E8C547)">
+          <HStack spacing={2} color="var(--cc-text-2)">
             {icon}
-            <Text
-              fontSize="11px"
-              fontWeight={500}
-              letterSpacing="0.08em"
-              textTransform="uppercase"
-              color="#606068"
-              className="inter"
-            >
-              {label}
-            </Text>
+            <AdminLabel>{label}</AdminLabel>
           </HStack>
           {trend && trendColor ? (
             <HStack spacing={1} color={trendColor}>
@@ -306,16 +324,17 @@ function StatWidget(props: {
           ) : null}
         </HStack>
         <Text
-          className="jetbrains-mono"
+          className="cc-num"
           fontSize="28px"
-          fontWeight={700}
+          fontWeight={600}
+          letterSpacing="-0.02em"
           lineHeight="1"
-          color="#F0F0F2"
+          color="var(--cc-text)"
         >
           {value}
         </Text>
         {sublabel ? (
-          <Text fontSize="xs" color="var(--color-text-secondary)" className="inter">
+          <Text fontSize="12px" color="var(--cc-text-2)" className="cc-num">
             {sublabel}
           </Text>
         ) : null}
@@ -341,23 +360,13 @@ function FunnelSection({ funnel }: { funnel: AnalyticsResponse["funnel"] }) {
   return (
     <SectionCard
       title="Funnel-Konversion"
-      icon={<Activity size={16} />}
+      icon={<Activity size={16} strokeWidth={1.75} />}
       right={
-        <HStack spacing={1}>
+        <HStack spacing={1.5}>
           {(["7d", "30d"] as const).map((id) => {
             const active = tab === id;
             return (
-              <Button
-                key={id}
-                size="xs"
-                onClick={() => setTab(id)}
-                bg={active ? "rgba(212,175,55,0.16)" : "transparent"}
-                color={active ? "var(--color-accent-gold-light, #E8C547)" : "var(--color-text-secondary)"}
-                border="1px solid"
-                borderColor={active ? "rgba(212,175,55,0.45)" : "rgba(255,255,255,0.10)"}
-                _hover={{ bg: "rgba(255,255,255,0.06)" }}
-                className="inter"
-              >
+              <Button key={id} {...adminChipProps(active)} size="xs" onClick={() => setTab(id)}>
                 {id === "7d" ? "7 Tage" : "30 Tage"}
               </Button>
             );
@@ -402,25 +411,24 @@ function FunnelBar(props: {
   return (
     <Stack spacing={2}>
       <HStack justify="space-between">
-        <Text fontSize="sm" color="var(--color-text-primary)" className="inter">
+        <Text fontSize="14px" color="var(--cc-text-soft)">
           {label}
         </Text>
-        <Text className="jetbrains-mono" fontSize="sm" color="var(--color-text-primary)">
+        <Text className="cc-num" fontSize="14px" fontWeight={600} color="var(--cc-text)">
           {value}
         </Text>
       </HStack>
-      <Box bg="#1A1B1F" borderRadius="9999px" overflow="hidden" h="8px">
+      <Box bg={ADMIN_CHART.track} borderRadius="full" overflow="hidden" h="8px">
         <Box
           h="full"
           w={`${(pct * 100).toFixed(2)}%`}
-          background="linear-gradient(90deg, #A67C00 0%, #D4AF37 100%)"
-          borderRadius="9999px"
-          boxShadow="0 0 8px rgba(212,175,55,0.30)"
-          transition="width 600ms cubic-bezier(0.16, 1, 0.3, 1)"
+          bg={ADMIN_CHART.gold}
+          borderRadius="full"
+          transition="width 600ms var(--cc-ease)"
         />
       </Box>
       {subtext ? (
-        <Text fontSize="xs" color="var(--color-text-secondary)" className="inter">
+        <Text fontSize="12px" color="var(--cc-text-2)" className="cc-num">
           {subtext}
         </Text>
       ) : null}
@@ -445,23 +453,13 @@ function PaymentsSection({ payments }: { payments: PaymentLogRow[] }) {
   return (
     <SectionCard
       title="Payments-Log · letzte 30 Tage"
-      icon={<Wallet size={16} />}
+      icon={<Wallet size={16} strokeWidth={1.75} />}
       right={
-        <HStack spacing={1}>
+        <HStack spacing={1.5}>
           {PAYMENT_STATUS_FILTERS.map((f) => {
             const active = filter === f.id;
             return (
-              <Button
-                key={f.id}
-                size="xs"
-                onClick={() => setFilter(f.id)}
-                bg={active ? "rgba(212,175,55,0.16)" : "transparent"}
-                color={active ? "var(--color-accent-gold-light, #E8C547)" : "var(--color-text-secondary)"}
-                border="1px solid"
-                borderColor={active ? "rgba(212,175,55,0.45)" : "rgba(255,255,255,0.10)"}
-                _hover={{ bg: "rgba(255,255,255,0.06)" }}
-                className="inter"
-              >
+              <Button key={f.id} {...adminChipProps(active)} size="xs" onClick={() => setFilter(f.id)}>
                 {f.label}
               </Button>
             );
@@ -469,28 +467,8 @@ function PaymentsSection({ payments }: { payments: PaymentLogRow[] }) {
         </HStack>
       }
     >
-      <Box
-        // adminPanel.table aus DESIGN.json
-        bg="#0C0D10"
-        border="1px solid rgba(255,255,255,0.07)"
-        borderRadius="12px"
-        overflow="hidden"
-      >
-        <Grid
-          templateColumns={{ base: "1fr", md: "140px 1.5fr 100px 110px 110px 60px" }}
-          gap={0}
-          fontSize="11px"
-          fontWeight={500}
-          letterSpacing="0.08em"
-          textTransform="uppercase"
-          color="#3A3A40"
-          bg="rgba(255,255,255,0.02)"
-          borderBottom="1px solid rgba(255,255,255,0.07)"
-          px={4}
-          py={3}
-          className="inter"
-          display={{ base: "none", md: "grid" }}
-        >
+      <Box {...adminInsetProps} overflow="hidden">
+        <Grid templateColumns={{ base: "1fr", md: "140px 1.5fr 100px 110px 110px 60px" }} {...gridHeadProps}>
           <GridItem>Datum</GridItem>
           <GridItem>User</GridItem>
           <GridItem>Typ</GridItem>
@@ -500,7 +478,7 @@ function PaymentsSection({ payments }: { payments: PaymentLogRow[] }) {
         </Grid>
 
         {filtered.length === 0 ? (
-          <Text px={4} py={6} fontSize="sm" color="var(--color-text-secondary)" className="inter">
+          <Text px={4} py={6} fontSize="14px" color="var(--cc-text-2)">
             Keine Zahlungen in dieser Ansicht.
           </Text>
         ) : (
@@ -509,61 +487,36 @@ function PaymentsSection({ payments }: { payments: PaymentLogRow[] }) {
               key={p.id}
               templateColumns={{ base: "1fr", md: "140px 1.5fr 100px 110px 110px 60px" }}
               gap={2}
-              px={4}
-              py={3}
-              borderBottom="1px solid rgba(255,255,255,0.05)"
-              fontSize="14px"
-              color="#9A9AA4"
-              alignItems="center"
-              transition="background 150ms ease"
-              _hover={{ bg: "rgba(255,255,255,0.03)" }}
-              className="inter"
+              {...gridRowProps}
             >
-              <GridItem className="jetbrains-mono" fontSize="xs">
+              <GridItem className="cc-num" fontSize="13px" color="var(--cc-text-2)">
                 {dateFmt.format(new Date(p.createdAt))}
               </GridItem>
               <GridItem minW={0}>
                 <Stack spacing={0}>
-                  <Text noOfLines={1} color="var(--color-text-primary)" fontSize="sm">
+                  <Text noOfLines={1} color="var(--cc-text)" fontSize="14px">
                     {p.userName ?? p.userEmail ?? "—"}
                   </Text>
                   {p.userEmail && p.userName ? (
-                    <Text noOfLines={1} fontSize="xs" color="var(--color-text-secondary)">
+                    <Text noOfLines={1} fontSize="12px" color="var(--cc-text-2)">
                       {p.userEmail}
                     </Text>
                   ) : null}
                 </Stack>
               </GridItem>
               <GridItem>
-                <Badge
-                  bg={
-                    p.type === "lifetime"
-                      ? "rgba(212,175,55,0.12)"
-                      : p.type === "monthly"
-                        ? "rgba(255,255,255,0.07)"
-                        : "rgba(255,255,255,0.04)"
-                  }
-                  color={
-                    p.type === "lifetime"
-                      ? "#E8C547"
-                      : p.type === "monthly"
-                        ? "#9A9AA4"
-                        : "#606068"
-                  }
-                  border="1px solid rgba(255,255,255,0.08)"
-                  borderRadius="6px"
-                  fontSize="11px"
-                  px={2}
-                  className="inter"
+                <StatusPill
+                  tone="neutral"
                   textTransform="capitalize"
+                  color={p.type === "lifetime" ? "var(--cc-text)" : undefined}
                 >
                   {p.type === "unknown" ? "—" : p.type}
-                </Badge>
+                </StatusPill>
               </GridItem>
               <GridItem
                 textAlign={{ base: "left", md: "right" }}
-                className="jetbrains-mono"
-                color="var(--color-text-primary)"
+                className="cc-num"
+                color="var(--cc-text)"
                 fontWeight={600}
               >
                 {eurFmtCents.format(p.amountEur)}
@@ -578,15 +531,17 @@ function PaymentsSection({ payments }: { payments: PaymentLogRow[] }) {
                     href={`https://dashboard.stripe.com/invoices/${p.stripeInvoiceId}`}
                     target="_blank"
                     rel="noreferrer"
-                    color="var(--color-accent-gold-light, #E8C547)"
+                    aria-label="Rechnung in Stripe öffnen"
+                    color="var(--cc-text-2)"
                     display="inline-flex"
                     alignItems="center"
-                    _hover={{ color: "#FFD66B" }}
+                    transition="color 150ms var(--cc-ease)"
+                    _hover={{ color: "var(--cc-gold-light)" }}
                   >
                     <ExternalLink size={14} />
                   </Box>
                 ) : (
-                  <Text fontSize="xs" color="#3A3A40">—</Text>
+                  <Text fontSize="12px" color="var(--cc-text-3)">—</Text>
                 )}
               </GridItem>
             </Grid>
@@ -599,25 +554,16 @@ function PaymentsSection({ payments }: { payments: PaymentLogRow[] }) {
 
 function PaymentStatusBadge({ status }: { status: string }) {
   const lower = status.toLowerCase();
-  const variant =
+  const tone: AdminTone =
     lower === "succeeded"
-      ? { bg: "rgba(34,197,94,0.10)", color: "#4ADE80", border: "rgba(34,197,94,0.18)" }
+      ? "success"
       : lower === "failed" || lower.startsWith("payment_failed")
-        ? { bg: "rgba(239,68,68,0.10)", color: "#F87171", border: "rgba(239,68,68,0.18)" }
-        : { bg: "rgba(255,255,255,0.07)", color: "#9A9AA4", border: "rgba(255,255,255,0.08)" };
+        ? "danger"
+        : "neutral";
   return (
-    <Badge
-      bg={variant.bg}
-      color={variant.color}
-      border={`1px solid ${variant.border}`}
-      borderRadius="6px"
-      fontSize="11px"
-      px={2}
-      className="inter"
-      textTransform="capitalize"
-    >
+    <StatusPill tone={tone} textTransform="capitalize">
       {status}
-    </Badge>
+    </StatusPill>
   );
 }
 
@@ -627,64 +573,49 @@ function CancellationsSection({ cancellations }: { cancellations: CancellationRo
   return (
     <SectionCard
       title="Cancellations-Inbox"
-      icon={<XCircle size={16} />}
+      icon={<XCircle size={16} strokeWidth={1.75} />}
     >
       {cancellations.length === 0 ? (
-        <Text fontSize="sm" color="var(--color-text-secondary)" className="inter">
+        <Text fontSize="14px" color="var(--cc-text-2)">
           Noch keine Kündigungs-Antworten.
         </Text>
       ) : (
-        <Stack spacing={3}>
+        <Stack spacing={2.5}>
           {cancellations.map((c) => (
-            <Box
-              key={c.id}
-              borderRadius="12px"
-              border="1px solid rgba(255,255,255,0.07)"
-              bg="rgba(255,255,255,0.03)"
-              p={4}
-            >
+            <Box key={c.id} {...adminInsetProps} p={4}>
               <HStack justify="space-between" mb={2} flexWrap="wrap" gap={2}>
                 <Stack spacing={0}>
-                  <Text className="inter-semibold" color="var(--color-text-primary)" fontSize="sm">
+                  <Text fontWeight={600} color="var(--cc-text)" fontSize="14px">
                     {c.userName ?? c.userEmail ?? "Unbekannt"}
                   </Text>
                   {c.userEmail && c.userName ? (
-                    <Text fontSize="xs" color="var(--color-text-secondary)" className="inter">
+                    <Text fontSize="12px" color="var(--cc-text-2)">
                       {c.userEmail}
                     </Text>
                   ) : null}
                 </Stack>
                 <HStack spacing={2}>
                   {c.structuredReason ? (
-                    <Badge
-                      bg="rgba(212,175,55,0.12)"
-                      color="#E8C547"
-                      border="1px solid rgba(212,175,55,0.22)"
-                      borderRadius="6px"
-                      fontSize="11px"
-                      px={2}
-                      className="inter"
-                    >
+                    <StatusPill tone="neutral">
                       {STRUCTURED_REASON_LABELS[c.structuredReason] ?? c.structuredReason}
-                    </Badge>
+                    </StatusPill>
                   ) : null}
-                  <Text fontSize="xs" color="var(--color-text-secondary)" className="jetbrains-mono">
+                  <Text fontSize="12px" color="var(--cc-text-2)" className="cc-num">
                     {dateOnlyFmt.format(new Date(c.canceledAt))}
                   </Text>
                 </HStack>
               </HStack>
               {(c.feedback ?? c.reason) ? (
                 <Text
-                  fontSize="sm"
-                  color="var(--color-text-secondary)"
-                  className="inter"
+                  fontSize="14px"
+                  color="var(--cc-text-soft)"
                   whiteSpace="pre-wrap"
                   lineHeight="1.6"
                 >
                   {c.feedback ?? c.reason}
                 </Text>
               ) : (
-                <Text fontSize="xs" color="#3A3A40" className="inter" fontStyle="italic">
+                <Text fontSize="12px" color="var(--cc-text-3)" fontStyle="italic">
                   Kein Freitext angegeben.
                 </Text>
               )}
@@ -730,49 +661,29 @@ function EmailPerformanceSection({ rows }: { rows: EmailPerfRow[] }) {
   return (
     <SectionCard
       title="Email-Performance · letzte 60 Tage"
-      icon={<Mail size={16} />}
+      icon={<Mail size={16} strokeWidth={1.75} />}
       right={
         <Select
           size="xs"
           maxW="180px"
           value={groupBy}
           onChange={(e) => setGroupBy(e.target.value as "sequence" | "step")}
-          bg="rgba(255,255,255,0.04)"
-          borderColor="rgba(255,255,255,0.10)"
-          color="var(--color-text-primary)"
-          className="inter"
+          {...adminInputProps}
+          borderRadius="6px"
         >
-          <option value="sequence">Pro Sequence</option>
-          <option value="step">Pro Step</option>
+          <option value="sequence" style={adminOptionStyle}>Pro Sequence</option>
+          <option value="step" style={adminOptionStyle}>Pro Step</option>
         </Select>
       }
     >
       {aggregated.length === 0 ? (
-        <Text fontSize="sm" color="var(--color-text-secondary)" className="inter">
+        <Text fontSize="14px" color="var(--cc-text-2)">
           Noch keine Email-Logs. Daten werden befüllt, sobald Sequencen versenden
           und der Resend-Webhook Events liefert.
         </Text>
       ) : (
-        <Box
-          bg="#0C0D10"
-          border="1px solid rgba(255,255,255,0.07)"
-          borderRadius="12px"
-          overflow="hidden"
-        >
-          <Grid
-            templateColumns={{ base: "1fr", md: "1.5fr 80px 110px 110px 110px 110px" }}
-            px={4}
-            py={3}
-            bg="rgba(255,255,255,0.02)"
-            borderBottom="1px solid rgba(255,255,255,0.07)"
-            fontSize="11px"
-            fontWeight={500}
-            letterSpacing="0.08em"
-            textTransform="uppercase"
-            color="#3A3A40"
-            className="inter"
-            display={{ base: "none", md: "grid" }}
-          >
+        <Box {...adminInsetProps} overflow="hidden">
+          <Grid templateColumns={{ base: "1fr", md: "1.5fr 80px 110px 110px 110px 110px" }} {...gridHeadProps}>
             <GridItem>Sequence</GridItem>
             <GridItem textAlign="right">Step</GridItem>
             <GridItem textAlign="right">Gesendet</GridItem>
@@ -784,48 +695,45 @@ function EmailPerformanceSection({ rows }: { rows: EmailPerfRow[] }) {
             <Grid
               key={`${row.sequence}-${row.step}`}
               templateColumns={{ base: "1fr", md: "1.5fr 80px 110px 110px 110px 110px" }}
-              px={4}
-              py={3}
-              borderBottom="1px solid rgba(255,255,255,0.05)"
-              fontSize="14px"
-              alignItems="center"
-              _hover={{ bg: "rgba(255,255,255,0.03)" }}
+              {...gridRowProps}
             >
-              <GridItem color="var(--color-text-primary)" className="inter">
+              <GridItem color="var(--cc-text)">
                 {row.sequence}
               </GridItem>
               <GridItem
                 textAlign={{ base: "left", md: "right" }}
-                className="jetbrains-mono"
-                color="var(--color-text-secondary)"
+                className="cc-num"
+                color="var(--cc-text-2)"
               >
                 {row.step === -1 ? "·" : row.step}
               </GridItem>
               <GridItem
                 textAlign={{ base: "left", md: "right" }}
-                className="jetbrains-mono"
-                color="var(--color-text-primary)"
+                className="cc-num"
+                color="var(--cc-text)"
               >
                 {row.sent}
               </GridItem>
               <GridItem
                 textAlign={{ base: "left", md: "right" }}
-                className="jetbrains-mono"
-                color="var(--color-text-secondary)"
+                className="cc-num"
+                color="var(--cc-text-2)"
               >
                 {row.opened}
               </GridItem>
               <GridItem
                 textAlign={{ base: "left", md: "right" }}
-                className="jetbrains-mono"
-                color="#E8C547"
+                className="cc-num"
+                color="var(--cc-text)"
+                fontWeight={500}
               >
                 {row.openRatePct.toFixed(1)} %
               </GridItem>
               <GridItem
                 textAlign={{ base: "left", md: "right" }}
-                className="jetbrains-mono"
-                color="#E8C547"
+                className="cc-num"
+                color="var(--cc-text)"
+                fontWeight={500}
               >
                 {row.clickRatePct.toFixed(1)} %
               </GridItem>
@@ -846,19 +754,17 @@ function SectionCard(props: {
   children: React.ReactNode;
 }) {
   return (
-    <Stack spacing={4}>
-      <HStack justify="space-between" flexWrap="wrap" gap={2}>
+    <Box as="section" className={ADMIN_CARD_CLASS} p={adminCardPadding}>
+      <HStack justify="space-between" flexWrap="wrap" gap={2} mb={4}>
         <HStack spacing={2}>
           {props.icon ? (
-            <Box color="var(--color-accent-gold-light, #E8C547)">{props.icon}</Box>
+            <Box color="var(--cc-text-2)" aria-hidden>{props.icon}</Box>
           ) : null}
-          <Text className="radley-regular" fontSize="lg" color="whiteAlpha.950">
-            {props.title}
-          </Text>
+          <AdminCardTitle>{props.title}</AdminCardTitle>
         </HStack>
         {props.right}
       </HStack>
       <Box>{props.children}</Box>
-    </Stack>
+    </Box>
   );
 }

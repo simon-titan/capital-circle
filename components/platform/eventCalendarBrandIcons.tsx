@@ -2,16 +2,15 @@
 
 import { Icon } from "@chakra-ui/react";
 import type { IconType } from "react-icons";
-import { FaApple } from "react-icons/fa6";
-import { FcGoogle } from "react-icons/fc";
+import { FaApple, FaGoogle } from "react-icons/fa6";
 
 type BrandIconProps = {
   boxSize?: string | number;
 };
 
-/** Klassisches Google-„G“ (farbig), kein Produkt-Icon. */
+/** Google-„G“ einfarbig in Textfarbe — Fremdmarken stehen neutral (DESIGN.md). */
 export function GoogleCalendarBrandIcon({ boxSize = "18px" }: BrandIconProps) {
-  return <Icon as={FcGoogle as IconType} boxSize={boxSize} aria-hidden />;
+  return <Icon as={FaGoogle as IconType} boxSize={boxSize} color="currentColor" aria-hidden />;
 }
 
 /** Apple-Logo für Kalender-Export (.ics). */

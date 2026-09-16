@@ -1,104 +1,54 @@
-# Prinzipien & Stil-Modi
+# Prinzipien (v3.2 „Champagner auf Graphit“)
 
-← zurück zum [Index](./README.md)
+← zurück zum [Index](./README.md) · verbindlich: [`DESIGN.md`](../../DESIGN.md)
 
-## Markenphilosophie
+## Haltung
 
-**Dark Monochrome mit Gold-Akzent.** Schwarz/Weiß/Grau tragen ~90 % der UI; Metallic-Gold
-(`#D4AF37`) tritt nur dort auf, wo **Aktion, Fokus oder Bedeutung** signalisiert werden soll.
-Premium, ruhig, klar — kein dekoratives Buntwerk.
+Struktur, Inhalte und seit v3.2 auch die Farben kommen aus den Kunden-Mockups (Sidebar, Raster, „Was ist jetzt
+dran?“). Der Look ist **Champagner auf Graphit**: Graphitgrund mit Sternenfeld und Champagner-Licht, graphitgraue
+Glas-Karten mit Gold-Kante, Gold mit Verlauf und Glow für Aktion und Hervorhebung. Das rein flache v3 war dem Nutzer
+zu langweilig (2026-09-13) — nicht wieder wegminimieren.
 
-- **Stack:** Next.js · Supabase · Chakra UI v2 · Hetzner Object Storage.
-- **Primärstil:** Dark Monochrome Minimal mit selektiven Glassmorphism-Akzenten auf Widgets/Modals.
-- **Grün & Rot** ausschließlich semantisch (Profit/Loss, Success/Error) — **nie** als Designfarbe.
+- Grund: Graphit (`--cc-bg`), Sternenfeld (`.cc-stars`) + weicher Champagner-Schein (`.cc-goldlight`).
+- Karten: graphitgraues Glas (94 %) mit Blur, feiner Rahmen, Gold-Kante oben, Schatten; Hover hebt an und glüht leicht gold.
+- Hero-Karte („Weiter wo du warst“): Gold-Rahmen, Gold-Schein, atmender Glow.
+- Eine Schrift: **Inter** — Überschriften, UI, Zahlen (tabellarische Ziffern, `.cc-num`).
+- Ein Schema für Plattform **und** Marketing. Das Metall-Tier (Bronze/Silber/Orange) ist abgelöst.
 
----
+## Gold (Champagner #D4B080) — der einzige Akzent
 
-## Die zwei Stil-Modi
+| Einsatz | Form |
+|---------|------|
+| Hauptaktionen (Weiterlernen, Beitreten, Jetzt bewerben) | `variant="gold"` — Verlauf, Glow, Hover-Lift |
+| Fortschritt außerhalb der Dashboard-Daten (Lernseite, Institut) | Gold-Balken mit leichtem Glow |
+| Name in der Begrüßung, Hero-Kartentitel | `--cc-gold-light` |
+| Aktiver Navigationspunkt | Gold-Verlauf-Wash, Gold-Linie, Glow |
+| Live | Gold-Punkt, bei laufender Session mit Ring (`.cc-ping`) |
+| Sekundäre Aktionen | `variant="line"` — Haarlinie, Hover mit Gold-Kante |
 
-Das ist die wichtigste Unterscheidung im ganzen System. Es gibt **zwei bewusst getrennte Welten**:
+**Datentinte statt Gold für Dashboard-Daten** (wie im Kunden-Mockup): Weiterlernen-Balken (`ProgressBar tone="ink"`),
+Fortschrittssegmente und Streak-Haken in `--cc-ink` (hellgrau), die Prozentzahl in `--cc-text`, Icon-Kacheln neutral.
 
-### 1. Plattform-Modus (Gold-only)
+Einzige Ausnahme vom Gold: die warme Streak-Flamme (Orange→Champagner). Grün/Rot nur semantisch.
 
-**Wo:** Mitgliederbereich / `app/(platform)/*`, Admin, alles unter `[data-platform]`.
+## Bewegung
 
-- **Strikt monochrom + Gold.** Gold ist der **einzige** Akzent.
-- Gold nur für: primäre CTAs, aktive Nav-Items, Fokus-States, Progress-Bars, selektierte Quiz-Antworten,
-  Hero-/Highlight-Karten.
-- Glassmorphism nur auf Widgets, Modals, Overlays, Top-/Sidebar — **nie** auf Content-Karten.
-- Dies ist der Modus, den `DESIGN.json` `usage_guidelines` beschreibt.
-
-### 2. Marketing-/Funnel-Modus (Metall-Tier)
-
-**Wo:** `/insight`, `/bewerbung`, `app/(marketing)/*`, alle Landing-/Funnel-Pages.
-
-- Bewusst **mehrfarbiges „Metall-Tier"-Schema** zur emotionalen Aufwertung & visuellen Hierarchie:
-
-  | Tier | Farbe | Einsatz |
-  |------|-------|---------|
-  | **Gold** | `#D4AF37` | höchste Wertigkeit, Haupt-CTA, „Premium" |
-  | **Silber** | `#AAC0D8` (blaustichig) | Mittel-Tier, neutrale Stats |
-  | **Bronze/Kupfer** | `#CD7F32` / `rgba(184,94,48,…)` | Einstieg/Wärme |
-  | **Orange** | `#FF9432` / `rgba(255,148,50,…)` | Energie/Dringlichkeit (Insight-Cards) |
-  | **Rot** | `rgba(229,62,62,…)` | Verknappungs-Highlight („EINE EINZIGE CHANCE") |
-
-- **Warum die Abweichung Absicht ist:** Landing-Pages müssen Aufmerksamkeit, Dringlichkeit und
-  Tier-Hierarchie transportieren — das reine Gold-only der Plattform wäre zu flach für Conversion.
-  Das Schema bleibt aber **diszipliniert**: gedämpfte, metallische Töne auf dunklem Grund, kein Regenbogen.
-
-> **Faustregel:** Baust du etwas im Mitgliederbereich → **Gold-only**. Baust du einen Funnel/Landing →
-> **Metall-Tier** erlaubt, aber kontrolliert (siehe [`funnel-pages.md`](./funnel-pages.md)).
-
----
-
-## Color-Regeln
-
-- 90 % der UI: ausschließlich Background-/Surface-/Text-Tokens (Schwarz/Weiß/Grau).
-- Gold = Signalfarbe (Plattform) bzw. höchstes Tier (Marketing).
-- Grün/Rot nur semantisch (Profit/Loss, Success/Error) — nie dekorativ.
-- Gradients: Gold-auf-Gold (`accentPrimary`) oder Weiß-Transparenz (`surfaceUp`); im Marketing zusätzlich
-  metallische Radial-Verläufe pro Tier. **Keine** bunten Multi-Color-Gradients.
-- Der Name `--color-accent-blue` / `brand.accentBlue` ist ein **deprecated Legacy-Alias auf Gold** —
-  „minimal blau" aus alten Prompts ist **veraltet**. Immer Gold.
-
-## Typografie-Regeln (verbindlich)
-
-| Rolle | Schrift | Einbindung |
-|-------|---------|------------|
-| Überschriften | **Radley** (serif, 400 + italic) | `.radley-regular` / `.radley-regular-italic`, `h1`–`h6`, Chakra `fonts.heading`, `var(--font-heading)` |
-| Fließtext & UI | **Inter** (variable, optical sizing) | `body`, `.inter` (+ `.inter-medium/-semibold/-bold`), Chakra `fonts.body`, `var(--font-body)` |
-| Zahlen / Code | **JetBrains Mono** | `.jetbrains-mono`, Chakra `fonts.mono`, `var(--font-mono)` |
-
-- **Alle Zahlen** (Preise, %, Datum, IDs) in JetBrains Mono — ohne Ausnahme.
-- Im Mitgliederbereich werden Überschriften per `[data-platform] h1…h6` bewusst auf **Inter** gezwungen
-  (siehe `app/globals.css`) — Radley bleibt für Marketing/Hero-Akzente.
-- `.dm-sans` = Legacy-Alias für Inter-Body; neues Markup nutzt `.inter`.
-- Keine weiteren Schriftfamilien. Neue Webfonts nur mit Anpassung von `DESIGN.json` + `app/layout.tsx`.
-
-## Glassmorphism-Regeln
-
-- Nur auf: StatWidgets, Modals, Overlays, Top-/Sidebar, Hero-/Dashboard-Karten — **nie** auf einfache
-  Content-Karten oder Listen.
-- `backdrop-filter` immer mit `-webkit-` Prefix; max. `blur(32px)` (Performance).
-- Bei `backdrop-filter` `will-change: transform` für GPU-Beschleunigung.
-
----
+Karten steigen beim Laden nacheinander auf (`.cc-rise`), Fortschritt füllt sich (`.cc-fill`), die Hero-Karte atmet,
+die Flamme pulsiert, Sterne funkeln, ein Lichtfunke wandert an der Sidebar-Kante. Alles aus bei `prefers-reduced-motion`.
 
 ## Do / Don't
 
 **Do**
-- CSS-Variablen (`--color-*`, `--font-*`) statt hardcoded Werten verwenden, wo vorhanden.
-- Hover: `transform: translateY(-1px…-2px)` + Border-/Glow-Änderung.
-- Animationen max. ~400 ms, Easing `cubic-bezier(0.16, 1, 0.3, 1)`.
-- 4px-Raster strikt einhalten (kein `padding: 15px`).
-- `prefers-reduced-motion` respektieren (alle Hero-/Puls-Animationen deaktivieren).
-- Bestehende Bausteine wiederverwenden (siehe [README Quick-Start](./README.md#quick-start-neue-funnel-landing-page-bauen)).
+- `.cc-card` (+ `--hero`) und die Primitives aus `components/platform/dashboard/primitives.tsx` nutzen.
+- Gold über die Tokens (`--cc-gold*`, `--cc-gold-grad`, `--cc-gold-bar`) statt Einzelwerten.
+- Gesperrte Inhalte ehrlich benennen (`LockedNote`).
+- Browser-Oberflächen mitgestalten: Auswahl, Caret, Scrollbar, `:focus-visible` (gold).
 
 **Don't**
-- Kein heller Page-Background.
-- Kein Glassmorphism auf Content-Karten/Listen.
-- Kein `blur() > 32px`.
-- Im **Plattform-Modus** keine Farben außer Gold (+ Semantik). Im **Marketing-Modus** keine Töne
-  außerhalb der Metall-Tier-Palette.
-- Keine Schrift außer Radley / Inter / JetBrains Mono.
-- Kein „blau" (deprecated).
+- Keine zweite Schrift (Radley, JetBrains Mono sind entfernt; geladen wird nur Inter).
+- Keine weiteren Akzentfarben neben Gold; kein Bronze/Silber/Orange (außer der Streak-Flamme).
+- Kein `#D4AF37` — das gelbere Brand-Gold ist aus der App entfernt.
+- Dashboard-Daten und Icon-Kacheln nicht wieder vergolden.
+- Kein Verlaufstext (Gradient auf Schrift) — Betonung über Farbe/Gewicht.
+- Kein `GlassCard`/`.glass-card*` — beide sind entfernt, `.cc-card` ersetzt sie.
+- Kein heller Hintergrund.

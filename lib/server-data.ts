@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { resolveEventColor } from "@/config/event-colors";
+import { buildThumbnailUrl } from "@/lib/cloudflare-stream";
 import { getPresignedGetUrl } from "@/lib/storage";
 import {
   getModulePublishedPlaylist,
@@ -42,6 +44,10 @@ export type LastWatchedModuleData = {
   /** S3-Key des zuletzt angesehenen Videos (für Dashboard-Vorschau via /api/video-url) */
   lastVideoStorageKey: string | null;
   thumbnailSignedUrl: string | null;
+  /** Position des zuletzt angesehenen Videos in der Modul-Playlist (1-basiert), null wenn unbekannt. */
+  lessonNumber: number | null;
+  /** Anzahl veröffentlichter Videos im Modul. */
+  lessonCount: number;
   module: {
     id: string;
     title: string;
@@ -92,7 +98,55 @@ export type AcademyModuleRow = {
   progressPercent: number;
   videoCount: number;
   totalDurationSeconds: number;
+  /** Untermodule in Playlist-Reihenfolge — für die aufklappbaren Modulkacheln im Institut. */
+  submodules: AcademySubmoduleRow[];
 };
+
+/**
+ * Ein Abschnitt innerhalb eines Moduls. `id: null` steht für die Videos, die
+ * direkt am Modul hängen und keiner Subkategorie zugeordnet sind.
+ */
+export type AcademySubmoduleRow = {
+  id: string | null;
+  title: string;
+  videoCount: number;
+  completedCount: number;
+  durationSeconds: number;
+};
+
+/**
+ * Fasst eine Modul-Playlist zu Untermodulen zusammen. Die Playlist kommt bereits
+ * in Anzeigereihenfolge (direkte Videos und Subkategorien nach gemeinsamer
+ * `position` verschränkt) — die Reihenfolge des ersten Auftretens ist also die
+ * richtige Reihenfolge der Abschnitte.
+ */
+function buildSubmodules(
+  playlist: PlaylistVideoRow[],
+  progressMap: Record<string, number>,
+): AcademySubmoduleRow[] {
+  const reihenfolge: string[] = [];
+  const nach = new Map<string, AcademySubmoduleRow>();
+
+  for (const v of playlist) {
+    const key = v.subcategoryId ?? "__direkt__";
+    if (!nach.has(key)) {
+      reihenfolge.push(key);
+      nach.set(key, {
+        id: v.subcategoryId,
+        title: v.subcategoryTitle ?? "Im Modul",
+        videoCount: 0,
+        completedCount: 0,
+        durationSeconds: 0,
+      });
+    }
+    const eintrag = nach.get(key)!;
+    eintrag.videoCount += 1;
+    eintrag.durationSeconds += v.duration_seconds ?? 0;
+    if (isPlaylistVideoDone(v, progressMap)) eintrag.completedCount += 1;
+  }
+
+  return reihenfolge.map((k) => nach.get(k)!);
+}
 
 /** Free-Kurs (is_free) fuer alle; Paid-Kurs nur mit profiles.is_paid. */
 export function userCanAccessAcademyModule(memberIsPaid: boolean, courseIsFree: boolean | null | undefined): boolean {
@@ -144,6 +198,8 @@ async function signThumbnail(key: string | null | undefined): Promise<string | n
 type ModuleRow = {
   id: string;
   title: string;
+  /** Unveröffentlichte Module dürfen nicht als „zuletzt angesehen“ erscheinen. */
+  is_published?: boolean | null;
   courses: { slug: string | null; title: string; is_free?: boolean | null } | null;
   videos?: { duration_seconds: number | null }[] | null;
 };
@@ -154,6 +210,7 @@ const progressModuleSelect = `
   modules (
     id,
     title,
+    is_published,
     courses ( slug, title ),
     videos ( duration_seconds )
   )
@@ -166,6 +223,7 @@ const progressModuleSelectWithUpdated = `
   modules (
     id,
     title,
+    is_published,
     courses ( slug, title ),
     videos ( duration_seconds )
   )
@@ -192,6 +250,7 @@ const progressModuleSelectExtended = `
     id,
     title,
     slug,
+    is_published,
     thumbnail_storage_key,
     courses ( slug, title, is_free ),
     videos ( duration_seconds )
@@ -226,12 +285,34 @@ async function lastWatchedDataFromProgressRow(
     const { data: lv } = await supabase.from("videos").select("title").eq("id", lastVid).maybeSingle();
     lastVideoTitle = lv?.title ?? null;
   }
-  const thumbKey = mod.thumbnail_storage_key ?? null;
-  const thumbnailSignedUrl = await signThumbnail(thumbKey);
   const currentSec = lastVid ? map[lastVid] ?? row.video_progress_seconds ?? 0 : row.video_progress_seconds ?? 0;
   const lastPlaylistRow = lastVid ? playlist.find((v) => v.id === lastVid) : playlist[0] ?? null;
+
+  /**
+   * Vorschau: bevorzugt das Standbild des zuletzt gesehenen Videos aus
+   * Cloudflare, an der Stelle, an der weitergeschaut wird. Erst wenn das Video
+   * nicht bei Cloudflare liegt, fällt es auf das Modul-Thumbnail zurück — das
+   * lag bis zur Umstellung auf dem Hetzner-Bucket und ist dort verloren.
+   */
+  let thumbnailSignedUrl: string | null = null;
+  if (lastPlaylistRow?.cloudflare_uid) {
+    try {
+      thumbnailSignedUrl = buildThumbnailUrl(lastPlaylistRow.cloudflare_uid, {
+        signed: true,
+        timeSeconds: currentSec,
+        width: 960,
+      });
+    } catch {
+      // Signatur nicht konfiguriert — dann eben das Modulbild.
+    }
+  }
+  if (!thumbnailSignedUrl) {
+    thumbnailSignedUrl = await signThumbnail(mod.thumbnail_storage_key ?? null);
+  }
+
   const lastVideoDurationSeconds = lastPlaylistRow?.duration_seconds ?? 0;
-  const lastVideoStorageKey = lastPlaylistRow?.storage_key ?? null;
+  const lastVideoStorageKey = lastPlaylistRow?.cloudflare_uid ?? lastPlaylistRow?.storage_key ?? null;
+  const lessonIndex = lastPlaylistRow ? playlist.findIndex((v) => v.id === lastPlaylistRow.id) : -1;
 
   // Video-Fortschritt in % für das zuletzt angesehene Video
   let videoProgressPercent = 0;
@@ -256,6 +337,8 @@ async function lastWatchedDataFromProgressRow(
     lastVideoTitle,
     lastVideoStorageKey,
     thumbnailSignedUrl,
+    lessonNumber: lessonIndex >= 0 ? lessonIndex + 1 : null,
+    lessonCount: playlist.length,
     module: {
       id: mod.id,
       title: mod.title,
@@ -303,7 +386,17 @@ export async function getLastWatchedModule(userId: string): Promise<LastWatchedM
       const mod = normalizeJoinedModule(r);
       const course = mod?.courses;
       if (!mod || !userCanAccessAcademyModule(memberIsPaid, course?.is_free)) continue;
-      return lastWatchedDataFromProgressRow(supabase, r);
+      /**
+       * Unveröffentlichte Module überspringen. Ein zurückgezogener Kurs (etwa
+       * der alte Free-Kurs) hinterlässt Fortschrittszeilen, die sonst dauerhaft
+       * „Weiter wo du warst" belegen — mit leerer Vorschau, weil das Modul
+       * keine veröffentlichte Playlist mehr hat.
+       */
+      if (mod.is_published === false) continue;
+      const daten = await lastWatchedDataFromProgressRow(supabase, r);
+      // Ohne Videos in der Playlist gibt es nichts fortzusetzen — nächste Zeile.
+      if (!daten || daten.lessonCount === 0) continue;
+      return daten;
     }
     return null;
   };
@@ -555,6 +648,7 @@ export async function getAcademyModulesOverview(
       progressPercent: completed ? 100 : pct,
       videoCount: playlist.length,
       totalDurationSeconds: totalDur,
+      submodules: buildSubmodules(playlist, map),
     });
   }
 
@@ -744,6 +838,68 @@ export async function getUpcomingEvents(limit: number): Promise<EventRow[]> {
     .limit(limit);
 
   return (data as EventRow[] | null) ?? [];
+}
+
+/**
+ * Events, die gerade laufen oder noch kommen (Dashboard „Heute live“).
+ * Anders als `getUpcomingEvents` bleiben bereits gestartete Events drin, bis
+ * sie enden — ohne `end_time` gelten 90 Minuten.
+ */
+export type MonatsTermin = {
+  /** Tag im Monat (1–31). */
+  tag: number;
+  titel: string;
+  /** Farbe des Events, bereits auf die Markenpalette abgebildet. */
+  farbe: string;
+  startIso: string;
+};
+
+/**
+ * Alle Events des laufenden Kalendermonats — für den Mini-Kalender im
+ * Dashboard. Bewusst nur ein Monat: Die Karte zeigt ein Monatsraster, alles
+ * darüber hinaus wäre geladen und nie sichtbar.
+ */
+export async function getMonatsTermine(bezug: Date): Promise<MonatsTermin[]> {
+  const supabase = await createClient();
+  const von = new Date(bezug.getFullYear(), bezug.getMonth(), 1);
+  const bis = new Date(bezug.getFullYear(), bezug.getMonth() + 1, 1);
+
+  const { data } = await supabase
+    .from("events")
+    .select("title,start_time,color")
+    .gte("start_time", von.toISOString())
+    .lt("start_time", bis.toISOString())
+    .order("start_time", { ascending: true });
+
+  return ((data as { title: string; start_time: string; color: string | null }[] | null) ?? []).map((ev) => {
+    const start = new Date(ev.start_time);
+    return {
+      tag: start.getDate(),
+      titel: ev.title,
+      farbe: resolveEventColor(ev.color).value,
+      startIso: ev.start_time,
+    };
+  });
+}
+
+export async function getLiveWindowEvents(limit: number): Promise<EventRow[]> {
+  const supabase = await createClient();
+  const now = Date.now();
+  const since = new Date(now - 4 * 60 * 60 * 1000).toISOString();
+  const { data } = await supabase
+    .from("events")
+    .select("id,title,description,start_time,end_time,event_type,color,external_url")
+    .gte("start_time", since)
+    .order("start_time", { ascending: true })
+    .limit(limit + 6);
+
+  return ((data as EventRow[] | null) ?? [])
+    .filter((ev) => {
+      const start = Date.parse(ev.start_time);
+      const end = ev.end_time ? Date.parse(ev.end_time) : start + 90 * 60 * 1000;
+      return end >= now;
+    })
+    .slice(0, limit);
 }
 
 export async function getCompletedModulesCount(userId: string): Promise<number> {
@@ -1197,6 +1353,21 @@ export async function getAnalysisPostById(id: string): Promise<AnalysisPostRow |
   const supabase = await createClient();
   const { data } = await supabase.from("analysis_posts").select("*").eq("id", id).maybeSingle();
   return (data as AnalysisPostRow | null) ?? null;
+}
+
+export type LatestAnalysisRow = Pick<AnalysisPostRow, "id" | "title" | "post_type" | "analysis_date" | "published_at">;
+
+/** Neueste Analyse fürs Dashboard — gleiche Sortierung wie der Feed, ohne Inhalt. */
+export async function getLatestAnalysisPost(): Promise<LatestAnalysisRow | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("analysis_posts")
+    .select("id,title,post_type,analysis_date,published_at")
+    .order("analysis_date", { ascending: false, nullsFirst: false })
+    .order("published_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data as LatestAnalysisRow | null) ?? null;
 }
 
 // ============================================================

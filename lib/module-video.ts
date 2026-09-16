@@ -8,6 +8,7 @@ export type PlaylistVideoRow = {
   title: string;
   description: string | null;
   storage_key: string;
+  cloudflare_uid: string | null;
   thumbnail_key: string | null;
   thumbnailSignedUrl: string | null;
   duration_seconds: number | null;
@@ -48,6 +49,7 @@ type VideoRow = {
   title: string;
   description?: string | null;
   storage_key: string;
+  cloudflare_uid?: string | null;
   thumbnail_key: string | null;
   duration_seconds: number | null;
   position: number;
@@ -155,7 +157,7 @@ export async function getPrimaryPublishedVideoStorageKey(
 ): Promise<string | null> {
   const { data: direct } = await supabase
     .from("videos")
-    .select("id,storage_key,position")
+    .select("id,storage_key,cloudflare_uid,position")
     .eq("module_id", moduleId)
     .is("subcategory_id", null)
     .eq("is_published", true);
@@ -170,17 +172,24 @@ export async function getPrimaryPublishedVideoStorageKey(
     subIds.length > 0
       ? await supabase
           .from("videos")
-          .select("storage_key,subcategory_id,position")
+          .select("storage_key,cloudflare_uid,subcategory_id,position")
           .in("subcategory_id", subIds)
           .eq("is_published", true)
-      : { data: [] as { storage_key: string; subcategory_id: string | null; position: number }[] };
+      : {
+          data: [] as {
+            storage_key: string;
+            cloudflare_uid: string | null;
+            subcategory_id: string | null;
+            position: number;
+          }[],
+        };
 
-  const bySub = new Map<string, { storage_key: string; position: number }[]>();
+  const bySub = new Map<string, { storage_key: string; cloudflare_uid: string | null; position: number }[]>();
   for (const v of subVideos ?? []) {
     const sid = v.subcategory_id;
-    if (!sid || !v.storage_key) continue;
+    if (!sid || (!v.storage_key && !v.cloudflare_uid)) continue;
     const arr = bySub.get(sid) ?? [];
-    arr.push({ storage_key: v.storage_key, position: v.position ?? 0 });
+    arr.push({ storage_key: v.storage_key, cloudflare_uid: v.cloudflare_uid, position: v.position ?? 0 });
     bySub.set(sid, arr);
   }
   for (const [, arr] of bySub) {
@@ -188,16 +197,18 @@ export async function getPrimaryPublishedVideoStorageKey(
   }
 
   const slots = interleaveModuleContent(
-    (direct ?? []) as Array<{ id: string; storage_key: string; position: number }>,
+    (direct ?? []) as Array<{ id: string; storage_key: string; cloudflare_uid: string | null; position: number }>,
     subs ?? [],
   );
 
   for (const slot of slots) {
     if (slot.kind === "direct") {
-      if (slot.item.storage_key) return slot.item.storage_key;
+      const key = slot.item.cloudflare_uid ?? slot.item.storage_key;
+      if (key) return key;
     } else {
       const first = bySub.get(slot.sub.id)?.[0];
-      if (first?.storage_key) return first.storage_key;
+      const key = first?.cloudflare_uid ?? first?.storage_key;
+      if (key) return key;
     }
   }
 
@@ -212,7 +223,7 @@ export async function getModulePublishedPlaylist(supabase: ServerClient, moduleI
 
   const { data: direct } = await supabase
     .from("videos")
-    .select("id,title,description,storage_key,thumbnail_key,duration_seconds,position")
+    .select("id,title,description,storage_key,cloudflare_uid,thumbnail_key,duration_seconds,position")
     .eq("module_id", moduleId)
     .is("subcategory_id", null)
     .eq("is_published", true);
@@ -228,7 +239,7 @@ export async function getModulePublishedPlaylist(supabase: ServerClient, moduleI
     subIdsPlaylist.length > 0
       ? await supabase
           .from("videos")
-          .select("id,title,description,storage_key,thumbnail_key,duration_seconds,position,subcategory_id")
+          .select("id,title,description,storage_key,cloudflare_uid,thumbnail_key,duration_seconds,position,subcategory_id")
           .in("subcategory_id", subIdsPlaylist)
           .eq("is_published", true)
       : { data: [] as VideoRow[] };
@@ -255,6 +266,7 @@ export async function getModulePublishedPlaylist(supabase: ServerClient, moduleI
         title: v.title,
         description: v.description ?? null,
         storage_key: v.storage_key,
+        cloudflare_uid: v.cloudflare_uid ?? null,
         thumbnail_key: v.thumbnail_key,
         duration_seconds: v.duration_seconds,
         position: v.position,
@@ -269,6 +281,7 @@ export async function getModulePublishedPlaylist(supabase: ServerClient, moduleI
           title: v.title,
           description: v.description ?? null,
           storage_key: v.storage_key,
+          cloudflare_uid: v.cloudflare_uid ?? null,
           thumbnail_key: v.thumbnail_key,
           duration_seconds: v.duration_seconds,
           position: v.position,
@@ -300,7 +313,7 @@ export async function getModulePublishedPlaylistsBulk(
 
   const { data: directRows } = await supabase
     .from("videos")
-    .select("id,title,description,storage_key,thumbnail_key,duration_seconds,position,module_id")
+    .select("id,title,description,storage_key,cloudflare_uid,thumbnail_key,duration_seconds,position,module_id")
     .in("module_id", moduleIds)
     .is("subcategory_id", null)
     .eq("is_published", true);
@@ -316,7 +329,7 @@ export async function getModulePublishedPlaylistsBulk(
     subIds.length > 0
       ? await supabase
           .from("videos")
-          .select("id,title,description,storage_key,thumbnail_key,duration_seconds,position,subcategory_id")
+          .select("id,title,description,storage_key,cloudflare_uid,thumbnail_key,duration_seconds,position,subcategory_id")
           .in("subcategory_id", subIds)
           .eq("is_published", true)
       : { data: [] as VideoRow[] };
@@ -371,6 +384,7 @@ export async function getModulePublishedPlaylistsBulk(
           title: v.title,
           description: v.description ?? null,
           storage_key: v.storage_key,
+          cloudflare_uid: v.cloudflare_uid ?? null,
           thumbnail_key: v.thumbnail_key,
           duration_seconds: v.duration_seconds,
           position: v.position,
@@ -386,6 +400,7 @@ export async function getModulePublishedPlaylistsBulk(
             title: v.title,
             description: v.description ?? null,
             storage_key: v.storage_key,
+            cloudflare_uid: v.cloudflare_uid ?? null,
             thumbnail_key: v.thumbnail_key,
             duration_seconds: v.duration_seconds,
             position: v.position,
