@@ -9,6 +9,7 @@ import {
   getOrCreateUserByEmail,
   loadAuthEmail,
   loadProfileByCustomerId,
+  pausiereProfil,
   pickFirstName,
   unixToISO,
   type WebhookSupabase,
@@ -125,6 +126,21 @@ export async function handleSubscriptionUpdated(
 
   if (upsertError) {
     throw new Error(`subscriptions UPSERT fehlgeschlagen (sub=${sub.id}): ${upsertError.message}`);
+  }
+
+  /**
+   * Eingefrorene Abrechnung (`pause_collection`) laesst den Status auf
+   * `active` stehen — Stripe unterscheidet die Pause nicht ueber den Status,
+   * sondern ueber dieses Feld. Ohne die Abfrage liefe der Zugang waehrend
+   * einer dreimonatigen Pause unbezahlt weiter, und der Nutzer haette keinen
+   * Grund, sie je zu beenden.
+   */
+  if (sub.pause_collection) {
+    // Der laufende Zeitraum ist bezahlt und laeuft aus; `pausiereProfil`
+    // verlaengert ihn nicht, falls Stripe den Zyklus waehrend der Pause
+    // weiterdreht.
+    await pausiereProfil(supabase, profile.id, endISO);
+    return;
   }
 
   if (!ACTIVE_STATUSES.has(sub.status)) {

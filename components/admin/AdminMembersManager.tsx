@@ -3,6 +3,7 @@
 import {
   Box,
   Button,
+  Checkbox,
   Divider,
   FormControl,
   FormLabel,
@@ -40,6 +41,7 @@ import {
   adminSwitchSx,
   type AdminTone,
 } from "@/components/admin/adminUi";
+import { AdminLifetimeOfferPanel } from "./AdminLifetimeOfferPanel";
 import { UserTierOverrideModal, type Tier } from "./UserTierOverrideModal";
 
 type UserRow = {
@@ -55,12 +57,16 @@ type UserRow = {
   membershipTier: Tier;
   accessUntil: string | null;
   applicationStatus: "pending" | "approved" | "rejected" | null;
+  /** Freischalt-Gruppe fuer das Lifetime-Angebot (071); null = keine. */
+  lifetimeOfferGroup: string | null;
 };
 
 /** Tier-Pill: Free neutral, zahlende Tiers grün, High-Ticket in Champagner. */
 const TIER_BADGE: Record<Tier, { tone: AdminTone; label: string }> = {
   free: { tone: "neutral", label: "Free" },
-  monthly: { tone: "success", label: "Monthly" },
+  monthly: { tone: "success", label: "Monatlich" },
+  quarterly: { tone: "success", label: "Quartal" },
+  yearly: { tone: "success", label: "Jährlich" },
   lifetime: { tone: "success", label: "Lifetime" },
   ht_1on1: { tone: "attention", label: "1on1" },
 };
@@ -102,6 +108,13 @@ export function AdminMembersManager() {
   const [tierTarget, setTierTarget] = useState<UserRow | null>(null);
 
   const [gdprLoadingId, setGdprLoadingId] = useState<string | null>(null);
+
+  // Sammelaktion Lifetime-Freischaltung. Die Auswahl haelt IDs, nicht Zeilen —
+  // die Liste wird nach jeder Aktion neu geladen und die Objekte waeren dann
+  // veraltet.
+  const [auswahl, setAuswahl] = useState<Set<string>>(new Set());
+  const [gruppenName, setGruppenName] = useState("");
+  const [gruppeLaeuft, setGruppeLaeuft] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -173,6 +186,47 @@ export function AdminMembersManager() {
     window.open("/api/admin/users/export", "_blank");
   };
 
+  const auswahlUmschalten = (id: string) => {
+    setAuswahl((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  /**
+   * Gruppe fuer die Auswahl setzen oder entfernen.
+   *
+   * `gruppe === null` loescht die Freischaltung. Die Liste wird danach neu
+   * geladen statt lokal fortgeschrieben: Der Server normiert den Namen
+   * (getrimmt, auf 64 Zeichen gekuerzt), und eine optimistische Anzeige wuerde
+   * sonst etwas anderes zeigen als das, was in der Datenbank steht.
+   */
+  const gruppeSetzen = async (gruppe: string | null) => {
+    if (auswahl.size === 0) return;
+    setGruppeLaeuft(true);
+    const res = await fetch("/api/admin/users/lifetime-offer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userIds: [...auswahl], group: gruppe }),
+    });
+    const json = (await res.json()) as { ok?: boolean; updated?: number; error?: string };
+    setGruppeLaeuft(false);
+    if (!json.ok) {
+      setFormStatus({ msg: json.error ?? "Freischaltung fehlgeschlagen.", ok: false });
+      return;
+    }
+    setFormStatus({
+      msg: gruppe
+        ? `${json.updated} Mitglied(er) der Gruppe „${gruppe}“ zugeordnet.`
+        : `Freischaltung fuer ${json.updated} Mitglied(er) entfernt.`,
+      ok: true,
+    });
+    setAuswahl(new Set());
+    void load();
+  };
+
   const exportGdpr = async (user: UserRow) => {
     setGdprLoadingId(user.id);
     try {
@@ -219,8 +273,13 @@ export function AdminMembersManager() {
       (u.username ?? "").toLowerCase().includes(search.toLowerCase()),
   );
 
+  const alleGefiltertGewaehlt = filtered.length > 0 && filtered.every((u) => auswahl.has(u.id));
+
   return (
     <Stack spacing={6}>
+      {/* ── Lifetime-Freischaltung ── */}
+      <AdminLifetimeOfferPanel />
+
       {/* ── Nutzer anlegen ── */}
       <Stack spacing={5} className={ADMIN_CARD_CLASS} p={adminCardPadding}>
         <Box>
@@ -341,6 +400,45 @@ export function AdminMembersManager() {
           </HStack>
         </HStack>
 
+        {auswahl.size > 0 ? (
+          <HStack
+            px={3}
+            py={2.5}
+            borderRadius="8px"
+            border="1px solid var(--cc-gold-line)"
+            bg="var(--cc-gold-wash)"
+            flexWrap="wrap"
+            gap={3}
+          >
+            <Text fontSize="sm" color="var(--cc-text)" className="cc-num">
+              {auswahl.size} ausgewählt
+            </Text>
+            <Input
+              placeholder="Gruppenname, z. B. whop-import-2026"
+              value={gruppenName}
+              onChange={(e) => setGruppenName(e.target.value)}
+              size="sm"
+              maxW="280px"
+              {...adminInputProps}
+            />
+            <Button
+              size="sm"
+              variant="gold"
+              isLoading={gruppeLaeuft}
+              isDisabled={!gruppenName.trim()}
+              onClick={() => void gruppeSetzen(gruppenName.trim())}
+            >
+              Lifetime freischalten
+            </Button>
+            <Button size="sm" variant="line" isLoading={gruppeLaeuft} onClick={() => void gruppeSetzen(null)}>
+              Freischaltung entfernen
+            </Button>
+            <Button size="sm" variant="ghost" color="var(--cc-text-2)" onClick={() => setAuswahl(new Set())}>
+              Auswahl aufheben
+            </Button>
+          </HStack>
+        ) : null}
+
         <Box mx={{ base: -2, md: -3 }}>
           {/* Tabellen-Header */}
           <HStack
@@ -350,6 +448,17 @@ export function AdminMembersManager() {
             spacing={4}
             display={{ base: "none", lg: "flex" }}
           >
+            <Checkbox
+              colorScheme="brand"
+              borderColor="var(--cc-line-strong)"
+              isChecked={alleGefiltertGewaehlt}
+              isIndeterminate={!alleGefiltertGewaehlt && filtered.some((u) => auswahl.has(u.id))}
+              onChange={(e) =>
+                setAuswahl(e.target.checked ? new Set(filtered.map((u) => u.id)) : new Set())
+              }
+              aria-label="Alle sichtbaren Mitglieder auswählen"
+              flexShrink={0}
+            />
             {["E-Mail / Name", "Tier", "Paid", "Admin", "Codex", "Discord", "Registriert", ""].map(
               (h) => (
                 <Text
@@ -395,6 +504,15 @@ export function AdminMembersManager() {
                   flexDir={{ base: "column", lg: "row" }}
                   {...adminRowProps}
                 >
+                  <Checkbox
+                    colorScheme="brand"
+                    borderColor="var(--cc-line-strong)"
+                    isChecked={auswahl.has(user.id)}
+                    onChange={() => auswahlUmschalten(user.id)}
+                    aria-label={`${user.email} auswählen`}
+                    flexShrink={0}
+                    alignSelf={{ base: "flex-start", lg: "center" }}
+                  />
                   <Stack flex={1} spacing={0.5} align="flex-start" minW={0}>
                     <Text fontSize="sm" fontWeight={500} color="var(--cc-text)" noOfLines={1}>
                       {user.email}
@@ -403,6 +521,9 @@ export function AdminMembersManager() {
                       <Text fontSize="xs" color="var(--cc-text-2)" noOfLines={1}>
                         {user.fullName ?? user.username}
                       </Text>
+                    ) : null}
+                    {user.lifetimeOfferGroup ? (
+                      <StatusPill tone="attention">Lifetime: {user.lifetimeOfferGroup}</StatusPill>
                     ) : null}
                   </Stack>
 

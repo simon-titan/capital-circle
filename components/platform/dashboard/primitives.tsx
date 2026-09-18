@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Button, Flex, Heading, Stack, Text, type BoxProps, type TextProps } from "@chakra-ui/react";
-import { Lock } from "lucide-react";
+import { ArrowRight, Lock } from "lucide-react";
 import NextLink from "next/link";
 import type { ReactNode } from "react";
 
@@ -12,6 +12,8 @@ type DashCardProps = Omit<BoxProps, "title"> & {
   action?: ReactNode;
   /** Kleines Kennzeichen oben rechts auf Höhe des Kartentitels (z. B. Event-Art). */
   badge?: ReactNode;
+  /** Linienicon links vom Kartentitel, wie im Kunden-Mockup. */
+  icon?: ReactNode;
   /**
    * Hero-Karte (`.cc-card--hero`). Im Dashboard bleibt davon nur der hellere
    * Titel: die Wrapper-Klasse `.cc-neutral` nimmt Gold-Rahmen, Schein und
@@ -21,7 +23,17 @@ type DashCardProps = Omit<BoxProps, "title"> & {
 };
 
 /** Glas-Karte (`.cc-card` in globals.css); der Versaltitel ist die Überschrift der Karte. */
-export function DashCard({ label, labelId, action, badge, hero = false, children, className, ...rest }: DashCardProps) {
+export function DashCard({
+  label,
+  labelId,
+  action,
+  badge,
+  icon,
+  hero = false,
+  children,
+  className,
+  ...rest
+}: DashCardProps) {
   const ueberschrift = (
     <Heading
       as="h2"
@@ -32,23 +44,30 @@ export function DashCard({ label, labelId, action, badge, hero = false, children
       letterSpacing="0.12em"
       textTransform="uppercase"
       color={hero ? "var(--cc-gold-light)" : "var(--cc-text-soft)"}
-      // Ohne Badge bleibt der bisherige Abstand; mit Badge sitzt er auf der Zeile.
-      mb={badge ? 0 : 4}
+      // Ohne Badge und ohne Icon bleibt der bisherige Abstand; sonst sitzt der
+      // Titel auf einer eigenen Zeile und die trägt den Abstand.
+      mb={badge || icon ? 0 : 4}
     >
       {label}
     </Heading>
   );
 
+  const titelzeile =
+    badge || icon ? (
+      <Flex align="center" justify="space-between" gap={3} mb={4}>
+        <Flex align="center" gap={3} minW={0}>
+          {icon ? <SmallIconTile>{icon}</SmallIconTile> : null}
+          {ueberschrift}
+        </Flex>
+        {badge ? <Box flexShrink={0}>{badge}</Box> : null}
+      </Flex>
+    ) : (
+      ueberschrift
+    );
+
   const body = (
     <Box flex="1" minW={0} display="flex" flexDirection="column">
-      {badge ? (
-        <Flex align="center" justify="space-between" gap={3} mb={4}>
-          {ueberschrift}
-          <Box flexShrink={0}>{badge}</Box>
-        </Flex>
-      ) : (
-        ueberschrift
-      )}
+      {titelzeile}
       {children}
     </Box>
   );
@@ -77,6 +96,37 @@ export function DashCard({ label, labelId, action, badge, hero = false, children
         body
       )}
     </Box>
+  );
+}
+
+/** Textlink oben rechts in einer Karte („Details →“, „Alle Termine →“). */
+export function CardLink({ href, children }: { href: string; children: string }) {
+  return (
+    <Flex
+      as={NextLink}
+      href={href}
+      role="group"
+      display="inline-flex"
+      align="center"
+      gap={1.5}
+      fontSize="14px"
+      color="var(--cc-text-2)"
+      whiteSpace="nowrap"
+      transition="color 150ms var(--cc-ease)"
+      _hover={{ color: "var(--cc-text)" }}
+      _focusVisible={{ outline: "2px solid var(--cc-gold-line)", outlineOffset: "2px", borderRadius: "4px" }}
+    >
+      {children}
+      <Box
+        as="span"
+        display="inline-flex"
+        transition="transform 200ms var(--cc-ease)"
+        _groupHover={{ transform: "translateX(2px)" }}
+        aria-hidden
+      >
+        <ArrowRight size={15} strokeWidth={1.75} />
+      </Box>
+    </Flex>
   );
 }
 
@@ -140,6 +190,26 @@ export function TitleWithMeta({ title, meta, metaLead }: { title: ReactNode; met
 
 export function Meta(props: TextProps) {
   return <Text fontSize="14px" lineHeight={1.5} color="var(--cc-text-2)" {...props} />;
+}
+
+/** Kleine Variante der Icon-Kachel, links vom Kartentitel (Kunden-Mockup). */
+export function SmallIconTile({ children }: { children: ReactNode }) {
+  return (
+    <Flex
+      w="32px"
+      h="32px"
+      flexShrink={0}
+      align="center"
+      justify="center"
+      border="1px solid var(--cc-line-strong)"
+      bg="rgba(255, 255, 255, 0.02)"
+      borderRadius="8px"
+      color="var(--cc-text-soft)"
+      aria-hidden
+    >
+      {children}
+    </Flex>
+  );
 }
 
 /** Icon-Kachel: Haarlinie, helles Icon (wie im Kunden-Mockup). */

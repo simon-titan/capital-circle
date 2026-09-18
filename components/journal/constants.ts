@@ -60,3 +60,23 @@ export const TRADOVATE_EXPORT_STEPS = [
 
 /** Instrumente, die im manuellen Formular vorgeschlagen werden. */
 export const MANUAL_SYMBOLS = ["MNQ", "NQ", "MES", "ES", "MGC", "GC", "MCL", "CL"] as const;
+
+/**
+ * Monatsnamen für den P&L-Kalender. Lagen bis zur Abschaltung des klassischen
+ * Journals in `components/trading-journal/constants.ts`; dort steht jetzt nur
+ * noch der Positionsrechner.
+ */
+export const MONTHS_DE = [
+  "Januar",
+  "Februar",
+  "März",
+  "April",
+  "Mai",
+  "Juni",
+  "Juli",
+  "August",
+  "September",
+  "Oktober",
+  "November",
+  "Dezember",
+];

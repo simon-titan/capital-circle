@@ -5,7 +5,20 @@ import { createServiceClient } from "@/lib/supabase/service";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const ALLOWED_TIERS = ["free", "monthly", "lifetime", "ht_1on1"] as const;
+/**
+ * `quarterly` und `yearly` gehören hierher, seit die beiden Laufzeiten verkauft
+ * werden (069): Ohne sie lehnt die Route jeden Override auf eine der beiden
+ * Stufen ab, obwohl der Webhook sie selbst ins Profil schreibt — ein Admin
+ * konnte einen Jahreskunden also nicht von Hand wiederherstellen.
+ */
+const ALLOWED_TIERS = [
+  "free",
+  "monthly",
+  "quarterly",
+  "yearly",
+  "lifetime",
+  "ht_1on1",
+] as const;
 type Tier = (typeof ALLOWED_TIERS)[number];
 
 interface PatchBody {

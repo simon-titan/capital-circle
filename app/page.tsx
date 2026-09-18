@@ -4,7 +4,7 @@ import { MembershipLanding } from "@/components/landing/membership/MembershipLan
 export const metadata: Metadata = {
   title: "Capital Circle — Trading-Community & Plattform",
   description:
-    "Werde endlich konstant profitabel — nicht nur an guten Tagen. System, Live-Sessions und eine Community, die dich auf Kurs hält. Ab 99 € im Monat, monatlich kündbar.",
+    "Werde endlich konstant profitabel — nicht nur an guten Tagen. System, Live-Sessions und eine Community, die dich auf Kurs hält. 99 € im Monat, monatlich kündbar.",
 };
 
 /**

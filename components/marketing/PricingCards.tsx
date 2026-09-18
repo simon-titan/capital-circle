@@ -4,15 +4,23 @@ import { Box, Button, Flex, Heading, HStack, Stack, Text, useToast } from "@chak
 import { Check, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ManageSubscriptionButton } from "@/components/billing/ManageSubscriptionButton";
+import { istAbo, TIER_LABEL, type Tier } from "@/components/billing/format";
 import { preiskarten } from "@/config/landing-membership";
 import type { MembershipPlan } from "@/lib/stripe/plan-map";
-
-/** Alle Stufen, die ein Profil tragen kann — auch die nicht mehr verkäuflichen. */
-type Tier = "free" | MembershipPlan | "lifetime" | "ht_1on1";
 
 type PricingCardsProps = {
   isLoggedIn: boolean;
   membershipTier: Tier;
+  /**
+   * Konto-Ansicht (`/einstellungen/abonnement`). Dann ist die Liste eine
+   * **Übersicht**: Das eigene Paket ist markiert, und aus einem laufenden Abo
+   * heraus führt keine Karte mehr in die Kasse — ein zweiter Checkout legte
+   * ein zweites Abo an, und das Mitglied zahlte doppelt.
+   */
+  kontoAnsicht?: boolean;
+  /** Ob zu dem Konto ein Abo bei Stripe liegt — nur dann gibt es einen Weg zum Wechsel. */
+  hatAbo?: boolean;
 };
 
 /**
@@ -23,30 +31,100 @@ type PricingCardsProps = {
  * Adresse erneut einzutippen — mit einem Tippfehler entstünde ein zweites
  * Konto. Auf der Landing ist es genau umgekehrt, dort gibt es noch kein Konto.
  *
- * Die Leistungen stehen bewusst **einmal** unter den Karten statt dreimal
- * darin: Die drei Laufzeiten unterscheiden sich ausschließlich im Preis, und
- * dieselbe Liste in drei Spalten lässt den einen Unterschied untergehen.
+ * Seit 09/2026 steht die Liste im Konto **für jeden Tarif**, nicht mehr nur
+ * für Free. Wer zahlt, sah vorher nirgends, welche Laufzeiten es gibt und in
+ * welcher er selbst steckt.
+ *
+ * Die Leistungsliste darunter ist am 17.09.2026 auf Nutzerwunsch entfallen:
+ * Wer hier steht, ist bereits Mitglied oder kennt das Angebot von der
+ * Verkaufsseite — die Aufzählung war eine Wiederholung. Sie steht weiterhin
+ * auf `/` im Abschnitt „Angebot" (`config/landing-membership.ts`).
  */
-const LEISTUNGEN = [
-  "Institut: 10 Module, 114 Videos",
-  "Live-Sessions vier Mal pro Woche",
-  "Trading Journal mit Auswertung",
-  "Wochenaufgaben und Fortschritt",
-  "Discord-Community",
-];
 
 /**
- * Beschriftung und Zustand eines Knopfes. Zentral hier statt im JSX, damit
- * alle drei Karten dieselbe Logik nutzen.
+ * Was diese Karte dem Nutzer anbietet. Zentral hier statt im JSX, damit alle
+ * drei Karten dieselbe Logik nutzen.
+ *
+ * - `kaufen` — Kasse öffnen (nur ohne laufendes Abo).
+ * - `eigenes` — das ist sein Paket, nichts zu tun.
+ * - `jahreswechsel` — der Wechsel läuft über die Upgrade-Karte weiter unten,
+ *   nicht über eine zweite Kasse (`subscriptions.update` mit Proration).
+ * - `portal` — jede andere Umstellung macht Stripe selbst; dort sieht der
+ *   Nutzer die anteilige Verrechnung, bevor er zustimmt.
+ * - `keine` — Lifetime, 1:1 oder ein von Hand eingetragener Zugang.
  */
-function knopfZustand(plan: MembershipPlan, tier: Tier): { label: string; disabled: boolean } {
-  if (tier === "lifetime") return { label: "Du hast Lifetime ⚡", disabled: true };
-  if (tier === "ht_1on1") return { label: "Du bist im 1:1-Mentoring", disabled: true };
-  if (tier === plan) return { label: "Dein aktueller Plan", disabled: true };
-  return { label: "Jetzt starten", disabled: false };
+type KartenAktion =
+  | { art: "kaufen" }
+  | { art: "eigenes" }
+  | { art: "jahreswechsel" }
+  | { art: "portal" }
+  | { art: "keine"; label: string };
+
+function kartenAktion(
+  plan: MembershipPlan,
+  tier: Tier,
+  kontoAnsicht: boolean,
+  hatAbo: boolean,
+): KartenAktion {
+  if (tier === "lifetime") return { art: "keine", label: "Du hast Lifetime" };
+  if (tier === "ht_1on1") return { art: "keine", label: "Du bist im 1:1-Mentoring" };
+  if (tier === plan) return { art: "eigenes" };
+  if (!kontoAnsicht || !istAbo(tier)) return { art: "kaufen" };
+  if (!hatAbo) return { art: "keine", label: "Auf Anfrage" };
+  return plan === "yearly" ? { art: "jahreswechsel" } : { art: "portal" };
 }
 
-export function PricingCards({ isLoggedIn, membershipTier }: PricingCardsProps) {
+/** Kennzeichen oben auf einer Karte: „Dein Paket" bzw. „Beliebteste Wahl". */
+function KartenBadge({ children }: { children: React.ReactNode }) {
+  return (
+    <HStack
+      position="absolute"
+      top="-13px"
+      left="50%"
+      transform="translateX(-50%)"
+      zIndex={2}
+      spacing={1.5}
+      h="26px"
+      px="12px"
+      borderRadius="full"
+      bg="var(--cc-gold)"
+      bgImage="var(--cc-gold-grad)"
+      color="var(--cc-on-gold)"
+      whiteSpace="nowrap"
+      fontSize="11px"
+      fontWeight={600}
+      letterSpacing="0.12em"
+      textTransform="uppercase"
+      boxShadow="0 6px 18px rgba(212, 176, 128, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.35)"
+    >
+      {children}
+    </HStack>
+  );
+}
+
+/** Ein Satz über der Liste, der sagt, was sie für diesen Tarif bedeutet. */
+function uebersichtHinweis(tier: Tier, hatAbo: boolean): string {
+  if (tier === "lifetime") {
+    return "Du hast lebenslangen Zugang — hier gibt es nichts mehr zu wechseln und nichts mehr abzubuchen. Die Laufzeiten stehen nur zur Übersicht.";
+  }
+  if (tier === "ht_1on1") {
+    return "Dein 1:1-Programm läuft außerhalb dieser Laufzeiten. Die Liste steht nur zur Übersicht.";
+  }
+  if (!istAbo(tier)) {
+    return "Wähle deine Laufzeit. Die Leistungen sind in allen dreien dieselben — es geht nur um Bindung und Preis.";
+  }
+  if (!hatAbo) {
+    return `Du bist in „${TIER_LABEL[tier]}". Dieser Zugang wurde von Hand eingetragen, ein Wechsel läuft deshalb über uns.`;
+  }
+  return `Du bist in „${TIER_LABEL[tier]}". Auf den Jahresplan wechselst du auf dieser Seite, jede andere Laufzeit stellst du im Stripe-Portal um.`;
+}
+
+export function PricingCards({
+  isLoggedIn,
+  membershipTier,
+  kontoAnsicht = false,
+  hatAbo = false,
+}: PricingCardsProps) {
   const router = useRouter();
   const toast = useToast();
   const [laufenderPlan, setLaufenderPlan] = useState<MembershipPlan | null>(null);
@@ -92,41 +170,63 @@ export function PricingCards({ isLoggedIn, membershipTier }: PricingCardsProps) 
 
   return (
     <Stack w="full" maxW="960px" mx="auto" spacing={8}>
+      {kontoAnsicht ? (
+        <Stack spacing={2}>
+          <Heading
+            as="h2"
+            id="pakete-uebersicht"
+            fontSize="13px"
+            lineHeight="18px"
+            fontWeight={500}
+            letterSpacing="0.12em"
+            textTransform="uppercase"
+            color="var(--cc-text-soft)"
+          >
+            Alle Pakete
+          </Heading>
+          <Text fontSize="14px" lineHeight={1.5} color="var(--cc-text-2)">
+            {uebersichtHinweis(membershipTier, hatAbo)}
+          </Text>
+        </Stack>
+      ) : null}
+
       <Flex direction={{ base: "column", md: "row" }} gap={{ base: 8, md: 5 }} align="stretch" justify="center" pt={4}>
         {preiskarten.map((karte) => {
-          const zustand = knopfZustand(karte.plan, membershipTier);
+          const aktion = kartenAktion(karte.plan, membershipTier, kontoAnsicht, hatAbo);
+          const eigenes = aktion.art === "eigenes";
+          /*
+            Hervorgehoben ist im Konto das **eigene** Paket, nicht das meist
+            gekaufte: Wer schon zahlt, sucht sich selbst auf der Seite, und ein
+            Gold-Rahmen um eine fremde Laufzeit führte ihn in die Irre.
+
+            Lifetime und 1:1 haben kein eigenes Paket in dieser Reihe — dort
+            bleibt die Liste ganz ohne Hero. „Beliebteste Wahl" im Gold-Rahmen
+            wäre für sie eine Empfehlung für etwas, das sie nicht kaufen
+            können und schon bezahlt haben.
+          */
+          const hervorheben = kontoAnsicht
+            ? istAbo(membershipTier)
+              ? eigenes
+              : membershipTier === "free" && Boolean(karte.beliebt)
+            : Boolean(karte.beliebt);
           return (
             <Box
               key={karte.plan}
-              className={karte.beliebt ? "cc-card cc-card--hero" : "cc-card"}
+              className={hervorheben ? "cc-card cc-card--hero" : "cc-card"}
               flex="1"
               minW={0}
               p={{ base: 6, md: 7 }}
             >
-              {karte.beliebt ? (
-                <HStack
-                  position="absolute"
-                  top="-13px"
-                  left="50%"
-                  transform="translateX(-50%)"
-                  zIndex={2}
-                  spacing={1.5}
-                  h="26px"
-                  px="12px"
-                  borderRadius="full"
-                  bg="var(--cc-gold)"
-                  bgImage="var(--cc-gold-grad)"
-                  color="var(--cc-on-gold)"
-                  whiteSpace="nowrap"
-                  fontSize="11px"
-                  fontWeight={600}
-                  letterSpacing="0.12em"
-                  textTransform="uppercase"
-                  boxShadow="0 6px 18px rgba(212, 176, 128, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.35)"
-                >
+              {eigenes ? (
+                <KartenBadge>
+                  <Check size={12} strokeWidth={2.5} aria-hidden />
+                  <Text as="span">Dein Paket</Text>
+                </KartenBadge>
+              ) : hervorheben && karte.beliebt ? (
+                <KartenBadge>
                   <Sparkles size={12} strokeWidth={2} aria-hidden />
                   <Text as="span">Beliebteste Wahl</Text>
-                </HStack>
+                </KartenBadge>
               ) : null}
 
               <Stack spacing={6} h="full">
@@ -138,7 +238,7 @@ export function PricingCards({ isLoggedIn, membershipTier }: PricingCardsProps) 
                     fontWeight={500}
                     letterSpacing="0.12em"
                     textTransform="uppercase"
-                    color={karte.beliebt ? "var(--cc-gold-light)" : "var(--cc-text-soft)"}
+                    color={hervorheben ? "var(--cc-gold-light)" : "var(--cc-text-soft)"}
                   >
                     {karte.laufzeit}
                   </Heading>
@@ -161,8 +261,8 @@ export function PricingCards({ isLoggedIn, membershipTier }: PricingCardsProps) 
                     className="cc-num"
                     fontSize="13px"
                     lineHeight="20px"
-                    color={karte.beliebt ? "var(--cc-gold-light)" : "var(--cc-text-3)"}
-                    fontWeight={karte.beliebt ? 600 : 400}
+                    color={hervorheben ? "var(--cc-gold-light)" : "var(--cc-text-3)"}
+                    fontWeight={hervorheben ? 600 : 400}
                   >
                     {karte.hinweis}
                   </Text>
@@ -170,70 +270,47 @@ export function PricingCards({ isLoggedIn, membershipTier }: PricingCardsProps) 
 
                 <Box flex="1" />
 
-                <Button
-                  variant={karte.beliebt ? "gold" : "line"}
-                  w="full"
-                  h="48px"
-                  fontSize="15px"
-                  color={karte.beliebt ? undefined : "var(--cc-gold-light)"}
-                  borderColor={karte.beliebt ? undefined : "rgba(232, 192, 148, 0.35)"}
-                  onClick={() => void planWaehlen(karte.plan)}
-                  isDisabled={zustand.disabled}
-                  isLoading={laufenderPlan === karte.plan}
-                  loadingText="Wird vorbereitet…"
-                >
-                  {zustand.label}
-                </Button>
+                {aktion.art === "portal" ? (
+                  <ManageSubscriptionButton label="Im Portal umstellen" variant="outline" block />
+                ) : aktion.art === "jahreswechsel" ? (
+                  <Button
+                    as="a"
+                    href="#abo-upgrade"
+                    variant="line"
+                    w="full"
+                    h="48px"
+                    fontSize="15px"
+                    color="var(--cc-gold-light)"
+                    borderColor="rgba(232, 192, 148, 0.35)"
+                  >
+                    Zum Jahreswechsel
+                  </Button>
+                ) : (
+                  <Button
+                    variant={hervorheben ? "gold" : "line"}
+                    w="full"
+                    h="48px"
+                    fontSize="15px"
+                    color={hervorheben ? undefined : "var(--cc-gold-light)"}
+                    borderColor={hervorheben ? undefined : "rgba(232, 192, 148, 0.35)"}
+                    onClick={aktion.art === "kaufen" ? () => void planWaehlen(karte.plan) : undefined}
+                    isDisabled={aktion.art !== "kaufen"}
+                    isLoading={laufenderPlan === karte.plan}
+                    loadingText="Wird vorbereitet…"
+                  >
+                    {aktion.art === "kaufen"
+                      ? "Jetzt starten"
+                      : aktion.art === "eigenes"
+                        ? "Dein aktuelles Paket"
+                        : aktion.label}
+                  </Button>
+                )}
               </Stack>
             </Box>
           );
         })}
       </Flex>
 
-      <Box className="cc-card cc-card--still" p={{ base: 5, md: 6 }}>
-        <Heading
-          as="h3"
-          fontSize="13px"
-          lineHeight="18px"
-          fontWeight={500}
-          letterSpacing="0.12em"
-          textTransform="uppercase"
-          color="var(--cc-text-soft)"
-          mb={4}
-        >
-          In jeder Laufzeit enthalten
-        </Heading>
-        <Stack
-          as="ul"
-          listStyleType="none"
-          spacing={3}
-          sx={{ columnCount: { base: 1, md: 2 }, columnGap: "24px" }}
-        >
-          {LEISTUNGEN.map((leistung) => (
-            <HStack as="li" key={leistung} spacing={3} align="flex-start" sx={{ breakInside: "avoid" }}>
-              <Box
-                mt="2px"
-                w="18px"
-                h="18px"
-                flexShrink={0}
-                borderRadius="full"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                color="var(--cc-gold-light)"
-                bg="var(--cc-gold-wash)"
-                border="1px solid rgba(232, 192, 148, 0.35)"
-                aria-hidden
-              >
-                <Check size={11} strokeWidth={2.5} />
-              </Box>
-              <Text fontSize="15px" color="var(--cc-text-soft)" lineHeight={1.45}>
-                {leistung}
-              </Text>
-            </HStack>
-          ))}
-        </Stack>
-      </Box>
     </Stack>
   );
 }

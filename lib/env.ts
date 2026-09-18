@@ -29,12 +29,29 @@ const OPTIONAL_ENV = [
   "RESEND_WEBHOOK_SECRET",
   "RESEND_FROM_EMAIL",
   "RESEND_FROM_NAME",
-  // Die drei verkauften Laufzeiten. `STRIPE_PRICE_LIFETIME` ist raus: der Plan
-  // wird nicht mehr verkauft und keine Stelle im Code liest die Variable noch.
-  // Bestandskunden behalten `membership_tier = 'lifetime'` samt Zugang.
+  // Die drei verkauften Laufzeiten.
   "STRIPE_PRICE_MONTHLY",
   "STRIPE_PRICE_QUARTERLY",
   "STRIPE_PRICE_YEARLY",
+  /**
+   * Lifetime-Einmalzahlung. Wieder in Betrieb, aber nur nach innen: Das
+   * Angebot erscheint ausschliesslich zahlenden Mitgliedern im Konto-Bereich
+   * (`lib/access-control/lifetime-offer.ts`). Fehlt die Variable, gibt es das
+   * Angebot nicht — das ist ein gueltiger Zustand, kein Fehler.
+   */
+  "STRIPE_PRICE_LIFETIME",
+  /**
+   * Coupon-ID (nicht der Code) fuer den Rabatt beim Wechsel auf den
+   * Jahresplan. Steht sie nicht, laeuft das Upgrade zum vollen Jahrespreis.
+   * Die Hoehe gehoert nach Stripe, damit sie sich ohne Deployment aendern
+   * laesst.
+   */
+  "STRIPE_UPGRADE_COUPON_ID",
+  /**
+   * Coupon-ID fuer das Halte-Angebot im Kuendigungs-Flow. Ohne sie faellt
+   * dort nur die Rabatt-Variante weg; die Pause bleibt.
+   */
+  "STRIPE_RETENTION_COUPON_ID",
   "TURNSTILE_SECRET_KEY",
   "NEXT_PUBLIC_TURNSTILE_SITE_KEY",
   "NEXT_PUBLIC_APP_URL",

@@ -6,9 +6,9 @@ import type {
   ContinueItem,
   DashboardViewData,
   HomeworkSummary,
-  KalenderTag,
   LiveItem,
   StreakDay,
+  TerminZeile,
 } from "@/components/platform/dashboard/types";
 import { evaluateAccess } from "@/lib/access-control/has-access";
 import { clockLabel, daysFromToday, relativeDayLabel, shortDateLabel } from "@/lib/dashboard-time";
@@ -19,7 +19,6 @@ import {
   mergeStreakActivityDay,
   parseStreakActivityByDay,
   resolveLearningSecondsByDay,
-  resolveTotalLearningSeconds,
 } from "@/lib/learning-daily";
 import { resolveEventColor } from "@/config/event-colors";
 import { istExtern, toAbsoluteUrl } from "@/lib/external-url";
@@ -29,18 +28,18 @@ import {
   getAcademyModulesOverview,
   getCurrentUserAndProfile,
   getHomeworkDashboardState,
+  getHomeworkWeekTotal,
   getLastWatchedModule,
   getLatestAnalysisPost,
+  getLessonNeighbourHrefs,
   getLiveWindowEvents,
-  getMonatsTermine,
-  getMemberDays,
   getRecommendedAcademyModuleFromOverview,
   getWelcomeDashboardMetricsFromOverview,
+  type AcademyModuleRow,
   type EventRow,
   type HomeworkCustomTaskRow,
   type HomeworkRow,
   type LastWatchedModuleData,
-  type MonatsTermin,
   type RecommendedModuleData,
 } from "@/lib/server-data";
 import { createClient } from "@/lib/supabase/server";
@@ -58,24 +57,30 @@ function clampPercent(v: number | null | undefined): number {
   return Math.max(0, Math.min(100, Math.round(v ?? 0)));
 }
 
-/** „38 h 20 Min“ */
-function learningLabel(totalSeconds: number): string {
-  const minutes = Math.floor(Math.max(0, totalSeconds) / 60);
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (h === 0) return `${m} Min`;
-  return m === 0 ? `${h} h` : `${h} h ${m} Min`;
-}
-
 /** „Heute“ → „heute“ im Fließtext hinter dem Titel; Datumsangaben bleiben groß. */
 function inlineDay(label: string): string {
   return /^(Heute|Gestern|Morgen)$/.test(label) ? label.toLowerCase() : label;
 }
 
-function toContinueItem(
+/**
+ * Ein Satz zum Modul — steckt bereits in der Institut-Übersicht, die das
+ * Dashboard ohnehin lädt.
+ */
+function modulBeschreibung(rows: AcademyModuleRow[], moduleId: string): string | null {
+  return rows.find((m) => m.id === moduleId)?.description?.trim() || null;
+}
+
+/**
+ * Die Pfeile in „Als nächstes“ blättern Lektionen statt Module (Nutzerwunsch
+ * 17.09.2026) — die Ziele rechnet `getLessonNeighbourHrefs` entlang des
+ * Lernpfads aus, deshalb ist der Aufbau der Karte hier asynchron.
+ */
+async function toContinueItem(
+  supabase: Awaited<ReturnType<typeof createClient>>,
   lastWatched: LastWatchedModuleData | null,
   recommended: RecommendedModuleData | null,
-): ContinueItem | null {
+  academyRows: AcademyModuleRow[],
+): Promise<ContinueItem | null> {
   if (lastWatched) {
     const { module, lessonNumber, lessonCount, videoProgressSeconds, lastVideoDurationSeconds } = lastWatched;
     const startAtSeconds =
@@ -92,6 +97,9 @@ function toContinueItem(
       thumbnailUrl: lastWatched.thumbnailSignedUrl,
       videoStorageKey: lastWatched.lastVideoStorageKey,
       startAtSeconds,
+      description: modulBeschreibung(academyRows, module.id),
+      // `lessonNumber` zählt ab 1, die Playlist ab 0.
+      ...(await getLessonNeighbourHrefs(supabase, academyRows, module.id, (lessonNumber ?? 1) - 1)),
     };
   }
 
@@ -107,10 +115,21 @@ function toContinueItem(
       thumbnailUrl: recommended.thumbnailSignedUrl,
       videoStorageKey: recommended.previewVideoStorageKey,
       startAtSeconds: 0,
+      description: modulBeschreibung(academyRows, module.id),
+      // Noch nicht begonnen: Der Einstieg ist die erste Lektion des Moduls.
+      ...(await getLessonNeighbourHrefs(supabase, academyRows, module.id, 0)),
     };
   }
 
   return null;
+}
+
+/** „15:30 – 17:00 Uhr“, wenn ein Ende hinterlegt ist — sonst „15:30 Uhr“. */
+function zeitraumLabel(startIso: string, endIso: string | null): string {
+  const start = clockLabel(startIso);
+  if (!endIso) return start;
+  // `clockLabel` hängt „Uhr“ an; am Anfang des Bereichs stört das.
+  return `${start.replace(/\s*Uhr$/, "")} – ${clockLabel(endIso)}`;
 }
 
 function toLiveItem(events: EventRow[], now: Date): LiveItem | null {
@@ -119,6 +138,7 @@ function toLiveItem(events: EventRow[], now: Date): LiveItem | null {
   const start = new Date(ev.start_time);
   const running = start.getTime() <= now.getTime();
   const state: LiveItem["state"] = running ? "now" : daysFromToday(start, now) === 0 ? "today" : "upcoming";
+  const minutenBisStart = Math.round((start.getTime() - now.getTime()) / 60000);
   // Im Admin wird der Link oft ohne Protokoll eingetippt („google.com“). Ohne
   // das Ergänzen wäre das für den Browser ein relativer Pfad, und „Beitreten“
   // landete auf /dashboard/google.com statt beim Anbieter.
@@ -128,6 +148,13 @@ function toLiveItem(events: EventRow[], now: Date): LiveItem | null {
     state,
     dayLabel: relativeDayLabel(start, now),
     timeLabel: clockLabel(start),
+    timeRangeLabel: zeitraumLabel(ev.start_time, ev.end_time),
+    laeuft: running,
+    // Die Restzeit wird hier ausgerechnet und fertig weitergereicht. Die Karte
+    // ist eine Client-Komponente; ein `Date.now()` dort läge beim ersten Render
+    // neben dem Server-HTML (Hydration-Mismatch). Ab wann daraus „In 28 Minuten“
+    // und ein warmer Ton wird, entscheidet `zeit-ton.ts`.
+    minutesUntilStart: running ? null : Math.max(0, minutenBisStart),
     href: extern ?? "/events",
     external: istExtern(extern),
     eventType: ev.event_type?.trim() || null,
@@ -136,49 +163,37 @@ function toLiveItem(events: EventRow[], now: Date): LiveItem | null {
 }
 
 /**
- * Baut das Monatsraster für den Mini-Kalender: führende Leerfelder bis zum
- * Monatsersten (Woche beginnt montags), danach jeder Tag mit seinen Terminen.
+ * Die nächsten Termine als Liste: Tag · Titel · Uhrzeit. Restzeit und
+ * Laufzustand kommen wie in „Heute live“ fertig vom Server (siehe `toLiveItem`),
+ * damit beide Karten dieselbe Zeitfarbe aus denselben Zahlen ziehen.
  */
-function toKalender(termine: MonatsTermin[], now: Date): KalenderTag[] {
-  const jahr = now.getFullYear();
-  const monat = now.getMonth();
-  const tageImMonat = new Date(jahr, monat + 1, 0).getDate();
-  // getDay(): 0 = Sonntag. Wir starten montags, also verschieben.
-  const ersterWochentag = (new Date(jahr, monat, 1).getDay() + 6) % 7;
-  const heute = now.getDate();
-
-  const proTag = new Map<number, KalenderTag["termine"]>();
-  for (const t of termine) {
-    const liste = proTag.get(t.tag) ?? [];
-    liste.push({ titel: t.titel, zeitLabel: clockLabel(t.startIso), farbe: t.farbe });
-    proTag.set(t.tag, liste);
-  }
-
-  const zellen: KalenderTag[] = [];
-  for (let i = 0; i < ersterWochentag; i++) {
-    zellen.push({ key: `leer-${i}`, tag: null, istHeute: false, istZukunft: false, tagLabel: "", termine: [] });
-  }
-  for (let tag = 1; tag <= tageImMonat; tag++) {
-    zellen.push({
-      key: `tag-${tag}`,
-      tag,
-      istHeute: tag === heute,
-      istZukunft: tag >= heute,
-      tagLabel: shortDateLabel(new Date(jahr, monat, tag).toISOString()),
-      termine: proTag.get(tag) ?? [],
-    });
-  }
-  return zellen;
+function toTermine(events: EventRow[], now: Date): TerminZeile[] {
+  return events.map((ev) => {
+    const start = new Date(ev.start_time).getTime();
+    const laeuft = start <= now.getTime();
+    return {
+      id: ev.id,
+      dayLabel: relativeDayLabel(ev.start_time, now),
+      title: ev.title,
+      timeLabel: zeitraumLabel(ev.start_time, ev.end_time),
+      farbe: resolveEventColor(ev.color).value,
+      istHeute: daysFromToday(ev.start_time, now) === 0,
+      laeuft,
+      minutesUntilStart: laeuft ? null : Math.max(0, Math.round((start - now.getTime()) / 60000)),
+    };
+  });
 }
 
 function toHomework(
   homework: HomeworkRow | null,
   state: { officialDone: boolean; customTasks: HomeworkCustomTaskRow[] },
+  weekTotal: number | null,
   now: Date,
 ): HomeworkSummary {
   const customDone = state.customTasks.filter((t) => t.done).length;
   const customTotal = state.customTasks.length;
-  if (!homework) return { official: null, customDone, customTotal };
+  const tasks = state.customTasks.map((t) => ({ id: t.id, title: t.title, done: t.done }));
+  if (!homework) return { official: null, tasks, customDone, customTotal };
 
   let dueLabel: string | null = null;
   let overdue = false;
@@ -196,14 +211,25 @@ function toHomework(
     }
   }
 
+  // „Woche 4 von 12“, sobald es eine höchste Wochennummer gibt — sonst nur die
+  // laufende Woche, statt eine Gesamtzahl zu erfinden.
+  const weekLabel =
+    homework.week_number == null
+      ? null
+      : weekTotal && weekTotal >= homework.week_number
+        ? `Woche ${homework.week_number} von ${weekTotal}`
+        : `Woche ${homework.week_number}`;
+
   return {
     official: {
       title: homework.title,
-      weekLabel: homework.week_number != null ? `Woche ${homework.week_number}` : null,
+      subtitle: homework.description?.trim() || null,
+      weekLabel,
       dueLabel,
       overdue,
       done: state.officialDone,
     },
+    tasks,
     customDone,
     customTotal,
   };
@@ -253,19 +279,30 @@ export default async function DashboardPage({
   const academyRows = await getAcademyModulesOverview(userId);
   const supabase = await createClient();
 
-  const [lastWatched, recommended, homework, liveEvents, monatsTermine, welcomeMetrics, latestAnalysis] = await Promise.all([
+  const [
+    lastWatched,
+    recommended,
+    homework,
+    homeworkWeekTotal,
+    liveEvents,
+    kommendeEvents,
+    welcomeMetrics,
+    latestAnalysis,
+  ] = await Promise.all([
     getLastWatchedModule(userId),
     getRecommendedAcademyModuleFromOverview(supabase, academyRows),
     getActiveHomework(),
+    getHomeworkWeekTotal(),
     getLiveWindowEvents(3),
-    getMonatsTermine(new Date()),
+    // Vier Zeilen wie im Kunden-Mockup; der laufende Termin bleibt drin, damit
+    // „Heute“ auch dann oben steht, wenn die Session schon begonnen hat.
+    getLiveWindowEvents(4),
     getWelcomeDashboardMetricsFromOverview(userId, academyRows, supabase),
     isPaid ? getLatestAnalysisPost() : Promise.resolve(null),
   ]);
 
   const now = new Date();
   const displayName = profile.full_name || profile.username || "Mitglied";
-  const memberDays = getMemberDays(profile.created_at);
   const todayKey = berlinCalendarDayKey(now);
   const nowIso = now.toISOString();
 
@@ -311,9 +348,6 @@ export default async function DashboardPage({
     await supabase.from("profiles").update(updatePayload).eq("id", userId);
   }
 
-  const totalLearnedSeconds = resolveTotalLearningSeconds(
-    profile as { total_learning_seconds?: number | null; total_learning_minutes?: number | null },
-  );
   const learningWeekDays = buildLearningWeekLast7(
     resolveLearningSecondsByDay(
       profile as { learning_seconds_by_day?: unknown; learning_minutes_by_day?: unknown },
@@ -334,6 +368,21 @@ export default async function DashboardPage({
             : `${d.labelDe}: keine Aktivität`,
     };
   });
+
+  /*
+   * „N von 5 Tagen diese Woche“: Nur Werktage der laufenden Kalenderwoche
+   * zählen. `week` deckt die letzten sieben Tage ab und reicht damit in die
+   * Vorwoche hinein — deren Tage dürfen die aktuelle Woche nicht aufblähen.
+   */
+  const montagKey = berlinCalendarDayKey(
+    new Date(now.getTime() - ((now.getDay() + 6) % 7) * 86_400_000),
+  );
+  const weekdaysActive = week.filter((d) => {
+    if (d.dayKey < montagKey) return false;
+    const [y, m, t] = d.dayKey.split("-").map(Number);
+    const wochentag = new Date(Date.UTC(y, m - 1, t)).getUTCDay();
+    return wochentag >= 1 && wochentag <= 5 && d.active;
+  }).length;
 
   const homeworkState = await getHomeworkDashboardState(userId, homework);
 
@@ -361,13 +410,15 @@ export default async function DashboardPage({
       }
     : null;
 
+  const continueItem = await toContinueItem(supabase, lastWatched, recommended, academyRows);
+
   const data: DashboardViewData = {
     firstName: firstName(displayName),
     isPaid,
     canUseJournal: evaluateAccess(profile).hasAccess,
     showApplyPrompt,
-    continueItem: toContinueItem(lastWatched, recommended),
-    streak: { days: streakDaysSanitized, week },
+    continueItem,
+    streak: { days: streakDaysSanitized, week, weekdaysActive, weekdaysTotal: 5 },
     progress: {
       // Prozent = angesehene Videos, damit die Zahl zur Zeile „x von y Videos“ darunter passt.
       // Abgerundet, damit 100 % erst erscheint, wenn wirklich alles angesehen ist.
@@ -381,21 +432,19 @@ export default async function DashboardPage({
       totalVideos: welcomeMetrics.totalVideos,
     },
     live: toLiveItem(liveEvents, now),
-    homework: toHomework(homework, homeworkState, now),
+    homework: toHomework(homework, homeworkState, homeworkWeekTotal, now),
     analysis: latestAnalysis
       ? {
           id: latestAnalysis.id,
           title: latestAnalysis.title,
           dayLabel: inlineDay(relativeDayLabel(latestAnalysis.analysis_date ?? latestAnalysis.published_at, now)),
+          imageUrl: latestAnalysis.imageSignedUrl,
         }
       : null,
     appointment: toAppointment(step2, isPaid, now),
-    kalender: toKalender(monatsTermine, now),
-    status: {
-      learningLabel: learningLabel(totalLearnedSeconds),
-      memberDays,
-      discord: { visible: isPaid, username: (discordConnection?.discord_username as string | null) ?? null },
-    },
+    termine: toTermine(kommendeEvents, now),
+    // Sichtbar nur unterhalb von `lg` — darüber steht Discord in der Sidebar.
+    discord: { visible: isPaid, username: (discordConnection?.discord_username as string | null) ?? null },
   };
 
   return (

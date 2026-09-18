@@ -40,11 +40,24 @@ import {
   type AdminTone,
 } from "@/components/admin/adminUi";
 
-export type Tier = "free" | "monthly" | "lifetime" | "ht_1on1";
+/**
+ * Alle Stufen, die `profiles.membership_tier` tragen kann. `quarterly` und
+ * `yearly` fehlten hier, solange nur ein Monatsplan verkauft wurde — ein
+ * Jahreskunde wurde im Admin deshalb als „Free" gezeichnet.
+ */
+export type Tier =
+  | "free"
+  | "monthly"
+  | "quarterly"
+  | "yearly"
+  | "lifetime"
+  | "ht_1on1";
 
 const TIER_LABELS: Record<Tier, string> = {
   free: "Free",
-  monthly: "Monthly (99 €)",
+  monthly: "Monatlich (99 €)",
+  quarterly: "Vierteljährlich (267 €)",
+  yearly: "Jährlich (990 €)",
   lifetime: "Lifetime",
   ht_1on1: "High-Ticket 1on1",
 };
@@ -53,6 +66,8 @@ const TIER_LABELS: Record<Tier, string> = {
 const TIER_TONE: Record<Tier, AdminTone> = {
   free: "neutral",
   monthly: "neutral",
+  quarterly: "neutral",
+  yearly: "neutral",
   lifetime: "attention",
   ht_1on1: "attention",
 };

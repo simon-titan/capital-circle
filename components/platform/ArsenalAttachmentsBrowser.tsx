@@ -87,6 +87,90 @@ function normalizeSearchText(s: string): string {
     .replace(/[̀-ͯ]/g, "");
 }
 
+/** Eine Datei-Zeile. Das Modul steht in der Gruppen-Überschrift, nicht hier. */
+function AttachmentRow({
+  item,
+  delay,
+  isLoading,
+  onDownload,
+}: {
+  item: ArsenalAttachmentListItem;
+  delay: { animationDelay: string };
+  isLoading: boolean;
+  onDownload: (attachmentId: string, filename: string) => void | Promise<void>;
+}) {
+  return (
+    <Box as="li" className="cc-card cc-rise" style={delay} px={{ base: 4, md: 5 }} py={4}>
+      <Flex
+        direction={{ base: "column", sm: "row" }}
+        align={{ base: "stretch", sm: "center" }}
+        justify="space-between"
+        gap={{ base: 3, sm: 4 }}
+      >
+        <Flex minW={0} gap={3} align="flex-start" flex="1">
+          <Flex
+            w="40px"
+            h="40px"
+            flexShrink={0}
+            align="center"
+            justify="center"
+            borderRadius="10px"
+            border="1px solid var(--cc-line-strong)"
+            bg="rgba(255, 255, 255, 0.02)"
+            color={item.hasAccess ? "var(--cc-text)" : "var(--cc-text-3)"}
+            aria-hidden
+          >
+            <FileDown size={18} strokeWidth={1.5} />
+          </Flex>
+          <Stack spacing={1.5} minW={0}>
+            <Text
+              fontSize="16px"
+              fontWeight={600}
+              lineHeight={1.35}
+              color={item.hasAccess ? "var(--cc-text)" : "var(--cc-text-2)"}
+              sx={clampLines(2)}
+            >
+              {item.filename}
+            </Text>
+            <Meta fontSize="13px" overflowWrap="anywhere">
+              {item.video_title}
+            </Meta>
+            {item.category_name || !item.hasAccess ? (
+              <Flex gap={2} wrap="wrap" pt={0.5}>
+                {item.category_name ? <Pill>{item.category_name}</Pill> : null}
+                {!item.hasAccess ? (
+                  <Pill locked>
+                    <Lock size={12} strokeWidth={1.75} aria-hidden />
+                    Nur für Mitglieder
+                  </Pill>
+                ) : null}
+              </Flex>
+            ) : null}
+          </Stack>
+        </Flex>
+
+        <Box flexShrink={0} pl={{ base: "52px", sm: 0 }}>
+          {item.hasAccess ? (
+            <Button
+              size="sm"
+              variant="line"
+              onClick={() => void onDownload(item.id, item.filename)}
+              isLoading={isLoading}
+              aria-label={`${item.filename} herunterladen`}
+            >
+              Download
+            </Button>
+          ) : (
+            <Button as={NextLink} href="/bewerbung" size="sm" variant="line">
+              Mitglied werden
+            </Button>
+          )}
+        </Box>
+      </Flex>
+    </Box>
+  );
+}
+
 /**
  * Datei-Browser für Templates und PDFs. Den Seitenkopf (Titel, Untertitel)
  * rendert die Seite selbst per `PageHeader` — `title` benennt hier nur die
@@ -160,6 +244,21 @@ export function ArsenalAttachmentsBrowser({
       return hay.includes(q);
     });
   }, [items, moduleId, videoId, categoryId, search]);
+
+  /**
+   * Nach Modul gruppiert statt flach: Man sieht ohne einen einzigen Filterklick,
+   * welche Dateien zu welchem Modul gehören — der Modul-Filter darüber bleibt für
+   * den Fall, dass man sich auf eines beschränken will.
+   */
+  const gruppen = useMemo(() => {
+    const nachModul = new Map<string, { title: string; items: ArsenalAttachmentListItem[] }>();
+    for (const it of filtered) {
+      const vorhanden = nachModul.get(it.module_id);
+      if (vorhanden) vorhanden.items.push(it);
+      else nachModul.set(it.module_id, { title: it.module_title, items: [it] });
+    }
+    return [...nachModul.values()].sort((a, b) => a.title.localeCompare(b.title, "de"));
+  }, [filtered]);
 
   const hasActiveSearchOrFilters = useMemo(
     () =>
@@ -282,83 +381,45 @@ export function ArsenalAttachmentsBrowser({
           </Stack>
         </Box>
       ) : (
-        <Stack as="ul" listStyleType="none" gap={3} aria-label={title}>
-          {filtered.map((it, i) => (
-            <Box
-              as="li"
-              key={it.id}
-              className="cc-card cc-rise"
-              style={riseDelay(i + 1)}
-              px={{ base: 4, md: 5 }}
-              py={4}
-            >
+        <Stack gap={6}>
+          {gruppen.map((gruppe, gi) => (
+            <Stack key={gruppe.title} gap={3}>
               <Flex
-                direction={{ base: "column", sm: "row" }}
-                align={{ base: "stretch", sm: "center" }}
+                align="baseline"
                 justify="space-between"
-                gap={{ base: 3, sm: 4 }}
+                gap={3}
+                pb={2}
+                borderBottom="1px solid var(--cc-line)"
+                className="cc-rise"
+                style={riseDelay(gi + 1)}
               >
-                <Flex minW={0} gap={3} align="flex-start" flex="1">
-                  <Flex
-                    w="40px"
-                    h="40px"
-                    flexShrink={0}
-                    align="center"
-                    justify="center"
-                    borderRadius="10px"
-                    border="1px solid var(--cc-line-strong)"
-                    bg="rgba(255, 255, 255, 0.02)"
-                    color={it.hasAccess ? "var(--cc-text)" : "var(--cc-text-3)"}
-                    aria-hidden
-                  >
-                    <FileDown size={18} strokeWidth={1.5} />
-                  </Flex>
-                  <Stack spacing={1.5} minW={0}>
-                    <Text
-                      fontSize="16px"
-                      fontWeight={600}
-                      lineHeight={1.35}
-                      color={it.hasAccess ? "var(--cc-text)" : "var(--cc-text-2)"}
-                      sx={clampLines(2)}
-                    >
-                      {it.filename}
-                    </Text>
-                    <Meta fontSize="13px" overflowWrap="anywhere">
-                      {it.module_title} · {it.video_title}
-                    </Meta>
-                    {it.category_name || !it.hasAccess ? (
-                      <Flex gap={2} wrap="wrap" pt={0.5}>
-                        {it.category_name ? <Pill>{it.category_name}</Pill> : null}
-                        {!it.hasAccess ? (
-                          <Pill locked>
-                            <Lock size={12} strokeWidth={1.75} aria-hidden />
-                            Nur für Mitglieder
-                          </Pill>
-                        ) : null}
-                      </Flex>
-                    ) : null}
-                  </Stack>
-                </Flex>
-
-                <Box flexShrink={0} pl={{ base: "52px", sm: 0 }}>
-                  {it.hasAccess ? (
-                    <Button
-                      size="sm"
-                      variant="line"
-                      onClick={() => void onDownload(it.id, it.filename)}
-                      isLoading={loadingId === it.id}
-                      aria-label={`${it.filename} herunterladen`}
-                    >
-                      Download
-                    </Button>
-                  ) : (
-                    <Button as={NextLink} href="/bewerbung" size="sm" variant="line">
-                      Mitglied werden
-                    </Button>
-                  )}
-                </Box>
+                <Text
+                  as="h2"
+                  fontSize="13px"
+                  lineHeight="18px"
+                  fontWeight={500}
+                  letterSpacing="0.12em"
+                  textTransform="uppercase"
+                  color="var(--cc-text-soft)"
+                >
+                  {gruppe.title}
+                </Text>
+                <Meta fontSize="13px" className="cc-num" flexShrink={0}>
+                  {gruppe.items.length}
+                </Meta>
               </Flex>
-            </Box>
+              <Stack as="ul" listStyleType="none" gap={3} aria-label={`${title} — ${gruppe.title}`}>
+                {gruppe.items.map((it, i) => (
+                  <AttachmentRow
+                    key={it.id}
+                    item={it}
+                    delay={riseDelay(gi + i + 1)}
+                    isLoading={loadingId === it.id}
+                    onDownload={onDownload}
+                  />
+                ))}
+              </Stack>
+            </Stack>
           ))}
         </Stack>
       )}

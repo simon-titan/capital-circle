@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { resolveEventColor } from "@/config/event-colors";
 import { buildThumbnailUrl } from "@/lib/cloudflare-stream";
 import { getPresignedGetUrl } from "@/lib/storage";
 import {
@@ -15,6 +14,7 @@ import {
   isCourseUnlockedFromMaps,
   isModuleUnlockedFromMaps,
 } from "@/lib/progress";
+import { lessonHref } from "@/lib/module-route";
 import type { WelcomeDashboardMetrics } from "@/lib/welcome-metrics";
 export type { WelcomeDashboardMetrics } from "@/lib/welcome-metrics";
 
@@ -449,6 +449,61 @@ export async function getRecommendedAcademyModule(userId: string): Promise<Recom
   return getRecommendedAcademyModuleFromOverview(supabase, rows);
 }
 
+/**
+ * Die Lektion vor und nach der aktuellen — entlang des Lernpfads, nicht entlang
+ * der Module.
+ *
+ * Die Reihenfolge der Ausbildung steckt bereits in der Institut-Übersicht
+ * (Kurs-Sortierung, dann `order_index`), die Reihenfolge innerhalb eines Moduls
+ * in seiner veröffentlichten Playlist. Am Modulrand wird deshalb schlicht über
+ * die Grenze hinweg weitergezählt: Die letzte Lektion eines Moduls grenzt an die
+ * erste des nächsten. Dass dabei das Modul wechselt, ist Folge des Sprungs, nicht
+ * sein Maß.
+ *
+ * Nachbarn in Modulen, die der Nutzer nicht öffnen darf (kein Zugriff, Sperre,
+ * Reihenfolge), geben `null` zurück — der Pfeil bleibt dann sichtbar, aber tot.
+ */
+export async function getLessonNeighbourHrefs(
+  supabase: ServerSupabase,
+  rows: AcademyModuleRow[],
+  moduleId: string,
+  /** 0-basierte Position der aktuellen Lektion in der Playlist des Moduls. */
+  lessonIndex: number,
+): Promise<{ prevHref: string | null; nextHref: string | null }> {
+  const i = rows.findIndex((m) => m.id === moduleId);
+  if (i < 0) return { prevHref: null, nextHref: null };
+
+  const offen = (m: AcademyModuleRow | undefined): AcademyModuleRow | null =>
+    m && m.hasAccess && m.unlocked && !m.isLocked ? m : null;
+  const davor = offen(rows[i - 1]);
+  const danach = offen(rows[i + 1]);
+
+  // Ein Bulk-Aufruf für höchstens drei Module — die Playlists selbst stehen
+  // nicht in `rows`, dort steht nur ihre Länge.
+  const playlists = await getModulePublishedPlaylistsBulk(
+    supabase,
+    [moduleId, davor?.id, danach?.id].filter((id): id is string => Boolean(id)),
+  );
+
+  const aktuell = playlists.get(moduleId) ?? [];
+  const imModul = (position: number): string | null => {
+    const v = aktuell[position];
+    return v ? lessonHref({ id: moduleId, slug: rows[i].slug }, v.id) : null;
+  };
+  const imNachbarn = (m: AcademyModuleRow | null, kante: "erste" | "letzte"): string | null => {
+    if (!m) return null;
+    const list = playlists.get(m.id) ?? [];
+    const v = kante === "erste" ? list[0] : list[list.length - 1];
+    return v ? lessonHref({ id: m.id, slug: m.slug }, v.id) : null;
+  };
+
+  const hier = Math.min(Math.max(0, lessonIndex), Math.max(0, aktuell.length - 1));
+  return {
+    prevHref: hier > 0 ? imModul(hier - 1) : imNachbarn(davor, "letzte"),
+    nextHref: hier < aktuell.length - 1 ? imModul(hier + 1) : imNachbarn(danach, "erste"),
+  };
+}
+
 export async function getAcademyModulesOverview(
   userId: string,
   options?: { signThumbnails?: boolean },
@@ -841,47 +896,14 @@ export async function getUpcomingEvents(limit: number): Promise<EventRow[]> {
 }
 
 /**
- * Events, die gerade laufen oder noch kommen (Dashboard „Heute live“).
- * Anders als `getUpcomingEvents` bleiben bereits gestartete Events drin, bis
- * sie enden — ohne `end_time` gelten 90 Minuten.
+ * Events, die gerade laufen oder noch kommen (Dashboard „Heute live“ und
+ * „Nächste Termine“). Anders als `getUpcomingEvents` bleiben bereits gestartete
+ * Events drin, bis sie enden — ohne `end_time` gelten 90 Minuten.
+ *
+ * `getMonatsTermine` ist am 17.09.2026 mit dem Mini-Kalender weggefallen: Die
+ * Terminkarte zeigt jetzt eine Liste der nächsten Termine statt eines
+ * Monatsrasters und kommt mit dieser Abfrage aus.
  */
-export type MonatsTermin = {
-  /** Tag im Monat (1–31). */
-  tag: number;
-  titel: string;
-  /** Farbe des Events, bereits auf die Markenpalette abgebildet. */
-  farbe: string;
-  startIso: string;
-};
-
-/**
- * Alle Events des laufenden Kalendermonats — für den Mini-Kalender im
- * Dashboard. Bewusst nur ein Monat: Die Karte zeigt ein Monatsraster, alles
- * darüber hinaus wäre geladen und nie sichtbar.
- */
-export async function getMonatsTermine(bezug: Date): Promise<MonatsTermin[]> {
-  const supabase = await createClient();
-  const von = new Date(bezug.getFullYear(), bezug.getMonth(), 1);
-  const bis = new Date(bezug.getFullYear(), bezug.getMonth() + 1, 1);
-
-  const { data } = await supabase
-    .from("events")
-    .select("title,start_time,color")
-    .gte("start_time", von.toISOString())
-    .lt("start_time", bis.toISOString())
-    .order("start_time", { ascending: true });
-
-  return ((data as { title: string; start_time: string; color: string | null }[] | null) ?? []).map((ev) => {
-    const start = new Date(ev.start_time);
-    return {
-      tag: start.getDate(),
-      titel: ev.title,
-      farbe: resolveEventColor(ev.color).value,
-      startIso: ev.start_time,
-    };
-  });
-}
-
 export async function getLiveWindowEvents(limit: number): Promise<EventRow[]> {
   const supabase = await createClient();
   const now = Date.now();
@@ -1355,19 +1377,54 @@ export async function getAnalysisPostById(id: string): Promise<AnalysisPostRow |
   return (data as AnalysisPostRow | null) ?? null;
 }
 
-export type LatestAnalysisRow = Pick<AnalysisPostRow, "id" | "title" | "post_type" | "analysis_date" | "published_at">;
+export type LatestAnalysisRow = Pick<AnalysisPostRow, "id" | "title" | "post_type" | "analysis_date" | "published_at"> & {
+  /** Fertig signiertes Vorschaubild fürs Dashboard; null, wenn keines hinterlegt ist. */
+  imageSignedUrl: string | null;
+};
 
 /** Neueste Analyse fürs Dashboard — gleiche Sortierung wie der Feed, ohne Inhalt. */
 export async function getLatestAnalysisPost(): Promise<LatestAnalysisRow | null> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("analysis_posts")
-    .select("id,title,post_type,analysis_date,published_at")
+    .select("id,title,post_type,analysis_date,published_at,cover_image_storage_key,image_storage_key")
     .order("analysis_date", { ascending: false, nullsFirst: false })
     .order("published_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  return (data as LatestAnalysisRow | null) ?? null;
+  if (!data) return null;
+
+  const row = data as AnalysisPostRow;
+  // Cover zuerst: das Legacy-Feld `image_storage_key` traegt bei aelteren
+  // Beitraegen das grosse Bild im Artikel und ist nur der Notnagel.
+  const imageSignedUrl = await signThumbnail(row.cover_image_storage_key ?? row.image_storage_key ?? null);
+
+  return {
+    id: row.id,
+    title: row.title,
+    post_type: row.post_type,
+    analysis_date: row.analysis_date,
+    published_at: row.published_at,
+    imageSignedUrl,
+  };
+}
+
+/**
+ * Höchste vergebene Wochennummer aus `homework` — fürs Dashboard-Label
+ * „Woche 4 von 12“. Kein eigenes Feld im Schema; die Zahl ergibt sich aus dem,
+ * was das Team bisher angelegt hat.
+ */
+export async function getHomeworkWeekTotal(): Promise<number | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("homework")
+    .select("week_number")
+    .not("week_number", "is", null)
+    .order("week_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const total = (data as { week_number?: number | null } | null)?.week_number ?? null;
+  return typeof total === "number" && total > 0 ? total : null;
 }
 
 // ============================================================

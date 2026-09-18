@@ -1,5 +1,7 @@
 /** Reine Anzeige-Daten fürs Dashboard — die Page berechnet, die Karten zeigen nur an. */
 
+import type { ZeitBezug } from "./zeit-ton";
+
 export type ContinueItem = {
   kind: "resume" | "start";
   href: string;
@@ -7,10 +9,19 @@ export type ContinueItem = {
   /** „Lektion 7 von 24“ bzw. „24 Lektionen“ */
   lessonLabel: string | null;
   videoTitle: string | null;
+  /** Ein Satz zum Modul, unter der Meta-Zeile. */
+  description: string | null;
   progressPercent: number;
   thumbnailUrl: string | null;
   videoStorageKey: string | null;
   startAtSeconds: number;
+  /**
+   * Nachbarlektionen im Lernpfad — die Pfeile oben rechts in der Karte. Sie
+   * springen über die Modulgrenze hinaus: Am Modulende führt „weiter“ zur
+   * ersten Lektion des nächsten Moduls, nicht einfach zum Modul.
+   */
+  prevHref: string | null;
+  nextHref: string | null;
 };
 
 export type StreakDay = {
@@ -19,6 +30,14 @@ export type StreakDay = {
   active: boolean;
   isToday: boolean;
   detail: string;
+};
+
+export type StreakSummary = {
+  days: number;
+  week: StreakDay[];
+  /** Aktive Werktage dieser Woche — „4 von 5 Tagen“ im Fortschritt. */
+  weekdaysActive: number;
+  weekdaysTotal: number;
 };
 
 export type ProgressSummary = {
@@ -30,13 +49,20 @@ export type ProgressSummary = {
   totalVideos: number;
 };
 
-export type LiveItem = {
+export type LiveItem = ZeitBezug & {
   title: string;
+  /**
+   * Der Kalenderbezug für die Überschrift („Jetzt live“ / „Heute live“ /
+   * „Nächstes Live“). `laeuft` aus `ZeitBezug` sagt dasselbe wie `"now"`,
+   * trägt aber die Farbe — die Unterscheidung heute/später steckt nur hier.
+   */
   state: "now" | "today" | "upcoming";
   /** „Heute“, „Morgen“, „Do, 18. Sept“ */
   dayLabel: string;
   /** „15:00 Uhr“ */
   timeLabel: string;
+  /** „15:30 – 17:00 Uhr“, wenn ein Ende hinterlegt ist — sonst wie `timeLabel`. */
+  timeRangeLabel: string;
   href: string;
   external: boolean;
   /** Art des Events („Livetrading“, „BIAS“ …) — als Badge oben rechts. */
@@ -45,14 +71,25 @@ export type LiveItem = {
   eventColor: string;
 };
 
+/** Eine Teilaufgabe der Woche — im Dashboard nur angezeigt, abgehakt wird in /hausaufgabe. */
+export type WeekTask = {
+  id: string;
+  title: string;
+  done: boolean;
+};
+
 export type HomeworkSummary = {
   official: {
     title: string;
+    /** Ein Satz unter dem Titel (Beschreibung der Aufgabe). */
+    subtitle: string | null;
+    /** „Woche 4 von 12“ bzw. „Woche 4“, wenn die Gesamtzahl unbekannt ist. */
     weekLabel: string | null;
     dueLabel: string | null;
     overdue: boolean;
     done: boolean;
   } | null;
+  tasks: WeekTask[];
   customDone: number;
   customTotal: number;
 };
@@ -61,18 +98,20 @@ export type AnalysisSummary = {
   id: string;
   title: string;
   dayLabel: string;
+  /** Vorschaubild rechts in der Karte; null = Karte bleibt textlich. */
+  imageUrl: string | null;
 };
 
-/** Eine Zelle im Mini-Kalender. `tag: null` = Leerfeld vor dem Monatsersten. */
-export type KalenderTag = {
-  key: string;
-  tag: number | null;
+/** Eine Zeile in „Nächste Termine“: Tag · Titel · Uhrzeit. */
+export type TerminZeile = ZeitBezug & {
+  id: string;
+  /** „Heute“, „Morgen“, „So, 21. Sep“ */
+  dayLabel: string;
+  title: string;
+  /** „15:30 – 17:00 Uhr“ */
+  timeLabel: string;
+  farbe: string;
   istHeute: boolean;
-  /** Liegt der Tag heute oder später? Für „nächster Termin“. */
-  istZukunft: boolean;
-  /** „Do, 18. Sept“ */
-  tagLabel: string;
-  termine: { titel: string; zeitLabel: string; farbe: string }[];
 };
 
 export type AppointmentSummary =
@@ -80,10 +119,13 @@ export type AppointmentSummary =
   | { state: "open"; title: string }
   | { state: "none" };
 
-export type StatusSummary = {
-  learningLabel: string;
-  memberDays: number;
-  discord: { visible: boolean; username: string | null };
+/**
+ * Discord-Status für die Karte über „Als nächstes“. Sie erscheint nur unterhalb
+ * von `lg` — auf dem Desktop steht Discord in der Seitennavigation.
+ */
+export type DiscordStatus = {
+  visible: boolean;
+  username: string | null;
 };
 
 export type DashboardViewData = {
@@ -92,12 +134,12 @@ export type DashboardViewData = {
   canUseJournal: boolean;
   showApplyPrompt: boolean;
   continueItem: ContinueItem | null;
-  streak: { days: number; week: StreakDay[] };
+  streak: StreakSummary;
   progress: ProgressSummary;
   live: LiveItem | null;
   homework: HomeworkSummary;
   analysis: AnalysisSummary | null;
   appointment: AppointmentSummary;
-  kalender: KalenderTag[];
-  status: StatusSummary;
+  termine: TerminZeile[];
+  discord: DiscordStatus;
 };

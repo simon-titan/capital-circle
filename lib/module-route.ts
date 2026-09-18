@@ -5,6 +5,18 @@ export function moduleHref(module: { id: string; slug: string | null }): string 
   return `/ausbildung/${encodeURIComponent(seg)}`;
 }
 
+/**
+ * Query-Parameter für eine bestimmte Lektion. Ohne ihn öffnet die Modulseite
+ * die zuletzt gesehene Lektion — mit ihm genau die verlangte (z. B. die Pfeile
+ * in „Als nächstes“ auf dem Dashboard).
+ */
+export const LEKTION_PARAM = "lektion";
+
+/** `/ausbildung/<modul>?lektion=<videoId>` — tiefer Link auf eine Lektion. */
+export function lessonHref(module: { id: string; slug: string | null }, videoId: string): string {
+  return `${moduleHref(module)}?${LEKTION_PARAM}=${encodeURIComponent(videoId)}`;
+}
+
 export function isUuidParam(param: string): boolean {
   return UUID_RE.test(param);
 }

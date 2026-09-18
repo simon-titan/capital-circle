@@ -10,7 +10,7 @@ colors:
   gold-line: "rgba(232, 192, 148, 0.6)"
   gold-wash: "rgba(212, 176, 128, 0.08)"
   on-gold: "#1a140c"
-  graphite: "#12171c"
+  graphite: "#0f1317"
   graphite-raised: "rgba(22, 26, 32, 0.92)"
   panel-solid: "#151a1e"
   surface: "#191e23"
@@ -184,7 +184,7 @@ v3.1 löst das flache Schema v3 „Capital Circle Minimal“ ab. Der Nutzer fand
 **Status (2026-09-14): Migration abgeschlossen.** Plattform (Dashboard, Institut, Trading Journal, klassisches Journal, Positionsrechner, Live & Events, Ressourcen, Konto), Marketing/Funnel, Auth und Onboarding, Einzelseiten (`/wartung`, `/erfolge`, `/video`, `/termin`, `/discord`) und Admin (`/admin/**`) laufen auf v3.2. Es gibt keine nicht migrierten Seiten mehr; neue Flächen folgen ausschließlich diesem Dokument.
 
 **Key Characteristics:**
-- Graphitgrund `#12171c` mit Sternenfeld und weichem Champagner-Licht, beides fixiert hinter dem Inhalt.
+- Graphitgrund `#0f1317` mit Sternenfeld und weichem Champagner-Licht, beides fixiert hinter dem Inhalt; wie laut der Himmel steht, regeln `--cc-sky-stars` (0.5) und `--cc-sky-glow` (0.58).
 - Graphitgraue Glas-Karten (12px, 94 % deckend, Blur 14px, tiefer Schatten) mit Gold-Lichtkante oben; Hover hebt an und leuchtet golden.
 - Champagner-Gold `#D4B080` als Verlauf (hell `#e8c094` → dunkel `#b8935f`) für Hauptaktionen, aktive Navigation, Fokus und Live.
 - Daten im Dashboard (Fortschrittsbalken, Segmente, erledigte Streak-Tage) in heller Datentinte `#d1d0d4`; Icon-Kacheln neutral mit Haarlinie.
@@ -209,7 +209,7 @@ Warmneutrales Graphit mit einer einzigen Akzentfamilie: Champagner-Gold in drei 
 - **Tinte auf Gold** (`on-gold`): Text und Icons auf Gold-Füllung.
 
 ### Neutral
-- **Graphit** (`graphite`): Seitengrund unter Sternenfeld und Champagner-Licht; auch das Häkchen auf erledigten Streak-Tagen.
+- **Graphit** (`graphite`): Seitengrund unter Sternenfeld und Champagner-Licht; auch das Häkchen auf erledigten Streak-Tagen. Seit 2026-09-17 einen Tick dunkler (`#0f1317` statt `#12171c`), damit die Karten klarer davor stehen.
 - **Graphit erhöht** (`graphite-raised`): Leiste, Sidebar und mobile Kopfzeile, 92 % deckend mit Blur 16–18px.
 - **Panel massiv** (`panel-solid`): mobiler Drawer, deckend.
 - **Fläche** (`surface`): Grundton der Karten; im Einsatz als vertikaler Verlauf `rgba(27,32,38,0.94)` → `rgba(24,29,34,0.94)`.
@@ -221,7 +221,8 @@ Warmneutrales Graphit mit einer einzigen Akzentfamilie: Champagner-Gold in drei 
 
 ### Semantic
 - **Gewinn** (`success`) und **Verlust/überfällig** (`danger`): nur für Bedeutung.
-- **Streak-Glut** (warmes Orange `#ffb454` mit Glut-Verlauf `rgba(255,140,60,…)`): ausschließlich für die Streak-Flamme. Die Wärme gehört zum Motiv Feuer und ist kein zweiter Akzent.
+- **Streak-Glut** (warmes Orange `#ffb454` mit Glut-Verlauf `rgba(255,140,60,…)`): für die Streak-Flamme und — seit 2026-09-17 — für den Zeitton „bald“ (siehe unten). Die Wärme gehört zum Motiv Feuer und ist kein zweiter Akzent.
+- **Zeitton** (`components/platform/dashboard/zeit-ton.ts`): Ein Termin, der **läuft**, steht in Grün (`--cc-success`); bis **drei Stunden** vor dem Start in der Streak-Glut; davor bleibt er neutral bzw. in Gold hell. Die Regel gilt gleichermaßen für „Heute live“ und „Nächste Termine“ und kommt aus einer einzigen Ableitung — zwei Kopien derselben Schwelle driften auseinander. Der Nutzer wollte hier ausdrücklich Gelb; Gelb wäre ein zweiter Akzentton neben Gold, deshalb trägt die Warnstufe die bereits erlaubte Glut. Gefärbt werden Punkt und Text, **nicht** der Typ-Badge — der behält die im Admin gewählte Event-Farbe.
 - **Ticket-Status** (`lib/support/shared.ts`, Punkt `TicketStatusDot`): offen = Gold hell, wartet auf Antwort = Gold dunkel, in Bearbeitung = Datentinte, gelöst = Grün, geschlossen = Grau (45 % Weiß).
 - **Event-Farben** (`config/event-colors.ts`): nur Markentöne — Champagner `#d4b080` (Standard), Champagner hell `#e8c094`, Bronze `#b8935f`, Silber `#d1d0d4`, Graphit `#80868d`. Der Admin wählt im Event-Formular, der Mitglieder-Kalender färbt die Chips als Hauch (18 %) mit Haarlinie (55 %) über die Klassen `ev-tone-<key>`. Alt-Farben aus der Datenbank werden auf den nächstliegenden Markenton abgebildet, die API speichert nur Palettenwerte. Free-Call (Gold-Verlauf) und gesperrte Events überschreiben den Ton.
 
@@ -262,13 +263,13 @@ Warmneutrales Graphit mit einer einzigen Akzentfamilie: Champagner-Gold in drei 
 
 - **Rahmen:** Oben eine Leiste von 48px: die Apex-Promo läuft als Laufband über die volle Breite (Hover pausiert, bei reduzierter Bewegung steht sie still); die Unterkante ist eine Gold-Linie mit 18 % Deckkraft. Ab `lg` (992px) folgt links eine feste Sidebar von 264px, sticky unter der Leiste. Darunter ersetzt eine 56px-Kopfzeile mit Menü-Button die Sidebar und öffnet dieselbe Navigation als Drawer von links (max. 300px).
 - **Inhalt:** max. 1280px, zentriert; Innenabstand 16/24/40px (mobil/md/xl), oben 24/32/48px.
-- **Dashboard-Raster:** ab `xl` (1280px) zwei unabhängige Spalten 1.8fr / 1fr, Abstand 20px. Darunter eine Spalte. Die Spalten lösen sich mobil per `display: contents` auf, sodass `order` die Karten nach Dringlichkeit sortiert (Weiterlernen, Streak, Live, Wochenaufgabe, Fortschritt, Analyse, Termin, Trade erfassen).
+- **Dashboard-Raster:** seit 2026-09-17 drei Reihen statt zweier durchlaufender Spalten, Abstand 20px. Oben „Als nächstes“ und „Dein Fortschritt“ (1.8fr / 1fr ab `xl`), in der Mitte „Heute live“, „Diese Woche“ und „Journal“ (drei gleiche Spalten ab `lg`), unten „Neueste Analyse“ und „Nächste Termine“ (1fr / 1.25fr ab `xl`). Die Statuskacheln (Lernzeit, Mitglied seit, Discord) sind am 17.09.2026 entfallen; Discord wohnt jetzt im Konto-Block der Sidebar und erscheint unterhalb `lg` zusätzlich als erste Karte über „Als nächstes“. Unterhalb der Bruchstelle stapelt jede Reihe für sich, die Dringlichkeit steckt damit in der Reihenfolge der Reihen — das frühere `display: contents` mit `order` je Karte entfällt.
 - **Rhythmus:** Karten-Innenabstand 20/24px, Abstand zwischen Karten 20px, Kartentitel 16px über dem Inhalt. Eine Statuszeile schließt die Seite ab, hinter einer Haarlinie 32–40px unter dem Raster.
 - **Einstieg:** Kopf und Karten steigen in `order`-Reihenfolge auf (80ms + 70ms je Schritt).
 
 ## Elevation & Depth
 
-Tiefe entsteht in drei Ebenen. Hinten liegt der Himmel (Graphit, Sternenfeld, Champagner-Licht, alles `position: fixed`). In der Mitte liegt das Glas: Leiste, Sidebar und Karten, fast deckend (92–94 %) mit Blur, sodass Sterne und Licht nur weich durchscheinen. Vorne liegt das Licht, also Gold-Kanten, Gold-Glows und Schatten, die Karten und Hauptaktionen vom Grund abheben. Ebenen über dem Inhalt (Drawer) liegen auf einem dunklen Overlay (`rgba(8,10,12,0.72)`).
+Tiefe entsteht in drei Ebenen. Hinten liegt der Himmel (Graphit, Sternenfeld, Champagner-Licht, alles `position: fixed`). Seine Lautstärke hängt an zwei Reglern in `:root`: `--cc-sky-stars` (Deckkraft von `.cc-stars`, aktuell 0.5) und `--cc-sky-glow` (Deckkraft von `.cc-goldlight`, aktuell 0.58). Die rgba-Werte in den beiden Klassen halten nur noch das Verhältnis der Sterne bzw. der beiden Lichter zueinander — wer den Hintergrund beruhigen oder aufdrehen will, ändert die Regler, nicht die Verläufe. In der Mitte liegt das Glas: Leiste, Sidebar und Karten, fast deckend (92–94 %) mit Blur, sodass Sterne und Licht nur weich durchscheinen. Vorne liegt das Licht, also Gold-Kanten, Gold-Glows und Schatten, die Karten und Hauptaktionen vom Grund abheben. Ebenen über dem Inhalt (Drawer) liegen auf einem dunklen Overlay (`rgba(8,10,12,0.72)`).
 
 ### Shadow Vocabulary
 - **Karte ruhend** (`0 12px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05)`): jede Glas-Karte.
@@ -326,7 +327,7 @@ Glas-Leiste (Blur 16px) mit einer Gold-Unterkante von 18 %. Die Promo beginnt mi
 - **Bewegung:** füllt sich einmal beim Laden (900ms, `cubic-bezier(0.16,1,0.3,1)`, Segmente um 45ms versetzt).
 
 ### Streak
-Große tabellarische Zahl neben einer 56px-Glut-Kachel (warmer Verlauf Orange → Champagner, Rand und Schein in Orange). Darin liegt eine gefüllte Flamme, die warm pulsiert (2.6s). Darunter eine Siebentagesreihe: erledigt = 26px-Kreis in Datentinte mit dunklem Häkchen (Graphit), offen = durchgezogener 1.5px-Kreis (30 % Weiß). Der heutige Tag steht in Text, 600; ist er offen, trägt sein Kreis die Gold-Haarlinie.
+Seit 2026-09-17 steht die Streak nicht mehr als eigene Karte, sondern im Fuß der Fortschrittskarte, hinter einer Haarlinie und zweigeteilt: links eine 44px-Glut-Kachel (warmer Verlauf Orange → Champagner, Rand in Orange) mit gefüllter, warm pulsierender Flamme (2.6s) neben der tabellarischen Zahl und „Tage aktiv“, rechts hinter einer senkrechten Haarlinie ein Häkchen mit „N von 5 Tagen diese Woche“. Die Siebentagesreihe aus Kreisen entfällt; wer den Verlauf sehen will, findet ihn im Tooltip der Glut-Kachel.
 
 ### Live-Zustand
 Ein 8px-Punkt in Gold hell mit Leuchten vor der Zeitangabe. Läuft eine Session, breitet sich ein Gold-Ring aus (1.8s). Beim Termin „heute“ steht der Punkt still, bei späteren Terminen fehlt er.
@@ -335,7 +336,7 @@ Ein 8px-Punkt in Gold hell mit Leuchten vor der Zeitangabe. Läuft eine Session,
 Hero-Karte mit Videovorschau links (10px, Gold-Rand 28 %, Tiefenschatten) und Titel · Meta, Balken in Datentinte und Gold-Button rechts. Mitten auf der Vorschau liegt ein 64px-Play-Button im Gold-Verlauf mit starkem Gold-Glow; Hover skaliert ihn auf 1.07. Ohne Bild wird der Lektionstitel auf einem warmen Gold-Schein zum Bildinhalt.
 
 ### Bewegung
-Standard-Easing `cubic-bezier(0.16,1,0.3,1)`, Zustandswechsel 150–220ms. Einmalig beim Laden: Aufsteigen der Karten, Füllen des Fortschritts. Dauerhaft und leise: Sternfunkeln (7s), Hero-Atmen (6s), Live-Ring (1.8s), Flamme (2.6s), Funke (14s), mobiles Promo-Laufband (32s). `prefers-reduced-motion` stoppt alle und hebt die Karten-Anhebung auf.
+Standard-Easing `cubic-bezier(0.16,1,0.3,1)`, Zustandswechsel 150–220ms. Einmalig beim Laden: Aufsteigen der Karten, Füllen des Fortschritts. Dauerhaft und leise: Sternfunkeln (7s, Deckkraft 0.55 → 0.8), Hero-Atmen (6s), Live-Ring (1.8s), Punkt in der Hero-Pill der Verkaufsseite (`.cc-pulse`, 2.4s), Flamme (2.6s), Funke (14s), mobiles Promo-Laufband (32s). `prefers-reduced-motion` stoppt alle und hebt die Karten-Anhebung auf.
 
 ### Marketing (umgesetzt, aus Kunden-Mockups)
 Dasselbe Schema auf Landing, Funnels, Pricing und Bewerbung, seit 2026-09-14 umgesetzt (Bausteine: `components/marketing/funnel-ui.tsx`, `components/landing/landing-ui.tsx`, `components/landing/DiscordFunnelChrome.tsx`). Die Kunden-Mockups (Hero, Vergleich, Für wen) sind die Quelle des Sternenfelds und der Lichtlinie; Plattform und Marketing teilen damit einen Himmel:
@@ -350,7 +351,7 @@ Dasselbe Schema auf Landing, Funnels, Pricing und Bewerbung, seit 2026-09-14 umg
 
 ### Do:
 - **Do** Inhalte auf Glas-Karten legen: 12px, Blur 14px, Tiefenschatten, Gold-Lichtkante oben, Hover mit −2px und Gold-Schimmer.
-- **Do** den Seitengrund aus Graphit `#12171c`, Sternenfeld und Champagner-Licht aufbauen (`.cc-stars`, `.cc-goldlight`).
+- **Do** den Seitengrund aus Graphit `#0f1317`, Sternenfeld und Champagner-Licht aufbauen (`.cc-stars`, `.cc-goldlight`).
 - **Do** Aktionen, die jetzt weiterbringen, im Gold-Verlauf füllen; alles andere als Line-Button mit Gold-Kante beim Hover.
 - **Do** Daten im Dashboard (Fortschritt, Segmente, erledigte Streak-Tage) in Datentinte `--cc-ink` zeichnen, die Prozentzahl in Text; Gold bleibt Aktion, Navigation, Fokus und Live.
 - **Do** die Hero-Karte dem nächsten Schritt vorbehalten.
@@ -362,7 +363,7 @@ Dasselbe Schema auf Landing, Funnels, Pricing und Bewerbung, seit 2026-09-14 umg
 ### Don't:
 - **Don't** einen anderen Goldton als die Champagner-Familie um `#D4B080` verwenden. Das gelbere Brand-Gold `#D4AF37` ist vollständig entfernt, auch aus den E-Mails; kein kühles Messing.
 - **Don't** Dashboard-Daten wieder vergolden oder Icon-Kacheln golden tönen; beide bleiben neutral wie im Kunden-Mockup.
-- **Don't** einen zweiten Akzentton einführen; Grün/Rot nur für Bedeutung, Orange nur für die Streak-Glut.
+- **Don't** einen zweiten Akzentton einführen; Grün/Rot nur für Bedeutung, Orange nur für Streak-Glut und Zeitton.
 - **Don't** eine zweite Schrift einführen (kein Radley, keine Mono-Schrift).
 - **Don't** das Landschaftsbild oder die Metall-Tier-Farben (Bronze/Silber/Platin) zurückholen — beide sind entfernt.
 - **Don't** Karten ohne Blur und Gold-Kante direkt auf den Himmel stellen.
@@ -388,3 +389,4 @@ Die Migration ist abgeschlossen. Was an Legacy noch im Code steht, dient nur der
 - v3.1 → v3.2 (2026-09-13): Farben 1:1 nach Kunden-Mockup (01-dashboard). Graphit `#12171c` statt Nacht `#0a0d11`, graphitgraue Karten (94 % deckend, Rand 7 %), Champagner `#D4B080` statt Brand-Gold `#D4AF37` als Akzent der Plattform (Verläufe, Glows, Fokus und Theme-Buttons ziehen mit). Dashboard-Daten (Weiterlernen-Balken, Fortschrittssegmente, Streak-Haken) und Icon-Kacheln stehen neutral in heller Datentinte `#d1d0d4`, die Prozentzahl in Text — „Datentinte statt Gold“ kehrt für Daten zurück. Sternenfeld, Champagner-Licht, Hero-Glow, Flamme, Gold-Buttons, aktive Navigation, Gold-Name und Fokusring bleiben. Legacy-`--color-*`, `colors.brand` und Marketing behalten `#D4AF37`.
 - v3.2 (2026-09-14): gesamte App migriert — Plattform, Marketing/Funnel, Auth/Onboarding, Einzelseiten und Admin auf `--cc-*` und `.cc-card`. Nur noch Inter geladen (Radley, JetBrains Mono entfernt); `GlassCard`, `GlowButton`, `CardLockOverlay`, `PageTransition` und `.glass-card*` gelöscht, Metall-Tier entfernt. `--color-*` und `colors.brand` auf Champagner gezogen (nur noch Aliasse), Chakra-Controls standardmäßig `colorScheme="brand"`, Toasts als Graphit-Panel. `Logo` ist eine Inter-Wortmarke statt des Serif-Bilds. Neu: Sticky-Hinweis für `.cc-card`, Ticket-Statusfarben, offene Entscheidung Event-Farben.
 - v3.2 Nachtrag (2026-09-14): E-Mail-Templates auf „Champagner auf Graphit“ und Inter umgestellt (`#D4AF37`, Georgia, Aqua/Lila im Discord-Invite und Rot/Weiß der Migrations-Kampagne entfernt). Event-Farben: Farbwähler mit fünf Markentönen (`config/event-colors.ts`), Mitglieder-Kalender färbt die Chips wieder nach Admin-Wahl.
+- v3.2 → v3.2.1 (2026-09-17): **Himmel ruhiger** auf Nutzerwunsch. Der Grund ist einen Tick dunkler (`#12171c` → `#0f1317`; `--cc-bg`, die `--color-*`-Aliasse und `theme/index.ts` → `brand.bg` ziehen mit, sonst stünde der Body-Hintergrund heller als der Himmel darüber). Neu sind die beiden Regler `--cc-sky-stars` (0.5) und `--cc-sky-glow` (0.58): Sternenfeld und Champagner-Licht behalten ihre rgba-Verläufe als Verhältnis und werden über die Deckkraft der Klasse gedämpft — das Gold-Licht wirkt damit bei ~0.10 (oben rechts) und ~0.04 (unten links) statt 0.17/0.07. Der Funkel-Keyframe `cc-twinkle` läuft von 0.55 → 0.8 statt 0.35 → 1, weil ein Funkeln, das fast auf null geht, sich als Blinken liest. Das betrifft Plattform **und** Marketing, die sich den Himmel teilen. Ebenfalls neu: `.cc-pulse` — der Punkt in der Eyebrow-Pill der Verkaufsseite (2.4s, in der Reduced-Motion-Liste).

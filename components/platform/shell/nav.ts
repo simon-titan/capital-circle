@@ -45,9 +45,13 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Journal",
     icon: BookMarked,
     href: "/trading-journal",
+    /**
+     * „Klassisches Journal“ am 17.09.2026 aus der Oberfläche genommen. Die
+     * Tabellen `trading_journals` / `trading_journal_trades` bleiben mitsamt
+     * Daten bestehen — nur die Seite und alle Verweise darauf sind weg.
+     */
     children: [
       { href: "/trading-journal", label: "Trading Journal", access: "paid" },
-      { href: "/journal-klassisch", label: "Klassisches Journal", access: "paid" },
       { href: "/position-rechner", label: "Positionsrechner" },
     ],
   },

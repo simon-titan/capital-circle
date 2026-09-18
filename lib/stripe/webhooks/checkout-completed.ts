@@ -1,5 +1,6 @@
 import type Stripe from "stripe";
 import { sendWelcomePaid } from "@/lib/email/templates/welcome-paid";
+import { getStripe } from "@/lib/stripe/server";
 import {
   extractCustomerId,
   loadAuthEmail,
@@ -66,6 +67,20 @@ export async function handleCheckoutCompleted(
     throw new Error(`Lifetime-Update für ${userId} fehlgeschlagen: ${updateError.message}`);
   }
 
+  /*
+    Ein laufendes Abo muss weg, sonst zahlt der frisch gekaufte Lifetime-Kunde
+    weiter monatlich fuer etwas, das er jetzt dauerhaft besitzt. Gekuendigt
+    wird zum Periodenende: Der laufende Monat ist bezahlt, und eine sofortige
+    Kuendigung wuerfe die Frage nach einer anteiligen Erstattung auf, die
+    niemand gestellt hat.
+
+    Best-effort — der Dauerzugang steht an dieser Stelle bereits. Ein Fehler
+    hier darf den Webhook nicht mit 500 antworten lassen, sonst wiederholt
+    Stripe das Ereignis drei Tage lang und schreibt jedes Mal erneut
+    `lifetime_purchased_at`.
+  */
+  await beendeLaufendesAbo(supabase, userId);
+
   const profile = await loadProfileByUserId(supabase, userId);
   const email =
     session.customer_details?.email ??
@@ -81,6 +96,43 @@ export async function handleCheckoutCompleted(
     userId,
     tier: "lifetime",
   });
+}
+
+/**
+ * Laufendes Abo nach einem Lifetime-Kauf zum Periodenende beenden.
+ *
+ * Die Freigabe des Dauerzugangs haengt nicht daran: `subscription.deleted`
+ * laesst `membership_tier = 'lifetime'` seit 17.09.2026 ausdruecklich stehen.
+ */
+async function beendeLaufendesAbo(
+  supabase: WebhookSupabase,
+  userId: string,
+): Promise<void> {
+  try {
+    const { data } = await supabase
+      .from("subscriptions")
+      .select("stripe_subscription_id,status,cancel_at_period_end")
+      .eq("user_id", userId)
+      .in("status", ["active", "trialing", "past_due"])
+      .limit(1);
+
+    const abo = (data as Array<{
+      stripe_subscription_id: string;
+      cancel_at_period_end: boolean;
+    }> | null)?.[0];
+    if (!abo || abo.cancel_at_period_end) return;
+
+    await getStripe().subscriptions.update(abo.stripe_subscription_id, {
+      cancel_at_period_end: true,
+      cancellation_details: { comment: "Lifetime gekauft" },
+    });
+  } catch (err) {
+    console.error(
+      `[stripe-webhook] Abo-Kuendigung nach Lifetime-Kauf (user=${userId}) fehlgeschlagen. ` +
+        "Der Dauerzugang steht; das Abo muss von Hand beendet werden:",
+      err,
+    );
+  }
 }
 
 /**

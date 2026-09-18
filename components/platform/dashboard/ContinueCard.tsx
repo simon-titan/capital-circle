@@ -1,16 +1,56 @@
 "use client";
 
-import { Box, Button, Flex, Grid, Text } from "@chakra-ui/react";
-import { ArrowRight, Play } from "lucide-react";
+import { Box, Button, Flex, Grid, IconButton, Text } from "@chakra-ui/react";
+import { ArrowRight, ChevronLeft, ChevronRight, GraduationCap, Play } from "lucide-react";
 import NextLink from "next/link";
 import { InstitutMediaArea } from "@/components/platform/InstitutMediaArea";
 import { CardValue, DashCard, Meta, ProgressBar, TitleWithMeta, clampLines } from "./primitives";
 import type { ContinueItem } from "./types";
 
+/**
+ * Pfeile zur Nachbarlektion — eine Lektion vor bzw. zurück, nicht ein ganzes
+ * Modul (Nutzerwunsch 17.09.2026). Am Modulende führt der Pfeil in die erste
+ * Lektion des nächsten Moduls; dass dabei das Modul wechselt, ist Folge des
+ * Sprungs, nicht sein Maß.
+ *
+ * Ohne Ziel bleibt der Pfeil sichtbar, aber inaktiv — ein verschwindender Pfeil
+ * würde die Titelzeile beim Blättern springen lassen. Inaktiv heißt er auch,
+ * wenn die Nachbarlektion in einem gesperrten Modul liegt.
+ */
+function LektionsPfeile({ prevHref, nextHref }: { prevHref: string | null; nextHref: string | null }) {
+  const arrowProps = {
+    size: "sm" as const,
+    variant: "line" as const,
+    w: "32px",
+    minW: "32px",
+    h: "32px",
+  };
+  return (
+    <Flex gap={2}>
+      <IconButton
+        {...arrowProps}
+        as={prevHref ? NextLink : undefined}
+        href={prevHref ?? undefined}
+        isDisabled={!prevHref}
+        aria-label="Vorherige Lektion"
+        icon={<ChevronLeft size={16} strokeWidth={1.75} />}
+      />
+      <IconButton
+        {...arrowProps}
+        as={nextHref ? NextLink : undefined}
+        href={nextHref ?? undefined}
+        isDisabled={!nextHref}
+        aria-label="Nächste Lektion"
+        icon={<ChevronRight size={16} strokeWidth={1.75} />}
+      />
+    </Flex>
+  );
+}
+
 export function ContinueCard({ item }: { item: ContinueItem | null }) {
   if (!item) {
     return (
-      <DashCard label="Institut" labelId="dash-continue" hero>
+      <DashCard label="Als nächstes" labelId="dash-continue" icon={<GraduationCap size={17} strokeWidth={1.5} />}>
         <CardValue>Noch keine Inhalte</CardValue>
         <Meta mt={1}>Sobald Module freigeschaltet sind, geht es hier weiter.</Meta>
         <Box pt={6}>
@@ -27,7 +67,12 @@ export function ContinueCard({ item }: { item: ContinueItem | null }) {
   const cta = resume ? "Weiterlernen" : "Jetzt starten";
 
   return (
-    <DashCard label={resume ? "Weiter wo du warst" : "Dein nächstes Modul"} labelId="dash-continue" hero>
+    <DashCard
+      label="Als nächstes"
+      labelId="dash-continue"
+      icon={<GraduationCap size={17} strokeWidth={1.5} />}
+      badge={<LektionsPfeile prevHref={item.prevHref} nextHref={item.nextHref} />}
+    >
       <Grid
         templateColumns={{ base: "minmax(0, 1fr)", md: "minmax(0, 0.85fr) minmax(0, 1fr)" }}
         gap={{ base: 5, md: 8 }}
@@ -103,12 +148,31 @@ export function ContinueCard({ item }: { item: ContinueItem | null }) {
 
         <Box minW={0}>
           <TitleWithMeta title={item.moduleTitle} meta={item.lessonLabel} />
-          <ProgressBar value={item.progressPercent} label={`Modul-Fortschritt ${item.progressPercent} Prozent`} tone="ink" mt={5} />
+
+          {/* Prozentwert rechts neben dem Balken statt darüber (Kunden-Mockup). */}
+          <Flex align="center" gap={4} mt={5}>
+            <ProgressBar
+              value={item.progressPercent}
+              label={`Modul-Fortschritt ${item.progressPercent} Prozent`}
+              tone="ink"
+              flex="1"
+            />
+            <Text className="cc-num" fontSize="14px" color="var(--cc-text-2)" flexShrink={0}>
+              {item.progressPercent} %
+            </Text>
+          </Flex>
+
+          {item.description ? (
+            <Meta mt={4} sx={clampLines(2)}>
+              {item.description}
+            </Meta>
+          ) : null}
+
           <Button
             as={NextLink}
             href={item.href}
             variant="gold"
-            mt={6}
+            mt={5}
             rightIcon={<ArrowRight size={16} strokeWidth={2} />}
           >
             {cta}

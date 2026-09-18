@@ -80,13 +80,12 @@ export async function GET() {
 
   const service = getServiceClient();
 
+  const BASIS_SPALTEN =
+    "id,full_name,username,is_admin,is_paid,codex_accepted,discord_username,created_at,membership_tier,access_until,application_status";
+
   const [listResult, profilesResult] = await Promise.all([
     service.auth.admin.listUsers({ perPage: 500 }),
-    service
-      .from("profiles")
-      .select(
-        "id,full_name,username,is_admin,is_paid,codex_accepted,discord_username,created_at,membership_tier,access_until,application_status",
-      ),
+    service.from("profiles").select(`${BASIS_SPALTEN},lifetime_offer_group`),
   ]);
 
   const { data: authUsers, error: listErr } = listResult;
@@ -94,7 +93,21 @@ export async function GET() {
     return NextResponse.json({ ok: false, error: listErr.message }, { status: 500 });
   }
 
-  const { data: profiles } = profilesResult;
+  /*
+    `lifetime_offer_group` kommt erst mit Migration 071. Solange sie nicht
+    eingespielt ist, laesst PostgREST den gesamten Select scheitern — und die
+    Mitgliederliste waere leer, nicht nur um eine Spalte aermer. Deshalb der
+    zweite Versuch ohne die Spalte: Der Admin sieht seine Mitglieder, ihm fehlt
+    lediglich die Freischalt-Anzeige, bis die Migration laeuft.
+  */
+  let profiles: Record<string, unknown>[] | null = profilesResult.data;
+  if (profilesResult.error) {
+    const nachschlag = await service.from("profiles").select(BASIS_SPALTEN);
+    if (nachschlag.error) {
+      return NextResponse.json({ ok: false, error: nachschlag.error.message }, { status: 500 });
+    }
+    profiles = nachschlag.data;
+  }
 
   const profileMap = new Map((profiles ?? []).map((p) => [p.id as string, p]));
 
@@ -114,6 +127,8 @@ export async function GET() {
         (p?.membership_tier as
           | "free"
           | "monthly"
+          | "quarterly"
+          | "yearly"
           | "lifetime"
           | "ht_1on1"
           | undefined) ?? "free",
@@ -125,6 +140,8 @@ export async function GET() {
           | "rejected"
           | null
           | undefined) ?? null,
+      /** Freischalt-Gruppe fuer das Lifetime-Angebot (071); null = keine. */
+      lifetimeOfferGroup: (p?.lifetime_offer_group as string | null) ?? null,
     };
   });
 

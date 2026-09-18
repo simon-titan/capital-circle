@@ -6,6 +6,7 @@ import {
   Box,
   Button,
   FormControl,
+  FormErrorMessage,
   FormLabel,
   Grid,
   GridItem,
@@ -16,7 +17,7 @@ import {
   Text,
   Textarea,
 } from "@chakra-ui/react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { POINT_VALUE_USD } from "@/lib/journal/instruments";
 import { createClient } from "@/lib/supabase/client";
 import { MANUAL_SYMBOLS } from "./constants";
@@ -26,7 +27,8 @@ import { formatMoney, pnlColor } from "./format";
  * Schlankes Erfassungsformular für das neue Journal.
  *
  * Es bildet exakt das ab, was ein geschlossener Round-Trip braucht — keine
- * Strategie-Tags, keine Emotionen. Wer das will, nutzt das klassische Journal.
+ * Strategie-Tags, keine Emotionen. Das klassische Journal, das beides konnte,
+ * ist seit 17.09.2026 aus der Oberfläche genommen.
  */
 
 const inputSx = {
@@ -37,11 +39,26 @@ const inputSx = {
   _focusVisible: { borderColor: "var(--j-accent)", boxShadow: "0 0 0 1px var(--j-accent)" },
 };
 
-/** `datetime-local` liefert Ortszeit ohne Zone — als solche interpretieren. */
+/**
+ * `datetime-local` liefert Ortszeit ohne Zone — als solche interpretieren.
+ *
+ * Bewusst von Hand geparst statt über `new Date(value)`: sekundenlose Werte wie
+ * "2026-09-17T12:30" ergeben in WebKit `Invalid Date`, und selbst dort, wo der
+ * Konstruktor sie versteht, entscheidet die Engine über die Zeitzone. Der Regex
+ * liest überall dasselbe und baut daraus ausdrücklich Ortszeit.
+ */
 function localInputToIso(value: string): string | null {
-  if (!value) return null;
-  const date = new Date(value);
+  const match = /^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d)(?::(\d\d))?$/.exec(value.trim());
+  if (!match) return null;
+  const [, y, mo, d, hh, mm, ss] = match;
+  const date = new Date(Number(y), Number(mo) - 1, Number(d), Number(hh), Number(mm), Number(ss ?? 0));
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+/** Ortszeit im Format, das `datetime-local` erwartet — für die Startwerte. */
+function toLocalInput(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 function isoToTradeDate(iso: string): string {
@@ -58,12 +75,34 @@ export function ManualTradeForm({ accountId, onSaved }: { accountId: string; onS
   const [qty, setQty] = useState("1");
   const [entryPrice, setEntryPrice] = useState("");
   const [exitPrice, setExitPrice] = useState("");
-  const [entryTime, setEntryTime] = useState("");
-  const [exitTime, setExitTime] = useState("");
+  // Vorbelegt, damit nie ein leeres Zeitfeld abgeschickt wird: Einstieg = vor einer
+  // Stunde, Ausstieg = jetzt. Das ist für einen gerade geschlossenen Trade meist
+  // ohnehin nah dran und spart das fehleranfällige Tippen von Hand.
+  const [entryTime, setEntryTime] = useState(() => toLocalInput(new Date(Date.now() - 60 * 60 * 1000)));
+  const [exitTime, setExitTime] = useState(() => toLocalInput(new Date()));
   const [fees, setFees] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ entryTime?: string; exitTime?: string }>({});
+
+  /**
+   * Zweite Absicherung gegen den Bug: Solange nicht alle Segmente eines
+   * `datetime-local` gültig sind, liefert der Browser `""` — die Ziffern stehen
+   * sichtbar im Feld, der React-State ist aber leer. Beim Speichern lesen wir
+   * deshalb notfalls direkt am DOM-Knoten nach.
+   */
+  const entryRef = useRef<HTMLInputElement>(null);
+  const exitRef = useRef<HTMLInputElement>(null);
+
+  /** Meldet am Feld, wenn der Browser eine unvollständige Eingabe verschluckt. */
+  const checkTimeField = (key: "entryTime" | "exitTime", input: HTMLInputElement) => {
+    const unvollstaendig = input.validity.badInput || !input.value;
+    setFieldErrors((prev) => ({
+      ...prev,
+      [key]: unvollstaendig ? "Datum und Uhrzeit bitte vollständig eingeben." : undefined,
+    }));
+  };
 
   const pointValue = POINT_VALUE_USD[symbol] ?? 0;
 
@@ -80,17 +119,33 @@ export function ManualTradeForm({ accountId, onSaved }: { accountId: string; onS
 
   const save = async () => {
     setError(null);
+    setFieldErrors({});
 
     const q = Number(qty);
     const entry = Number(entryPrice);
     const exit = Number(exitPrice);
-    const entryIso = localInputToIso(entryTime);
-    const exitIso = localInputToIso(exitTime);
+    // Der State gewinnt; steht er leer, zählt der Rohwert am Eingabefeld.
+    const entryIso = localInputToIso(entryTime || entryRef.current?.value || "");
+    const exitIso = localInputToIso(exitTime || exitRef.current?.value || "");
 
     if (!q || q <= 0) return setError("Bitte eine Stückzahl größer als 0 eingeben.");
     if (!entry || !exit) return setError("Bitte Einstiegs- und Ausstiegspreis eingeben.");
-    if (!entryIso || !exitIso) return setError("Bitte Einstiegs- und Ausstiegszeit eingeben.");
-    if (new Date(exitIso) < new Date(entryIso)) return setError("Der Ausstieg liegt vor dem Einstieg.");
+    if (!entryIso || !exitIso) {
+      // Getrennt melden, damit sichtbar wird, welches der beiden Felder klemmt.
+      setFieldErrors({
+        entryTime: entryIso ? undefined : "Bitte Einstiegszeit vollständig eingeben.",
+        exitTime: exitIso ? undefined : "Bitte Ausstiegszeit vollständig eingeben.",
+      });
+      return setError(
+        !entryIso && !exitIso
+          ? "Bitte Einstiegs- und Ausstiegszeit eingeben."
+          : `Bitte ${entryIso ? "Ausstiegszeit" : "Einstiegszeit"} eingeben.`,
+      );
+    }
+    if (new Date(exitIso) < new Date(entryIso)) {
+      setFieldErrors({ exitTime: "Liegt vor dem Einstieg." });
+      return setError("Der Ausstieg liegt vor dem Einstieg.");
+    }
     if (!pointValue) return setError(`Für ${symbol} ist kein Punktwert hinterlegt.`);
 
     setSaving(true);
@@ -195,16 +250,34 @@ export function ManualTradeForm({ accountId, onSaved }: { accountId: string; onS
 
         {/* datetime-local braucht die volle Breite, sonst wird das Feld beschnitten. */}
         <GridItem colSpan={{ base: 2, md: 1 }}>
-          <FormControl>
+          <FormControl isInvalid={Boolean(fieldErrors.entryTime)}>
             <FormLabel fontSize="sm" color="var(--cc-text-2)">Einstieg</FormLabel>
-            <Input type="datetime-local" value={entryTime} onChange={(e) => setEntryTime(e.target.value)} sx={inputSx} />
+            <Input
+              ref={entryRef}
+              type="datetime-local"
+              step="60"
+              value={entryTime}
+              onChange={(e) => setEntryTime(e.target.value)}
+              onBlur={(e) => checkTimeField("entryTime", e.target)}
+              sx={inputSx}
+            />
+            <FormErrorMessage fontSize="xs">{fieldErrors.entryTime}</FormErrorMessage>
           </FormControl>
         </GridItem>
 
         <GridItem colSpan={{ base: 2, md: 1 }}>
-          <FormControl>
+          <FormControl isInvalid={Boolean(fieldErrors.exitTime)}>
             <FormLabel fontSize="sm" color="var(--cc-text-2)">Ausstieg</FormLabel>
-            <Input type="datetime-local" value={exitTime} onChange={(e) => setExitTime(e.target.value)} sx={inputSx} />
+            <Input
+              ref={exitRef}
+              type="datetime-local"
+              step="60"
+              value={exitTime}
+              onChange={(e) => setExitTime(e.target.value)}
+              onBlur={(e) => checkTimeField("exitTime", e.target)}
+              sx={inputSx}
+            />
+            <FormErrorMessage fontSize="xs">{fieldErrors.exitTime}</FormErrorMessage>
           </FormControl>
         </GridItem>
       </Grid>

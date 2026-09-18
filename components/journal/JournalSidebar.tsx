@@ -208,20 +208,6 @@ export function JournalSidebar() {
         >
           Positionsrechner
         </Button>
-
-        <Text fontSize="xs" color="var(--cc-text-3)" px={2} pt={1} lineHeight="1.5">
-          Strategie-Tags?{" "}
-          <Box
-            as={Link}
-            href="/journal-klassisch"
-            textDecoration="underline"
-            textUnderlineOffset="2px"
-            color="var(--cc-text-2)"
-            _hover={{ color: "var(--cc-gold-light)" }}
-          >
-            Klassisches Journal
-          </Box>
-        </Text>
       </Stack>
     </>
   );

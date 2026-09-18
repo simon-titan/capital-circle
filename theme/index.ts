@@ -16,7 +16,10 @@ export const theme = extendTheme({
   colors: {
     // v3.2 „Champagner auf Graphit“ (DESIGN.md) — brand.500 = --cc-gold
     brand: {
-      bg: "#12171c",
+      // = --cc-bg. Chakra setzt daraus `body { background }` und überschreibt
+      // damit die Regel aus globals.css — der Wert muss hier mitgezogen werden,
+      // sonst steht der Seitengrund heller als der Himmel darüber.
+      bg: "#0f1317",
       bgSecondary: "#151a1e",
       textPrimary: "#f2f3f5",
       /** @deprecated Nutze brand.500 */

@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, Lock } from "lucide-react";
 import { ChakraLinkButton } from "@/components/platform/ChakraLinkButton";
 import { IconTile } from "@/components/platform/dashboard/primitives";
+import { isFreeLiveSessionCategory } from "@/components/platform/live-session-free";
 import { LiveSessionDetailClient } from "@/components/platform/LiveSessionDetailClient";
 import { getCurrentUserAndProfile, getLiveSessionDetail } from "@/lib/server-data";
 import { isApprovedFreeMember } from "@/lib/membership";
@@ -25,9 +26,9 @@ export default async function LiveSessionDetailPage({ params }: PageProps) {
   if (!detail) notFound();
 
   const freeMember = isApprovedFreeMember(profile);
-  const isWeeklyOutlook = detail.category.title.toLowerCase().includes("weekly outlook");
+  const freeCategory = isFreeLiveSessionCategory(detail.category.title);
 
-  if (freeMember && !isWeeklyOutlook) {
+  if (freeMember && !freeCategory) {
     return (
       <Stack spacing={5} align="stretch">
         <Box>
@@ -76,7 +77,7 @@ export default async function LiveSessionDetailPage({ params }: PageProps) {
           </Text>
           <Text fontSize="14px" lineHeight={1.7} color="var(--cc-text-2)" mt={2} maxW="420px">
             Diese Live Session ist exklusiv für vollwertige Capital Circle Mitglieder verfügbar.
-            Als Free-Mitglied hast du Zugang zu allen Weekly Outlook Sessions.
+            Als Free-Mitglied hast du Zugang zu allen Wochenrecap-Sessions.
           </Text>
           <ChakraLinkButton href="/bewerbung" variant="gold" mt={6} px={8}>
             Jetzt Mitglied werden
@@ -98,6 +99,7 @@ export default async function LiveSessionDetailPage({ params }: PageProps) {
       session={{
         title: detail.title,
         categoryTitle: detail.category.title,
+        categoryId: detail.category.id,
         description: detail.description,
         dateLine,
         eventTitle: detail.event?.title ?? null,

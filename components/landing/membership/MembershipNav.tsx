@@ -1,9 +1,10 @@
 "use client";
 
-import { Box, Button, Flex, HStack, IconButton, Stack } from "@chakra-ui/react";
+import { Box, Flex, HStack, IconButton, Stack } from "@chakra-ui/react";
 import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { ctaAnker, ctaLabel, navAnker } from "@/config/landing-membership";
+import { navAnker } from "@/config/landing-membership";
+import { BeitrittCta } from "./BeitrittModal";
 
 /**
  * Kopfleiste der Verkaufsseite.
@@ -13,8 +14,11 @@ import { ctaAnker, ctaLabel, navAnker } from "@/config/landing-membership";
  * mit Unterkante direkt unter der Headline würde den Himmel zerschneiden, den
  * der Hero gerade aufmacht.
  *
- * Alle Ziele sind Anker auf derselben Seite, deshalb durchgehend `<a href>`
- * statt `next/link`: Für Sprungmarken hätte der Router nichts zu holen.
+ * Alle Sprungmarken sind Anker auf derselben Seite, deshalb durchgehend
+ * `<a href>` statt `next/link`: Für Sprungmarken hätte der Router nichts zu
+ * holen. Die Hauptaktion ist seit 09/2026 keine Sprungmarke mehr, sondern
+ * öffnet den Beitritts-Dialog — hier oben ist die Laufzeit noch offen, und der
+ * Sprung ans Seitenende hat den Leser jedes Mal aus dem Text gerissen.
  */
 export function MembershipNav() {
   const [gescrollt, setGescrollt] = useState(false);
@@ -82,17 +86,17 @@ export function MembershipNav() {
         </HStack>
 
         <HStack spacing={2}>
-          <Button
-            as="a"
-            href={ctaAnker}
-            variant="gold"
+          <BeitrittCta
             h="40px"
             px={5}
             fontSize="15px"
+            // Der Text ist seit „Capital Circle beitreten" lang genug, dass er
+            // zwischen Wortmarke und Sprungmarken sonst zweizeilig umbricht.
+            whiteSpace="nowrap"
+            // Unterhalb von `sm` ist die Leiste zu eng für den Knopf; dort
+            // trägt ihn das Mobilmenü darunter.
             display={{ base: "none", sm: "inline-flex" }}
-          >
-            {ctaLabel}
-          </Button>
+          />
 
           <IconButton
             display={{ base: "inline-flex", lg: "none" }}
@@ -127,6 +131,16 @@ export function MembershipNav() {
               </Box>
             ))}
           </Stack>
+
+          {/* Die Hauptaktion auch hier: Unterhalb von `sm` fehlt sie in der
+              Leiste, und ein Menü ohne den einen Knopf, um den es geht, wäre
+              auf den schmalsten Geräten eine Sackgasse.
+
+              Das Menü bleibt beim Klick bewusst offen. Würde es sich schließen,
+              verschwände dieser Knopf aus dem DOM, und der Dialog hätte beim
+              Schließen kein Ziel mehr für den Fokus — er fiele auf den
+              Seitenanfang zurück. */}
+          <BeitrittCta mt={4} w="full" h="48px" fontSize="16px" />
         </Box>
       ) : null}
     </Box>

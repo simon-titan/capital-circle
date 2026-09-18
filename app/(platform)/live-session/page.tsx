@@ -1,30 +1,29 @@
 import { Box } from "@chakra-ui/react";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/journal/PageHeader";
-import { PageLiveSessionGrid } from "@/components/platform/PageCards";
-import {
-  getCurrentUserAndProfile,
-  getLiveSessionCategories,
-  getLiveSessions,
-} from "@/lib/server-data";
+import { LiveSessionCategoryCards } from "@/components/platform/LiveSessionCategoryCards";
+import { getCurrentUserAndProfile } from "@/lib/server-data";
+import { getLiveSessionCategoryOverview } from "@/lib/live-session-overview";
 import { isApprovedFreeMember } from "@/lib/membership";
 
+/**
+ * Übersicht wie das Institut: die drei Kategorien als Einstiegskarten. Ein
+ * Klick führt in die Kategorie, dort stehen die Aufzeichnungen, und in der
+ * Aufzeichnung liegen die einzelnen Videos (Nutzerwunsch 17.09.2026).
+ */
 export default async function LiveSessionPage() {
   const { user, profile } = await getCurrentUserAndProfile();
   if (!user || !profile) redirect("/einsteig");
 
-  const [categories, sessions] = await Promise.all([
-    getLiveSessionCategories(),
-    getLiveSessions(null),
-  ]);
+  const categories = await getLiveSessionCategoryOverview();
 
   return (
     <Box>
       <PageHeader
         title="Live Sessions"
-        subtitle="Aufzeichnungen vergangener Live Calls — nach Kategorie sortiert, mit Detail-Ansicht wie im Institut. Videos liegen auf unserem sicheren Speicher."
+        subtitle="Drei Bereiche, wie im Institut: Kategorie anklicken, dann die Aufzeichnung wählen und die Videos darin ansehen."
       />
-      <PageLiveSessionGrid categories={categories} sessions={sessions} isFreeMember={isApprovedFreeMember(profile)} />
+      <LiveSessionCategoryCards categories={categories} isFreeMember={isApprovedFreeMember(profile)} />
     </Box>
   );
 }

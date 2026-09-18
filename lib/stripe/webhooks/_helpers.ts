@@ -194,3 +194,51 @@ export function pickFirstName(profile: ProfileLookup | null): string {
   if (username) return username;
   return "da";
 }
+
+/**
+ * Zugang während einer Pause begrenzen — ohne die Stufe zu vergessen.
+ *
+ * Naheliegend wäre, `membership_tier` auf `free` zu setzen. Genau das war bis
+ * 17.09.2026 der Fall und hatte eine unangenehme Nebenwirkung: Beim Fortsetzen
+ * prüft `subscription-updated.ts`, ob jemand „schon zahlend" war, um die
+ * Willkommensmail nur einmal zu verschicken. Stand dort `free`, sah der Handler
+ * einen Neukunden und schickte einem zurückkehrenden Mitglied eine zweite
+ * Willkommensmail samt Passwort-Hinweis.
+ *
+ * Deshalb bleibt die Stufe stehen; begrenzt wird nur `access_until`.
+ * `evaluateAccess()` sperrt damit genauso zuverlässig — ein Tarif mit
+ * abgelaufenem Zugang ist dort kein Zugang —, und die Oberfläche kann den
+ * Tarif weiter benennen („Monatlich · Pausiert") statt ihn zu „Free"
+ * umzuschreiben.
+ *
+ * **Das Datum wandert nur nach vorn, nie nach hinten.** Stripe lässt den
+ * Abrechnungszyklus während `pause_collection` weiterlaufen und verwirft die
+ * Rechnungen nur; `current_period_end` rückt also Monat für Monat vor. Würden
+ * wir es jedes Mal übernehmen, verlängerte sich der Zugang durch die Pause
+ * hindurch — kostenlos, und niemand hätte je einen Grund, sie zu beenden.
+ */
+export async function pausiereProfil(
+  supabase: WebhookSupabase,
+  userId: string,
+  zugangBisISO: string,
+): Promise<void> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("access_until")
+    .eq("id", userId)
+    .maybeSingle();
+
+  const bisher = (data as { access_until: string | null } | null)?.access_until ?? null;
+  const kandidat = new Date(zugangBisISO);
+  const alt = bisher ? new Date(bisher) : null;
+  const ziel = alt && !Number.isNaN(alt.getTime()) && alt < kandidat ? alt : kandidat;
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ is_paid: false, access_until: ziel.toISOString() })
+    .eq("id", userId);
+
+  if (error) {
+    throw new Error(`Profil-Pause (user=${userId}) fehlgeschlagen: ${error.message}`);
+  }
+}

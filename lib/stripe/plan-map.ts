@@ -2,11 +2,14 @@
  * Die drei verkäuflichen Mitgliedschaften und ihre Stripe-Preise.
  *
  * Alle drei laufen als Abo (`mode: "subscription"`) — auch „Vierteljährlich"
- * und „Jährlich": Das sind Abrechnungsintervalle, keine Einmalzahlungen. Der
- * frühere Lifetime-Plan (`mode: "payment"`) ist aus dem Verkauf genommen;
- * Bestandskunden mit `membership_tier = 'lifetime'` behalten ihren Zugang,
- * deshalb taucht er in den Webhook-Handlern und in `has-access.ts` weiter auf,
- * aber nirgends mehr im Kaufweg.
+ * und „Jährlich": Das sind Abrechnungsintervalle, keine Einmalzahlungen.
+ *
+ * Lifetime ist **kein** vierter Plan in dieser Liste. Es ist eine
+ * Einmalzahlung (`mode: "payment"`), es hat keinen öffentlichen Preis, und es
+ * wird ausschließlich innerhalb der Plattform an bestehende, zahlende
+ * Mitglieder angeboten (siehe `lib/access-control/lifetime-offer.ts`). Stünde
+ * es hier, wäre es über jeden Weg kaufbar, der `isMembershipPlan()` fragt —
+ * auch über den Gast-Checkout `/go/<plan>`.
  *
  * Die Preise sind in Stripe mit `tax_behavior: "inclusive"` angelegt: Die
  * angezeigten 99 / 267 / 990 € sind Endpreise inkl. MwSt. (B2C Deutschland).
@@ -58,4 +61,16 @@ export function resolvePlanFromPriceId(priceId: string): MembershipPlan | null {
     if (process.env[PLAN_PRICE_ENV[plan]]?.trim() === priceId) return plan;
   }
   return null;
+}
+
+/**
+ * Stripe-Preis der Lifetime-Einmalzahlung.
+ *
+ * Getrennt von `priceIdForPlan()`, weil Lifetime kein Abo ist und nicht in
+ * denselben Kaufweg gehört. Liefert `null` statt zu werfen: Fehlt die
+ * Variable, gibt es das Angebot schlicht nicht — das ist ein gültiger
+ * Zustand, kein Fehler.
+ */
+export function lifetimePriceId(): string | null {
+  return process.env.STRIPE_PRICE_LIFETIME?.trim() || null;
 }

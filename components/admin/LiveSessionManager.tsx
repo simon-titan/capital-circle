@@ -725,7 +725,9 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
         <TabPanel px={0} pt={6}>
           <Stack gap={4} maxW="720px" {...cardSx}>
             <Text fontSize="sm" color="var(--cc-text-2)">
-              Kategorien gruppieren die Live Sessions in der Mitglieder-Übersicht (Filter-Tabs).
+              Kategorien sind die drei Einstiegskarten auf der Mitglieder-Übersicht — wie die Module im
+              Institut. Wer eine umbenennt, ändert die Karte; wer „Wochenrecap“ umbenennt, sperrt damit
+              Free-Mitglieder aus (die freie Kategorie wird über den Titel erkannt).
             </Text>
             <HStack flexWrap="wrap" gap={3}>
               <Input

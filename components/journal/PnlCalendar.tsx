@@ -3,8 +3,8 @@
 import { Box, Grid, HStack, IconButton, Stack, Text } from "@chakra-ui/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
-import { MONTHS_DE } from "@/components/trading-journal/constants";
 import { dailyPnl, type MetricTrade } from "@/lib/journal/metrics";
+import { MONTHS_DE } from "./constants";
 import { formatMoney, formatMoneyTight, pnlColor } from "./format";
 
 const WEEKDAY_HEAD = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];

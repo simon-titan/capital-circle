@@ -2,24 +2,48 @@ import { createServiceClient } from "@/lib/supabase/service";
 
 export type AccessReason =
   | "lifetime"
-  | "monthly_active"
-  | "monthly_grace"
-  | "monthly_cancel_pending"
-  | "monthly_expired"
+  | "subscription_active"
+  | "subscription_grace"
+  | "subscription_cancel_pending"
+  | "subscription_expired"
   | "free_tier"
   | "ht_1on1"
   | "no_profile"
   | "unknown";
 
+/** Jede Stufe, die ein Profil tragen kann — auch die nicht mehr verkäufliche. */
+export type AccessTier =
+  | "free"
+  | "monthly"
+  | "quarterly"
+  | "yearly"
+  | "lifetime"
+  | "ht_1on1";
+
+/**
+ * Die wiederkehrend abgerechneten Stufen.
+ *
+ * „Vierteljährlich" und „Jährlich" sind Abrechnungsintervalle desselben
+ * Produkts, keine eigenen Leistungen — sie gehören in jede Prüfung, die
+ * `monthly` durchlässt. Genau das fehlte hier bis zum 17.09.2026: Beide
+ * fielen in den Default am Ende und wurden wie `free` behandelt, womit
+ * Quartals- und Jahresmitglieder aus dem Trading Journal flogen.
+ */
+const RECURRING_TIERS: ReadonlySet<AccessTier> = new Set([
+  "monthly",
+  "quarterly",
+  "yearly",
+]);
+
 export interface AccessResult {
   hasAccess: boolean;
-  tier: "free" | "monthly" | "lifetime" | "ht_1on1";
+  tier: AccessTier;
   reason: AccessReason;
   accessUntil: Date | null;
 }
 
 interface ProfileRow {
-  membership_tier: "free" | "monthly" | "lifetime" | "ht_1on1" | null;
+  membership_tier: AccessTier | null;
   is_paid: boolean | null;
   access_until: string | null;
 }
@@ -29,19 +53,20 @@ interface ProfileRow {
  *
  * Wahrheits-Tabelle:
  *
- *   tier=lifetime              → access=true,  reason=lifetime, until=null
- *   tier=ht_1on1               → access=true,  reason=ht_1on1
- *   tier=monthly + until>now() → access=true,  reason=monthly_active|monthly_grace
- *   tier=monthly + until<=now()→ access=false, reason=monthly_expired
- *   tier=free                  → access=false, reason=free_tier
+ *   tier=lifetime                  → access=true,  reason=lifetime, until=null
+ *   tier=ht_1on1                   → access=true,  reason=ht_1on1
+ *   tier=monthly|quarterly|yearly
+ *        + until>now()             → access=true,  reason=subscription_active
+ *        + until<=now()            → access=false, reason=subscription_expired
+ *   tier=free                      → access=false, reason=free_tier
  *
- * `monthly_grace` deckt zwei Fälle:
+ * `subscription_grace` deckt zwei Fälle:
  *   - 48h-Grace nach payment_failed (access_until = now()+48h)
  *   - cancel_at_period_end=true (access_until = period_end, Subscription
  *     läuft noch bis dahin)
  *
  * Da wir die Subscription-Row für die Granular-Differenzierung lesen müssten
- * und das eine zusätzliche Query kostet, nutzen `monthly_active` für alles
+ * und das eine zusätzliche Query kostet, nutzen `subscription_active` für alles
  * mit access_until in der Zukunft. UI/Cron können bei Bedarf separat
  * anhand `cancel_at_period_end` differenzieren.
  */
@@ -72,7 +97,7 @@ export async function hasActivePaidAccess(
  * (z. B. `proxy.ts` mit existierendem Profil-Select).
  */
 export function evaluateAccess(profile: ProfileRow): AccessResult {
-  const tier = (profile.membership_tier ?? "free") as AccessResult["tier"];
+  const tier = (profile.membership_tier ?? "free") as AccessTier;
   const accessUntil = profile.access_until ? new Date(profile.access_until) : null;
 
   if (tier === "lifetime") {
@@ -93,12 +118,12 @@ export function evaluateAccess(profile: ProfileRow): AccessResult {
     };
   }
 
-  if (tier === "monthly") {
+  if (RECURRING_TIERS.has(tier)) {
     if (!accessUntil) {
       return {
         hasAccess: false,
-        tier: "monthly",
-        reason: "monthly_expired",
+        tier,
+        reason: "subscription_expired",
         accessUntil: null,
       };
     }
@@ -106,15 +131,15 @@ export function evaluateAccess(profile: ProfileRow): AccessResult {
     if (accessUntil > now) {
       return {
         hasAccess: true,
-        tier: "monthly",
-        reason: "monthly_active",
+        tier,
+        reason: "subscription_active",
         accessUntil,
       };
     }
     return {
       hasAccess: false,
-      tier: "monthly",
-      reason: "monthly_expired",
+      tier,
+      reason: "subscription_expired",
       accessUntil,
     };
   }

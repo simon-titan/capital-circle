@@ -1,3 +1,4 @@
+import { buildThumbnailUrl } from "@/lib/cloudflare-stream";
 import type { createClient } from "@/lib/supabase/server";
 import { getPresignedGetUrl } from "@/lib/storage";
 
@@ -38,6 +39,31 @@ async function signKey(key: string | null | undefined): Promise<string | null> {
   try {
     return await getPresignedGetUrl(key.trim());
   } catch {
+    return null;
+  }
+}
+
+/**
+ * Vorschaubild einer Lektion.
+ *
+ * `thumbnail_key` (R2) pflegt der Admin von Hand und lässt es meist leer —
+ * deshalb blieb die Lektionsliste bisher fast überall ohne Bild. Liegt das
+ * Video bei Cloudflare Stream, hat Cloudflare selbst längst ein Standbild;
+ * signiert, weil alle Kursvideos `requireSignedURLs` tragen und ein
+ * unsigniertes Thumbnail mit 401 antwortet.
+ */
+async function resolveThumbnail(row: {
+  thumbnail_key: string | null;
+  cloudflare_uid: string | null;
+}): Promise<string | null> {
+  const fromStorage = await signKey(row.thumbnail_key);
+  if (fromStorage) return fromStorage;
+  if (!row.cloudflare_uid) return null;
+  try {
+    // 320px deckt die 80px-Spalte der Lektionsliste auch auf Retina ab.
+    return buildThumbnailUrl(row.cloudflare_uid, { signed: true, width: 320 });
+  } catch {
+    // Signaturschlüssel fehlt — dann bleibt der ruhige Platzhalter stehen.
     return null;
   }
 }
@@ -292,7 +318,7 @@ export async function getModulePublishedPlaylist(supabase: ServerClient, moduleI
     }
   }
 
-  const signedUrls = await Promise.all(raw.map((v) => signKey(v.thumbnail_key)));
+  const signedUrls = await Promise.all(raw.map((v) => resolveThumbnail(v)));
   return raw.map((v, i) => ({ ...v, thumbnailSignedUrl: signedUrls[i] ?? null }));
 }
 
@@ -412,6 +438,12 @@ export async function getModulePublishedPlaylistsBulk(
     }
   }
 
+  /*
+   * Hier bewusst ohne Cloudflare-Standbild: die Sammelabfrage bedient
+   * Übersichten, die nur Dauern und Zählwerte aus der Playlist brauchen. Ein
+   * RS256-Token je Video über alle Module hinweg wären hunderte Signaturen pro
+   * Seitenaufruf für Bilder, die niemand sieht.
+   */
   const signedUrls = await Promise.all(allRaw.map((v) => signKey(v.thumbnail_key)));
   for (let i = 0; i < allRaw.length; i++) {
     const { _moduleId, ...rest } = allRaw[i];

@@ -11,8 +11,8 @@
   --tv-widget-map-hover-stroke-color: light-dark(#2962ff, rgba(255, 255, 255, 1));
 
   /* Legacy-Namen, Werte seit v3.2 auf Graphit/Champagner (= --cc-*) gezogen */
-  --color-bg: #12171c;
-  --color-bg-primary: #12171c;
+  --color-bg: #0f1317;
+  --color-bg-primary: #0f1317;
   --color-bg-secondary: #151a1e;
   --color-surface: rgba(25, 30, 35, 0.9);
   --color-border: rgba(255, 255, 255, 0.07);
@@ -45,7 +45,7 @@
  * Die --color-*-Tokens oben bleiben für noch nicht migrierte Bereiche.
  */
 :root {
-  --cc-bg: #12171c;
+  --cc-bg: #0f1317;
   --cc-bg-raised: rgba(22, 26, 32, 0.92);
   --cc-panel-solid: #151a1e;
   --cc-surface: #191e23;
@@ -77,6 +77,22 @@
   /* = Höhe eines kompakten TradingView-Ticker-Eintrags */
   --cc-strip-h: 48px;
   --cc-sidebar-w: 264px;
+
+  /*
+   * ── Wie laut der Himmel ist ─────────────────────────────────────────────
+   *
+   * Zwei Regler für Sternenfeld und Champagner-Licht. Vorher standen die
+   * Intensitäten als rgba-Literale in zwanzig Verläufen verteilt: Wer den
+   * Hintergrund beruhigen wollte, musste zwanzig Zahlen treffen und dabei die
+   * Verhältnisse untereinander von Hand nachrechnen.
+   *
+   * Jetzt tragen die Literale nur noch die *relative* Helligkeit der einzelnen
+   * Sterne bzw. der beiden Lichter zueinander; wie stark das Ganze auf der
+   * Seite steht, sagt eine Zahl. Auf Nutzerwunsch (17.09.2026) ist sie
+   * deutlich gesenkt — der Himmel war „zu unruhig“.
+   */
+  --cc-sky-stars: 0.5;
+  --cc-sky-glow: 0.58;
 }
 
 
@@ -696,6 +712,8 @@ html:has([data-platform]) {
 
 .cc-stars {
   z-index: 0;
+  /* Der Regler für beide Sternlagen; die rgba-Werte unten bleiben das Verhältnis. */
+  opacity: var(--cc-sky-stars);
   background-repeat: repeat;
   background-size: 1100px 820px;
   background-image:
@@ -726,12 +744,18 @@ html:has([data-platform]) {
   animation: cc-twinkle 7s ease-in-out infinite alternate;
 }
 
+/*
+ * Schmaler Bereich als früher (war 0.35 → 1): Ein Funkeln, das fast auf null
+ * geht und wieder voll aufleuchtet, liest sich als Blinken. Hier soll der
+ * Himmel atmen, nicht Signal geben. Der Wert multipliziert sich zusätzlich mit
+ * `--cc-sky-stars` von der Elternebene.
+ */
 @keyframes cc-twinkle {
   from {
-    opacity: 0.35;
+    opacity: 0.55;
   }
   to {
-    opacity: 1;
+    opacity: 0.8;
   }
 }
 
@@ -741,6 +765,8 @@ html:has([data-platform]) {
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  /* Regler; die beiden rgba-Werte halten nur das Verhältnis Schein zu Gegenlicht. */
+  opacity: var(--cc-sky-glow);
   background:
     radial-gradient(ellipse 55% 42% at 80% -6%, rgba(212, 176, 128, 0.17), transparent 70%),
     radial-gradient(ellipse 38% 34% at 8% 108%, rgba(212, 176, 128, 0.07), transparent 70%);
@@ -892,6 +918,29 @@ html:has([data-platform]) {
   animation: cc-ping 1.8s var(--cc-ease) infinite;
 }
 
+/*
+ * Punkt in der Hero-Pill der Verkaufsseite: atmet, statt zu blinken.
+ *
+ * Bewusst kein `cc-ping`: Der Ring dort meldet eine laufende Session. Hier geht
+ * es nur um „hier ist Leben“ ganz oben auf der Seite — ein sich ausbreitender
+ * Ring würde eine Dringlichkeit behaupten, die nichts einlöst.
+ */
+@keyframes cc-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+
+.cc-pulse {
+  animation: cc-pulse 2.4s ease-in-out infinite;
+}
+
 /* Streak-Flamme pulsiert warm */
 @keyframes cc-flame {
   0%,
@@ -940,6 +989,7 @@ html:has([data-platform]) {
   .cc-card--hero,
   .cc-rise,
   .cc-ping,
+  .cc-pulse,
   .cc-flame,
   .cc-spark {
     animation: none;

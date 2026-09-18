@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   Accordion,
   AccordionButton,
@@ -119,6 +119,15 @@ function LessonThumb({
   done: boolean;
   locked: boolean;
 }) {
+  /*
+   * Signierte Standbilder können ins Leere laufen — der Token läuft ab, und
+   * Cloudflare liefert erst ein Bild, wenn die Kodierung durch ist. Ein kaputtes
+   * <img> hinterlässt sonst eine zerrissene Kachel; hier fällt die Zeile
+   * stattdessen auf denselben ruhigen Platzhalter zurück wie ein Video ohne Bild.
+   */
+  const [bildKaputt, setBildKaputt] = useState(false);
+  const bildUrl = !bildKaputt ? v.thumbnailSignedUrl : null;
+
   return (
     <Box
       flexShrink={0}
@@ -132,12 +141,21 @@ function LessonThumb({
       borderColor={active ? "var(--cc-gold-line)" : "rgba(255, 255, 255, 0.1)"}
       aria-hidden
     >
-      {v.thumbnailSignedUrl ? (
+      {bildUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={v.thumbnailSignedUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        <img
+          src={bildUrl}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onError={() => setBildKaputt(true)}
+          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+        />
       ) : null}
       {locked ? (
-        <Box position="absolute" inset={0} bg="rgba(0,0,0,0.6)" display="flex" alignItems="center" justifyContent="center" color="var(--cc-text-2)">
+        // Seit die Kacheln ein echtes Standbild tragen, muss das Schloss dagegen
+        // anstehen: dunklere Decke, hellere Linie.
+        <Box position="absolute" inset={0} bg="rgba(0,0,0,0.72)" display="flex" alignItems="center" justifyContent="center" color="var(--cc-text-soft)">
           <Lock size={14} strokeWidth={2} />
         </Box>
       ) : active ? (
@@ -156,7 +174,7 @@ function LessonThumb({
             <Play size={11} fill="currentColor" strokeWidth={0} style={{ marginLeft: 1 }} />
           </Box>
         </Box>
-      ) : !v.thumbnailSignedUrl ? (
+      ) : !bildUrl ? (
         <Box position="absolute" inset={0} display="flex" alignItems="center" justifyContent="center" color="var(--cc-text-3)">
           <Play size={14} strokeWidth={2} />
         </Box>

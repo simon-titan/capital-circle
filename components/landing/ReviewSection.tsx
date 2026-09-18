@@ -146,6 +146,9 @@ interface ReviewSectionProps {
 
 export function ReviewSection({ landingSlug }: ReviewSectionProps) {
   const [dbReviews, setDbReviews] = useState<DisplayReview[] | null>(null);
+  // Ohne `landingSlug` wird nichts geladen — dann ist der Zustand von Anfang
+  // an fertig, statt ihn im Effekt nachzuziehen.
+  const [geladen, setGeladen] = useState(!landingSlug);
   const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
@@ -159,11 +162,28 @@ export function ReviewSection({ landingSlug }: ReviewSectionProps) {
           setDbReviews((json.items as DbReview[]).map(toDisplayReview));
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setGeladen(true);
+      });
     return () => { cancelled = true; };
   }, [landingSlug]);
 
-  const reviews: DisplayReview[] = dbReviews ?? landingConfig.reviews.map(configToDisplay);
+  /**
+   * Der Rückfall auf `landingConfig.reviews` gilt nur ohne `landingSlug`.
+   *
+   * Grund: Dort stehen Stimmen über den **kostenlosen Kurs** („Der Free-Kurs
+   * von Capital Circle …", Schnitt 4,8). Auf einer Seite, die 99 € im Monat
+   * verkauft und zwei Bildschirme höher „5,0 ★ · 4 Bewertungen" zeigt, wäre
+   * das beim ersten Anstrich ein sichtbarer Widerspruch — und bliebe stehen,
+   * wenn der Abruf scheitert. Solange geladen wird, steht hier nichts; kommt
+   * nichts zurück, verschwindet der Abschnitt ganz.
+   */
+  const reviews: DisplayReview[] = landingSlug
+    ? dbReviews ?? []
+    : landingConfig.reviews.map(configToDisplay);
+
+  if (landingSlug && (!geladen || reviews.length === 0)) return null;
 
   const visibleReviews = showAll ? reviews : reviews.slice(0, DEFAULT_VISIBLE);
   const hasMore = reviews.length > DEFAULT_VISIBLE;
@@ -189,7 +209,7 @@ export function ReviewSection({ landingSlug }: ReviewSectionProps) {
           {/* Links: Übersicht */}
           <Reveal w={{ base: "100%", lg: "320px" }} flexShrink={0}>
             <Stack spacing={5} align={{ base: "center", lg: "flex-start" }} textAlign={{ base: "center", lg: "left" }}>
-              <Eyebrow justify={{ base: "center", lg: "flex-start" }}>Was Teilnehmer sagen</Eyebrow>
+              <Eyebrow justify={{ base: "center", lg: "flex-start" }}>Was Mitglieder sagen</Eyebrow>
               <DisplayHeading id="reviews-title">Bewertungen</DisplayHeading>
 
               <HStack spacing={4} align="center">

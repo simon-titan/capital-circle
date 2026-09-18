@@ -1,16 +1,15 @@
 "use client";
 
-import { Box, Button, Flex, Grid, Heading, Text, type FlexProps } from "@chakra-ui/react";
-import { ArrowRight, Plus } from "lucide-react";
+import { Box, Button, Flex, Grid, Heading, Stack, Text, type FlexProps } from "@chakra-ui/react";
 import NextLink from "next/link";
 import type { CSSProperties } from "react";
 import { AnalysisCard } from "./AnalysisCard";
 import { AppointmentCard } from "./AppointmentCard";
 import { ContinueCard } from "./ContinueCard";
+import { DiscordCard } from "./DiscordCard";
+import { JournalCard } from "./JournalCard";
 import { LiveCard } from "./LiveCard";
 import { ProgressCard } from "./ProgressCard";
-import { StatusCards } from "./StatusCards";
-import { StreakCard } from "./StreakCard";
 import { WeekTaskCard } from "./WeekTaskCard";
 import type { DashboardViewData } from "./types";
 
@@ -41,73 +40,22 @@ function ApplyPrompt({ className, ...props }: FlexProps) {
   );
 }
 
-/** „Trade erfassen“ als Aktionskarte: ganze Fläche klickbar, Gold-Icon, Pfeil schiebt beim Hover nach. */
-function TradeCta() {
-  return (
-    <Flex
-      as={NextLink}
-      href="/trading-journal?neu=1"
-      className="cc-card"
-      role="group"
-      align="center"
-      gap={4}
-      p={{ base: 4, md: 5 }}
-      style={{ borderColor: "rgba(255, 255, 255, 0.24)" }}
-    >
-      <Flex
-        w="52px"
-        h="52px"
-        flexShrink={0}
-        align="center"
-        justify="center"
-        borderRadius="12px"
-        bg="var(--cc-gold-grad)"
-        color="var(--cc-on-gold)"
-        boxShadow="inset 0 1px 0 rgba(255, 255, 255, 0.35)"
-        aria-hidden
-      >
-        <Plus size={24} strokeWidth={2.25} />
-      </Flex>
-      <Box flex="1" minW={0}>
-        <Text fontSize={{ base: "17px", md: "18px" }} fontWeight={600} lineHeight={1.3} color="var(--cc-text)">
-          Trade erfassen
-        </Text>
-        <Text fontSize="14px" lineHeight={1.5} color="var(--cc-text-2)" mt={0.5}>
-          Halte deinen letzten Trade im Journal fest, solange er frisch ist.
-        </Text>
-      </Box>
-      <Flex
-        w="40px"
-        h="40px"
-        flexShrink={0}
-        align="center"
-        justify="center"
-        borderRadius="full"
-        border="1px solid var(--cc-line-strong)"
-        color="var(--cc-text-soft)"
-        transition="transform 200ms var(--cc-ease), background-color 200ms var(--cc-ease)"
-        _groupHover={{ transform: "translateX(3px)", bg: "rgba(255, 255, 255, 0.08)" }}
-        aria-hidden
-      >
-        <ArrowRight size={18} strokeWidth={2} />
-      </Flex>
-    </Flex>
-  );
-}
-
-/** Karten steigen beim Laden nacheinander auf (`.cc-rise`), Reihenfolge = `order`. */
+/** Karten steigen beim Laden nacheinander auf (`.cc-rise`). */
 function rise(step: number): { className: string; style: CSSProperties } {
   return { className: "cc-rise", style: { animationDelay: `${80 + step * 70}ms` } };
 }
 
 /**
- * Zwei unabhängige Spalten ab `xl` (wie im Mockup), darunter eine Spalte.
- * Die Spalten-Wrapper sind unter `xl` `display: contents`, damit `order` die
- * Karten mobil nach Dringlichkeit sortiert statt erst links, dann rechts.
+ * Drei Reihen wie im Kunden-Mockup (09/2026), jede mit eigener Spaltenteilung:
+ * oben „Als nächstes“ und der Fortschritt, in der Mitte die drei Handlungskarten,
+ * unten Analyse und Termine.
+ *
+ * Vorher waren es zwei durchlaufende Spalten, deren Karten mobil per
+ * `display: contents` und `order` neu sortiert wurden. Reihen brauchen das
+ * nicht: Sie stapeln von selbst in der Reihenfolge, in der sie im Markup stehen —
+ * und die ist bereits die nach Dringlichkeit.
  */
 export function DashboardView({ data }: { data: DashboardViewData }) {
-  const column = { display: { base: "contents", xl: "flex" }, flexDirection: "column" as const, gap: 5, minW: 0 };
-
   return (
     // `cc-neutral`: Dashboard ohne Gold-Glow, mit neutralen grauen Kanten
     // (Nutzerwunsch 16.09.2026). Die Regeln stehen in app/globals.css.
@@ -132,58 +80,55 @@ export function DashboardView({ data }: { data: DashboardViewData }) {
         </Text>
       </Box>
 
+      {/* Nur mobil sichtbar; auf dem Desktop trägt die Sidebar den Discord-Punkt. */}
+      <DiscordCard discord={data.discord} mb={5} {...rise(0)} />
+
       {data.showApplyPrompt ? <ApplyPrompt mb={5} {...rise(0)} /> : null}
 
-      {/*
-        Ohne `alignItems="start"` sind beide Spalten gleich hoch. Erst dadurch
-        kann die Fortschritts-Karte rechts den Rest ausfüllen und schließt unten
-        bündig mit „Heute live“ und „Wochenaufgabe“ ab, statt gestaucht darüber
-        zu schweben.
-      */}
-      <Grid templateColumns={{ base: "minmax(0, 1fr)", xl: "minmax(0, 1.8fr) minmax(0, 1fr)" }} gap={5}>
-        <Box {...column}>
-          <Box order={1} minW={0} {...rise(1)}>
+      <Stack spacing={5}>
+        <Grid templateColumns={{ base: "minmax(0, 1fr)", xl: "minmax(0, 1.8fr) minmax(0, 1fr)" }} gap={5}>
+          <Flex minW={0} {...rise(1)}>
             <ContinueCard item={data.continueItem} />
-          </Box>
-          <Grid
-            order={3}
-            display={{ base: "contents", md: "grid" }}
-            templateColumns="repeat(2, minmax(0, 1fr))"
-            gap={5}
-          >
-            <Flex order={3} minW={0} {...rise(3)}>
-              <LiveCard live={data.live} isPaid={data.isPaid} />
-            </Flex>
-            <Flex order={4} minW={0} {...rise(4)}>
-              <WeekTaskCard homework={data.homework} isPaid={data.isPaid} />
-            </Flex>
-          </Grid>
-          <Box order={6} minW={0} {...rise(6)}>
-            <AnalysisCard analysis={data.analysis} isPaid={data.isPaid} />
-          </Box>
+          </Flex>
+          <Flex minW={0} {...rise(2)}>
+            <ProgressCard progress={data.progress} streak={data.streak} />
+          </Flex>
+        </Grid>
+
+        {/*
+          Ohne Journal-Zugang (Free) bleibt die Reihe zweispaltig, statt eine
+          leere dritte Spalte offenzulassen.
+        */}
+        <Grid
+          templateColumns={{
+            base: "minmax(0, 1fr)",
+            md: "repeat(2, minmax(0, 1fr))",
+            xl: data.canUseJournal ? "repeat(3, minmax(0, 1fr))" : "repeat(2, minmax(0, 1fr))",
+          }}
+          gap={5}
+        >
+          <Flex minW={0} {...rise(3)}>
+            <LiveCard live={data.live} isPaid={data.isPaid} />
+          </Flex>
+          <Flex minW={0} {...rise(4)}>
+            <WeekTaskCard homework={data.homework} isPaid={data.isPaid} />
+          </Flex>
           {data.canUseJournal ? (
-            <Box order={8} {...rise(8)}>
-              <TradeCta />
-            </Box>
+            <Flex minW={0} {...rise(5)}>
+              <JournalCard />
+            </Flex>
           ) : null}
-        </Box>
+        </Grid>
 
-        <Box {...column}>
-          <Box order={2} minW={0} {...rise(2)}>
-            <StreakCard days={data.streak.days} week={data.streak.week} />
-          </Box>
-          {/* `flex="1"` nur ab xl, wo die Spalten nebeneinander stehen — darunter
-              liegen alle Karten untereinander und sollen normal hoch bleiben. */}
-          <Box order={5} minW={0} flex={{ base: undefined, xl: "1" }} {...rise(5)}>
-            <ProgressCard progress={data.progress} />
-          </Box>
-          <Box order={7} minW={0} {...rise(7)}>
-            <AppointmentCard appointment={data.appointment} kalender={data.kalender} />
-          </Box>
-        </Box>
-      </Grid>
-
-      <StatusCards status={data.status} mt={5} {...rise(9)} />
+        <Grid templateColumns={{ base: "minmax(0, 1fr)", xl: "minmax(0, 1fr) minmax(0, 1.25fr)" }} gap={5}>
+          <Flex minW={0} {...rise(6)}>
+            <AnalysisCard analysis={data.analysis} isPaid={data.isPaid} />
+          </Flex>
+          <Flex minW={0} {...rise(7)}>
+            <AppointmentCard appointment={data.appointment} termine={data.termine} />
+          </Flex>
+        </Grid>
+      </Stack>
     </Box>
   );
 }

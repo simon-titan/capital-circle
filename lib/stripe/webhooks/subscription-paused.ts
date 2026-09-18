@@ -1,15 +1,20 @@
 import type Stripe from "stripe";
 import {
   loadProfileByCustomerId,
+  pausiereProfil,
   type WebhookSupabase,
 } from "./_helpers";
 
 /**
  * `customer.subscription.paused`
  *
- * Stripe pausiert Subscriptions z. B. bei "Pause Collection" im Portal.
- * Solange pausiert: kein Zugang, aber wir lassen die `subscriptions`-Row
- * stehen (status wird über `subscription.updated` separat synchronisiert).
+ * Stripe setzt diesen Status, wenn eine Testphase ohne hinterlegte Zahlungs-
+ * methode endet. Die Pause, die ein Mitglied im Kündigungs-Flow wählt, läuft
+ * dagegen über `pause_collection` und kommt als `subscription.updated` an —
+ * behandelt wird sie dort, mit demselben Ergebnis.
+ *
+ * Die `subscriptions`-Row bleibt stehen (der Status kommt über
+ * `subscription.updated`); nur der Zugang endet.
  */
 export async function handleSubscriptionPaused(
   sub: Stripe.Subscription,
@@ -22,17 +27,6 @@ export async function handleSubscriptionPaused(
   const profile = await loadProfileByCustomerId(supabase, customerId);
   if (!profile) return;
 
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      membership_tier: "free",
-      is_paid: false,
-    })
-    .eq("id", profile.id);
-
-  if (error) {
-    throw new Error(
-      `Profil-Pause (user=${profile.id}) fehlgeschlagen: ${error.message}`,
-    );
-  }
+  // Trial-Pause: Es wurde nie gezahlt, der Zugang endet sofort.
+  await pausiereProfil(supabase, profile.id, new Date().toISOString());
 }

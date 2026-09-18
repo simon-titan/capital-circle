@@ -16,6 +16,12 @@ const AUSSTEHEND = [
   "006_dashboard",
   "019_live_session_replays",
   "040_learning_seconds_accumulation",
+  // Achtung: loescht alle Live-Session-Daten (Feedback 17.09.2026). Der Hinweis
+  // steht ausfuehrlich im Kopf der Migration und wandert in die Sammeldatei mit.
+  "070_live_session_kategorien_neu",
+  // Lifetime-Freischaltung: Spalte `profiles.lifetime_offer_group` plus den
+  // globalen Schalter in `app_settings`. Additiv, loescht nichts.
+  "071_lifetime_freischaltung",
 ];
 
 const DIR = path.resolve(process.cwd(), "supabase/migrations");

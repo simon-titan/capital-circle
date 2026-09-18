@@ -1,26 +1,33 @@
 import { Box } from "@chakra-ui/react";
+import { Suspense } from "react";
+import { ladeBewertungsspiegel } from "@/lib/landing-reviews";
 import { GoldGlowDivider } from "../GoldGlowDivider";
 import { LandingFooter } from "../landing-ui";
 import { ReviewSection } from "../ReviewSection";
 import { AngebotSection } from "./AngebotSection";
+import { BeitrittModalProvider } from "./BeitrittModal";
 import { ErgebnisseSection } from "./ErgebnisseSection";
 import { FaqSection } from "./FaqSection";
 import { FinalCtaSection } from "./FinalCtaSection";
 import { FounderBriefSection } from "./FounderBriefSection";
 import { FuerWenSection } from "./FuerWenSection";
-import { LichtSchiene } from "./membership-ui";
+import { KaufFehlerHinweis } from "./KaufFehlerHinweis";
 import { MembershipHero } from "./MembershipHero";
 import { MembershipMobileCta } from "./MembershipMobileCta";
 import { MembershipNav } from "./MembershipNav";
+import { ProzessSection } from "./ProzessSection";
 import { VergleichSection } from "./VergleichSection";
 
 /**
  * Die Sales-Landing auf `/`.
  *
  * ── Die Reihenfolge ist das Argument ───────────────────────────────────────
- * Versprechen (Hero) → Beweis (Ergebnisse, Bewertungen) → Abgrenzung
- * (Vergleich) → Einordnung (Für wen) → Person (Brief) → Angebot → Einwände
- * (FAQ) → Abschluss. Der Preis steht bewusst erst nach dem Brief: Wer bis
+ * Versprechen (Hero) → Beweis (Ergebnisse, Bewertungen) → Ablauf (Prozess) →
+ * Abgrenzung (Vergleich) → Einordnung (Für wen) → Person (Brief) → Angebot →
+ * Einwände (FAQ) → Abschluss. Der Prozess steht zwischen Beweis und
+ * Abgrenzung, weil „wie läuft das ab?" die Frage ist, die direkt auf einen
+ * Beleg folgt — und weil der Vergleich danach nicht mehr erklären muss, was
+ * Capital Circle überhaupt tut. Der Preis steht bewusst erst nach dem Brief: Wer bis
  * dahin gelesen hat, entscheidet nicht mehr zwischen „99 €" und „kostenlos",
  * sondern zwischen „mit System" und „weiter wie bisher".
  *
@@ -31,54 +38,79 @@ import { VergleichSection } from "./VergleichSection";
  * Kurs handeln.
  *
  * Diese Datei ist eine Server-Komponente ohne eigenen Zustand — jeder
- * Abschnitt bringt sein „use client" selbst mit, wenn er es braucht.
+ * Abschnitt bringt sein „use client" selbst mit, wenn er es braucht. Auch
+ * `BeitrittModalProvider` ist so einer: Er ist die Client-Grenze für den
+ * Beitritts-Dialog, und die Abschnitte darin bleiben serverseitig gerendert,
+ * weil sie ihm nur als `children` durchgereicht werden.
  */
-export function MembershipLanding() {
+export async function MembershipLanding() {
+  // Eine Abfrage fuer beide Sternezeilen — dieselbe Quelle wie die Liste
+  // weiter unten, damit Zahl und Liste nicht auseinanderlaufen.
+  const bewertungen = await ladeBewertungsspiegel("membership");
+
   return (
     <Box position="relative" minH="100vh" w="full" bg="var(--cc-bg)" color="var(--cc-text)" overflowX="clip">
       {/* Himmel: Sternenfeld und Champagner-Licht, beides fixiert hinter dem Inhalt. */}
       <Box className="cc-stars" aria-hidden />
       <Box className="cc-goldlight" aria-hidden />
 
-      <Box position="relative" zIndex={1}>
-        <LichtSchiene />
+      {/*
+        Der Dialog hinter den sechs „Capital Circle beitreten"-Knöpfen. Er muss
+        Kopfleiste, Hero, den festen Balken und die Abschnitte gemeinsam
+        umschließen — jeder dieser Knöpfe öffnet denselben Dialog.
+      */}
+      <BeitrittModalProvider>
+        <Box position="relative" zIndex={1}>
+            {/* Sprungziel der Wortmarke in der Kopfleiste. */}
+          <Box id="seitenanfang" aria-hidden />
 
-        {/* Sprungziel der Wortmarke in der Kopfleiste. */}
-        <Box id="seitenanfang" aria-hidden />
+          <MembershipNav />
 
-        <MembershipNav />
+          <Box as="main">
+            {/* Liest `?fehler=<code>`, wohin `app/go/[plan]/route.ts` bei einem
+                Kassenfehler zurueckleitet. Bewusst im Client und in `Suspense`:
+                Laese die Seite den Parameter serverseitig, waere die ganze
+                Verkaufsseite dynamisch — teuer fuer einen Fall, den fast niemand
+                sieht. So bleibt die Seite statisch und nur dieser Streifen
+                haengt an der Adresse. */}
+            <Suspense fallback={null}>
+              <KaufFehlerHinweis />
+            </Suspense>
 
-        <Box as="main">
-          <MembershipHero />
+            <MembershipHero bewertungen={bewertungen} />
 
-          <ErgebnisseSection />
-          <GoldGlowDivider />
+            <ErgebnisseSection />
+            <GoldGlowDivider />
 
-          <ReviewSection landingSlug="membership" />
-          <GoldGlowDivider />
+            <ReviewSection landingSlug="membership" />
+            <GoldGlowDivider />
 
-          <VergleichSection />
-          <GoldGlowDivider />
+            <ProzessSection />
+            <GoldGlowDivider />
 
-          <FuerWenSection />
-          <GoldGlowDivider />
+            <VergleichSection />
+            <GoldGlowDivider />
 
-          <FounderBriefSection />
-          <GoldGlowDivider />
+            <FuerWenSection />
+            <GoldGlowDivider />
 
-          <AngebotSection />
-          <GoldGlowDivider />
+            <FounderBriefSection />
+            <GoldGlowDivider />
 
-          <FaqSection />
-          <GoldGlowDivider />
+            <AngebotSection />
+            <GoldGlowDivider />
 
-          <FinalCtaSection />
+            <FaqSection />
+            <GoldGlowDivider />
+
+            <FinalCtaSection bewertungen={bewertungen} />
+          </Box>
+
+          <LandingFooter />
         </Box>
 
-        <LandingFooter />
-      </Box>
-
-      <MembershipMobileCta />
+        <MembershipMobileCta />
+      </BeitrittModalProvider>
     </Box>
   );
 }

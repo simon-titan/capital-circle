@@ -45,7 +45,16 @@ export type Database = {
           step2_application_status?: "pending" | "approved" | "rejected" | null;
           // 043_phase2_stripe
           stripe_customer_id?: string | null;
-          membership_tier?: "free" | "monthly" | "lifetime" | "ht_1on1";
+          // 069: `quarterly` und `yearly` sind eigene Laufzeiten, keine Varianten
+          // von `monthly` — der DB-Check in 069 kennt sie, dieser Typ hat sie
+          // bis 17.09.2026 verschwiegen.
+          membership_tier?:
+            | "free"
+            | "monthly"
+            | "quarterly"
+            | "yearly"
+            | "lifetime"
+            | "ht_1on1";
           access_until?: string | null;
           lifetime_purchased_at?: string | null;
           // 044_phase3_churn (Tracking-Timestamps für Churn- und Dunning-Mails)

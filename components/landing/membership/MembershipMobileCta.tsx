@@ -1,8 +1,9 @@
 "use client";
 
-import { Box, Button, HStack, Stack, Text } from "@chakra-ui/react";
+import { Box, HStack, Stack, Text } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
-import { ctaAnker, ctaLabel, preiskarten } from "@/config/landing-membership";
+import { preiskarten } from "@/config/landing-membership";
+import { BeitrittCta } from "./BeitrittModal";
 
 /**
  * Fester CTA-Balken, nur auf schmalen Bildschirmen.
@@ -39,7 +40,10 @@ export function MembershipMobileCta() {
     };
   }, []);
 
-  const guenstigster = preiskarten[0];
+  // `preiskarten[0]` ist der **Monats**plan und damit der teuerste Monatspreis —
+  // „Ab" davor war in die falsche Richtung falsch: Der guenstigste Monatspreis
+  // steckt im Jahresplan (82,50 €). Hier steht jetzt schlicht der Einstiegspreis.
+  const einstieg = preiskarten[0];
 
   return (
     <Box
@@ -75,12 +79,14 @@ export function MembershipMobileCta() {
         bg="linear-gradient(90deg, transparent, rgba(232, 192, 148, 0.7), transparent)"
       />
       <Stack spacing={2.5}>
-        <Button as="a" href={ctaAnker} variant="gold" w="full" h="52px" fontSize="16px" tabIndex={sichtbar ? 0 : -1}>
-          {ctaLabel}
-        </Button>
+        {/* Öffnet den Beitritts-Dialog statt zum Angebot zu springen. Gerade
+            hier zählt das am meisten: Der Balken erscheint mitten im Lesen, und
+            ein Sprung ans Seitenende verliert die Stelle, an der jemand gerade
+            war. */}
+        <BeitrittCta w="full" h="52px" fontSize="16px" tabIndex={sichtbar ? 0 : -1} />
         <HStack justify="center" spacing={3}>
           <Text fontSize="12px" color="var(--cc-text-3)" className="cc-num">
-            Ab {guenstigster.preis} im Monat
+            {einstieg.preis} im Monat
           </Text>
           <Box aria-hidden w="1px" h="10px" bg="var(--cc-line-strong)" />
           <Text fontSize="12px" color="var(--cc-text-3)">

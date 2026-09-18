@@ -51,19 +51,33 @@ export async function handleSubscriptionDeleted(
     );
   }
 
-  const { error: profileError } = await supabase
-    .from("profiles")
-    .update({
-      membership_tier: "free",
-      is_paid: false,
-      access_until: nowISO,
-    })
-    .eq("id", profile.id);
+  /*
+    Lifetime und 1:1 ueberleben das Ende eines Abos.
 
-  if (profileError) {
-    throw new Error(
-      `Profil-Reset bei Cancel (user=${profile.id}) fehlgeschlagen: ${profileError.message}`,
-    );
+    Seit Lifetime aus dem Mitgliederbereich heraus verkauft wird, ist der
+    Normalfall: jemand hat ein Monatsabo, kauft Lifetime, und das Abo laeuft
+    zum Periodenende aus. Genau dann kommt dieses Ereignis — und wuerde den
+    frisch bezahlten Dauerzugang auf `free` zuruecksetzen. Der Kunde haette
+    699 Euro gezahlt und stuende vor der Bezahlschranke.
+  */
+  const dauerzugang =
+    profile.membership_tier === "lifetime" || profile.membership_tier === "ht_1on1";
+
+  if (!dauerzugang) {
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .update({
+        membership_tier: "free",
+        is_paid: false,
+        access_until: nowISO,
+      })
+      .eq("id", profile.id);
+
+    if (profileError) {
+      throw new Error(
+        `Profil-Reset bei Cancel (user=${profile.id}) fehlgeschlagen: ${profileError.message}`,
+      );
+    }
   }
 
   const { error: cancelInsertError } = await supabase
@@ -82,6 +96,10 @@ export async function handleSubscriptionDeleted(
       `[stripe-webhook] cancellations INSERT warn (user=${profile.id}, sub=${sub.id}): ${cancelInsertError.message}`,
     );
   }
+
+  // Wer Lifetime gekauft hat, bekommt keine Abschiedsumfrage und behaelt seine
+  // Discord-Rolle — er ist nicht weg, sein Abo ist es.
+  if (dauerzugang) return;
 
   const email = await loadAuthEmail(supabase, profile.id);
   if (email) {

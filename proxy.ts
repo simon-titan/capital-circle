@@ -22,6 +22,10 @@ const PUBLIC_PATHS = [
   "/apply",
   "/insight",
   "/erfolge",
+  // Belegte Auszahlungen als eigene Seite (`app/ergebnisse/page.tsx`). Sie
+  // haengt am Fusslink der Ergebnis-Section der Verkaufsseite und muss
+  // deshalb ohne Anmeldung erreichbar sein.
+  "/ergebnisse",
   "/wartung",
   "/checkout/success",
   "/checkout/zurueck",
@@ -69,6 +73,16 @@ let maintenanceCache: { state: MaintenanceState; fetchedAt: number } | null = nu
 const MAINTENANCE_CACHE_TTL_MS = 15_000;
 
 async function getMaintenanceState(): Promise<MaintenanceState> {
+  // Lokaler Ausschalter fuer die Entwicklung. Das Flag liegt in der geteilten
+  // Produktionsdatenbank — wer dort ausschaltet, oeffnet die Plattform fuer
+  // alle. Zum Entwickeln braucht man aber nur die eigene Maschine offen.
+  // Der Schalter greift ausschliesslich ausserhalb von `production`: Selbst
+  // wenn die Variable versehentlich in die Deployment-Umgebung geraet, bleibt
+  // die Wartung dort an.
+  if (process.env.NODE_ENV !== "production" && process.env.WARTUNG_LOKAL_AUS === "1") {
+    return { enabled: false };
+  }
+
   const now = Date.now();
   if (maintenanceCache && now - maintenanceCache.fetchedAt < MAINTENANCE_CACHE_TTL_MS) {
     return maintenanceCache.state;
@@ -275,6 +289,6 @@ export async function proxy(request: NextRequest) {
 export const config = {
   // Statische Icons: Safari/WebKit u. a. holen apple-touch-icon / favicon ohne HTML — nicht zur Login-HTML umleiten.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|logo/|bg/|svg/|tg-slides/|founder/|cases/|apex/|apple-touch-icon|new-apple).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|logo/|bg/|svg/|tg-slides/|founder/|cases/|apex/|prozess/|nachweise/|apple-touch-icon|new-apple).*)",
   ],
 };

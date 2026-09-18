@@ -50,7 +50,11 @@ export function PlattformVorschau() {
   return (
     <Box
       aria-hidden
-      className="cc-card cc-card--still"
+      // `cc-neutral` nimmt Gold-Kante, Hover-Glow und das Atmen aus allen
+      // Karten darin — genau wie im echten Dashboard, das seit 16.09.2026
+      // unter derselben Klasse laeuft. Ohne das verspricht die Vorschau einen
+      // Gold-Look, den das Produkt nach dem Kauf nicht einloest.
+      className="cc-neutral cc-card cc-card--still"
       overflow="hidden"
       p={0}
       // Unten offen: Die Vorschau taucht in den Abschnitt darunter ab, statt
@@ -118,7 +122,7 @@ export function PlattformVorschau() {
             {/* Weiterlernen — die Hero-Karte des Dashboards */}
             <Box className="cc-card cc-card--hero" p={4} minW={0}>
               <Stack spacing={4}>
-                <KartenTitel gold>Weiter wo du warst</KartenTitel>
+                <KartenTitel gold>Als nächstes</KartenTitel>
 
                 <Flex direction={{ base: "column", sm: "row" }} gap={4} align={{ sm: "center" }}>
                   {/* Videovorschau mit Play-Knopf */}
@@ -184,77 +188,31 @@ export function PlattformVorschau() {
               </Stack>
             </Box>
 
-            {/* Rechte Spalte: Streak und Fortschritt */}
+            {/* Rechte Spalte: eine Karte, wie im echten Dashboard seit 17.09.2026.
+                Die fruehere getrennte Streak-Karte mit der Siebenerreihe aus
+                Kreisen gibt es dort nicht mehr; die Streak sitzt jetzt im Fuss
+                der Fortschrittskarte. */}
             <Stack spacing={4} minW={0}>
               <Box className="cc-card" p={4}>
-                <Stack spacing={4}>
-                  <KartenTitel>Streak</KartenTitel>
-
-                  <HStack spacing={3} align="center">
-                    <Flex
-                      w="44px"
-                      h="44px"
-                      flexShrink={0}
-                      align="center"
-                      justify="center"
-                      borderRadius="12px"
-                      bg="linear-gradient(145deg, rgba(255, 140, 60, 0.3), rgba(212, 176, 128, 0.16))"
-                      border="1px solid rgba(255, 160, 80, 0.45)"
-                      color="#ffb454"
-                    >
-                      <Flame className="cc-flame" size={20} fill="currentColor" strokeWidth={0} />
-                    </Flex>
-                    <Stack spacing={0}>
-                      <Text className="cc-num" fontSize="32px" fontWeight={600} lineHeight={1} letterSpacing="-0.02em">
-                        {streak.tage}
-                      </Text>
-                      <Text fontSize="12px" color="var(--cc-text-2)">
-                        Tage in Folge
-                      </Text>
-                    </Stack>
-                  </HStack>
-
-                  <Stack spacing={2}>
-                    <Text fontSize="10px" letterSpacing="0.14em" textTransform="uppercase" color="var(--cc-text-3)">
-                      Letzte 7 Tage
-                    </Text>
-                    <HStack spacing={1} justify="space-between">
-                      {streak.wochentage.map((tag, i) => {
-                        const erledigt = (streak.erledigt as readonly number[]).includes(i);
-                        return (
-                          <Stack key={tag} spacing={1.5} align="center" flex={1}>
-                            <Text fontSize="10px" color="var(--cc-text-3)">
-                              {tag}
-                            </Text>
-                            <Flex
-                              w="20px"
-                              h="20px"
-                              align="center"
-                              justify="center"
-                              borderRadius="full"
-                              bg={erledigt ? "var(--cc-ink)" : "transparent"}
-                              border={erledigt ? "none" : "1.5px solid rgba(255, 255, 255, 0.3)"}
-                              color="var(--cc-bg)"
-                            >
-                              {erledigt ? <Check size={11} strokeWidth={3} /> : null}
-                            </Flex>
-                          </Stack>
-                        );
-                      })}
-                    </HStack>
-                  </Stack>
-                </Stack>
-              </Box>
-
-              <Box className="cc-card" p={4}>
                 <Stack spacing={3}>
-                  <KartenTitel>Fortschritt</KartenTitel>
-                  <Text fontSize="14px" color="var(--cc-text-2)">
-                    <Box as="span" className="cc-num" fontSize="19px" fontWeight={600} color="var(--cc-text)">
-                      {fortschritt.prozent}%
-                    </Box>{" "}
-                    — dein Weg durchs Institut
-                  </Text>
+                  <KartenTitel>Dein Fortschritt</KartenTitel>
+
+                  <Stack spacing={1}>
+                    <Text
+                      className="cc-num"
+                      fontSize={{ base: "30px", md: "36px" }}
+                      lineHeight={1}
+                      fontWeight={600}
+                      letterSpacing="-0.02em"
+                      color="var(--cc-text)"
+                    >
+                      {fortschritt.prozent} %
+                    </Text>
+                    <Text fontSize="12px" color="var(--cc-text-2)" className="cc-num">
+                      {fortschritt.lektionen}
+                    </Text>
+                  </Stack>
+
                   <HStack spacing="4px">
                     {Array.from({ length: 10 }).map((_, i) => (
                       <Box
@@ -267,9 +225,55 @@ export function PlattformVorschau() {
                       />
                     ))}
                   </HStack>
-                  <Text fontSize="12px" color="var(--cc-text-3)" className="cc-num">
-                    {fortschritt.module}
-                  </Text>
+
+                  <Flex pt={3} gap={4} borderTop="1px solid var(--cc-line)" align="center">
+                    <HStack spacing={2.5} flex={1} minW={0}>
+                      <Flex
+                        w="34px"
+                        h="34px"
+                        flexShrink={0}
+                        align="center"
+                        justify="center"
+                        borderRadius="10px"
+                        bg="linear-gradient(145deg, rgba(255, 140, 60, 0.3), rgba(212, 176, 128, 0.16))"
+                        border="1px solid rgba(255, 160, 80, 0.45)"
+                        color="#ffb454"
+                      >
+                        <Flame className="cc-flame" size={16} fill="currentColor" strokeWidth={0} />
+                      </Flex>
+                      <Stack spacing={0} minW={0}>
+                        <Text className="cc-num" fontSize="17px" lineHeight={1.1} fontWeight={600}>
+                          {streak.tage}
+                        </Text>
+                        <Text fontSize="11px" lineHeight={1.3} color="var(--cc-text-2)">
+                          Tage aktiv
+                        </Text>
+                      </Stack>
+                    </HStack>
+
+                    <HStack spacing={2.5} flex={1} minW={0} borderLeft="1px solid var(--cc-line)" pl={4}>
+                      <Flex
+                        w="24px"
+                        h="24px"
+                        flexShrink={0}
+                        align="center"
+                        justify="center"
+                        borderRadius="full"
+                        border="1px solid var(--cc-line-strong)"
+                        color="var(--cc-ink)"
+                      >
+                        <Check size={13} strokeWidth={2.25} />
+                      </Flex>
+                      <Stack spacing={0} minW={0}>
+                        <Text className="cc-num" fontSize="12px" lineHeight={1.3} fontWeight={600}>
+                          {streak.wocheAktiv} von {streak.wocheGesamt} Tagen
+                        </Text>
+                        <Text fontSize="11px" lineHeight={1.3} color="var(--cc-text-2)">
+                          diese Woche
+                        </Text>
+                      </Stack>
+                    </HStack>
+                  </Flex>
                 </Stack>
               </Box>
             </Stack>
@@ -286,8 +290,12 @@ export function PlattformVorschau() {
  * Reines SVG statt eines Chartbilds: Es geht um die Anmutung „hier läuft ein
  * Chart-Video", nicht um Daten. Feste Werte, damit bei jedem Laden dasselbe
  * Bild steht — ein zufälliges Muster würde bei jedem Rendering flackern.
+ *
+ * Exportiert, weil die Lektionsvorschau in `ProzessSection` dieselbe Anmutung
+ * braucht. Zwei Kerzenbänder wären zwei Stellen, an denen jemand die Farbe
+ * nachzieht, und eine, an der er es vergisst.
  */
-function Kerzenband() {
+export function Kerzenband() {
   const kerzen = [
     [6, 34, 18], [14, 28, 24], [22, 40, 14], [30, 22, 30], [38, 30, 22],
     [46, 16, 38], [54, 26, 26], [62, 12, 42], [70, 20, 32], [78, 8, 46],

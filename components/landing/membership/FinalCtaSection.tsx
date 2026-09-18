@@ -2,8 +2,10 @@
 
 import { Box, Heading, Stack, Text } from "@chakra-ui/react";
 import { finalerCta } from "@/config/landing-membership";
+import type { Bewertungsspiegel } from "@/lib/landing-reviews";
 import { Reveal } from "../landing-ui";
-import { GoldCta, Sektion, SterneZeile } from "./membership-ui";
+import { BeitrittCta } from "./BeitrittModal";
+import { Sektion, SterneZeile } from "./membership-ui";
 
 /**
  * Der Abschluss.
@@ -13,11 +15,12 @@ import { GoldCta, Sektion, SterneZeile } from "./membership-ui";
  * Wer bis hierher gelesen hat, braucht keinen weiteren Grund, sondern einen
  * Knopf.
  *
- * Der Knopf führt zurück zur Laufzeitauswahl statt direkt in die Kasse — die
- * Entscheidung, welche Laufzeit es wird, ist an dieser Stelle noch nicht
- * gefallen.
+ * Der Knopf öffnet den Beitritts-Dialog statt direkt in die Kasse zu führen —
+ * die Entscheidung, welche Laufzeit es wird, ist an dieser Stelle noch nicht
+ * gefallen. Bis 09/2026 sprang er dafür zurück an den Angebots-Abschnitt, also
+ * ein Stück die Seite hinauf, das der Leser gerade hinter sich gebracht hatte.
  */
-export function FinalCtaSection() {
+export function FinalCtaSection({ bewertungen }: { bewertungen: Bewertungsspiegel }) {
   const [ersteZeile, zweiteZeile, dritteZeile] = finalerCta.zeilen;
 
   return (
@@ -43,11 +46,11 @@ export function FinalCtaSection() {
           </Heading>
 
           <Stack spacing={5} align="center">
-            <GoldCta href="#angebot" />
+            <BeitrittCta />
             <Text fontSize="14px" color="var(--cc-text-3)">
               {finalerCta.feinabdruck}
             </Text>
-            <SterneZeile />
+            <SterneZeile bewertungen={bewertungen} />
           </Stack>
         </Stack>
       </Reveal>

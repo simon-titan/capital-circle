@@ -22,7 +22,7 @@ Mitgliedschafts-Stufen in `profiles.membership_tier`:
 | `monthly` | 99 €/Monat | Gast-Checkout (`/` → `/go/monthly` → Stripe) |
 | `quarterly` | 267 €/3 Monate | Gast-Checkout (`/` → `/go/quarterly` → Stripe) |
 | `yearly` | 990 €/Jahr | Gast-Checkout (`/` → `/go/yearly` → Stripe) |
-| `lifetime` | 699 € einmalig | **nicht mehr verkäuflich** — Bestandskunden behalten den Zugang |
+| `lifetime` | 699 € einmalig | **nur intern** (17.09.2026) — Angebot in `/einstellungen/abonnement` für Mitglieder mit aktivem, zahlendem Abo; kein öffentlicher Preis, kein Link von der Landingpage |
 | `ht_1on1` | individuell | Bewerbung + Calendly-Call, kein Self-Checkout |
 
 Seit 16.09.2026 ist `/` die Sales-Landing mit Gast-Checkout (Konto entsteht erst nach der
@@ -74,7 +74,9 @@ Unveröffentlicht-Markierung; Mitglieder: mit `x/y`-Fortschritt je Untermodul).
 Kaufweg `/go/<plan>` → Stripe → Webhook legt das Konto an → `/checkout/success` mit
 Passwort-Formular. Prefetch-/Bot-/HEAD-Schutz auf `/go/` (bei MoonTrading hat dessen Fehlen
 589 von 729 Sessions als Phantom-Abbrüche erzeugt). Login/Onboarding auf `/einsteig`,
-`/pricing` gelöscht und auf `/#angebot` umgeleitet, Lifetime aus dem Verkaufsweg entfernt.
+`/pricing` gelöscht und auf `/#angebot` umgeleitet, Lifetime aus dem öffentlichen Verkaufsweg
+entfernt (seit 17.09.2026 wieder kaufbar — aber ausschließlich im Mitgliederbereich, gesteuert
+über `app_settings.lifetime_offer_enabled` und `profiles.lifetime_offer_group`, Migration 071).
 Stripe-Preise per `npm run stripe:preise -- --apply` angelegt (Test-Modus, Produkt
 `prod_VGo4kOUjnyWCfp`). Dabei fiel auf: die bisher eingetragene `STRIPE_PRICE_MONTHLY`
 gehörte zu einem **anderen Stripe-Konto** als der hinterlegte `sk_test`-Key.

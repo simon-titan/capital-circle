@@ -87,11 +87,11 @@ const tabProps = {
   border: "1px solid transparent",
   transition: "color 150ms var(--cc-ease), background-color 150ms var(--cc-ease), border-color 150ms var(--cc-ease)",
   _hover: { color: "var(--cc-text)" },
+  /* Gold als Schrift- und Flächenfarbe bleibt; der Schein fällt weg (siehe unten). */
   _selected: {
     color: "var(--cc-gold-light)",
     bg: "linear-gradient(90deg, rgba(212, 176, 128, 0.16) 0%, rgba(212, 176, 128, 0.04) 100%)",
     borderColor: "var(--cc-gold-line)",
-    boxShadow: "0 0 16px rgba(212, 176, 128, 0.1)",
   },
 };
 
@@ -390,7 +390,7 @@ export function ModuleLearningClient({
 
   const completedBanner = moduleCompleted ? (
     <Flex
-      className="cc-card cc-card--hero"
+      className="cc-card cc-card--still"
       p={{ base: 5, md: 6 }}
       direction={{ base: "column", md: "row" }}
       align={{ base: "stretch", md: "center" }}
@@ -423,7 +423,7 @@ export function ModuleLearningClient({
   if (!playlist.length) {
     const introFallback = process.env.NEXT_PUBLIC_INTRO_VIDEO_URL ?? "";
     return (
-      <Stack spacing={5} data-learning-wide>
+      <Stack spacing={5} data-learning-wide className="cc-neutral">
         <Box>
           <BackLink />
           <Heading as="h1" fontSize={{ base: "24px", md: "30px" }} fontWeight={600} color="var(--cc-text)" mt={3}>
@@ -457,8 +457,15 @@ export function ModuleLearningClient({
     );
   }
 
+  /*
+   * `cc-neutral` nimmt der ganzen Lektionsseite Gold-Haarlinie, Hover-Glow und
+   * atmenden Rahmen — wie beim Dashboard seit 16.09.2026 und wie es die
+   * Institut-Übersicht schon macht. Gold als Schrift- und Buttonfarbe bleibt;
+   * die drei Inline-Glows, an die die Klasse nicht herankommt, sind direkt
+   * entfernt (Tab, Lektions-Pill, Hero-Variante des Abschluss-Banners).
+   */
   return (
-    <Box data-learning-wide>
+    <Box data-learning-wide className="cc-neutral">
       {/* Mobil: Titel über dem Player — die Kursleiste folgt darunter. */}
       <Box display={{ base: "block", lg: "none" }} mb={4}>
         <BackLink />
@@ -514,7 +521,6 @@ export function ModuleLearningClient({
                     color="var(--cc-on-gold)"
                     fontSize="11px"
                     fontWeight={600}
-                    boxShadow="0 0 12px rgba(212, 176, 128, 0.35)"
                   >
                     {playlist.length} {playlist.length === 1 ? "Lektion" : "Lektionen"}
                   </Box>

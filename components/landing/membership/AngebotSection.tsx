@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Flex, Grid, Heading, HStack, Stack, Text } from "@chakra-ui/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { angebot, ctaLabel, preiskarten, type Preiskarte } from "@/config/landing-membership";
 import type { MembershipPlan } from "@/lib/stripe/plan-map";
 import { Reveal } from "../landing-ui";
@@ -30,6 +30,27 @@ export function AngebotSection() {
   const [gewaehlt, setGewaehlt] = useState<MembershipPlan>(
     preiskarten.find((k) => k.beliebt)?.plan ?? preiskarten[0].plan,
   );
+
+  /**
+   * `/go/<plan>` legt serverseitig eine Stripe-Session an, bevor es
+   * weiterleitet — dazwischen liegen je nach Verbindung 0,3 bis 1,5 Sekunden,
+   * in denen ohne diesen Zustand sichtbar nichts passiert. Wer dann ein
+   * zweites Mal tippt, erzeugt eine zweite Kasse.
+   */
+  const [oeffnet, setOeffnet] = useState(false);
+
+  /**
+   * Zuruecksetzen, wenn der Besucher aus der Kasse zurueckkommt. Der Browser
+   * holt die Seite dann aus dem Vor-/Zurueck-Cache statt sie neu zu bauen —
+   * ohne das bliebe der Knopf fuer immer auf „wird geoeffnet" stehen.
+   */
+  useEffect(() => {
+    const zurueck = (e: PageTransitionEvent) => {
+      if (e.persisted) setOeffnet(false);
+    };
+    window.addEventListener("pageshow", zurueck);
+    return () => window.removeEventListener("pageshow", zurueck);
+  }, []);
 
   return (
     <Sektion id="angebot" aria-labelledby="angebot-titel">
@@ -112,11 +133,35 @@ export function AngebotSection() {
       {/* ── Aktion ─────────────────────────────────────────────────────── */}
       <Reveal delay={320}>
         <Stack align="center" spacing={4} mt={{ base: 10, md: 12 }}>
-          <GoldCta href={`/go/${gewaehlt}?src=angebot`} minW={{ base: "100%", sm: "320px" }}>
-            {ctaLabel}
+          <GoldCta
+            href={`/go/${gewaehlt}?src=angebot`}
+            minW={{ base: "100%", sm: "320px" }}
+            aria-busy={oeffnet}
+            aria-disabled={oeffnet}
+            opacity={oeffnet ? 0.8 : 1}
+            cursor={oeffnet ? "progress" : undefined}
+            onClick={(e) => {
+              // Der Anker navigiert selbst; hier wird nur der zweite Klick
+              // abgefangen und der Zustand sichtbar gemacht.
+              if (oeffnet) {
+                e.preventDefault();
+                return;
+              }
+              setOeffnet(true);
+            }}
+          >
+            {oeffnet ? "Kasse wird geöffnet …" : ctaLabel}
           </GoldCta>
+          {/*
+            Aus der gewaehlten Karte abgeleitet, nicht fest verdrahtet: Unter
+            diesem Knopf kauft man auch Quartal und Jahr, und dort gilt
+            „monatlich kuendbar" nicht — die eigene FAQ sagt zwei Abschnitte
+            weiter das Gegenteil. Eine Zusicherung, die beim ersten
+            Kuendigungsversuch auffliegt, ist an der teuersten Stelle der Seite
+            der schlechteste Satz.
+          */}
           <Text fontSize="14px" color="var(--cc-text-3)">
-            {angebot.feinabdruck}
+            {preiskarten.find((k) => k.plan === gewaehlt)?.bindung ?? angebot.feinabdruck} · Sofortiger Zugang
           </Text>
         </Stack>
       </Reveal>

@@ -7,11 +7,12 @@ import { createClient } from "@/lib/supabase/server";
 import { isCourseUnlocked, isModuleUnlocked } from "@/lib/progress";
 import { getModulePublishedPlaylist } from "@/lib/module-video";
 import { parseVideoProgressByVideo, userCanAccessAcademyModule } from "@/lib/server-data";
-import { isUuidParam, moduleHref } from "@/lib/module-route";
+import { LEKTION_PARAM, isUuidParam, moduleHref } from "@/lib/module-route";
 import type { VideoAttachmentItem } from "@/components/platform/VideoAttachments";
 
 type PageProps = {
   params: Promise<{ segment: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 /** Harte Sperre (gesperrtes Modul / Kurs / Reihenfolge) als ruhige Glas-Karte. */
@@ -33,9 +34,11 @@ function LockedNotice({ title, text }: { title: string; text: string }) {
   );
 }
 
-export default async function AcademyModulePage({ params }: PageProps) {
+export default async function AcademyModulePage({ params, searchParams }: PageProps) {
   const { segment: raw } = await params;
+  const query = await searchParams;
   const idOrSlug = decodeURIComponent(raw);
+  const gewuenschteLektion = typeof query[LEKTION_PARAM] === "string" ? (query[LEKTION_PARAM] as string) : null;
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   const user = auth.user;
@@ -108,6 +111,15 @@ export default async function AcademyModulePage({ params }: PageProps) {
   const initialMap = parseVideoProgressByVideo(progress?.video_progress_by_video);
   const lastVideoId = (progress?.last_video_id as string | null) ?? null;
 
+  /*
+   * Ein verlangter Einstieg (`?lektion=`) schlägt den gespeicherten Stand — aber
+   * nur, wenn die Lektion wirklich in dieser Playlist steht. Sonst würde ein
+   * alter oder fremder Link den Player auf die erste Lektion zurückwerfen,
+   * statt dort weiterzumachen, wo man war.
+   */
+  const startVideoId =
+    gewuenschteLektion && playlist.some((v) => v.id === gewuenschteLektion) ? gewuenschteLektion : lastVideoId;
+
   const videoIds = playlist.map((v) => v.id);
   const attachmentsByVideoId: Record<string, VideoAttachmentItem[]> = {};
   if (videoIds.length > 0) {
@@ -144,7 +156,7 @@ export default async function AcademyModulePage({ params }: PageProps) {
       courseTitle={(courseRow?.title as string | null | undefined) ?? null}
       moduleDescription={(mod.description as string | null) ?? null}
       playlist={playlist}
-      initialVideoId={lastVideoId}
+      initialVideoId={startVideoId}
       initialProgressMap={initialMap}
       questions={Array.isArray(quiz?.questions) ? (quiz.questions as never[]) : []}
       quizMode={quiz?.quiz_mode === "single_page" ? "single_page" : "multi_page"}

@@ -1,35 +1,39 @@
 "use client";
 
-import { Box, Button, Flex, HStack, SimpleGrid, Text, Tooltip } from "@chakra-ui/react";
-import { ArrowRight } from "lucide-react";
+import { Box, Button, Flex, Grid, Text } from "@chakra-ui/react";
+import { ArrowRight, CalendarClock } from "lucide-react";
 import NextLink from "next/link";
-import { DashCard, Meta } from "./primitives";
-import type { AppointmentSummary, KalenderTag } from "./types";
+import { CardLink, DashCard, Meta } from "./primitives";
+import type { AppointmentSummary, TerminZeile } from "./types";
+import { zeitTon, zeitTonFarbe } from "./zeit-ton";
 
-const WOCHENTAGE = ["M", "D", "M", "D", "F", "S", "S"] as const;
+const terminIcon = <CalendarClock size={17} strokeWidth={1.5} />;
 
 /**
- * „Nächster Termin" mit Monatsübersicht statt eines einzelnen Datums.
+ * „Nächste Termine“ als Liste (Kunden-Mockup 09/2026).
  *
- * Die Karte zeigte für fast alle Mitglieder nur „Keine geplant" — der einzige
- * Termin dort ist das Bewerbungsgespräch, und das gibt es nach dem Beitritt
- * nicht mehr. Der Monatskalender füllt den Platz mit etwas, das dauerhaft
- * nützlich ist: welche Tage dieses Monats belegt sind.
+ * Bis dahin stand hier ein Monatsraster. Das zeigte zwar, welche Tage belegt
+ * sind, aber nicht, was ansteht — dafür musste man jede Zelle antippen. Vier
+ * Zeilen „Tag · Titel · Uhrzeit“ beantworten dieselbe Frage direkt.
  */
 export function AppointmentCard({
   appointment,
-  kalender,
+  termine,
 }: {
   appointment: AppointmentSummary;
-  kalender: KalenderTag[];
+  termine: TerminZeile[];
 }) {
-  const naechster = kalender.find((t) => t.istZukunft && t.termine.length > 0);
-
   return (
-    <DashCard label="Termine" labelId="dash-appointment">
-      {/* Bewerbungsgespräch, solange es eines gibt — sonst der nächste Event. */}
+    <DashCard
+      label="Nächste Termine"
+      labelId="dash-appointment"
+      icon={terminIcon}
+      badge={<CardLink href="/events">Alle Termine</CardLink>}
+    >
+      {/* Das Bewerbungsgespräch ist ein persönlicher Termin und steht nicht im
+          Event-Kalender — deshalb vor der Liste, solange es eines gibt. */}
       {appointment.state !== "none" ? (
-        <Box mb={3}>
+        <Box mb={4} pb={4} borderBottom="1px solid var(--cc-line)">
           <Text fontSize="15px" fontWeight={500} color="var(--cc-text)">
             {appointment.title}
           </Text>
@@ -38,129 +42,78 @@ export function AppointmentCard({
               ? `${appointment.dayLabel} · ${appointment.timeLabel}`
               : "Noch nicht gebucht"}
           </Meta>
-        </Box>
-      ) : naechster ? (
-        <Box mb={3}>
-          <HStack spacing={2} align="center">
-            <Box
-              w="7px"
-              h="7px"
-              borderRadius="full"
-              bg={naechster.termine[0].farbe}
-              flexShrink={0}
-              aria-hidden
-            />
-            <Text fontSize="15px" fontWeight={500} color="var(--cc-text)" noOfLines={1}>
-              {naechster.termine[0].titel}
-            </Text>
-          </HStack>
-          <Meta className="cc-num">
-            {naechster.tagLabel} · {naechster.termine[0].zeitLabel}
-          </Meta>
-        </Box>
-      ) : (
-        <Box mb={3}>
-          <Text fontSize="15px" color="var(--cc-text-soft)">
-            Diesen Monat nichts geplant
-          </Text>
-        </Box>
-      )}
-
-      {/* ── Monatsraster ─────────────────────────────────────────────────── */}
-      <Box mt="auto">
-        <SimpleGrid columns={7} spacing="2px" mb={1}>
-          {WOCHENTAGE.map((w, i) => (
-            <Text
-              key={`${w}-${i}`}
-              fontSize="10px"
-              fontWeight={500}
-              textAlign="center"
-              color="var(--cc-text-3)"
-              aria-hidden
+          {appointment.state === "open" ? (
+            <Button
+              as={NextLink}
+              href="/bewerbung/danke"
+              variant="line"
+              size="sm"
+              mt={3}
+              rightIcon={<ArrowRight size={16} strokeWidth={1.75} />}
             >
-              {w}
-            </Text>
-          ))}
-        </SimpleGrid>
-
-        <SimpleGrid columns={7} spacing="2px">
-          {kalender.map((t) =>
-            t.tag === null ? (
-              // Führende Leerfelder bis zum Monatsersten.
-              <Box key={t.key} h="22px" />
-            ) : (
-              <Tooltip
-                key={t.key}
-                isDisabled={t.termine.length === 0}
-                label={t.termine.map((e) => `${e.zeitLabel} ${e.titel}`).join("\n")}
-                placement="top"
-                hasArrow
-                whiteSpace="pre-line"
-                bg="var(--cc-panel-solid)"
-                color="var(--cc-text)"
-                border="1px solid var(--cc-line-strong)"
-                borderRadius="8px"
-                fontSize="12px"
-              >
-                <Flex
-                  h="22px"
-                  direction="column"
-                  align="center"
-                  justify="center"
-                  borderRadius="5px"
-                  position="relative"
-                  bg={t.istHeute ? "rgba(255, 255, 255, 0.1)" : "transparent"}
-                  border="1px solid"
-                  borderColor={t.istHeute ? "rgba(255, 255, 255, 0.28)" : "transparent"}
-                  cursor={t.termine.length > 0 ? "help" : "default"}
-                >
-                  <Text
-                    className="cc-num"
-                    fontSize="11px"
-                    lineHeight={1}
-                    fontWeight={t.istHeute ? 600 : 400}
-                    color={
-                      t.istHeute
-                        ? "var(--cc-text)"
-                        : t.termine.length > 0
-                          ? "var(--cc-text)"
-                          : "var(--cc-text-3)"
-                    }
-                  >
-                    {t.tag}
-                  </Text>
-                  {/* Punkt je Termin, höchstens drei — mehr wäre bei 22 px Breite Matsch. */}
-                  {t.termine.length > 0 ? (
-                    <HStack spacing="2px" position="absolute" bottom="1px" aria-hidden>
-                      {t.termine.slice(0, 3).map((e, i) => (
-                        <Box key={i} w="3px" h="3px" borderRadius="full" bg={e.farbe} />
-                      ))}
-                    </HStack>
-                  ) : null}
-                </Flex>
-              </Tooltip>
-            ),
-          )}
-        </SimpleGrid>
-      </Box>
-
-      {appointment.state === "open" ? (
-        <Box pt={4}>
-          <Button
-            as={NextLink}
-            href="/bewerbung/danke"
-            variant="line"
-            size="sm"
-            rightIcon={<ArrowRight size={16} strokeWidth={1.75} />}
-          >
-            Termin buchen
-          </Button>
+              Termin buchen
+            </Button>
+          ) : null}
         </Box>
+      ) : null}
+
+      {termine.length === 0 ? (
+        <Meta>Aktuell nichts geplant.</Meta>
       ) : (
-        <Box pt={3}>
-          <Button as={NextLink} href="/events" variant="line" size="sm" w="100%">
-            Alle Events
-          </Button>
+        <Box as="ul" listStyleType="none">
+          {termine.map((t, i) => {
+            /*
+             * Dieselbe Zeitfarbe wie in „Heute live“ — läuft grün, gleich in
+             * Glut, sonst ruhig. „Ruhig“ heißt hier: der Punkt behält die im
+             * Admin gewählte Event-Farbe, der Tag bleibt Text bzw. Text 2. Die
+             * Übermalung ist bewusst nur vorübergehend; sobald der Termin
+             * vorbei ist, fällt die Zeile aus der Liste.
+             */
+            const ton = zeitTon(t);
+            return (
+              <Grid
+                as="li"
+                key={t.id}
+                templateColumns={{ base: "minmax(0, 1fr)", sm: "110px minmax(0, 1fr) auto" }}
+                gap={{ base: 1, sm: 4 }}
+                alignItems="baseline"
+                py={3}
+                borderTop={i === 0 ? "none" : "1px solid var(--cc-line)"}
+              >
+                <Flex align="center" gap={2} minW={0}>
+                  <Box
+                    w="6px"
+                    h="6px"
+                    borderRadius="full"
+                    bg={zeitTonFarbe(ton, t.farbe)}
+                    flexShrink={0}
+                    aria-hidden
+                  />
+                  <Text
+                    fontSize="14px"
+                    className="cc-num"
+                    color={zeitTonFarbe(ton, t.istHeute ? "var(--cc-text)" : "var(--cc-text-2)")}
+                    fontWeight={t.istHeute || ton !== "ruhig" ? 600 : 400}
+                    whiteSpace="nowrap"
+                  >
+                    {t.dayLabel}
+                  </Text>
+                </Flex>
+                <Text fontSize="15px" color="var(--cc-text)" noOfLines={1} minW={0}>
+                  {t.title}
+                </Text>
+                <Text
+                  fontSize="14px"
+                  className="cc-num"
+                  color="var(--cc-text-2)"
+                  whiteSpace="nowrap"
+                  textAlign={{ base: "left", sm: "right" }}
+                >
+                  {t.timeLabel}
+                </Text>
+              </Grid>
+            );
+          })}
         </Box>
       )}
     </DashCard>

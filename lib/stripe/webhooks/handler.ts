@@ -4,6 +4,7 @@ import { handleCheckoutCompleted, handleCheckoutExpired } from "./checkout-compl
 import { handleSubscriptionUpdated } from "./subscription-updated";
 import { handleSubscriptionDeleted } from "./subscription-deleted";
 import { handleSubscriptionPaused } from "./subscription-paused";
+import { handleSubscriptionResumed } from "./subscription-resumed";
 import { handleInvoicePaid } from "./invoice-paid";
 import { handleInvoicePaymentFailed } from "./invoice-payment-failed";
 
@@ -80,6 +81,15 @@ export async function handleStripeEvent(
 
     case "customer.subscription.paused":
       return handleSubscriptionPaused(
+        event.data.object as Stripe.Subscription,
+        supabase,
+      );
+
+    // Ohne diesen Fall blieb ein Mitglied nach der Pause auf `free` haengen:
+    // Stripe schickt beim Fortsetzen zuerst `resumed`, und der landete bis
+    // 17.09.2026 im Default-Zweig, der Ereignisse still verwirft.
+    case "customer.subscription.resumed":
+      return handleSubscriptionResumed(
         event.data.object as Stripe.Subscription,
         supabase,
       );

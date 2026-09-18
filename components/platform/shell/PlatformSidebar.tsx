@@ -14,10 +14,12 @@ import {
   VisuallyHidden,
   useDisclosure,
 } from "@chakra-ui/react";
-import { Lock, LogOut, Menu as MenuIcon, MessageCircle, UserRound, X, type LucideIcon } from "lucide-react";
+import { Lock, LogOut, Menu as MenuIcon, MessageCircle, Settings, UserRound, X, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { DiscordGlyph } from "@/components/platform/DiscordBanner";
+import { getDiscordAuthUrl } from "@/lib/discord";
 import { createClient } from "@/lib/supabase/client";
 import { NAV_GROUPS, type NavChild, type NavGroup } from "./nav";
 
@@ -103,6 +105,57 @@ function useUnreadNews(pathname: string): number {
   }, [pathname]);
 
   return count;
+}
+
+type DiscordStatus = { eligible: boolean; connected: boolean; username: string | null };
+
+/**
+ * Discord-Zustand für den Konto-Block. Am 17.09.2026 aus den Dashboard-Kacheln
+ * hierher gewandert: die Verknüpfung gehört zum Konto und soll von jeder Seite
+ * aus erreichbar sein, nicht nur von der Tagesübersicht.
+ *
+ * `null` heißt „noch nicht bekannt“ — solange bleibt die Zeile aus, statt
+ * kurz „Nicht verbunden“ zu behaupten und dann umzuspringen.
+ *
+ * Kein Intervall wie bei den News: der Zustand ändert sich nur durch den
+ * OAuth-Rundgang zu Discord (danach lädt die Seite ohnehin neu) oder auf der
+ * Profilseite. Das Nachladen beim Fokus fängt beides ab.
+ */
+function useDiscordStatus(): DiscordStatus | null {
+  const [status, setStatus] = useState<DiscordStatus | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/discord/status", { cache: "no-store" });
+        if (!res.ok) return;
+        const json = (await res.json()) as {
+          ok: boolean;
+          eligible?: boolean;
+          connected?: boolean;
+          username?: string | null;
+        };
+        if (cancelled || !json.ok) return;
+        setStatus({
+          eligible: Boolean(json.eligible),
+          connected: Boolean(json.connected),
+          username: json.username ?? null,
+        });
+      } catch {
+        // ohne Discord-Zeile weiter
+      }
+    };
+    void load();
+    const onFocus = () => void load();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", onFocus);
+    };
+  }, []);
+
+  return status;
 }
 
 function matches(pathname: string, href: string): boolean {
@@ -309,19 +362,83 @@ function NavList({ pathname, viewer, onNavigate }: { pathname: string; viewer: V
   );
 }
 
+/**
+ * Discord-Zeile im Konto-Block.
+ *
+ * Nicht verbunden: `getDiscordAuthUrl()` als gewöhnlicher Anker — /api/discord/connect
+ * ist eine Server-Route, die zu Discord weiterleitet, der Next-Router darf sie
+ * nicht abfangen. Verbunden: kein zweiter Verbinden-Weg, sondern der Zustand
+ * samt Namen; der Klick führt dorthin, wo man ihn lösen kann.
+ */
+function DiscordRow({ status, onNavigate }: { status: DiscordStatus; onNavigate?: () => void }) {
+  const raw = status.username?.trim() ?? "";
+  const handle = raw ? (raw.startsWith("@") ? raw : `@${raw}`) : null;
+  /*
+   * Die Wortmarke ist gefüllt statt Linie und trägt 22 statt 24px, sonst steht
+   * sie schwerer da als ihre Nachbarn. Die 24px-Spur darum hält die Beschriftungen
+   * trotzdem auf einer Flucht mit den Lucide-Zeilen.
+   */
+  const glyph = (
+    <Flex w="24px" flexShrink={0} align="center" justify="center">
+      <DiscordGlyph size={22} />
+    </Flex>
+  );
+
+  if (status.connected) {
+    return (
+      <Box
+        as={Link}
+        href="/einstellungen/profil"
+        onClick={onNavigate}
+        title={handle ? `Discord verbunden als ${handle} — im Profil verwalten` : "Discord verbunden — im Profil verwalten"}
+        {...rowProps(false, "48px")}
+      >
+        {glyph}
+        <Box as="span" flex="1" minW={0}>
+          Discord
+        </Box>
+        <Flex align="center" gap="6px" flexShrink={0} fontSize="12px" color="var(--cc-text-2)">
+          <Box w="7px" h="7px" borderRadius="full" bg="var(--cc-success)" aria-hidden />
+          Verbunden
+          {handle ? <VisuallyHidden> als {handle}</VisuallyHidden> : null}
+        </Flex>
+      </Box>
+    );
+  }
+
+  return (
+    <Box as="a" href={getDiscordAuthUrl()} onClick={onNavigate} {...rowProps(false, "48px")}>
+      {glyph}
+      <Box as="span" flex="1" minW={0}>
+        Discord
+      </Box>
+      <Box as="span" flexShrink={0} fontSize="12px" color="var(--cc-gold-light)">
+        Verbinden
+      </Box>
+    </Box>
+  );
+}
+
 function AccountList({
   pathname,
   unreadNews,
+  discord,
   onNavigate,
   onLogout,
 }: {
   pathname: string;
   unreadNews: number;
+  discord: DiscordStatus | null;
   onNavigate?: () => void;
   onLogout: () => void;
 }) {
   const newsActive = pathname.startsWith("/news");
-  const profileActive = pathname.startsWith("/settings");
+  // `/settings` leitet seit dem 17.09.2026 auf `/einstellungen/profil` um. Wer
+  // nur auf den alten Pfad prueft, sieht auf der Profilseite „Einstellungen"
+  // leuchten statt „Profil" — beide Eintraege liegen jetzt unter derselben
+  // Adresse, also muessen sie sich gegenseitig ausschliessen.
+  const profileActive = pathname.startsWith("/einstellungen/profil") || pathname.startsWith("/settings");
+  const settingsActive = pathname.startsWith("/einstellungen") && !profileActive;
   const badge =
     unreadNews > 0 ? (
       <Box
@@ -351,15 +468,38 @@ function AccountList({
           <RowInner icon={MessageCircle} label="News" trailing={badge} />
         </Box>
       </Box>
+      {/* Nur für zahlende Mitglieder — /api/discord/connect weist Free ab. */}
+      {discord?.eligible ? (
+        <Box as="li">
+          <DiscordRow status={discord} onNavigate={onNavigate} />
+        </Box>
+      ) : null}
       <Box as="li">
         <Box
           as={Link}
-          href="/settings"
+          // Direkt auf das Ziel, nicht auf die Weiterleitung: `/settings` waere
+          // ein zusaetzlicher Sprung bei jedem Klick.
+          href="/einstellungen/profil"
           onClick={onNavigate}
           aria-current={profileActive ? "page" : undefined}
           {...rowProps(profileActive, "48px")}
         >
           <RowInner icon={UserRound} label="Profil" />
+        </Box>
+      </Box>
+      {/*
+        Konto-Bereich: „Profil“ zeigt auf /einstellungen/profil, „Einstellungen“
+        auf den Bereich daneben mit Zahlungsmethode, Rechnungen und Abonnement.
+      */}
+      <Box as="li">
+        <Box
+          as={Link}
+          href="/einstellungen"
+          onClick={onNavigate}
+          aria-current={settingsActive ? "page" : undefined}
+          {...rowProps(settingsActive, "48px")}
+        >
+          <RowInner icon={Settings} label="Einstellungen" />
         </Box>
       </Box>
       <Box as="li">
@@ -406,6 +546,7 @@ export function PlatformSidebar() {
   const router = useRouter();
   const viewer = useViewer();
   const unreadNews = useUnreadNews(pathname);
+  const discord = useDiscordStatus();
   const drawer = useDisclosure();
   // Fokus beim Öffnen auf „Schließen“ statt auf die Wortmarke (erster Link).
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -428,6 +569,7 @@ export function PlatformSidebar() {
         <AccountList
           pathname={pathname}
           unreadNews={unreadNews}
+          discord={discord}
           onNavigate={onNavigate}
           onLogout={() => {
             onNavigate?.();

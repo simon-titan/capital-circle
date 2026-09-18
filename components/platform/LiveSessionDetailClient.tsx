@@ -14,6 +14,8 @@ import type { LiveSessionVideoRow } from "@/lib/server-data";
 export type LiveSessionDetailInfo = {
   title: string;
   categoryTitle: string;
+  /** Ziel des Zurueck-Links — ohne sie laege der Weg zurueck eine Ebene zu hoch. */
+  categoryId: string;
   description: string | null;
   /** z. B. „Live am: …“ oder „Aufzeichnung: …“ */
   dateLine: string | null;
@@ -34,11 +36,14 @@ const sectionLabel = {
   color: "var(--cc-text-2)",
 };
 
-function BackLink() {
+function BackLink({ categoryId, categoryTitle }: { categoryId?: string; categoryTitle?: string }) {
+  // Zurueck heisst: eine Ebene hoeher, nicht ganz an den Anfang. Wer eine
+  // Aufzeichnung aus „Backtesting" geoeffnet hat, will dorthin zurueck und
+  // nicht zur Kategorieauswahl — dieselbe Regel wie im Institut.
   return (
     <Button
       as={NextLink}
-      href="/live-session"
+      href={categoryId ? `/live-session/kategorie/${categoryId}` : "/live-session"}
       variant="ghost"
       size="sm"
       h="auto"
@@ -48,7 +53,7 @@ function BackLink() {
       fontWeight={500}
       _hover={{ color: "var(--cc-gold-light)", bg: "transparent" }}
     >
-      Zurück zur Übersicht
+      {categoryTitle ? `Zurück zu ${categoryTitle}` : "Zurück zur Übersicht"}
     </Button>
   );
 }
@@ -130,7 +135,7 @@ export function LiveSessionDetailClient({ playlist, session }: LiveSessionDetail
     return (
       <Stack spacing={5}>
         <Box className="cc-rise">
-          <BackLink />
+          <BackLink categoryId={session?.categoryId} categoryTitle={session?.categoryTitle} />
           {session ? (
             <Box mt={4}>
               <SessionHead session={session} />
@@ -153,7 +158,7 @@ export function LiveSessionDetailClient({ playlist, session }: LiveSessionDetail
     <Box data-learning-wide>
       {/* Mobil: Kopf über dem Player — die Playlist folgt darunter. */}
       <Box display={{ base: "block", lg: "none" }} mb={5} className="cc-rise">
-        <BackLink />
+        <BackLink categoryId={session?.categoryId} categoryTitle={session?.categoryTitle} />
         {session ? (
           <Box mt={4}>
             <SessionHead session={session} />
@@ -174,7 +179,7 @@ export function LiveSessionDetailClient({ playlist, session }: LiveSessionDetail
           <Flex className="cc-card cc-card--still" direction="column" maxH={{ lg: "calc(100dvh - var(--cc-strip-h) - 48px)" }}>
             <Box px={5} pt={5} pb={4} flexShrink={0}>
               <Box display={{ base: "none", lg: "block" }} mb={5}>
-                <BackLink />
+                <BackLink categoryId={session?.categoryId} categoryTitle={session?.categoryTitle} />
                 {session ? (
                   <Box mt={4}>
                     <SessionHead session={session} compact />

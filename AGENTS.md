@@ -47,3 +47,82 @@ Nicht wieder „wegminimieren“: Hero-Qualität, Gold-Glow und Tiefe beibehalte
 2026-09-16 (**Ausnahme Dashboard**): Auf ausdrücklichen Nutzerwunsch läuft **nur `/dashboard`** ohne Gold-Glow — Kanten dort neutral grau, kein atmender Hero-Glow, keine Gold-Haarlinie an der Kartenoberkante, kein Schein an Fortschrittsbalken und Live-Punkt. Umgesetzt über die Wrapper-Klasse **`.cc-neutral`** (`components/platform/dashboard/DashboardView.tsx`, Regeln in `app/globals.css`) plus die entsprechenden Inline-Werte in `components/platform/dashboard/**`.
 Das widerspricht bewusst dem Eintrag von 2026-09-13 („Gold-Glow beibehalten, nicht wegminimieren"). **Der gilt unverändert für den Rest der App** — Marketing, Institut, Admin und Funnel behalten Glas, Gold-Kante und Glow. Wer das Dashboard anfasst: den Gold-Look dort nicht „wiederherstellen".
 Gold-Schrift und Gold-Buttons bleiben auch im Dashboard (Aktionen und Begrüßung) — entfernt wurden nur Schein und Rahmenfarbe.
+
+2026-09-17 (**Himmel ruhiger, gilt global**): Der Hintergrund war dem Nutzer zu unruhig. Der
+Grund ist jetzt einen Tick dunkler (`#12171c` → **`#0f1317`**), Sternenfeld und Champagner-Licht
+hängen an zwei neuen Reglern in `:root`: **`--cc-sky-stars`** (0.5) und **`--cc-sky-glow`** (0.58).
+Die rgba-Werte in `.cc-stars` und `.cc-goldlight` halten nur noch das Verhältnis zueinander — wer
+den Himmel nachjustiert, dreht an den zwei Reglern, **nicht** an den Verläufen. Der Funkel-Keyframe
+`cc-twinkle` läuft von 0.55 → 0.8 statt 0.35 → 1 (fast auf null abfallendes Funkeln liest sich als
+Blinken). Der dunklere Grund steht an drei Stellen, die zusammenbleiben müssen: `--cc-bg`, die
+`--color-bg*`-Aliasse in `app/globals.css` und `brand.bg` in `theme/index.ts` (Chakra erzeugt daraus
+`body { background }` und überschreibt damit die CSS-Regel). Das betrifft Plattform **und**
+Marketing — beide teilen sich den Himmel, und genau so war es gewünscht.
+Das ist **keine** Rücknahme des Eintrags von 2026-09-13: Glas, Gold-Kante und Glow bleiben
+unverändert. Leiser wurde nur der Grund dahinter.
+
+2026-09-17 (**Verkaufsseite**): Neue Prozess-Section „Aus Wissen wird ein Prozess." zwischen
+Bewertungen und Vergleich (`components/landing/membership/ProzessSection.tsx`); der Nav-Anker
+`ablauf` zeigt endlich dorthin statt auf die Vergleichstabelle. Vergleich und „Für wen" laufen auf
+den neuen Kunden-Mockups (zweizeilige Tabellenzellen, Merksatz an einer senkrechten Haarlinie,
+weiße Icon-Kacheln, CTA unter der Section). CTA heißt überall **„Capital Circle beitreten"**.
+Die beiden nachgebauten Vorschauen in der Prozess-Section rechnen in **`cqw`** (Container-Queries),
+sind also Maßstabsmodelle: Wer dort Größen ändert, ändert sie in Prozent der Kachelbreite, nicht in
+Pixeln. Der Screenshot dazwischen liegt unter `public/prozess/` — der Ordner steht deshalb im
+Matcher von `proxy.ts` unter den Ausnahmen, sonst liefert der Proxy dort Login-HTML statt Bild.
+
+2026-09-17 (**Belegte Auszahlungen**): Die Ergebnis-Section zeigt echte Nachweise statt
+Platzhalter (`config/landing-membership.ts`, `auszahlungenCommunity` / `auszahlungenEmre`), alle
+weiteren liegen auf der neuen öffentlichen Seite **`/ergebnisse`** (`app/ergebnisse/page.tsx`,
+Galerie in `components/landing/membership/NachweisGalerie.tsx`). Nicht verwechseln mit
+`/erfolge` — das ist die Galerie der von Mitgliedern selbst eingereichten Nachweise aus der
+Tabelle `certificates`.
+Aufgenommen wird **nur, wo Geld geflossen ist** (Überweisung, Payout-Mail, Payout-Zertifikat).
+Kontostände, Tagesgewinne und bestandene Challenges gehören ausdrücklich nicht dazu: Von 82
+gelieferten Screenshots waren nur 16 echte Auszahlungen, der Rest zeigt Kontogrößen — die neben
+eine Auszahlung zu stellen würde das Versprechen „jeder Nachweis nachprüfbar" brechen.
+Die Bilder liegen unter `public/nachweise/` und stehen **unverändert**, genau so wie der Nutzer
+sie geliefert hat — mit Discord-Kopfzeile, Avatar, Nickname und Klarnamen auf den Urkunden.
+Ausdrückliche Entscheidung vom 17.09.2026; eine erste Fassung war zugeschnitten und anonymisiert,
+das war nicht gewollt. Wer hier etwas anfasst, sollte wissen: Es sind personenbezogene Daten
+Dritter auf einer öffentlichen Seite **und in einem öffentlichen Repo** — mit dem Commit sind sie
+draußen, nicht erst mit dem Deploy. Das Einverständnis der Mitglieder liegt beim Betreiber.
+Der Ordner steht im Matcher von `proxy.ts` unter den Ausnahmen, `/ergebnisse` in `PUBLIC_PATHS` —
+ohne beides liefert der Proxy dort Login-HTML.
+
+2026-09-17 (**Bestandene Challenges**): `/ergebnisse` hat einen **zweiten Block** unter den
+Auszahlungen — 17 Challenge-Zertifikate aus demselben Bildbestand (`challenges` in
+`config/landing-membership.ts`, Bilder `public/nachweise/challenge-<firma>-<YYYY-MM-DD>.jpg`).
+Getrennt, weil die Zertifikate etwas anderes belegen: Die genannten 25.000 bis 150.000 $ sind
+**Kontogrößen, keine Auszahlungen**. Deshalb heißt das Feld `kontogroesse` und nicht `betrag`, steht
+die Zahl **neutral statt grün** (Grün trägt laut DESIGN.md Gewinn) und trägt auf der Kachel die
+Beschriftung „Kontogröße". Wer die beiden Listen zusammenlegt oder das Feld umbenennt, baut genau
+die Verwechslung ein, gegen die der Block gebaut wurde.
+`NachweisGalerie.tsx` trägt beide Arten über ein `art`-Feld je Block und hat dafür eine **eigene
+Lightbox**: die aus `ErgebnisseSection.tsx` färbt ihre Zahl fest grün, weil sie nur Auszahlungen
+kennt. Die Verkaufsseite `/` zeigt weiterhin ausschließlich die Auszahlungen.
+Die 17 Bilder stehen unverändert in ihren Originalmaßen (siehe oben). Ausnahme sind **drei**
+Quellbilder, die zwei Dokumente übereinander zeigen: Sie sind nur waagerecht getrennt, volle
+Breite, Originalpixel. Ohne diese Trennung stünde unter „Kontogröße 100.000 $" ein Screenshot,
+dessen größtes Element ein Überweisungsbetrag ist — und dasselbe Bild eine Sektion höher noch
+einmal als Auszahlung.
+Aussortiert wurden ein Zertifikat ohne lesbares Datum, eine Topstep-Funding-Mail ohne Kontogröße
+und eine Dublette.
+
+2026-09-17 (**Hero-Vorschau hängt am Dashboard**): `components/landing/membership/PlattformVorschau.tsx`
+baut das Dashboard als Markup nach und steht auf der Verkaufsseite direkt unter der Headline. Sie
+ist **kein eigenständiges Design** — wer `components/platform/dashboard/**` ändert, zieht sie mit.
+Am 17.09.2026 hing sie einen Tag lang hinterher und zeigte die gelöschte Streak-Karte mit der
+Siebenerreihe. Die Vorschau läuft deshalb jetzt unter **`cc-neutral`** wie das echte Dashboard, und
+ihre Zahlen in `config/landing-membership.ts` (`plattformVorschau`) müssen zueinander passen: Der
+Prozentwert, die Lektionszahl und die gefüllten Segmente zeigen denselben Stand, die Streak-Tage
+passen zu „N von 5 Tagen diese Woche". Ein Widerspruch dort steht unter der Überschrift
+„Belegt statt behauptet" — das ist die teuerste Stelle der Seite für einen Rechenfehler.
+
+2026-09-17 (**Kaufweg**): `app/go/[plan]/route.ts` leitet bei jedem Fehlschlag auf `/?fehler=<code>`.
+Der Code wird von `components/landing/membership/KaufFehlerHinweis.tsx` gelesen und über dem Hero
+angezeigt. Der Hinweis liest die Adresse **im Client** in einer `Suspense`-Grenze — würde die Seite
+`searchParams` entgegennehmen, fiele die ganze Verkaufsseite von statisch auf dynamisch. Wer einen
+neuen Fehlercode in der Route ergänzt, ergänzt auch den Text dort; unbekannte Codes fallen auf den
+allgemeinen Kassenfehler zurück. Der Kaufknopf in `AngebotSection.tsx` sperrt sich nach dem ersten
+Klick und zeigt „Kasse wird geöffnet …" — ohne das entsteht beim Doppeltipp eine zweite Stripe-Kasse.

@@ -5,19 +5,12 @@ import type {
   AnalysisPostRow,
   ArsenalAttachmentListItem,
   ArsenalCardRow,
-  LiveSessionCategoryRow,
-  LiveSessionListItem,
 } from "@/lib/server-data";
 import type { ArsenalBrowserAccent } from "@/components/platform/ArsenalAttachmentsBrowser";
 import type { ArsenalCardsAccent } from "@/components/platform/ArsenalCardsSection";
 
 const AnalysisFeed = dynamic(
   () => import("@/components/platform/AnalysisFeed").then((m) => m.AnalysisFeed),
-  { ssr: false },
-);
-
-const LiveSessionGrid = dynamic(
-  () => import("@/components/platform/LiveSessionGrid").then((m) => m.LiveSessionGrid),
   { ssr: false },
 );
 
@@ -38,18 +31,6 @@ const CodexReferenceView = dynamic(
 
 export function PageAnalysisFeed({ posts }: { posts: AnalysisPostRow[] }) {
   return <AnalysisFeed posts={posts} />;
-}
-
-export function PageLiveSessionGrid({
-  categories,
-  sessions,
-  isFreeMember,
-}: {
-  categories: LiveSessionCategoryRow[];
-  sessions: LiveSessionListItem[];
-  isFreeMember?: boolean;
-}) {
-  return <LiveSessionGrid categories={categories} sessions={sessions} isFreeMember={isFreeMember} />;
 }
 
 export function PageArsenalAttachmentsBrowser({

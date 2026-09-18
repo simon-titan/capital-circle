@@ -2,7 +2,7 @@
   "$meta": {
     "project": "Capital Circle",
     "name": "Champagner auf Graphit",
-    "version": "3.2.0",
+    "version": "3.2.1",
     "description": "Graphitgrund mit Sternenfeld und Champagner-Licht, graphitgraue Glas-Karten mit Gold-Kante, eine Schrift (Inter). Champagner-Gold #D4B080 mit Verlauf und Glow ist der einzige Akzent: Aktionen, aktive Navigation, Fokus, Live. Dashboard-Daten in heller Datentinte.",
     "source": "Struktur und Farben aus Kunden-Mockups 2026-09 (Dashboard 01 — Farben 1:1, Hero, Vergleich, Für wen); Effekte auf Nutzerwunsch. Verbindliche Beschreibung: DESIGN.md.",
     "implementation": "app/globals.css (--cc-* Tokens im Block „v3.2 Champagner auf Graphit“, Effekte .cc-stars/.cc-goldlight/.cc-card), theme/index.ts (fonts = Inter, colors.brand Champagner, Button-Varianten gold/line, Fokusring, colorScheme-Defaults, Toasts)",
@@ -11,21 +11,22 @@
       "3.0.0 (2026-09-13): Minimal-Schema nach Kunden-Mockups — flach, ohne Effekte",
       "3.1.0 (2026-09-13): Gold-Look zurück auf Nutzerwunsch („zu langweilig“) — Glas, Glow, Verläufe, Sternenfeld",
       "3.2.0 (2026-09-13): Farben 1:1 nach Kunden-Mockup — Graphit statt Nacht, Champagner #D4B080 statt #D4AF37, Dashboard-Daten und Icon-Kacheln in heller Datentinte; alle Effekte bleiben",
-      "3.2.0 (2026-09-14): gesamte App migriert — nur noch Inter geladen, GlassCard/GlowButton/CardLockOverlay/PageTransition und .glass-card* entfernt, Metall-Tier entfernt, --color-* und colors.brand als Champagner-Aliasse, Chakra-Controls colorScheme brand, Logo als Inter-Wortmarke"
+      "3.2.0 (2026-09-14): gesamte App migriert — nur noch Inter geladen, GlassCard/GlowButton/CardLockOverlay/PageTransition und .glass-card* entfernt, Metall-Tier entfernt, --color-* und colors.brand als Champagner-Aliasse, Chakra-Controls colorScheme brand, Logo als Inter-Wortmarke",
+      "3.2.1 (2026-09-17): Himmel ruhiger auf Nutzerwunsch — Grund #12171c → #0f1317, neue Regler --cc-sky-stars (0.5) und --cc-sky-glow (0.58) statt verstreuter rgba-Literale, Funkel-Bereich 0.35→1 auf 0.55→0.8 verengt. Neu: .cc-pulse (Punkt in der Hero-Pill der Verkaufsseite, 2.4s, in der Reduced-Motion-Liste)"
     ],
     "supersedes": "2.0.0 — Radley + JetBrains Mono, alte Glass-Klassen, Marketing-Metall-Tier",
-    "last_updated": "2026-09-14"
+    "last_updated": "2026-09-17"
   },
 
   "colors": {
     "$philosophy": "Dunkle, ruhige Graphitflächen; Champagner-Gold ist der einzige Akzent und darf leuchten. Daten im Dashboard in neutraler Datentinte. Einzige Ausnahme: die warme Streak-Flamme. Grün/Rot nur semantisch.",
     "ground": {
-      "page": "#12171c",
+      "page": "#0f1317",
       "raised": "rgba(22, 26, 32, 0.92)",
       "panelSolid": "#151a1e",
       "$raised": "Sidebar, obere Leiste, mobile Kopfzeile — mit backdrop-filter blur 16–18px",
-      "stars": "Sternenfeld .cc-stars (weiße/warmweiße 1–1.5px-Punkte, zweite Ebene funkelt)",
-      "goldLight": "Radialer Champagner-Schein oben rechts (0.17) und unten links (0.07), .cc-goldlight"
+      "stars": "Sternenfeld .cc-stars (weiße/warmweiße 1–1.5px-Punkte, zweite Ebene funkelt); Gesamthelligkeit über --cc-sky-stars (0.5)",
+      "goldLight": "Radialer Champagner-Schein oben rechts (0.17) und unten links (0.07), .cc-goldlight; Gesamtstärke über --cc-sky-glow (0.58), wirksam also ~0.10 / ~0.04"
     },
     "surface": {
       "base": "#191e23",
@@ -121,7 +122,7 @@
     "heroBreathe": "Hero-Karte atmet (6s)",
     "flame": "Streak-Flamme pulsiert (.cc-flame, 2.6s)",
     "ping": "Live-Ring bei laufender Session (.cc-ping, 1.8s)",
-    "twinkle": "Sterne funkeln (7s)",
+    "twinkle": "Sterne funkeln (7s), Deckkraft 0.55 → 0.8",
     "spark": "Lichtfunke wandert an der Sidebar-Kante (.cc-spark, 14s)",
     "marquee": "Promo-Band mobil (.cc-marquee, 32s)",
     "reducedMotion": "alle Animationen aus, Hover ohne Lift"
@@ -180,7 +181,7 @@
   },
 
   "cssVariables": {
-    "--cc-bg": "#12171c",
+    "--cc-bg": "#0f1317",
     "--cc-bg-raised": "rgba(22, 26, 32, 0.92)",
     "--cc-panel-solid": "#151a1e",
     "--cc-surface": "#191e23",
@@ -210,7 +211,9 @@
     "--cc-radius-lg": "10px",
     "--cc-ease": "cubic-bezier(0.16, 1, 0.3, 1)",
     "--cc-strip-h": "48px",
-    "--cc-sidebar-w": "264px"
+    "--cc-sidebar-w": "264px",
+    "--cc-sky-stars": "0.5",
+    "--cc-sky-glow": "0.58"
   },
 
   "legacy": {

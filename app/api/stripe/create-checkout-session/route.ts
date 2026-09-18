@@ -3,7 +3,13 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAppUrl } from "@/lib/site-url";
 import { getStripe } from "@/lib/stripe/server";
-import { isMembershipPlan, MEMBERSHIP_PLANS, priceIdForPlan } from "@/lib/stripe/plan-map";
+import {
+  isMembershipPlan,
+  lifetimePriceId,
+  MEMBERSHIP_PLANS,
+  priceIdForPlan,
+} from "@/lib/stripe/plan-map";
+import { pruefeLifetimeAngebot } from "@/lib/access-control/lifetime-offer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,10 +27,12 @@ interface Body {
  * Beide Wege teilen sich `lib/stripe/plan-map.ts`, damit Preis und Plan nicht
  * auseinanderlaufen.
  *
- * Der frueher hier gefuehrte `lifetime`-Plan (`mode: "payment"`) ist aus dem
- * Verkauf genommen. Bestandskunden behalten ihren Zugang (siehe
- * `lib/access-control/has-access.ts` und `checkout-completed.ts`), aber kaufbar
- * ist er nicht mehr.
+ * `plan: "lifetime"` ist der dritte Fall und laeuft als Einmalzahlung
+ * (`mode: "payment"`). Er hat keinen oeffentlichen Preis und wird nur
+ * innerhalb der Plattform angeboten — wer ihn kaufen darf, entscheidet
+ * `pruefeLifetimeAngebot()`, **serverseitig**. Eine ausgeblendete Karte ist
+ * kein Riegel: Ohne diese Pruefung koennte jedes Free-Konto den Endpunkt
+ * direkt aufrufen.
  */
 
 export async function POST(request: NextRequest) {
@@ -39,9 +47,10 @@ export async function POST(request: NextRequest) {
   }
 
   const plan = body.plan;
-  if (!plan || !isMembershipPlan(plan)) {
+  const istLifetime = plan === "lifetime";
+  if (!plan || (!isMembershipPlan(plan) && !istLifetime)) {
     return NextResponse.json(
-      { ok: false, error: "invalid_plan", allowed: MEMBERSHIP_PLANS },
+      { ok: false, error: "invalid_plan", allowed: [...MEMBERSHIP_PLANS, "lifetime"] },
       { status: 400 },
     );
   }
@@ -57,16 +66,41 @@ export async function POST(request: NextRequest) {
   }
 
   let priceId: string;
-  try {
-    priceId = priceIdForPlan(plan);
-  } catch (err) {
+  if (istLifetime) {
+    // Dieselbe Regel wie die Karte in `/einstellungen/abonnement` — nur hier
+    // zaehlt sie wirklich.
+    const angebot = await pruefeLifetimeAngebot(user.id);
+    if (!angebot.erlaubt) {
+      return NextResponse.json(
+        { ok: false, error: "lifetime_gesperrt", detail: angebot.grund },
+        { status: 403 },
+      );
+    }
+    const lifetimePreis = lifetimePriceId();
+    if (!lifetimePreis) {
+      return NextResponse.json(
+        { ok: false, error: "config_missing", detail: "STRIPE_PRICE_LIFETIME ist nicht gesetzt" },
+        { status: 500 },
+      );
+    }
+    priceId = lifetimePreis;
+  } else if (isMembershipPlan(plan)) {
+    try {
+      priceId = priceIdForPlan(plan);
+    } catch (err) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "config_missing",
+          detail: err instanceof Error ? err.message : "Preis-Konfiguration fehlt",
+        },
+        { status: 500 },
+      );
+    }
+  } else {
     return NextResponse.json(
-      {
-        ok: false,
-        error: "config_missing",
-        detail: err instanceof Error ? err.message : "Preis-Konfiguration fehlt",
-      },
-      { status: 500 },
+      { ok: false, error: "invalid_plan", allowed: [...MEMBERSHIP_PLANS, "lifetime"] },
+      { status: 400 },
     );
   }
 
@@ -133,18 +167,25 @@ export async function POST(request: NextRequest) {
     // für das vorherige `embedded` (Stripe-Checkout als iframe in der eigenen
     // Seite, gesteuert via `client_secret` + `<EmbeddedCheckout/>`).
     ui_mode: "embedded_page",
-    // Alle drei Laufzeiten sind Abos — "vierteljaehrlich" und "jaehrlich" sind
-    // Abrechnungsintervalle, keine Einmalzahlungen.
-    mode: "subscription",
+    // Die drei Laufzeiten sind Abos — "vierteljaehrlich" und "jaehrlich" sind
+    // Abrechnungsintervalle, keine Einmalzahlungen. Lifetime ist die einzige
+    // Einmalzahlung.
+    mode: istLifetime ? "payment" : "subscription",
     customer: customerId,
+    // Bei einer Einmalzahlung hat Stripe keine Abo-Adresse, aus der es den
+    // Steuersatz ableiten koennte — ohne `customer_update` lehnt es die Kasse
+    // mit aktivierter `automatic_tax` ab.
+    ...(istLifetime ? { customer_update: { address: "auto" as const } } : {}),
     line_items: [{ price: priceId, quantity: 1 }],
     return_url: `${appUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
     automatic_tax: { enabled: true },
     ...(promotionCodeId
       ? { discounts: [{ promotion_code: promotionCodeId }] }
       : { allow_promotion_codes: true }),
+    // `metadata.user_id` ist beim Lifetime-Kauf die einzige Bruecke zum Konto:
+    // `checkout-completed.ts` schreibt den Dauerzugang daraufhin.
     metadata: { user_id: user.id, plan },
-    subscription_data: { metadata: { user_id: user.id, plan } },
+    ...(istLifetime ? {} : { subscription_data: { metadata: { user_id: user.id, plan } } }),
   });
 
   return NextResponse.json({

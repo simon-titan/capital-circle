@@ -1,9 +1,10 @@
 "use client";
 
-import { Box, Heading, Stack, Text } from "@chakra-ui/react";
+import { Box, Heading, HStack, Stack, Text } from "@chakra-ui/react";
 import { hero } from "@/config/landing-membership";
 import { heroRise } from "../landing-ui";
-import { GoldCta, SterneZeile } from "./membership-ui";
+import { BeitrittCta } from "./BeitrittModal";
+import { SterneZeile } from "./membership-ui";
 import { PlattformVorschau } from "./PlattformVorschau";
 
 /**
@@ -17,8 +18,9 @@ import { PlattformVorschau } from "./PlattformVorschau";
  *
  * Darunter die Plattform-Vorschau: Der Besucher sieht, was er kauft, bevor er
  * ein Wort über den Preis liest.
- */
-export function MembershipHero() {
+ */import type { Bewertungsspiegel } from "@/lib/landing-reviews";
+
+export function MembershipHero({ bewertungen }: { bewertungen: Bewertungsspiegel }) {
   return (
     <Box
       as="section"
@@ -31,16 +33,44 @@ export function MembershipHero() {
     >
       <Stack maxW="1180px" mx="auto" spacing={{ base: 10, md: 14 }}>
         <Stack spacing={{ base: 6, md: 7 }} align="center" textAlign="center" maxW="900px" mx="auto">
-          <Text
+          {/*
+            Die Dachzeile sitzt in einer Pill mit einem leise pulsierenden
+            Punkt — dieselbe Geste wie der Live-Zustand im Mitgliederbereich
+            (DESIGN.md → Live-Zustand). Sie sagt vor dem ersten Satz, dass hier
+            etwas läuft, statt es nur zu behaupten. Der Punkt bleibt Gold hell:
+            ein zweiter Akzentton käme sonst über die Türschwelle der Seite.
+          */}
+          <HStack
             {...heroRise(0)}
-            fontSize={{ base: "11px", md: "13px" }}
-            fontWeight={600}
-            letterSpacing="0.22em"
-            textTransform="uppercase"
-            color="var(--cc-text-soft)"
+            spacing={{ base: 2.5, md: 3 }}
+            h={{ base: "32px", md: "36px" }}
+            px={{ base: 4, md: 5 }}
+            borderRadius="full"
+            border="1px solid var(--cc-line-strong)"
+            bg="rgba(255, 255, 255, 0.02)"
           >
-            {hero.eyebrow}
-          </Text>
+            <Box
+              className="cc-pulse"
+              aria-hidden
+              w="7px"
+              h="7px"
+              flexShrink={0}
+              borderRadius="full"
+              bg="var(--cc-gold-light)"
+              boxShadow="0 0 10px rgba(232, 192, 148, 0.7)"
+            />
+            <Text
+              as="span"
+              fontSize={{ base: "11px", md: "13px" }}
+              fontWeight={600}
+              letterSpacing="0.22em"
+              textTransform="uppercase"
+              color="var(--cc-text-soft)"
+              whiteSpace="nowrap"
+            >
+              {hero.eyebrow}
+            </Text>
+          </HStack>
 
           <Heading
             as="h1"
@@ -66,9 +96,12 @@ export function MembershipHero() {
             ))}
           </Stack>
 
+          {/* Öffnet den Beitritts-Dialog, statt zum Angebot zu springen: Wer
+              hier klickt, hat den Preis noch nicht gesehen — ihn erst quer über
+              die Seite zu schicken, kostet den Klick. */}
           <Stack {...heroRise(3)} spacing={5} align="center" pt={2}>
-            <GoldCta href="#angebot" />
-            <SterneZeile />
+            <BeitrittCta />
+            <SterneZeile bewertungen={bewertungen} />
           </Stack>
         </Stack>
 

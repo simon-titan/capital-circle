@@ -8,9 +8,11 @@ Farben seit v3.2 1:1 aus dem Kunden-Mockup (01-dashboard).
 
 | Variable / Klasse | Wert | Rolle |
 |-------------------|------|-------|
-| `--cc-bg` | `#12171c` | Graphitgrund |
-| `.cc-stars` | Punkte 1–1.5px, zweite Ebene funkelt | Sternenfeld (fixed) |
-| `.cc-goldlight` | Champagner-Radial oben rechts 0.17 / unten links 0.07 | Champagner-Licht (fixed) |
+| `--cc-bg` | `#0f1317` | Graphitgrund |
+| `.cc-stars` | Punkte 1–1.5px, zweite Ebene funkelt; Deckkraft `--cc-sky-stars` | Sternenfeld (fixed) |
+| `--cc-sky-stars` | `0.5` | Regler: wie hell das Sternenfeld steht |
+| `.cc-goldlight` | Champagner-Radial oben rechts 0.17 / unten links 0.07, Deckkraft `--cc-sky-glow` | Champagner-Licht (fixed) |
+| `--cc-sky-glow` | `0.58` | Regler: wie stark das Champagner-Licht steht (wirksam ~0.10 / ~0.04) |
 | `--cc-bg-raised` | `rgba(22,26,32,0.92)` + Blur | Sidebar, Leiste, mobile Kopfzeile |
 | `--cc-panel-solid` | `#151a1e` | Drawer |
 | `--cc-surface` | `#191e23` | Grundton der Karten |
@@ -64,7 +66,8 @@ Buttons 8px · Kacheln/Karten 12px · Segmente 4px. Leiste 48px · Sidebar 264px
 | `.cc-card--hero` | atmender Gold-Glow (6s) |
 | `.cc-flame` | Streak-Flamme pulsiert |
 | `.cc-ping` | Live-Ring |
-| `.cc-stars::after` | Sterne funkeln |
+| `.cc-stars::after` | Sterne funkeln (0.55 → 0.8) |
+| `.cc-pulse` | Punkt in der Eyebrow-Pill der Verkaufsseite (2.4s) |
 | `.cc-spark` | Lichtfunke an der Sidebar-Kante |
 | `.cc-marquee` | Promo-Band mobil |
 
@@ -84,7 +87,7 @@ Alle aus bei `prefers-reduced-motion: reduce`.
 ## Legacy (nicht für neue Arbeit)
 
 Die `--color-*`-Tokens oben in `app/globals.css` bleiben als **Aliasse** — ihre Werte entsprechen seit der Migration
-der v3.2-Palette (z. B. `--color-bg` = `#12171c`, `--color-accent-gold` = `#d4b080`). `--color-profit` / `--color-loss`
+der v3.2-Palette (z. B. `--color-bg` = `#0f1317`, `--color-accent-gold` = `#d4b080`). `--color-profit` / `--color-loss`
 bleiben semantische Journal-Tokens. Neuer Code nutzt `--cc-*`.
 
 Die Klassen `.radley-regular*`, `.jetbrains-mono`, `.dm-sans` setzen nur noch Inter und werden nicht mehr verwendet.
