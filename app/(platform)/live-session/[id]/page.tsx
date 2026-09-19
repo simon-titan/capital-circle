@@ -6,7 +6,7 @@ import { IconTile } from "@/components/platform/dashboard/primitives";
 import { isFreeLiveSessionCategory } from "@/components/platform/live-session-free";
 import { LiveSessionDetailClient } from "@/components/platform/LiveSessionDetailClient";
 import { getCurrentUserAndProfile, getLiveSessionDetail } from "@/lib/server-data";
-import { isApprovedFreeMember } from "@/lib/membership";
+import { liveSessionsNurFrei } from "@/lib/membership";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -25,7 +25,7 @@ export default async function LiveSessionDetailPage({ params }: PageProps) {
   const detail = await getLiveSessionDetail(id);
   if (!detail) notFound();
 
-  const freeMember = isApprovedFreeMember(profile);
+  const freeMember = liveSessionsNurFrei(profile);
   const freeCategory = isFreeLiveSessionCategory(detail.category.title);
 
   if (freeMember && !freeCategory) {
