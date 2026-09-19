@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Exklusive Trading-Lernplattform",
     start_url: "/",
     display: "browser",
-    background_color: "#000000",
-    theme_color: "#000000",
+    background_color: "#0F1317",
+    theme_color: "#0F1317",
     icons: [
       {
         src: "/new-apple.png",
