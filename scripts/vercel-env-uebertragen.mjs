@@ -201,8 +201,13 @@ for (const eintrag of plan) {
     continue;
   }
   if (schonDa && ueberschreiben) await vercel(["env", "rm", eintrag.name, eintrag.env, "--yes"]);
+  /*
+   * `--type config` fuer oeffentliche Werte: Sieht ein `NEXT_PUBLIC_`-Wert wie
+   * ein Geheimnis aus (etwa der Supabase-Anon-Schluessel, ein JWT), fragt die
+   * CLI sonst nach und bricht ohne Eingabe ab — still, mitten im Lauf.
+   */
   const flags = ["env", "add", eintrag.name, eintrag.env, "--yes"];
-  if (istGeheim(eintrag.name)) flags.push("--sensitive");
+  flags.push(istGeheim(eintrag.name) ? "--sensitive" : "--type", ...(istGeheim(eintrag.name) ? [] : ["config"]));
   const { code, aus } = await vercel(flags, eintrag.wert);
   if (code === 0) {
     geschrieben++;
