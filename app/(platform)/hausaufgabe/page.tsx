@@ -2,12 +2,7 @@ import { Box } from "@chakra-ui/react";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/journal/PageHeader";
 import { HomeworkFullView } from "@/components/platform/HomeworkFullView";
-import {
-  getActiveHomework,
-  getCurrentUserAndProfile,
-  getHomeworkDashboardState,
-  getPastHomework,
-} from "@/lib/server-data";
+import { getCurrentUserAndProfile, getHomeworkDashboardState, getHomeworkOverview } from "@/lib/server-data";
 
 export default async function HausaufgabePage() {
   const { user, profile } = await getCurrentUserAndProfile();
@@ -15,24 +10,21 @@ export default async function HausaufgabePage() {
     redirect("/einsteig");
   }
 
-  const [homework, pastHomework] = await Promise.all([
-    getActiveHomework(),
-    getPastHomework(),
-  ]);
-  const homeworkState = await getHomeworkDashboardState(user.id, homework);
+  const [overview, homeworkState] = await Promise.all([getHomeworkOverview(), getHomeworkDashboardState(user.id)]);
 
   return (
     <Box>
       <PageHeader
         title="Wochenaufgabe"
-        subtitle="Hier siehst du die aktuelle Wochenaufgabe im Detail und verwaltest deine persönlichen Aufgaben."
+        subtitle="Hier siehst du deine aktuellen Aufgaben im Detail und verwaltest deine persönliche Checkliste."
       />
 
       <HomeworkFullView
-        homework={homework}
+        aktuell={overview.aktuell}
+        vergangen={overview.vergangen}
+        todayKey={overview.todayKey}
         initialOfficialDone={homeworkState.officialDone}
         initialCustomTasks={homeworkState.customTasks}
-        pastHomework={pastHomework}
       />
     </Box>
   );

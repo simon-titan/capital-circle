@@ -24,10 +24,10 @@ import { resolveEventColor } from "@/config/event-colors";
 import { istExtern, toAbsoluteUrl } from "@/lib/external-url";
 import { moduleHref } from "@/lib/module-route";
 import {
-  getActiveHomework,
   getAcademyModulesOverview,
   getCurrentUserAndProfile,
   getHomeworkDashboardState,
+  getHomeworkOverview,
   getHomeworkWeekTotal,
   getLastWatchedModule,
   getLatestAnalysisPost,
@@ -184,23 +184,39 @@ function toTermine(events: EventRow[], now: Date): TerminZeile[] {
   });
 }
 
+/**
+ * „Diese Woche“ zeigt eine Aufgabe: die erste noch offene aus der aktuellen
+ * Liste (Reihenfolge aus `lib/hausaufgaben.ts`: überfällig → nach Frist → ohne
+ * Frist). Hat das Mitglied alles abgehakt, steht die erste mit „erledigt“ da.
+ * Fristlose Aufgaben bleiben aktuell, bis der Admin sie archiviert oder löscht —
+ * wer sie erledigt hat, bekommt hier trotzdem die nächste offene zu sehen.
+ */
 function toHomework(
-  homework: HomeworkRow | null,
-  state: { officialDone: boolean; customTasks: HomeworkCustomTaskRow[] },
+  aktuell: HomeworkRow[],
+  state: { officialDone: Record<string, boolean>; customTasks: HomeworkCustomTaskRow[] },
   weekTotal: number | null,
   now: Date,
 ): HomeworkSummary {
   const customDone = state.customTasks.filter((t) => t.done).length;
   const customTotal = state.customTasks.length;
-  const tasks = state.customTasks.map((t) => ({ id: t.id, title: t.title, done: t.done }));
-  if (!homework) return { official: null, tasks, customDone, customTotal };
+  // Die eigenen Aufgaben hängen nicht mehr an einer Hausaufgabe (siehe
+  // `getHomeworkDashboardState`) und sammeln sich deshalb über die Wochen an.
+  // Die Karte zeigt nur drei — offene zuerst, damit dort nicht Erledigtes steht.
+  const tasks = [...state.customTasks]
+    .sort((a, b) => Number(a.done) - Number(b.done))
+    .map((t) => ({ id: t.id, title: t.title, done: t.done }));
+  const offen = aktuell.filter((hw) => !state.officialDone[hw.id]);
+  const homework = offen[0] ?? aktuell[0] ?? null;
+  const moreOpen = offen.length > 1 ? offen.length - 1 : 0;
+  if (!homework) return { official: null, tasks, customDone, customTotal, moreOpen };
+  const officialDone = Boolean(state.officialDone[homework.id]);
 
   let dueLabel: string | null = null;
   let overdue = false;
   if (homework.due_date) {
     const diff = daysFromToday(homework.due_date, now);
     if (diff < 0) {
-      overdue = !state.officialDone;
+      overdue = !officialDone;
       dueLabel = diff === -1 ? "seit gestern fällig" : `seit ${-diff} Tagen fällig`;
     } else if (diff === 0) {
       dueLabel = "fällig heute";
@@ -209,6 +225,8 @@ function toHomework(
     } else {
       dueLabel = `fällig ${shortDateLabel(homework.due_date)}`;
     }
+  } else {
+    dueLabel = "ohne Frist";
   }
 
   // „Woche 4 von 12“, sobald es eine höchste Wochennummer gibt — sonst nur die
@@ -227,11 +245,12 @@ function toHomework(
       weekLabel,
       dueLabel,
       overdue,
-      done: state.officialDone,
+      done: officialDone,
     },
     tasks,
     customDone,
     customTotal,
+    moreOpen,
   };
 }
 
@@ -282,7 +301,7 @@ export default async function DashboardPage({
   const [
     lastWatched,
     recommended,
-    homework,
+    homeworkOverview,
     homeworkWeekTotal,
     liveEvents,
     kommendeEvents,
@@ -291,7 +310,7 @@ export default async function DashboardPage({
   ] = await Promise.all([
     getLastWatchedModule(userId),
     getRecommendedAcademyModuleFromOverview(supabase, academyRows),
-    getActiveHomework(),
+    getHomeworkOverview(),
     getHomeworkWeekTotal(),
     getLiveWindowEvents(3),
     // Vier Zeilen wie im Kunden-Mockup; der laufende Termin bleibt drin, damit
@@ -384,7 +403,7 @@ export default async function DashboardPage({
     return wochentag >= 1 && wochentag <= 5 && d.active;
   }).length;
 
-  const homeworkState = await getHomeworkDashboardState(userId, homework);
+  const homeworkState = await getHomeworkDashboardState(userId);
 
   const [{ data: discordConnection }, { data: step2Row }] = await Promise.all([
     isPaid
@@ -432,7 +451,7 @@ export default async function DashboardPage({
       totalVideos: welcomeMetrics.totalVideos,
     },
     live: toLiveItem(liveEvents, now),
-    homework: toHomework(homework, homeworkState, homeworkWeekTotal, now),
+    homework: toHomework(homeworkOverview.aktuell, homeworkState, homeworkWeekTotal, now),
     analysis: latestAnalysis
       ? {
           id: latestAnalysis.id,
