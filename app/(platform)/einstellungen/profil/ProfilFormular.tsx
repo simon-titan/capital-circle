@@ -24,6 +24,7 @@ import { CardValue, DashCard, IconTile, Meta } from "@/components/platform/dashb
 import { createClient } from "@/lib/supabase/client";
 import { getDiscordAuthUrl } from "@/lib/discord";
 import { resolveTotalLearningSeconds } from "@/lib/learning-daily";
+import { DiscordNachrichten } from "./DiscordNachrichten";
 
 type ProfileData = {
   id: string;
@@ -563,6 +564,9 @@ export function ProfilFormular() {
             </Stack>
           </DashCard>
         )}
+
+        {/* Für jedes verknüpfte Discord-Konto, auch ohne laufende Mitgliedschaft. */}
+        {discordUsername ? <DiscordNachrichten style={rise(4)} /> : null}
 
         <DashCard label="Passwort ändern" labelId="settings-password" className="cc-card--still cc-rise" style={rise(4)}>
           <Stack spacing={4}>

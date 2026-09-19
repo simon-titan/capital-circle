@@ -1,6 +1,8 @@
 import type Stripe from "stripe";
 import { sendWelcomePaid } from "@/lib/email/templates/welcome-paid";
 import { getStripe } from "@/lib/stripe/server";
+import { synchronisiereNachProfil } from "@/lib/discord/mitgliedschaft";
+import { schliesseOffeneFaelle } from "@/lib/zahlung/fall";
 import {
   extractCustomerId,
   loadAuthEmail,
@@ -81,6 +83,15 @@ export async function handleCheckoutCompleted(
   */
   await beendeLaufendesAbo(supabase, userId);
 
+  /*
+    Seit 19.09.2026 kaufen auch Gekündigte und Gesperrte Lifetime (Hinweis in
+    Mahnung, Warteraum und Abschied). Offene Zahlungsfälle hören deshalb hier
+    auf zu mahnen, und Discord zieht nach: Mitgliederrolle zurück, Warteraum
+    ab. Beides wirft nie.
+  */
+  await schliesseOffeneFaelle(supabase, userId, "Lifetime gekauft.");
+  await synchronisiereNachProfil(supabase, userId, "Lifetime gekauft");
+
   const profile = await loadProfileByUserId(supabase, userId);
   const email =
     session.customer_details?.email ??
@@ -99,10 +110,20 @@ export async function handleCheckoutCompleted(
 }
 
 /**
- * Laufendes Abo nach einem Lifetime-Kauf zum Periodenende beenden.
+ * Laufendes Abo nach einem Lifetime-Kauf beenden.
  *
  * Die Freigabe des Dauerzugangs haengt nicht daran: `subscription.deleted`
  * laesst `membership_tier = 'lifetime'` seit 17.09.2026 ausdruecklich stehen.
+ *
+ * ── Ein ueberfaelliges Abo endet sofort ─────────────────────────────────────
+ *
+ * Ein bezahltes Abo endet zum Periodenende (der laufende Monat ist bezahlt).
+ * Ein Abo mit gescheiterter Abbuchung (`past_due`, `unpaid`) endet **sofort**:
+ * Zum Periodenende gekuendigt, versuchte Stripe die offene Rechnung weiter
+ * einzuziehen, und gelaenge das, zahlte der Kunde neben 699 € noch einen
+ * Monat, den er nicht mehr braucht. Bei der sofortigen Kuendigung stellt
+ * Stripe den automatischen Einzug offener Rechnungen ein; die Rechnung selbst
+ * bleibt offen (kein Erlass — sie steht in der Fallakte).
  */
 async function beendeLaufendesAbo(
   supabase: WebhookSupabase,
@@ -113,19 +134,27 @@ async function beendeLaufendesAbo(
       .from("subscriptions")
       .select("stripe_subscription_id,status,cancel_at_period_end")
       .eq("user_id", userId)
-      .in("status", ["active", "trialing", "past_due"])
-      .limit(1);
+      .in("status", ["active", "trialing", "past_due", "unpaid"]);
 
-    const abo = (data as Array<{
+    const abos = (data ?? []) as Array<{
       stripe_subscription_id: string;
+      status: string;
       cancel_at_period_end: boolean;
-    }> | null)?.[0];
-    if (!abo || abo.cancel_at_period_end) return;
+    }>;
 
-    await getStripe().subscriptions.update(abo.stripe_subscription_id, {
-      cancel_at_period_end: true,
-      cancellation_details: { comment: "Lifetime gekauft" },
-    });
+    for (const abo of abos) {
+      if (abo.status === "past_due" || abo.status === "unpaid") {
+        await getStripe().subscriptions.cancel(abo.stripe_subscription_id, {
+          cancellation_details: { comment: "Lifetime gekauft, offene Abbuchung" },
+        });
+        continue;
+      }
+      if (abo.cancel_at_period_end) continue;
+      await getStripe().subscriptions.update(abo.stripe_subscription_id, {
+        cancel_at_period_end: true,
+        cancellation_details: { comment: "Lifetime gekauft" },
+      });
+    }
   } catch (err) {
     console.error(
       `[stripe-webhook] Abo-Kuendigung nach Lifetime-Kauf (user=${userId}) fehlgeschlagen. ` +

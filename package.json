@@ -21,6 +21,7 @@
     "zahlung:probe": "node scripts/zahlung-probe.mjs",
     "discord:warteraum": "node scripts/warteraum.mjs",
     "discord:warteraum-rolle": "node scripts/warteraum-rolle.mjs",
+    "rueckgewinnung": "node scripts/rueckgewinnung.mjs",
     "migrate:videos-to-cloudflare": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/migrate-videos-to-cloudflare.mjs",
     "cf:check": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/check-cloudflare.mjs",
     "cf:link": "node scripts/link-cloudflare-videos.mjs",
