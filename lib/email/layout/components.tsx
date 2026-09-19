@@ -1,6 +1,16 @@
 import * as React from "react";
 import { EMAIL_TOKENS as T } from "./styles";
 
+
+/**
+ * `bgcolor` ist ein altes HTML-Attribut, das die Word-Engine in Outlook
+ * auswertet — React kennt es in seinen Typen nicht. Deshalb wird es als
+ * Attribut-Objekt hineingereicht statt als Prop geschrieben.
+ */
+function bgAttribut(farbe: string): React.TdHTMLAttributes<HTMLTableCellElement> & React.TableHTMLAttributes<HTMLTableElement> {
+  return { bgcolor: farbe } as React.TdHTMLAttributes<HTMLTableCellElement> & React.TableHTMLAttributes<HTMLTableElement>;
+}
+
 /**
  * Die Bausteine, aus denen jede Mail besteht — mehr gibt es nicht.
  *
@@ -148,7 +158,7 @@ export function EmailButton({ href, children }: { href: string } & ChildrenProps
         <tr>
           <td
             align="center"
-            bgcolor={T.gold}
+            {...bgAttribut(T.gold)}
             style={{ borderRadius: "6px", backgroundColor: T.gold }}
           >
             <a

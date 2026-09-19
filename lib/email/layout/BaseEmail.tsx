@@ -3,6 +3,16 @@ import { EMAIL_TOKENS as T } from "./styles";
 import { getAppUrl } from "../resend";
 import { anbieter } from "@/config/legal";
 
+
+/**
+ * `bgcolor` ist ein altes HTML-Attribut, das die Word-Engine in Outlook
+ * auswertet — React kennt es in seinen Typen nicht. Deshalb wird es als
+ * Attribut-Objekt hineingereicht statt als Prop geschrieben.
+ */
+function bgAttribut(farbe: string): React.TdHTMLAttributes<HTMLTableCellElement> & React.TableHTMLAttributes<HTMLTableElement> {
+  return { bgcolor: farbe } as React.TdHTMLAttributes<HTMLTableCellElement> & React.TableHTMLAttributes<HTMLTableElement>;
+}
+
 interface BaseEmailProps {
   children: React.ReactNode;
   /** Der Satz, den Postfächer neben dem Betreff als Vorschau zeigen. */
@@ -117,7 +127,7 @@ export function BaseEmail({
           width="100%"
           cellSpacing={0}
           cellPadding={0}
-          bgcolor={T.bgPage}
+          {...bgAttribut(T.bgPage)}
           style={{ backgroundColor: T.bgPage }}
         >
           <tbody>
@@ -130,7 +140,7 @@ export function BaseEmail({
               */}
               <td
                 align="center"
-                bgcolor={T.bgPage}
+                {...bgAttribut(T.bgPage)}
                 style={{ padding: "32px 16px", backgroundColor: T.bgPage }}
               >
                 <table
@@ -145,7 +155,7 @@ export function BaseEmail({
                     <tr>
                       <td
                         align="center"
-                        bgcolor={T.bgPage}
+                        {...bgAttribut(T.bgPage)}
                         style={{ padding: "0 0 28px", backgroundColor: T.bgPage }}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element -- Eine Mail hat kein next/image; das Postfach lädt die Datei selbst */}
@@ -176,7 +186,7 @@ export function BaseEmail({
                     {/* Die eine Karte */}
                     <tr>
                       <td
-                        bgcolor={T.bgCard}
+                        {...bgAttribut(T.bgCard)}
                         style={{
                           backgroundColor: T.bgCard,
                           border: `1px solid ${T.line}`,
@@ -192,7 +202,7 @@ export function BaseEmail({
                     <tr>
                       <td
                         align="center"
-                        bgcolor={T.bgPage}
+                        {...bgAttribut(T.bgPage)}
                         style={{
                           padding: "28px 8px 0",
                           textAlign: "center",
