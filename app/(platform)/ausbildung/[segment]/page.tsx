@@ -3,9 +3,9 @@ import { notFound, redirect } from "next/navigation";
 import { ChakraLinkButton } from "@/components/platform/ChakraLinkButton";
 import { PaywallOverlay } from "@/components/ui/PaywallOverlay";
 import { AusbildungModuleLearningClient } from "@/components/platform/AusbildungPageCards";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { isCourseUnlocked, isModuleUnlocked } from "@/lib/progress";
-import { getModulePublishedPlaylist } from "@/lib/module-video";
+import { getModulePublishedPlaylist, playlistAlsVorschau } from "@/lib/module-video";
 import { parseVideoProgressByVideo, userCanAccessAcademyModule } from "@/lib/server-data";
 import { LEKTION_PARAM, isUuidParam, moduleHref } from "@/lib/module-route";
 import type { VideoAttachmentItem } from "@/components/platform/VideoAttachments";
@@ -79,15 +79,28 @@ export default async function AcademyModulePage({ params, searchParams }: PagePr
     }
   }
 
-  // Load all content data regardless of access — free users will see the full
-  // layout (blurred / blocked) behind the PaywallOverlay.
+  /*
+   * Ohne Zugang steht die Seite verdeckt hinter der PaywallOverlay. Alles, was
+   * hier geladen wird, landet trotzdem im Seiten-Payload beim Browser — die
+   * Paywall verdeckt nur optisch. Deshalb bekommt sie ausschließlich die
+   * Gliederung (Lektionstitel, Reihenfolge, Dauer): keine Abspiel-Schlüssel,
+   * keine Beschreibungen, kein Quiz, keine Anhänge.
+   *
+   * Die Gliederung kommt über den Service-Client, weil die Zeilen-Sicherheit
+   * (Migration 076) Konten ohne Zahlung die Videos bezahlter Kurse gar nicht
+   * mehr ausliefert — die verdeckte Seite stünde sonst leer da.
+   */
   const [{ data: quiz }, playlist] = await Promise.all([
-    supabase
-      .from("quizzes")
-      .select("questions,pass_threshold,quiz_mode")
-      .eq("module_id", mod.id)
-      .maybeSingle(),
-    getModulePublishedPlaylist(supabase, mod.id),
+    hasAccess
+      ? supabase
+          .from("quizzes")
+          .select("questions,pass_threshold,quiz_mode")
+          .eq("module_id", mod.id)
+          .maybeSingle()
+      : Promise.resolve({ data: null as { questions: unknown; pass_threshold: unknown; quiz_mode: unknown } | null }),
+    hasAccess
+      ? getModulePublishedPlaylist(supabase, mod.id)
+      : getModulePublishedPlaylist(createServiceClient(), mod.id).then(playlistAlsVorschau),
   ]);
 
   const { data: progress } = await supabase
@@ -122,7 +135,7 @@ export default async function AcademyModulePage({ params, searchParams }: PagePr
 
   const videoIds = playlist.map((v) => v.id);
   const attachmentsByVideoId: Record<string, VideoAttachmentItem[]> = {};
-  if (videoIds.length > 0) {
+  if (hasAccess && videoIds.length > 0) {
     const { data: attRows } = await supabase
       .from("video_attachments")
       .select("id, video_id, filename, content_type, position")
