@@ -4,6 +4,7 @@ import { CHECKOUT_COOKIE, CHECKOUT_COOKIE_MAX_AGE } from "@/lib/checkout/cookie"
 import { istBot, vorabrufGrund } from "@/lib/checkout/vorabruf";
 import { getAppUrl } from "@/lib/site-url";
 import { getStripe } from "@/lib/stripe/server";
+import { kassenRechtsangaben, kassenRechtsMetadata } from "@/lib/stripe/kasse-recht";
 import { isMembershipPlan, priceIdForPlan } from "@/lib/stripe/plan-map";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -169,8 +170,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ plan
       expires_at: Math.floor(Date.now() / 1000) + 2 * 60 * 60,
       automatic_tax: { enabled: true },
       allow_promotion_codes: true,
-      metadata,
-      subscription_data: { metadata },
+      // Pflicht-Häkchen (AGB + sofortiger Leistungsbeginn), Laufzeit am
+      // Bezahlknopf, deutsche Kasse — siehe `lib/stripe/kasse-recht.ts`.
+      ...kassenRechtsangaben(appUrl, plan),
+      metadata: { ...metadata, ...kassenRechtsMetadata },
+      subscription_data: { metadata: { ...metadata, ...kassenRechtsMetadata } },
     });
   } catch (err) {
     console.error(`[go/${plan}] Stripe-Session konnte nicht erstellt werden:`, err);

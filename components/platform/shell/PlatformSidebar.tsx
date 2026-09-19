@@ -18,6 +18,7 @@ import { Lock, LogOut, Menu as MenuIcon, MessageCircle, Settings, UserRound, X, 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { RechtsLinks } from "@/components/legal/RechtsFusszeile";
 import { DiscordGlyph } from "@/components/platform/DiscordBanner";
 import { getDiscordAuthUrl } from "@/lib/discord";
 import { createClient } from "@/lib/supabase/client";
@@ -578,6 +579,15 @@ export function PlatformSidebar() {
             void logout();
           }}
         />
+      </Box>
+      {/*
+        Rechtstexte und der Kündigungsbutton (§ 312k BGB) — dezent am Fuß der
+        Navigation, damit sie von jeder Seite des Mitgliederbereichs aus
+        erreichbar sind. Der Klick schließt im Drawer das Menü (bubbelt zum
+        `onClick` hier).
+      */}
+      <Box mt={5} px="14px" flexShrink={0} onClick={onNavigate}>
+        <RechtsLinks kompakt />
       </Box>
     </>
   );

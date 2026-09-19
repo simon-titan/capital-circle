@@ -4,6 +4,7 @@ import { Box, Flex, Stack, Text } from "@chakra-ui/react";
 import { ArrowLeft } from "lucide-react";
 import { auszahlungenCommunity, auszahlungenEmre, challenges } from "@/config/landing-membership";
 import { NachweisGalerie } from "@/components/landing/membership/NachweisGalerie";
+import { RechtsLinks } from "@/components/legal/RechtsFusszeile";
 
 export const metadata: Metadata = {
   title: "Belegte Auszahlungen — Capital Circle",
@@ -120,11 +121,15 @@ export default function ErgebnissePage() {
             ist ein Nachweis. Kontostände und Tagesgewinne stehen hier bewusst
             nicht — sie sagen weder, dass Geld geflossen ist, noch, dass jemand
             eine Prüfung bestanden hat. */}
-        <Text fontSize="13px" color="var(--cc-text-3)" maxW="720px" borderTop="1px solid var(--cc-line)" pt={6}>
-          Die beiden Abschnitte belegen Verschiedenes und bleiben deshalb getrennt: oben Geld, das ausgezahlt wurde,
-          unten Prüfungen, die bestanden wurden. Eine Kontogröße ist kein Verdienst. Kontostände und Tagesgewinne sind
-          gar nicht aufgeführt — sie belegen keines von beidem.
-        </Text>
+        <Stack gap={5} borderTop="1px solid var(--cc-line)" pt={6}>
+          <Text fontSize="13px" color="var(--cc-text-3)" maxW="720px">
+            Die beiden Abschnitte belegen Verschiedenes und bleiben deshalb getrennt: oben Geld, das ausgezahlt wurde,
+            unten Prüfungen, die bestanden wurden. Eine Kontogröße ist kein Verdienst. Kontostände und Tagesgewinne sind
+            gar nicht aufgeführt — sie belegen keines von beidem.
+          </Text>
+          {/* Impressum · Datenschutz · AGB · Widerruf · Verträge hier kündigen */}
+          <RechtsLinks justify="flex-start" />
+        </Stack>
       </Stack>
     </Box>
   );

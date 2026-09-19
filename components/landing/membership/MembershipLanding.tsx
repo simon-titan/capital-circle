@@ -107,6 +107,10 @@ export async function MembershipLanding() {
           </Box>
 
           <LandingFooter />
+          {/* Platz für den festen CTA-Balken auf schmalen Bildschirmen: Am
+              Seitenende ist er eingeblendet und läge sonst genau über der
+              Fußzeile — und damit über Impressum und „Verträge hier kündigen". */}
+          <Box aria-hidden display={{ base: "block", md: "none" }} h="120px" />
         </Box>
 
         <MembershipMobileCta />

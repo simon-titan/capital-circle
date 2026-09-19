@@ -51,14 +51,31 @@ const PUBLIC_PATHS = [
 // unten sie beim Klick auf „Community beitreten" nach `/einsteig`.
 // `/auth/*` löst Einmal-Token aus unseren E-Mails ein, ebenfalls ohne Sitzung.
 const PUBLIC_PREFIXES = [
+  // Rechtstexte und Kündigungsbutton (§ 312k BGB): ohne Anmeldung und — siehe
+  // `RECHTS_PFADE` unten — auch im Wartungsmodus erreichbar.
   "/datenschutz",
   "/impressum",
+  "/agb",
+  "/widerruf",
+  "/kuendigen",
   "/survey",
   "/discord",
   "/termin",
   "/go",
   "/auth",
 ];
+
+// Rechtstexte und Kündigungsbutton sind vom Wartungs-Gate ausgenommen:
+// `/vorschau` zeigt die Verkaufsseite auch bei geschlossener Plattform, und
+// deren Fußzeile verlinkt genau diese Seiten. Impressum, Datenschutz,
+// Widerrufsbelehrung und „Verträge hier kündigen" müssen ständig erreichbar
+// sein — eine Wartungsseite an ihrer Stelle wäre ein Rechtsverstoß.
+// Dieselben Pfade stehen in `config/legal.ts` (`rechtsPfade`).
+const RECHTS_PFADE = ["/impressum", "/datenschutz", "/agb", "/widerruf", "/kuendigen"];
+
+function isRechtsPfad(pathname: string): boolean {
+  return RECHTS_PFADE.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
 
 function isPublicPath(pathname: string): boolean {
   if (PUBLIC_PATHS.includes(pathname)) return true;
@@ -147,7 +164,8 @@ export async function proxy(request: NextRequest) {
     pathname === "/wartung" ||
     pathname === "/vorschau" ||
     pathname.startsWith("/admin") ||
-    pathname === "/login";
+    pathname === "/login" ||
+    isRechtsPfad(pathname);
   if (!maintenanceExempt) {
     const maintenance = await getMaintenanceState();
     if (maintenance.enabled) {
