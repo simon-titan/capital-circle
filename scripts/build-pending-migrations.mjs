@@ -26,6 +26,15 @@ const AUSSTEHEND = [
   // Policies. Additiv. Solange sie fehlt, nimmt `/kuendigen` Kündigungen trotzdem
   // an — dann ist nur die Betreiber-Mail der Beleg.
   "072_kuendigungen",
+  // Widerrufsfunktion (§ 356a BGB): neue Tabelle `widerrufe`, RLS an, keine
+  // Policies, Rechte für anon/authenticated entzogen. Additiv. Solange sie
+  // fehlt, nimmt `/widerrufen` Widerrufe trotzdem an — dann ist nur die
+  // Betreiber-Mail der Beleg.
+  "090_widerrufe",
+  // Zustimmungsnachweis der Kasse: drei Spalten an `checkout_sessions`
+  // (agb_zustimmung, zustimmung_am, rechtstexte_version). Additiv. Solange sie
+  // fehlen, schreibt der Webhook den Trichter ohne sie weiter.
+  "091_checkout_zustimmung",
 ];
 
 const DIR = path.resolve(process.cwd(), "supabase/migrations");

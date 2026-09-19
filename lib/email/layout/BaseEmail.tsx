@@ -1,21 +1,30 @@
 import * as React from "react";
 import { EMAIL_TOKENS as T } from "./styles";
 import { getAppUrl } from "../resend";
+import { anbieter } from "@/config/legal";
 
 interface BaseEmailProps {
   children: React.ReactNode;
   previewText: string;
   /**
-   * Nur wirksam wenn `hideFooter={false}`: DSGVO-Unsubscribe-Link im Footer.
-   * Baut `${appUrl}/api/unsubscribe?token=...`. Für abweichende Routen
-   * (z. B. Kampagnen ohne `profiles`-Zeile) stattdessen `unsubscribeUrl` nutzen.
+   * Abmeldelink für Werbe-Mails. Baut `${appUrl}/api/unsubscribe?token=...`.
+   * Für abweichende Routen (z. B. Kampagnen ohne `profiles`-Zeile) stattdessen
+   * `unsubscribeUrl` nutzen — am einfachsten über `abmeldeUrl()` aus
+   * `lib/email/abmeldung.ts`.
    */
   unsubscribeToken?: string;
-  /** Vollständige Unsubscribe-URL — hat Vorrang vor `unsubscribeToken`. */
+  /**
+   * Vollständige Abmelde-URL — hat Vorrang vor `unsubscribeToken`. Ist eine
+   * gesetzt, erscheint der Footer immer (auch ohne `hideFooter={false}`) mit
+   * dem Widerspruchshinweis nach § 7 Abs. 3 Nr. 4 UWG und dem Link „Abmelden".
+   */
   unsubscribeUrl?: string;
   /** Standard: Wortmarke „CAPITAL CIRCLE“ in Weiß. Bei `false` in Champagner. */
   headerLogo?: boolean;
-  /** Standard: kein rechtlicher Footer. Bei `false` Impressum, Datenschutz, optional Abmelden. */
+  /**
+   * Standard: kein rechtlicher Footer (Transaktionsmails). Bei `false`
+   * Impressum und Datenschutz; mit Abmelde-URL zusätzlich Hinweis und Link.
+   */
   hideFooter?: boolean;
   /**
    * Optionaler CSS-`background-image` für die Lichtkante unter der Wortmarke.
@@ -24,14 +33,13 @@ interface BaseEmailProps {
   accentGradient?: string;
   /** Farbe der Footer-Links (Impressum/Datenschutz/Abmelden). Standard: Champagner. */
   footerLinkColor?: string;
-  /** Überschreibt `fontFamily` von Body + Footer. Standard: `EMAIL_TOKENS.fontBody` (Inter). */
-  bodyFontFamily?: string;
   /**
-   * Stylesheet im `<head>` (Standard: Inter von Google Fonts). Nur Clients, die
-   * externe Stylesheets laden (u. a. Apple/iOS Mail), nutzen es; sonst greift
-   * der System-Fallback im Font-Stack.
+   * Überschreibt `fontFamily` von Body + Footer. Standard: `EMAIL_TOKENS.fontBody`
+   * (Inter, falls auf dem Gerät installiert, sonst Systemschrift). Kein
+   * Webfont-Stylesheet: Ein `<link>` auf Google Fonts übertrüge beim Öffnen
+   * der Mail die IP-Adresse an Google.
    */
-  headFontLinkHref?: string;
+  bodyFontFamily?: string;
 }
 
 /**
@@ -56,7 +64,6 @@ export function BaseEmail({
   accentGradient,
   footerLinkColor,
   bodyFontFamily,
-  headFontLinkHref,
 }: BaseEmailProps) {
   const appUrl = getAppUrl();
   const unsubscribeUrl =
@@ -64,7 +71,9 @@ export function BaseEmail({
     (unsubscribeToken ? `${appUrl}/api/unsubscribe?token=${unsubscribeToken}` : null);
   const linkColor = footerLinkColor ?? T.gold;
   const bodyFont = bodyFontFamily ?? T.fontBody;
-  const fontHref = headFontLinkHref ?? T.fontLinkHref;
+  // Eine Werbe-Mail ohne sichtbaren Abmeldehinweis wäre schlimmer als ein
+  // Footer, den niemand bestellt hat — deshalb erzwingt die URL den Footer.
+  const zeigeFooter = !hideFooter || Boolean(unsubscribeUrl);
 
   const footerLink = { color: linkColor, textDecoration: "none", margin: "0 8px" } as const;
 
@@ -78,7 +87,6 @@ export function BaseEmail({
         <meta name="color-scheme" content="dark" />
         <meta name="supported-color-schemes" content="dark" />
         <title>Capital Circle</title>
-        <link rel="stylesheet" href={fontHref} />
       </head>
       <body
         style={{
@@ -164,7 +172,7 @@ export function BaseEmail({
                       <td>{children}</td>
                     </tr>
 
-                    {!hideFooter ? (
+                    {zeigeFooter ? (
                       <tr>
                         <td
                           style={{
@@ -210,6 +218,27 @@ export function BaseEmail({
                               </>
                             )}
                           </p>
+                          {unsubscribeUrl ? (
+                            // Hinweis nach § 7 Abs. 3 Nr. 4 UWG — bei jeder Werbe-Mail, klar und deutlich.
+                            <p
+                              style={{
+                                margin: "0 auto 12px",
+                                maxWidth: "480px",
+                                fontFamily: bodyFont,
+                                fontSize: "12px",
+                                color: T.textFooter,
+                                lineHeight: 1.6,
+                              }}
+                            >
+                              Du möchtest solche E-Mails nicht mehr bekommen? Du kannst ihnen jederzeit
+                              widersprechen:{" "}
+                              <a href={unsubscribeUrl} style={{ color: linkColor, textDecoration: "underline" }}>
+                                hier abmelden
+                              </a>{" "}
+                              oder per E-Mail an {anbieter.email}. Dafür entstehen dir keine anderen als die
+                              Übermittlungskosten nach den Basistarifen.
+                            </p>
+                          ) : null}
                           <p
                             style={{
                               margin: "16px 0 0",

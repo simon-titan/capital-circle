@@ -101,11 +101,18 @@ export async function GET(request: NextRequest) {
     new Set(apps.map((a) => a.user_id).filter((id): id is string => Boolean(id))),
   );
   const profileMap = new Map<string, ProfileRow>();
-  if (userIds.length > 0) {
-    const { data: profiles } = await service
+  // In Blöcken: Bis zu 2000 UUIDs in einem `in.(…)` sprengen die URL-Länge,
+  // und ein stiller Fehler hier hieße früher „an alle, auch an Abgemeldete".
+  // Heute fehlt dann das Profil, und ohne Profil geht nichts raus (siehe unten).
+  for (let i = 0; i < userIds.length; i += 200) {
+    const { data: profiles, error: profilFehler } = await service
       .from("profiles")
       .select("id,unsubscribed_at,full_name")
-      .in("id", userIds);
+      .in("id", userIds.slice(i, i + 200));
+    if (profilFehler) {
+      console.error("[cron/free-course-sequence] Profile nicht lesbar:", profilFehler.message);
+      continue;
+    }
     for (const p of (profiles ?? []) as ProfileRow[]) {
       profileMap.set(p.id, p);
     }
@@ -141,8 +148,12 @@ export async function GET(request: NextRequest) {
 
       if (sentMap.has(`${app.email}::${step}`)) continue;
 
+      // Ohne Profil kein Versand: Nur dort lässt sich ein Widerspruch
+      // (`unsubscribed_at`) nachhalten, und die Mails verlinken ohnehin in die
+      // Plattform. Bewerbungen tragen seit dem Funnel immer eine `user_id`;
+      // fehlt das Profil, ist das Konto gelöscht.
       const profile = app.user_id ? profileMap.get(app.user_id) : undefined;
-      if (profile?.unsubscribed_at) continue;
+      if (!profile || profile.unsubscribed_at) continue;
 
       const firstName = firstNameFrom(profile?.full_name ?? app.name, app.email);
 

@@ -6,6 +6,7 @@ import {
   EmailButton,
 } from "../layout/components";
 import { generateSurveyToken } from "../unsubscribe-token";
+import { abmeldeUrl, istAbgemeldet } from "../abmeldung";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 
@@ -15,11 +16,15 @@ interface Props {
   userId: string;
 }
 
-export default function CancellationSurveyEmail({ firstName, userId }: Pick<Props, "firstName" | "userId">) {
+export default function CancellationSurveyEmail({
+  firstName,
+  userId,
+  abmeldeLink,
+}: Pick<Props, "firstName" | "userId"> & { abmeldeLink?: string }) {
   const appUrl = getAppUrl();
   const surveyToken = generateSurveyToken(userId);
   return (
-    <BaseEmail previewText="Danke für deine Zeit — kurzes Feedback?">
+    <BaseEmail previewText="Danke für deine Zeit — kurzes Feedback?" unsubscribeUrl={abmeldeLink}>
       <EmailHeading>Schade, dass du gehst, {firstName}</EmailHeading>
       <EmailText>
         deine Kündigung ist bei uns angekommen und ist verarbeitet. Bevor du
@@ -45,9 +50,17 @@ export default function CancellationSurveyEmail({ firstName, userId }: Pick<Prop
   );
 }
 
+/**
+ * Eine Feedback-Bitte per Mail ist Werbung (BGH, Urteil vom 10.07.2018,
+ * VI ZR 225/17) — deshalb Abmeldelink und die Prüfung auf `unsubscribed_at`
+ * hier im Sender: Der Aufrufer (`customer.subscription.deleted`) filtert nicht.
+ */
 export async function sendCancellationSurvey(
   props: Props,
 ): Promise<SendResult> {
+  if (await istAbgemeldet(props.userId)) {
+    return { skipped: true };
+  }
   return sendEmail({
     to: props.email,
     subject: "Danke für deine Zeit — kurzes Feedback?",
@@ -55,6 +68,7 @@ export async function sendCancellationSurvey(
       <CancellationSurveyEmail
         firstName={props.firstName}
         userId={props.userId}
+        abmeldeLink={abmeldeUrl({ userId: props.userId, email: props.email })}
       />
     ),
     log: {

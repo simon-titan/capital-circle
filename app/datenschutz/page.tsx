@@ -36,23 +36,22 @@ export default function DatenschutzPage() {
         <li><a href="#verantwortlicher">1. Verantwortlicher</a></li>
         <li><a href="#grundlagen">2. Rechtsgrundlagen im Überblick</a></li>
         <li><a href="#hosting">3. Hosting und Server-Protokolle</a></li>
-        <li><a href="#schrift">4. Schriftart</a></li>
-        <li><a href="#konto">5. Konto und Anmeldung</a></li>
-        <li><a href="#zahlung">6. Kauf, Zahlung und Kündigung</a></li>
-        <li><a href="#videos">7. Videos und Livestreams</a></li>
-        <li><a href="#dateien">8. Hochgeladene Dateien</a></li>
-        <li><a href="#journal">9. Trading Journal</a></li>
-        <li><a href="#discord">10. Community auf Discord</a></li>
-        <li><a href="#beitraege">11. Kommentare, Support und veröffentlichte Nachweise</a></li>
-        <li><a href="#bewerbungen">12. Bewerbungen, Anfragen und Terminbuchung</a></li>
-        <li><a href="#telegram">13. Telegram-Bot</a></li>
-        <li><a href="#messung">14. Auswertung unserer Werbeseiten</a></li>
-        <li><a href="#emails">15. E-Mails</a></li>
-        <li><a href="#speicher">16. Cookies und Speicher im Browser</a></li>
-        <li><a href="#drittland">17. Empfänger und Übermittlung in Drittländer</a></li>
-        <li><a href="#dauer">18. Speicherdauer</a></li>
-        <li><a href="#rechte">19. Deine Rechte</a></li>
-        <li><a href="#sonstiges">20. Sonstiges</a></li>
+        <li><a href="#konto">4. Konto und Anmeldung</a></li>
+        <li><a href="#zahlung">5. Kauf, Zahlung, Kündigung und Widerruf</a></li>
+        <li><a href="#videos">6. Videos und Livestreams</a></li>
+        <li><a href="#dateien">7. Hochgeladene Dateien</a></li>
+        <li><a href="#journal">8. Trading Journal</a></li>
+        <li><a href="#discord">9. Community auf Discord</a></li>
+        <li><a href="#beitraege">10. Kommentare, Support und veröffentlichte Nachweise</a></li>
+        <li><a href="#bewerbungen">11. Bewerbungen, Anfragen und Terminbuchung</a></li>
+        <li><a href="#telegram">12. Telegram-Bot</a></li>
+        <li><a href="#messung">13. Auswertung unserer Werbeseiten</a></li>
+        <li><a href="#emails">14. E-Mails</a></li>
+        <li><a href="#speicher">15. Cookies und Speicher im Browser</a></li>
+        <li><a href="#drittland">16. Empfänger und Übermittlung in Drittländer</a></li>
+        <li><a href="#dauer">17. Speicherdauer</a></li>
+        <li><a href="#rechte">18. Deine Rechte</a></li>
+        <li><a href="#sonstiges">19. Sonstiges</a></li>
       </ul>
 
       <h2 id="verantwortlicher">1. Verantwortlicher</h2>
@@ -95,23 +94,18 @@ export default function DatenschutzPage() {
         Betriebssystem sowie die zuvor besuchte Seite. Das ist nötig, um die Seiten auszuliefern, Fehler zu finden und
         Angriffe abzuwehren (berechtigtes Interesse, Art. 6 Abs. 1 lit. f DSGVO). Vercel ist für uns als
         Auftragsverarbeiter tätig; die Verarbeitung kann auch in den USA stattfinden (siehe{" "}
-        <a href="#drittland">Abschnitt 17</a>).
+        <a href="#drittland">Abschnitt 16</a>).
       </p>
-
-      {/* Google Fonts: `app/layout.tsx` (<link> auf fonts.googleapis.com) und
-          `lib/email/layout/styles.ts` (fontLinkHref). Wird die Schrift selbst
-          gehostet (z. B. über next/font), entfällt dieser Abschnitt. */}
-      <h2 id="schrift">4. Schriftart</h2>
+      {/* Schrift: next/font (`app/fonts.ts`) liefert Inter von der eigenen Domain;
+          die Mails nutzen Systemschriften. Kein Google Fonts mehr. */}
       <p>
-        Unsere Seiten laden die Schriftart Inter von Servern von Google (Google Ireland Limited, Gordon House, Barrow
-        Street, Dublin 4, Irland). Dabei überträgt dein Browser deine IP-Adresse und technische Angaben an Google;
-        eine Übermittlung an die Google LLC in den USA ist nicht ausgeschlossen. Zweck ist eine einheitliche
-        Darstellung unserer Seiten (Art. 6 Abs. 1 lit. f DSGVO). Auch unsere E-Mails binden die Schrift auf diesem Weg
-        ein; ob sie nachgeladen wird, hängt von deinem E-Mail-Programm ab.
+        Auch die Schriftart unserer Seiten liefern wir auf diesem Weg selbst aus. Dein Browser stellt dafür keine
+        Verbindung zu Google oder einem anderen Schriftenanbieter her; unsere E-Mails verwenden die Schriften deines
+        Geräts.
       </p>
 
       {/* Supabase: Datenbank und Anmeldung (`lib/supabase/*`). */}
-      <h2 id="konto">5. Konto und Anmeldung</h2>
+      <h2 id="konto">4. Konto und Anmeldung</h2>
       <p>
         Für den Mitgliederbereich brauchst du ein Konto. Dafür verarbeiten wir deine E-Mail-Adresse, dein Passwort
         (gespeichert nur als verschlüsselter Hashwert), deinen Namen, auf Wunsch einen Benutzernamen und ein
@@ -121,16 +115,16 @@ export default function DatenschutzPage() {
       </p>
       <p>
         Datenbank und Anmeldung betreibt für uns Supabase, Inc. (USA) als Auftragsverarbeiter. Damit du angemeldet
-        bleibst, setzen wir ein Anmelde-Cookie (siehe <a href="#speicher">Abschnitt 16</a>). Den Zeitpunkt der letzten
+        bleibst, setzen wir ein Anmelde-Cookie (siehe <a href="#speicher">Abschnitt 15</a>). Den Zeitpunkt der letzten
         Anmeldung nutzen wir auch, um dich zu erinnern, wenn du länger nicht da warst (siehe{" "}
-        <a href="#emails">Abschnitt 15</a>).
+        <a href="#emails">Abschnitt 14</a>).
       </p>
 
       {/* Stripe: gehostete Kasse (`app/go/[plan]`), eingebettete Kasse
           (`app/api/stripe/create-checkout-session`, Stripe.js nur auf /checkout),
           Kundenportal, Rechnungen, Webhooks. Trichter: Tabelle `checkout_sessions`,
           Cookie `cc_checkout` (`lib/checkout/cookie.ts`). */}
-      <h2 id="zahlung">6. Kauf, Zahlung und Kündigung</h2>
+      <h2 id="zahlung">5. Kauf, Zahlung, Kündigung und Widerruf</h2>
       <p>
         Bezahlt wird über Stripe (Stripe Payments Europe, Ltd., 1 Grand Canal Street Lower, Grand Canal Dock, Dublin,
         Irland). In der Kasse von Stripe gibst du deine E-Mail-Adresse, deine Zahlungsdaten und, soweit abgefragt,
@@ -146,7 +140,8 @@ export default function DatenschutzPage() {
       <p>
         Rechtsgrundlagen sind Art. 6 Abs. 1 lit. b DSGVO (Vertrag) und lit. c (steuer- und handelsrechtliche
         Aufbewahrung). Deine Zustimmung zu AGB und sofortigem Leistungsbeginn in der Kasse speichert Stripe mit der
-        Bestellung; wir halten zusätzlich fest, welcher Stand unserer Rechtstexte beim Kauf galt.
+        Bestellung; wir halten zusätzlich fest, dass und wann du zugestimmt hast und welcher Stand unserer
+        Rechtstexte beim Kauf galt, um das später belegen zu können (Art. 6 Abs. 1 lit. f DSGVO).
       </p>
       <p>
         Für jede geöffnete Kasse halten wir außerdem den gewählten Plan, eine Kennzeichnung der Quelle, die Seite, von
@@ -159,9 +154,19 @@ export default function DatenschutzPage() {
         Wenn du kündigst, kannst du freiwillig einen Grund angeben. Wir speichern ihn, um unser Angebot zu verbessern,
         und übermitteln ihn als Notiz zur Kündigung auch an Stripe (Art. 6 Abs. 1 lit. f DSGVO).
       </p>
+      {/* Kündigungsbutton (`app/kuendigen`, Tabelle `kuendigungen`) und
+          Widerrufsfunktion (`app/widerrufen`, Tabelle `widerrufe`). */}
+      <p>
+        Kündigst oder widerrufst du über „Verträge hier kündigen“ oder „Vertrag widerrufen“, speichern wir deine
+        Erklärung mit Name, E-Mail-Adresse, deinen Angaben zum Vertrag, der Adresse für die Bestätigung und dem
+        Zeitpunkt des Eingangs, ordnen sie deinem Konto und Vertrag zu und schicken dir die gesetzlich vorgeschriebene
+        Bestätigung per E-Mail (Art. 6 Abs. 1 lit. c DSGVO in Verbindung mit § 312k und § 356a BGB). Zum Schutz vor
+        Missbrauch halten wir außerdem einen Hashwert deiner IP-Adresse — nicht die Adresse selbst — und die Kennung
+        deines Browsers fest (Art. 6 Abs. 1 lit. f DSGVO).
+      </p>
 
       {/* Cloudflare Stream: `lib/cloudflare-stream.ts`, Player, /stream-iframe. */}
-      <h2 id="videos">7. Videos und Livestreams</h2>
+      <h2 id="videos">6. Videos und Livestreams</h2>
       <p>
         Videos und Livestreams liefern wir über Cloudflare Stream (Cloudflare, Inc., USA) aus. Beim Abspielen ruft
         dein Browser die Videodaten direkt bei Cloudflare ab; Cloudflare verarbeitet dabei deine IP-Adresse und
@@ -171,7 +176,7 @@ export default function DatenschutzPage() {
       </p>
 
       {/* Cloudflare R2, EU-Jurisdiktion (`lib/storage.ts`, R2_ENDPOINT *.eu.*). */}
-      <h2 id="dateien">8. Hochgeladene Dateien</h2>
+      <h2 id="dateien">7. Hochgeladene Dateien</h2>
       <p>
         Dateien, die du hochlädst — Profilbild, eingereichte Nachweise, Screenshots im Trading Journal —, speichern
         wir bei Cloudflare R2 in einem Speicher mit Datenstandort in der EU. Dein Browser lädt sie über zeitlich
@@ -179,7 +184,7 @@ export default function DatenschutzPage() {
         Art. 6 Abs. 1 lit. b DSGVO.
       </p>
 
-      <h2 id="journal">9. Trading Journal</h2>
+      <h2 id="journal">8. Trading Journal</h2>
       <p>
         Im Trading Journal speicherst du Handelskonten (Bezeichnung, Broker), importierte oder eingetragene Trades
         (Instrument, Richtung, Menge, Preise, Zeiten, Ergebnis, Gebühren), Notizen, Tags und Screenshots. Wir
@@ -189,7 +194,7 @@ export default function DatenschutzPage() {
 
       {/* Discord: OAuth `identify guilds.join` (`app/api/discord/*`,
           `app/api/discord-funnel/*`), Bot vergibt/entzieht Rollen. */}
-      <h2 id="discord">10. Community auf Discord</h2>
+      <h2 id="discord">9. Community auf Discord</h2>
       <p>
         Unsere Community läuft auf Discord (Discord Inc., USA). Wenn du dein Discord-Konto mit der Plattform
         verbindest, meldest du dich bei Discord an und erlaubst uns, deine Discord-ID und deinen Benutzernamen abzurufen
@@ -206,7 +211,7 @@ export default function DatenschutzPage() {
         .
       </p>
 
-      <h2 id="beitraege">11. Kommentare, Support und veröffentlichte Nachweise</h2>
+      <h2 id="beitraege">10. Kommentare, Support und veröffentlichte Nachweise</h2>
       <p>
         <strong>News:</strong> Kommentare, Likes, gemerkte Beiträge und den Gelesen-Status speichern wir mit deinem
         Konto. Kommentare sehen andere Mitglieder zusammen mit deinem Namen (Art. 6 Abs. 1 lit. b DSGVO).
@@ -232,9 +237,10 @@ export default function DatenschutzPage() {
 
       {/* Bewerbungen: `app/api/applications/*`, `app/api/ht-applications/*`,
           `app/api/discord-funnel/lead` (IP + User-Agent). Calendly-Widget auf
-          /bewerbung/danke, /discord/termin/danke, /termin/danke; Webhook
+          /bewerbung/danke, /discord/termin/danke, /termin/danke — erst nach
+          Klick (`components/marketing/CalendlyZweiKlick.tsx`); Webhook
           `app/api/integrations/calendly/webhook`. */}
-      <h2 id="bewerbungen">12. Bewerbungen, Anfragen und Terminbuchung</h2>
+      <h2 id="bewerbungen">11. Bewerbungen, Anfragen und Terminbuchung</h2>
       <p>Je nach Formular verarbeiten wir:</p>
       <ul>
         <li>
@@ -265,11 +271,15 @@ export default function DatenschutzPage() {
       </p>
       <p>
         <strong>Terminbuchung mit Calendly:</strong> Auf den Bestätigungsseiten nach einer Bewerbung oder Anfrage
-        binden wir den Buchungskalender von Calendly (Calendly LLC, USA) ein. Schon beim Laden dieser Seiten stellt
-        dein Browser eine Verbindung zu Calendly her; Calendly verarbeitet dabei deine IP-Adresse und kann Cookies
-        setzen. Zum Vorausfüllen übergeben wir Vorname und E-Mail-Adresse sowie eine interne Kennung, mit der wir die
-        Buchung deiner Anfrage zuordnen. Nach einer Buchung meldet Calendly uns E-Mail-Adresse, Termin und diese
-        Kennung (Art. 6 Abs. 1 lit. b DSGVO). Für die Verarbeitung bei Calendly gilt die{" "}
+        kannst du einen Termin über den Buchungskalender von Calendly (Calendly LLC, USA) buchen. Der Kalender wird
+        erst geladen, wenn du auf „Termin-Kalender laden“ klickst; vorher stellt dein Browser keine Verbindung zu
+        Calendly her. Mit dem Klick willigst du ein, dass der Kalender geladen wird: Dein Browser verbindet sich mit
+        Calendly, Calendly verarbeitet dabei deine IP-Adresse und kann Cookies setzen (Art. 6 Abs. 1 lit. a DSGVO,
+        § 25 Abs. 1 TDDDG). Du kannst die Einwilligung jederzeit für die Zukunft widerrufen, indem du den Kalender
+        nicht erneut lädst und die Cookies von Calendly in deinem Browser löschst. Zum Vorausfüllen übergeben wir
+        Vorname und E-Mail-Adresse sowie eine interne Kennung, mit der wir die Buchung deiner Anfrage zuordnen. Nach
+        einer Buchung meldet Calendly uns E-Mail-Adresse, Termin und diese Kennung (Art. 6 Abs. 1 lit. b DSGVO). Für
+        die Verarbeitung bei Calendly gilt die{" "}
         <a href="https://calendly.com/privacy" target="_blank" rel="noopener noreferrer">
           Datenschutzerklärung von Calendly
         </a>
@@ -277,7 +287,7 @@ export default function DatenschutzPage() {
       </p>
 
       {/* Telegram: `app/api/telegram/webhook`, Tabelle `telegram_leads`. */}
-      <h2 id="telegram">13. Telegram-Bot</h2>
+      <h2 id="telegram">12. Telegram-Bot</h2>
       <p>
         Wenn du unseren Telegram-Bot startest, erhalten wir von Telegram deine Telegram-ID und Chat-ID, deinen
         Benutzernamen, Vor- und Nachnamen, deine Spracheinstellung und den Link, über den du gekommen bist. Wir
@@ -288,7 +298,7 @@ export default function DatenschutzPage() {
 
       {/* Eigene Messung: `app/api/discord-funnel/visit|video`, `app/api/tracking/event`,
           sessionStorage `cc_discord_sid`, `cc_tracking_sid`, `cc_tracking_ref`. */}
-      <h2 id="messung">14. Auswertung unserer Werbeseiten</h2>
+      <h2 id="messung">13. Auswertung unserer Werbeseiten</h2>
       <p>
         Wir setzen keine Analyse- oder Werbedienste Dritter ein — kein Google Analytics, keine Werbe-Pixel. Auf einigen
         Werbeseiten messen wir selbst:
@@ -308,7 +318,7 @@ export default function DatenschutzPage() {
       </p>
 
       {/* Resend (EU-Region eu-west-1), Crons in `vercel.json`. */}
-      <h2 id="emails">15. E-Mails</h2>
+      <h2 id="emails">14. E-Mails</h2>
       <p>
         E-Mails versenden wir über Resend (Resend, Inc., USA); der Versand läuft über das Rechenzentrum von Resend in
         Irland. Wir senden dir:
@@ -318,21 +328,26 @@ export default function DatenschutzPage() {
           E-Mails zu deinem Vertrag und Konto — Bestätigungen, Passwort, Zahlungsprobleme, Antworten des Supports (Art.
           6 Abs. 1 lit. b DSGVO);
         </li>
-        <li>nach der Anmeldung zum kostenlosen Einstiegskurs die zugehörige Folge von Kurs-E-Mails (Art. 6 Abs. 1 lit. b DSGVO);</li>
+        <li>
+          nach der Anmeldung zum kostenlosen Einstiegskurs die zugehörige Folge von Kurs-E-Mails, die auch auf unsere
+          Mitgliedschaft hinweist (Art. 6 Abs. 1 lit. b und f DSGVO);
+        </li>
         <li>
           als Kundin oder Kunde Hinweise zu unseren eigenen, ähnlichen Angeboten: Erinnerungen, wenn du länger nicht
-          aktiv warst, Angebote nach einer Kündigung, Informationen zum 1:1-Mentoring und zu Änderungen der Plattform
-          (Art. 6 Abs. 1 lit. f DSGVO in Verbindung mit § 7 Abs. 3 UWG).
+          aktiv warst, die Bitte um Feedback und Angebote nach einer Kündigung, Informationen zum 1:1-Mentoring und zu
+          Änderungen der Plattform (Art. 6 Abs. 1 lit. f DSGVO in Verbindung mit § 7 Abs. 3 UWG).
         </li>
       </ul>
+      {/* Abmeldelink: `lib/email/abmeldung.ts`, Hinweis im Footer von `BaseEmail`. */}
       <p>
-        Den E-Mails der letzten Gruppe kannst du jederzeit widersprechen, per E-Mail an{" "}
-        <a href={`mailto:${anbieter.email}`}>{anbieter.email}</a> oder über den Abmeldelink, wo die E-Mail einen
-        enthält. Dafür entstehen dir keine anderen als die Übermittlungskosten nach den Basistarifen. Öffnungen und
-        Klicks in unseren E-Mails werten wir nicht aus.
+        Den E-Mails der letzten beiden Gruppen kannst du jederzeit widersprechen, per E-Mail an{" "}
+        <a href={`mailto:${anbieter.email}`}>{anbieter.email}</a> oder über den Abmeldelink, den jede dieser E-Mails
+        enthält. Dafür entstehen dir keine anderen als die Übermittlungskosten nach den Basistarifen. Nach einem
+        Widerspruch erhältst du nur noch E-Mails zu deinem Vertrag und Konto. Öffnungen und Klicks in unseren E-Mails
+        werten wir nicht aus.
       </p>
 
-      <h2 id="speicher">16. Cookies und Speicher im Browser</h2>
+      <h2 id="speicher">15. Cookies und Speicher im Browser</h2>
       <p>Wir selbst setzen oder lesen im Browser nur Folgendes:</p>
       <table>
         <thead>
@@ -355,7 +370,7 @@ export default function DatenschutzPage() {
           </tr>
           <tr>
             <td><code>cc_discord_sid</code>, <code>cc_tracking_sid</code>, <code>cc_tracking_ref</code> (Sitzungsspeicher)</td>
-            <td>Auswertung unserer Werbeseiten (Abschnitt 14)</td>
+            <td>Auswertung unserer Werbeseiten (Abschnitt 13)</td>
             <td>bis zum Schließen des Tabs</td>
           </tr>
           <tr>
@@ -372,25 +387,26 @@ export default function DatenschutzPage() {
       </table>
       <p>
         Das Anmelde-Cookie und die technisch notwendigen Einträge sind nach § 25 Abs. 2 Nr. 2 TDDDG ohne Einwilligung
-        zulässig. Dazu kommen die Cookies von Stripe in der Kasse (<a href="#zahlung">Abschnitt 6</a>) und von
-        Calendly auf den Seiten zur Terminbuchung (<a href="#bewerbungen">Abschnitt 12</a>).
+        zulässig. Dazu kommen die Cookies von Stripe in der Kasse (<a href="#zahlung">Abschnitt 5</a>) und von
+        Calendly auf den Seiten zur Terminbuchung, sobald du dort den Kalender lädst (
+        <a href="#bewerbungen">Abschnitt 11</a>).
       </p>
 
-      <h2 id="drittland">17. Empfänger und Übermittlung in Drittländer</h2>
+      <h2 id="drittland">16. Empfänger und Übermittlung in Drittländer</h2>
       <p>
         Wir geben deine Daten nur an die in dieser Erklärung genannten Dienstleister weiter. Als Auftragsverarbeiter
-        arbeiten für uns Vercel, Supabase, Cloudflare und Resend; Stripe, Discord, Calendly und Google verarbeiten
-        Daten in den genannten Fällen ganz oder teilweise in eigener Verantwortung.
+        arbeiten für uns Vercel, Supabase, Cloudflare und Resend; Stripe, Discord und Calendly verarbeiten Daten in
+        den genannten Fällen ganz oder teilweise in eigener Verantwortung.
       </p>
       <p>
         Mehrere dieser Anbieter haben ihren Sitz in den USA oder können Daten dort verarbeiten: Vercel, Supabase,
-        Cloudflare, Resend, Discord, Calendly, Google und — für einzelne Zwecke — Stripe. Für die USA besteht ein
+        Cloudflare, Resend, Discord, Calendly und — für einzelne Zwecke — Stripe. Für die USA besteht ein
         Angemessenheitsbeschluss der EU-Kommission (EU-U.S. Data Privacy Framework); auf ihn stützen wir die
         Übermittlung, soweit der jeweilige Anbieter danach zertifiziert ist. Im Übrigen erfolgt die Übermittlung auf
         Grundlage der Standardvertragsklauseln der EU-Kommission (Art. 46 Abs. 2 lit. c DSGVO).
       </p>
 
-      <h2 id="dauer">18. Speicherdauer</h2>
+      <h2 id="dauer">17. Speicherdauer</h2>
       <ul>
         <li>Konto, Lernfortschritt, Journal, Kommentare und Tickets speichern wir, solange dein Konto besteht.</li>
         <li>
@@ -402,15 +418,19 @@ export default function DatenschutzPage() {
           jeweiligen Zweck nicht mehr brauchen oder du der Verarbeitung widersprichst, soweit keine Pflicht zur
           Aufbewahrung besteht.
         </li>
+        <li>
+          Kündigungs- und Widerrufserklärungen bewahren wir als Nachweis auf, solange aus dem Vertrag noch Ansprüche
+          geltend gemacht werden können, in der Regel drei Jahre ab dem Ende des Jahres der Erklärung (§ 195 BGB).
+        </li>
         <li>Veröffentlichte Nachweise nehmen wir von der Seite, sobald du deine Einwilligung widerrufst.</li>
-        <li>Für Cookies und Browserspeicher gelten die Zeiten aus Abschnitt 16.</li>
+        <li>Für Cookies und Browserspeicher gelten die Zeiten aus Abschnitt 15.</li>
       </ul>
       <p>
         Die Löschung deines Kontos kannst du jederzeit per E-Mail an{" "}
         <a href={`mailto:${anbieter.email}`}>{anbieter.email}</a> verlangen.
       </p>
 
-      <h2 id="rechte">19. Deine Rechte</h2>
+      <h2 id="rechte">18. Deine Rechte</h2>
       <p>Du hast das Recht auf</p>
       <ul>
         <li>Auskunft über die Daten, die wir über dich verarbeiten (Art. 15 DSGVO),</li>
@@ -443,7 +463,7 @@ export default function DatenschutzPage() {
         </a>
       </address>
 
-      <h2 id="sonstiges">20. Sonstiges</h2>
+      <h2 id="sonstiges">19. Sonstiges</h2>
       <p>
         <strong>Pflicht zur Angabe:</strong> Für den Abschluss einer Mitgliedschaft brauchen wir deine E-Mail-Adresse
         und Zahlungsdaten; ohne sie kommt kein Vertrag zustande. Alle weiteren Angaben sind freiwillig, soweit wir

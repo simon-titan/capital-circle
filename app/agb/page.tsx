@@ -2,7 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { RechtstextSeite } from "@/components/legal/RechtstextSeite";
 import { preiskarten } from "@/config/landing-membership";
-import { anbieter, anbieterAnschriftEinzeilig, rechtsPfade, rechtstexteVersion } from "@/config/legal";
+import {
+  anbieter,
+  anbieterAnschriftEinzeilig,
+  rechtsPfade,
+  rechtstexteVersion,
+  widerrufsfunktionPfad,
+} from "@/config/legal";
 
 export const metadata: Metadata = {
   title: "AGB — Capital Circle",
@@ -263,6 +269,13 @@ export default function AgbPage() {
         Beginn der Bereitstellung; für die Dienstleistungen erlischt es mit ihrer vollständigen Erbringung, und bei
         einem Widerruf schuldest du für die bis dahin erbrachten Dienstleistungen anteiligen Wertersatz.
       </p>
+      {widerrufsfunktionPfad ? (
+        <p>
+          Deinen Widerruf kannst du auch online erklären — über die Schaltfläche{" "}
+          <Link href={widerrufsfunktionPfad}>„Vertrag widerrufen“</Link> im Fußbereich unserer Seiten und in der
+          Navigation des Mitgliederbereichs, ohne Anmeldung. Den Eingang bestätigen wir dir sofort per E-Mail.
+        </p>
+      ) : null}
 
       <h2 id="p9">§ 9 Konto, Zugang und Nutzungsrechte</h2>
       <p>

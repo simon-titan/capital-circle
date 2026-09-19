@@ -1,6 +1,7 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
 import { EmailText, EmailHighlight, EmailButton } from "../layout/components";
+import { abmeldeUrl } from "../abmeldung";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 
@@ -10,10 +11,10 @@ interface Props {
   userId: string;
 }
 
-export default function FreeCourseDay3Email({ firstName }: Pick<Props, "firstName">) {
+export default function FreeCourseDay3Email({ firstName, abmeldeLink }: Pick<Props, "firstName"> & { abmeldeLink?: string }) {
   const appUrl = getAppUrl();
   return (
-    <BaseEmail previewText="Du bekommst Einblick in den Sonntags-Call — kostenlos.">
+    <BaseEmail previewText="Du bekommst Einblick in den Sonntags-Call — kostenlos." unsubscribeUrl={abmeldeLink}>
       <EmailText>Hey {firstName},</EmailText>
       <EmailText>
         als Teil dieses Zugangs bekommst du nicht nur die Inhalte des Free Kurses.
@@ -51,7 +52,7 @@ export async function sendFreeCourseDay3(props: Props): Promise<SendResult> {
     to: props.email,
     subject: "Kostenloser Community Call bei Capital Circle!",
     jsx: (
-      <FreeCourseDay3Email firstName={props.firstName} />
+      <FreeCourseDay3Email firstName={props.firstName} abmeldeLink={abmeldeUrl({ userId: props.userId, email: props.email })} />
     ),
     log: {
       userId: props.userId,

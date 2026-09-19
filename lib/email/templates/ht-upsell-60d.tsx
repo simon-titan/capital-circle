@@ -7,6 +7,7 @@ import {
   EmailSubheading,
   EmailHighlight,
 } from "../layout/components";
+import { abmeldeUrl } from "../abmeldung";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 
@@ -16,13 +17,13 @@ interface Props {
   userId: string;
 }
 
-export default function HtUpsell60dEmail({ firstName }: Pick<Props, "firstName">) {
+export default function HtUpsell60dEmail({ firstName, abmeldeLink }: Pick<Props, "firstName"> & { abmeldeLink?: string }) {
   const appUrl = getAppUrl();
   const calendlyUrl =
     process.env.NEXT_PUBLIC_CALENDLY_URL?.trim() || `${appUrl}/apply`;
 
   return (
-    <BaseEmail previewText={`Bereit für den nächsten Schritt, ${firstName}?`}>
+    <BaseEmail previewText={`Bereit für den nächsten Schritt, ${firstName}?`} unsubscribeUrl={abmeldeLink}>
       <EmailHeading>
         Bereit für den nächsten Schritt, {firstName}?
       </EmailHeading>
@@ -59,7 +60,7 @@ export async function sendHtUpsell60d(props: Props): Promise<SendResult> {
     to: props.email,
     subject: `Bereit für den nächsten Schritt, ${props.firstName}?`,
     jsx: (
-      <HtUpsell60dEmail firstName={props.firstName} />
+      <HtUpsell60dEmail firstName={props.firstName} abmeldeLink={abmeldeUrl({ userId: props.userId, email: props.email })} />
     ),
     log: {
       userId: props.userId,

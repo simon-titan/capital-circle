@@ -60,6 +60,9 @@ const PUBLIC_PREFIXES = [
   "/agb",
   "/widerruf",
   "/kuendigen",
+  // Widerrufsfunktion (§ 356a BGB). Eigener Eintrag: `/widerruf` deckt
+  // `/widerrufen` nicht ab (Präfix gilt nur mit Schrägstrich).
+  "/widerrufen",
   "/survey",
   "/discord",
   "/termin",
@@ -70,10 +73,10 @@ const PUBLIC_PREFIXES = [
 // Rechtstexte und Kündigungsbutton sind vom Wartungs-Gate ausgenommen:
 // `/vorschau` zeigt die Verkaufsseite auch bei geschlossener Plattform, und
 // deren Fußzeile verlinkt genau diese Seiten. Impressum, Datenschutz,
-// Widerrufsbelehrung und „Verträge hier kündigen" müssen ständig erreichbar
-// sein — eine Wartungsseite an ihrer Stelle wäre ein Rechtsverstoß.
-// Dieselben Pfade stehen in `config/legal.ts` (`rechtsPfade`).
-const RECHTS_PFADE = ["/impressum", "/datenschutz", "/agb", "/widerruf", "/kuendigen"];
+// Widerrufsbelehrung, „Verträge hier kündigen" und „Vertrag widerrufen"
+// müssen ständig erreichbar sein — eine Wartungsseite an ihrer Stelle wäre ein
+// Rechtsverstoß. Dieselben Pfade stehen in `config/legal.ts` (`rechtsPfade`).
+const RECHTS_PFADE = ["/impressum", "/datenschutz", "/agb", "/widerruf", "/kuendigen", "/widerrufen"];
 
 function isRechtsPfad(pathname: string): boolean {
   return RECHTS_PFADE.some((p) => pathname === p || pathname.startsWith(`${p}/`));

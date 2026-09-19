@@ -1,10 +1,10 @@
 "use client";
 
-import { Box, Stack, Text } from "@chakra-ui/react";
+import { Box, Stack } from "@chakra-ui/react";
 import { Calendar } from "lucide-react";
-import Script from "next/script";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
+import { CalendlyZweiKlick } from "@/components/marketing/CalendlyZweiKlick";
 import {
   FunnelEyebrow,
   FunnelFinePrint,
@@ -18,17 +18,14 @@ interface Props {
   calendlyUrl: string;
 }
 
+/** Der Kalender lädt erst nach Klick (Zwei-Klick-Lösung, `CalendlyZweiKlick`). */
 export function DankePageClient({ calendlyUrl }: Props) {
   const router = useRouter();
-  const [widgetReady, setWidgetReady] = useState(false);
 
   const handleMessage = useCallback(
     (e: MessageEvent) => {
       if (e.data?.event === "calendly.event_scheduled") {
         router.push("/dashboard?booking_success=1");
-      }
-      if (e.data?.event === "calendly.page_height" || e.data?.event === "calendly.date_and_time_selected") {
-        setWidgetReady(true);
       }
     },
     [router],
@@ -38,12 +35,6 @@ export function DankePageClient({ calendlyUrl }: Props) {
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
   }, [handleMessage]);
-
-  const loadTimeout = useEffect(() => {
-    const timer = setTimeout(() => setWidgetReady(true), 5000);
-    return () => clearTimeout(timer);
-  }, []);
-  void loadTimeout;
 
   return (
     <>
@@ -128,51 +119,7 @@ export function DankePageClient({ calendlyUrl }: Props) {
               aria-hidden
             />
 
-            {/* Loading overlay */}
-            {!widgetReady && (
-              <Box
-                position="absolute"
-                inset={0}
-                zIndex={1}
-                display="flex"
-                flexDirection="column"
-                alignItems="center"
-                justifyContent="center"
-                gap={5}
-                bg="var(--cc-panel-solid)"
-                role="status"
-              >
-                {/* Gold spinner */}
-                <Box
-                  w="40px"
-                  h="40px"
-                  borderRadius="full"
-                  border="3px solid rgba(212, 176, 128, 0.15)"
-                  borderTopColor="var(--cc-gold-light)"
-                  boxShadow="0 0 18px rgba(212, 176, 128, 0.2)"
-                  sx={{
-                    animation: "calSpin 0.8s linear infinite",
-                    "@keyframes calSpin": {
-                      "0%": { transform: "rotate(0deg)" },
-                      "100%": { transform: "rotate(360deg)" },
-                    },
-                  }}
-                />
-                <Text fontSize="14px" color="var(--cc-text-2)">
-                  Termine werden geladen…
-                </Text>
-              </Box>
-            )}
-
-            <div
-              className="calendly-inline-widget"
-              data-url={calendlyUrl}
-              style={{ minWidth: "320px", height: "700px", width: "100%" }}
-            />
-            <Script
-              src="https://assets.calendly.com/assets/external/widget.js"
-              strategy="lazyOnload"
-            />
+            <CalendlyZweiKlick url={calendlyUrl} flaeche="var(--cc-panel-solid)" />
           </Box>
 
           {/* Footer */}

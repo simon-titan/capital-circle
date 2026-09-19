@@ -16,8 +16,15 @@
  * Stripe-Session und belegt damit später, welcher Stand beim Kauf galt.
  */
 
-/** Versionskennung der Rechtstexte (ISO-Datum des Stands). */
-export const rechtstexteVersion = "2026-09-19";
+/**
+ * Versionskennung der Rechtstexte (ISO-Datum des Stands, bei mehreren Ständen
+ * am selben Tag mit laufender Nummer).
+ *
+ * `2026-09-19.2`: Widerrufsfunktion (Satz nach Gestaltungshinweis 3 in der
+ * Belehrung, AGB § 8), Datenschutz ohne Google Fonts, mit Calendly erst nach
+ * Klick, mit Kündigungs- und Widerrufsfunktion und dem Zustimmungsnachweis.
+ */
+export const rechtstexteVersion = "2026-09-19.2";
 
 /** Derselbe Stand als Lesedatum für die Seiten. */
 export const rechtstexteStand = "19. September 2026";
@@ -82,6 +89,8 @@ export const rechtsPfade = {
   widerruf: "/widerruf",
   /** Kündigungsbutton nach § 312k BGB (eigene Seite `app/kuendigen`). */
   kuendigen: "/kuendigen",
+  /** Widerrufsfunktion nach § 356a BGB (eigene Seite `app/widerrufen`). */
+  widerrufen: "/widerrufen",
 } as const;
 
 /**
@@ -89,14 +98,13 @@ export const rechtsPfade = {
  * für online geschlossene Fernabsatzverträge, Beschriftung „Vertrag
  * widerrufen").
  *
- * **Gibt es noch nicht.** Solange der Wert `null` ist, fehlt in der
- * Widerrufsbelehrung der Satz nach Gestaltungshinweis 3 des gesetzlichen
- * Musters („Sie können Ihr Widerrufsrecht auch online unter … ausüben"), und
- * die Fußzeile zeigt keinen Eintrag „Vertrag widerrufen". Wird die Funktion
- * gebaut, genügt es, hier ihren Pfad einzutragen — Belehrung und Fußzeile
- * ziehen dann von selbst mit.
+ * Gesetzt, seit es die Funktion gibt (`app/widerrufen`, `/api/widerruf`).
+ * Daran hängen der Satz nach Gestaltungshinweis 3 in der Widerrufsbelehrung
+ * („Sie können Ihr Widerrufsrecht auch online unter … ausüben"), der Eintrag
+ * „Vertrag widerrufen" in der Fußzeile und in der Plattform-Sidebar und der
+ * Hinweis in § 8 der AGB. `null` nähme alle vier zurück.
  */
-export const widerrufsfunktionPfad: string | null = null;
+export const widerrufsfunktionPfad: string | null = rechtsPfade.widerrufen;
 
 /** Absolute Adresse eines Rechtstexts, z. B. für Mails und die Stripe-Kasse. */
 export function rechtsUrl(pfad: string, basisUrl: string): string {
