@@ -21,7 +21,7 @@ import {
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
-import { CheckCircle2, LifeBuoy, PauseCircle, TicketPercent } from "lucide-react";
+import { CheckCircle2, LifeBuoy, PauseCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -58,18 +58,21 @@ const FELD_SX = {
  * Auswertung statt in `cancellations`.
  *
  * Das Halte-Angebot richtet sich nach dem Grund: Wer zu wenig Zeit hat, dem
- * hilft eine Pause; wer den Preis nennt, dem ein Rabatt; wer über Technik
- * klagt, braucht den Support und keinen Rabatt. Ein Angebot, das am Grund
- * vorbeigeht, liest sich wie eine Verkaufsmasche.
+ * hilft eine Pause; wer über Technik klagt, braucht den Support. Ein Angebot,
+ * das am Grund vorbeigeht, liest sich wie eine Verkaufsmasche.
+ *
+ * **Kein Rabatt** (Entscheidung Simon, 19.09.2026): Weder Halte- noch
+ * Rückkehrangebote arbeiten mit Preisnachlässen. Der frühere Rabatt-Schritt
+ * (`/api/stripe/subscription/discount`, `STRIPE_RETENTION_COUPON_ID`) wird
+ * nicht mehr angeboten; die Route bleibt nur, damit alte Aufrufe nicht ins
+ * Leere laufen, und tut ohne Coupon-ID nichts.
  */
 export function CancelFlow({
   periodenEnde,
-  rabattVerfuegbar,
   bereitsGekuendigt,
   pausiertBis,
 }: {
   periodenEnde: string;
-  rabattVerfuegbar: boolean;
   bereitsGekuendigt: boolean;
   pausiertBis: string | null;
 }) {
@@ -115,26 +118,6 @@ export function CancelFlow({
         description: `Die Abrechnung ruht ${pauseMonate} Monat(e). Dein Zugang endet am ${formatDate(
           json.accessUntil ?? periodenEnde,
         )} und kommt danach automatisch zurück.`,
-        status: "success",
-        duration: 8000,
-        isClosable: true,
-      });
-      onClose();
-      router.refresh();
-    } catch (err) {
-      melde(err);
-    } finally {
-      setLaeuft(false);
-    }
-  }
-
-  async function rabattNehmen() {
-    setLaeuft(true);
-    try {
-      await ruf("/api/stripe/subscription/discount", "POST");
-      toast({
-        title: "Rabatt ist aktiv",
-        description: "Er greift ab der nächsten Abrechnung. Deine Mitgliedschaft läuft unverändert weiter.",
         status: "success",
         duration: 8000,
         isClosable: true,
@@ -317,19 +300,6 @@ export function CancelFlow({
                     aktion={
                       <Button as={Link} href="/support" variant="gold" size="sm" onClick={schliessen}>
                         Support schreiben
-                      </Button>
-                    }
-                  />
-                ) : null}
-
-                {grund === "too_expensive" && rabattVerfuegbar ? (
-                  <Angebot
-                    icon={<TicketPercent size={20} strokeWidth={1.75} aria-hidden />}
-                    titel="Rabatt auf die nächsten Abrechnungen"
-                    text="Wenn es nur am Betrag liegt: Wir senken ihn, statt dich zu verlieren. Der Rabatt greift ab der nächsten Abbuchung."
-                    aktion={
-                      <Button variant="gold" size="sm" onClick={() => void rabattNehmen()} isLoading={laeuft}>
-                        Rabatt annehmen
                       </Button>
                     }
                   />

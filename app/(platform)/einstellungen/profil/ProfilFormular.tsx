@@ -24,6 +24,7 @@ import { CardValue, DashCard, IconTile, Meta } from "@/components/platform/dashb
 import { createClient } from "@/lib/supabase/client";
 import { getDiscordAuthUrl } from "@/lib/discord";
 import { resolveTotalLearningSeconds } from "@/lib/learning-daily";
+import { DiscordNachrichten } from "./DiscordNachrichten";
 
 type ProfileData = {
   id: string;
@@ -285,22 +286,27 @@ export function ProfilFormular() {
   const disconnectDiscord = async () => {
     if (!profileId) return;
     setDisconnectingDiscord(true);
-    const { error: dcError } = await supabase.from("discord_connections").delete().eq("user_id", profileId);
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        discord_id: null,
-        discord_username: null,
-        discord_access_token: null,
-        discord_refresh_token: null,
-      })
-      .eq("id", profileId);
+    /*
+      Über die Route statt direkt in die Tabellen: Nur sie nimmt auch die
+      Rollen ab, die das System auf Discord vergeben hat. Vorher löste dieser
+      Knopf nur die Verknüpfung, und die Mitgliederrolle hing danach an einem
+      Discord-Konto, das kein Abgleich mehr kannte. Vom Server wirft das
+      Trennen niemanden (mehr).
+    */
+    let fehler: string | null = null;
+    try {
+      const res = await fetch("/api/discord/disconnect", { method: "POST", credentials: "same-origin" });
+      const daten = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+      if (!res.ok || !daten.ok) fehler = daten.error ?? "Unbekannter Fehler";
+    } catch (err) {
+      fehler = err instanceof Error ? err.message : "Unbekannter Fehler";
+    }
 
     setDisconnectingDiscord(false);
-    if (dcError || error) {
+    if (fehler) {
       toast({
         title: "Discord konnte nicht getrennt werden",
-        description: dcError?.message ?? error?.message,
+        description: fehler,
         status: "error",
         duration: 4000,
         isClosable: true,
@@ -558,6 +564,9 @@ export function ProfilFormular() {
             </Stack>
           </DashCard>
         )}
+
+        {/* Für jedes verknüpfte Discord-Konto, auch ohne laufende Mitgliedschaft. */}
+        {discordUsername ? <DiscordNachrichten style={rise(4)} /> : null}
 
         <DashCard label="Passwort ändern" labelId="settings-password" className="cc-card--still cc-rise" style={rise(4)}>
           <Stack spacing={4}>

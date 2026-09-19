@@ -4,14 +4,19 @@
  * praktisch für Cron/manuelle Kontrolle ohne eingeloggte Admin-Session.
  *
  * Aufruf:
- *   node scripts/discord-role-sync.mjs            (Dry-Run, Standard)
- *   node scripts/discord-role-sync.mjs --apply     (Abweichungen wirklich beheben)
+ *   npm run discord:sync                         (Dry-Run, Standard)
+ *   npm run discord:sync -- --apply              (Abweichungen wirklich beheben)
+ *   npm run discord:sync -- --apply --warteraum  (wer die Rolle verliert, kommt in den Warteraum)
+ *
+ * Seit 19.09.2026 zählt der Zugang (`is_paid` oder Admin, dieselbe Regel wie
+ * bei den Inhalten), nicht die letzte Zahlung. Entzogen wird nur mit Enddatum
+ * im Profil (`access_until`). Eine vorhandene Warteraumrolle bei jemandem ohne Zugang ist
+ * **keine** Abweichung und wird nie entzogen.
  */
 
 import { existsSync } from "node:fs";
 import { register } from "node:module";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 
 for (const file of [".env.local", ".env"]) {
@@ -25,18 +30,24 @@ for (const file of [".env.local", ".env"]) {
 register("./ts-loader.mjs", import.meta.url);
 
 const apply = process.argv.includes("--apply");
+const warteraumSetzen = process.argv.includes("--warteraum");
 
 const { reconcileDiscordRoles } = await import("../lib/discord/reconcile.ts");
 
 console.log(`\nDiscord-Rollen-Bestandsabgleich (${apply ? "APPLY" : "Dry-Run"})\n`);
 
 try {
-  const result = await reconcileDiscordRoles({ apply, triggeredBy: "script" });
+  const result = await reconcileDiscordRoles({ apply, triggeredBy: "script", warteraumSetzen });
 
   console.log(`Geprüft: ${result.checkedCount}`);
   console.log(`Behoben: ${result.fixedCount}`);
 
-  const mismatches = result.details.filter((d) => d.desired !== d.actual);
+  // Abweichung heisst: Zugang ohne Mitgliederrolle, oder Mitgliederrolle ohne Zugang.
+  const mismatches = result.details.filter(
+    (d) => (d.desired === "regular" && d.actual !== "regular" && d.actual !== "not_in_guild") ||
+      (d.desired === "none" && d.actual === "regular"),
+  );
+  if (result.entzugAusgesetzt) console.log(`\nEntzug ausgesetzt: ${result.entzugAusgesetzt}`);
   if (mismatches.length === 0) {
     console.log("\n✅ Keine Abweichungen gefunden.\n");
   } else {

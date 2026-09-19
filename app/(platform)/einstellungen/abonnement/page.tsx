@@ -14,7 +14,6 @@ import { createClient } from "@/lib/supabase/server";
 import { aboLaeuftSeit, ladeAboKontext } from "@/lib/stripe/abo-kontext";
 import { getStripe } from "@/lib/stripe/server";
 import {
-  haltenCouponId,
   istUpgradeQuelle,
   pruefeUpgrade,
   upgradeCouponId,
@@ -62,7 +61,6 @@ export default async function AbonnementPage() {
   const pausiertBis = stripeAbo?.pause_collection?.resumes_at
     ? new Date(stripeAbo.pause_collection.resumes_at * 1000).toISOString()
     : null;
-  const hatRabatt = (stripeAbo?.discounts?.length ?? 0) > 0;
   const status = stripeAbo?.status ?? kontext?.abo?.status ?? null;
 
   /*
@@ -143,17 +141,17 @@ export default async function AbonnementPage() {
       {/*
         Lifetime bleibt das einzige Angebot, das wirklich verschwindet, statt
         gesperrt dazustehen: Es hat keinen öffentlichen Preis und gilt nur für
-        zahlende Mitglieder. Eine gesperrte Karte wäre genau die Werbung, die
-        dieses Angebot nicht haben soll — und ohne `STRIPE_PRICE_LIFETIME`
-        führte ihr Knopf ohnehin ins Leere (`pruefeLifetimeAngebot` →
-        `kein_preis`).
+        Mitglieder, die zahlen oder je gezahlt haben (seit 19.09.2026 auch
+        Gekündigte und Gesperrte — auf sie verweisen Mahnung, Warteraum und
+        Abschied). Eine gesperrte Karte wäre genau die Werbung, die dieses
+        Angebot nicht haben soll — und ohne `STRIPE_PRICE_LIFETIME` führte ihr
+        Knopf ohnehin ins Leere (`pruefeLifetimeAngebot` → `kein_preis`).
       */}
-      {lifetime.erlaubt ? <LifetimeOffer /> : null}
+      {lifetime.erlaubt ? <LifetimeOffer ehemalig={Boolean(lifetime.ehemalig)} /> : null}
 
       {istAbo(tier) && kontext?.abo && periodenEnde ? (
         <CancelFlow
           periodenEnde={periodenEnde}
-          rabattVerfuegbar={Boolean(haltenCouponId()) && !hatRabatt}
           bereitsGekuendigt={cancelAtPeriodEnd}
           pausiertBis={pausiertBis}
         />

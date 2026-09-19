@@ -18,7 +18,7 @@ import { DashCard, IconTile, Meta } from "@/components/platform/dashboard/primit
  * Einmalzahlung. Ein laufendes Abo kündigt der Webhook danach zum
  * Periodenende — sonst zahlte das Mitglied doppelt.
  */
-export function LifetimeOffer() {
+export function LifetimeOffer({ ehemalig = false }: { ehemalig?: boolean }) {
   const router = useRouter();
   const toast = useToast();
   const [laeuft, setLaeuft] = useState(false);
@@ -53,7 +53,9 @@ export function LifetimeOffer() {
   }
 
   return (
-    <Box className="cc-rise" style={{ animationDelay: "220ms" }}>
+    // `id="lifetime"`: Ziel der Links aus Mahnung, Warteraum und Abschied
+    // (`config/lifetime.ts` → `/einstellungen/abonnement#lifetime`).
+    <Box id="lifetime" className="cc-rise" style={{ animationDelay: "220ms" }} scrollMarginTop="96px">
       <DashCard
         label="Einmal zahlen, dauerhaft dabei"
         labelId="abo-lifetime"
@@ -79,7 +81,9 @@ export function LifetimeOffer() {
           <List spacing={2} fontSize="14px" color="var(--cc-text-2)">
             {[
               "Voller Zugang zu Institut, Live-Sessions und Journal — ohne Enddatum.",
-              "Dein laufendes Abo endet automatisch zum bezahlten Periodenende.",
+              ehemalig
+                ? "Kein Abo mehr: Nach der Zahlung bist du sofort wieder drin, auch auf Discord."
+                : "Dein laufendes Abo endet automatisch zum bezahlten Periodenende.",
               "Keine Preiserhöhung, keine Verlängerung, nichts zu verwalten.",
             ].map((zeile) => (
               <ListItem key={zeile} display="flex" alignItems="flex-start" gap={2}>
@@ -90,7 +94,7 @@ export function LifetimeOffer() {
           </List>
 
           <Text fontSize="12px" color="var(--cc-text-3)" lineHeight={1.6}>
-            Dieses Angebot gilt nur für bestehende Mitglieder und steht nirgends öffentlich.
+            Dieses Angebot gilt nur für bestehende und ehemalige Mitglieder und steht nirgends öffentlich.
           </Text>
         </Stack>
       </DashCard>

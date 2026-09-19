@@ -30,7 +30,7 @@ export async function GET() {
 
   const [usersRes, profilesRes, dcRes] = await Promise.all([
     service.auth.admin.listUsers({ perPage: 500 }),
-    service.from("profiles").select("id, full_name, username, created_at, is_paid, access_until"),
+    service.from("profiles").select("id, full_name, username, created_at, is_paid, is_admin"),
     service.from("discord_connections").select("user_id, discord_username, discord_user_id, connected_at"),
   ]);
 
@@ -47,24 +47,12 @@ export async function GET() {
   const profileMap = new Map((profilesRes.data ?? []).map((p) => [p.id as string, p]));
   const dcMap = new Map((dcRes.data ?? []).map((d) => [d.user_id as string, d]));
 
-  const connectedUserIds = (dcRes.data ?? []).map((d) => d.user_id as string);
-  const latestPaymentStatus = new Map<string, string>();
-  if (connectedUserIds.length > 0) {
-    const paymentsRes = await service
-      .from("payments")
-      .select("user_id, status, created_at")
-      .in("user_id", connectedUserIds)
-      .order("created_at", { ascending: false });
-    if (paymentsRes.error) {
-      return NextResponse.json({ ok: false, error: paymentsRes.error.message }, { status: 500 });
-    }
-    // Desc sortiert — erster Treffer je user_id ist der neueste.
-    for (const p of paymentsRes.data ?? []) {
-      const uid = p.user_id as string;
-      if (!latestPaymentStatus.has(uid)) latestPaymentStatus.set(uid, p.status as string);
-    }
-  }
-
+  /*
+    Soll-Status nach dem Zugang (`is_paid` oder Admin, wie bei den Inhalten),
+    dieselbe Regel wie im Bestandsabgleich (`lib/discord/reconcile.ts`). Bis 19.09.2026 zählte hier
+    die letzte Zahlung: Wer einmal eine gescheiterte Abbuchung hatte, stand als
+    „Warteraum", obwohl er sieben Tage lang vollwertig bleibt.
+  */
   const rows: AdminDiscordRow[] = (usersRes.data.users ?? []).map((u) => {
     const p = profileMap.get(u.id);
     const dc = dcMap.get(u.id);
@@ -75,8 +63,7 @@ export async function GET() {
     const roleStatus = connected
       ? computeDesiredRoleState({
           isPaid: Boolean(p?.is_paid),
-          accessUntil: (p?.access_until as string | null) ?? null,
-          latestPaymentStatus: latestPaymentStatus.get(u.id) ?? null,
+          isAdmin: Boolean(p?.is_admin),
         })
       : null;
     return {

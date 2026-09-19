@@ -1,15 +1,13 @@
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe/server";
-import { MEMBERSHIP_PLANS } from "@/lib/stripe/plan-map";
-import { addGuildMemberRole, getGuildMember, removeGuildMemberRole } from "@/lib/discord/roles";
+import { synchronisiereNachProfil } from "@/lib/discord/mitgliedschaft";
+import { schliesseFallZuRechnung } from "@/lib/zahlung/fall";
 import {
   extractCurrentPeriod,
   loadProfileByCustomerId,
   unixToISO,
   type WebhookSupabase,
 } from "./_helpers";
-
-const ABO_STUFEN: ReadonlySet<string> = new Set(MEMBERSHIP_PLANS);
 
 /**
  * Abo-ID einer Rechnung.
@@ -41,8 +39,14 @@ function aboIdAusRechnung(invoice: Stripe.Invoice): string | null {
  * - Payment-Row anlegen (idempotent: UNIQUE auf `stripe_invoice_id`)
  * - Bei zugehöriger Subscription: `current_period_end` aktualisieren
  *   (sowohl in `subscriptions` als auch `profiles.access_until`)
- * - Reset der Dunning-Mail-Zähler, damit der nächste Failure wieder mit
- *   Mail 1 startet.
+ * - Einen offenen Zahlungsfall zu dieser Rechnung schliessen
+ *   (`lib/zahlung/fall.ts`) und die Mitgliederrolle nach dem Profil richten —
+ *   wer im Warteraum sass, bekommt seine Kanäle zurück.
+ *
+ * Die alten Mahn-Stempel (`payment_failed_email_*`) werden nicht mehr
+ * zurückgesetzt, weil sie nicht mehr gelesen werden: Die Mahnstrecke hängt
+ * seit 19.09.2026 am Fall je Rechnung, und ein zweiter Ausfall ist eine neue
+ * Rechnung und damit ein neuer Fall. Genau das war der Zweck des Resets.
  */
 export async function handleInvoicePaid(
   invoice: Stripe.Invoice,
@@ -133,60 +137,11 @@ export async function handleInvoicePaid(
     }
   }
 
-  // Alle drei Abo-Laufzeiten, nicht nur `monthly`: Bis 19.09.2026 blieben die
-  // Zähler bei Quartals- und Jahresmitgliedern nach einer nachgeholten Zahlung
-  // stehen, und beim nächsten Ausfall ging Mail 1 nicht mehr raus.
-  if (profile.membership_tier && ABO_STUFEN.has(profile.membership_tier)) {
-    await supabase
-      .from("profiles")
-      .update({
-        payment_failed_email_1_sent_at: null,
-        payment_failed_email_2_sent_at: null,
-        payment_failed_email_3_sent_at: null,
-      })
-      .eq("id", profile.id);
-  }
-
-  await restoreDiscordFromWaitingRoom(supabase, profile.id);
-}
-
-/**
- * Recovery-Pfad: es gibt kein explizites "Grace beendet"-Flag in der DB —
- * `access_until` wird sowohl für die normale Laufzeit als auch für die 48h-
- * Grace nach `invoice.payment_failed` verwendet. Statt eines fragilen
- * DB-Signals fragen wir Discord selbst: Hat der Nutzer aktuell die
- * Warteraum-Rolle, wird sie entfernt und die reguläre Rolle wieder vergeben.
- * Kein Warteraum → nichts zu tun. Best-effort, blockiert den Webhook nicht.
- */
-async function restoreDiscordFromWaitingRoom(supabase: WebhookSupabase, userId: string): Promise<void> {
-  const guildId = process.env.DISCORD_GUILD_ID;
-  const botToken = process.env.DISCORD_BOT_TOKEN;
-  const roleId = process.env.DISCORD_ROLE_ID;
-  const waitingRoomRoleId = process.env.DISCORD_WAITING_ROOM_ROLE_ID;
-
-  if (!guildId || !botToken || !roleId || !waitingRoomRoleId) {
-    console.warn(
-      "[stripe-webhook] invoice.paid: DISCORD_WAITING_ROOM_ROLE_ID / DISCORD_GUILD_ID / DISCORD_BOT_TOKEN / DISCORD_ROLE_ID nicht vollständig gesetzt — Warteraum-Rückholung übersprungen.",
-    );
-    return;
-  }
-
-  try {
-    const { data: dc } = await supabase
-      .from("discord_connections")
-      .select("discord_user_id")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    const discordUserId = (dc?.discord_user_id as string | null) ?? null;
-    if (!discordUserId) return;
-
-    const member = await getGuildMember(guildId, botToken, discordUserId);
-    if (!member?.roles?.includes(waitingRoomRoleId)) return;
-
-    await removeGuildMemberRole(guildId, botToken, discordUserId, waitingRoomRoleId);
-    await addGuildMemberRole(guildId, botToken, discordUserId, roleId);
-  } catch (err) {
-    console.error("[stripe-webhook] invoice.paid: Warteraum-Rückholung fehlgeschlagen:", err);
-  }
+  /*
+    Erst den Fall schliessen, dann die Rolle richten: Solange der Fall offen
+    steht, ist er für niemanden mehr relevant, und `synchronisiereNachProfil`
+    liest den gerade aktualisierten `access_until`.
+  */
+  if (invoice.id) await schliesseFallZuRechnung(supabase, invoice.id);
+  await synchronisiereNachProfil(supabase, profile.id, "invoice.paid");
 }

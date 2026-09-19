@@ -1,7 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { sendReactivationOffer } from "@/lib/email/templates";
-import { isAuthorizedCron, pickFirstNameFor } from "@/lib/cron/auth";
+import { cronBefugt, pickFirstNameFor } from "@/lib/cron/auth";
+import { pruefeLifetimeAngebot } from "@/lib/access-control/lifetime-offer";
+import { istRueckgewinnungMailAn } from "@/lib/rueckgewinnung/schalter";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,6 +24,17 @@ export const dynamic = "force-dynamic";
  *   - `sendReactivationOffer` benutzt `email_sequence_log` mit UNIQUE-Constraint.
  *   - Doppelte Cron-Läufe / mehrere `cancellations`-Rows pro User können nicht
  *     zu Doppel-Mails führen.
+ *
+ * ── Hinter einem Schalter, Standard aus (19.09.2026) ────────────────────────
+ *
+ * Entscheidung Simon: Ehemalige werden vorerst nicht beworben, aber alles ist
+ * vorbereitet. Der Lauf tut nichts, solange `app_settings.rueckgewinnung_mail`
+ * nicht an ist (`lib/rueckgewinnung/schalter.ts`, Migration 082). Die Mail
+ * selbst verspricht keinen Gratismonat mehr (der war nie einlösbar) und
+ * nennt Lifetime nur, wo es kaufbar ist.
+ *
+ * Werbung, deshalb **fail-closed** hinter `CRON_SECRET` (`cronBefugt`) statt
+ * des alten `isAuthorizedCron`, das ohne Variable jeden durchliess.
  */
 
 interface CancellationRow {
@@ -43,7 +56,7 @@ interface LogRow {
 const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorizedCron(request)) {
+  if (!cronBefugt(request)) {
     return NextResponse.json(
       { ok: false, error: "unauthorized" },
       { status: 401 },
@@ -51,6 +64,10 @@ export async function GET(request: NextRequest) {
   }
 
   const service = createServiceClient();
+
+  if (!(await istRueckgewinnungMailAn(service))) {
+    return NextResponse.json({ ok: true, sent: 0, uebersprungen: "Schalter rueckgewinnung_mail ist aus." });
+  }
   const cutoffISO = new Date(Date.now() - FOURTEEN_DAYS_MS).toISOString();
 
   const { data: cancellations, error: cancelErr } = await service
@@ -138,10 +155,12 @@ export async function GET(request: NextRequest) {
 
     const firstName = pickFirstNameFor(profile.full_name, email);
     try {
+      const lifetime = await pruefeLifetimeAngebot(profile.id).catch(() => null);
       const result = await sendReactivationOffer({
         firstName,
         email,
         userId: profile.id,
+        mitLifetime: Boolean(lifetime?.erlaubt),
       });
       if (!result.skipped) sent++;
     } catch (err) {

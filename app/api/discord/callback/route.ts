@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { addGuildMemberRole } from "@/lib/discord/roles";
+import { addGuildMember, discordBotConfigured } from "@/lib/discord/api";
+import { hatZugangLautProfil, mitgliedsRolleId, setzeMitgliedsrolle } from "@/lib/discord/mitgliedschaft";
 
 function siteUrl() {
   return process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -28,9 +29,7 @@ export async function GET(request: Request) {
   const clientId = process.env.DISCORD_CLIENT_ID;
   const clientSecret = process.env.DISCORD_CLIENT_SECRET;
   const redirectUri = process.env.DISCORD_REDIRECT_URI;
-  const guildId = process.env.DISCORD_GUILD_ID;
-  const botToken = process.env.DISCORD_BOT_TOKEN;
-  const roleId = process.env.DISCORD_ROLE_ID;
+  const roleId = mitgliedsRolleId();
 
   if (!clientId || !clientSecret || !redirectUri) {
     return NextResponse.redirect(new URL("/dashboard?discord=error&reason=oauth_not_configured", siteUrl()));
@@ -99,28 +98,38 @@ export async function GET(request: Request) {
     discordUser.username ||
     discordUser.id;
 
-  if (guildId && botToken && roleId) {
-    const memberRes = await fetch(
-      `https://discord.com/api/v10/guilds/${guildId}/members/${discordUser.id}`,
-      {
-        method: "PUT",
-        headers: {
-          Authorization: `Bot ${botToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          access_token: tokenData.access_token,
-          roles: [roleId],
-        }),
-      },
-    );
+  /*
+    Beitritt und Rolle über `lib/discord/api.ts`, also mit der Wartelogik bei
+    429 — ein Beitritt, der genau in eine Drosselung läuft, wird sonst nirgends
+    wiederholt.
 
-    if (!memberRes.ok && memberRes.status !== 204) {
-      const errBody = await memberRes.text();
-      console.error("[discord/callback] guild member PUT failed:", memberRes.status, errBody);
-    } else if (memberRes.status === 204) {
-      // Bereits im Server: `roles` im Body werden ignoriert — Rolle explizit zuweisen
-      await addGuildMemberRole(guildId, botToken, discordUser.id, roleId);
+    Die Rolle wird danach immer einzeln gesetzt: Bei 204 („war schon drin")
+    ignoriert Discord das `roles`-Feld im Rumpf, und auf 201 statt 204 ist bei
+    aktiver Mitgliedschaftsprüfung kein Verlass. `setzeMitgliedsrolle` nimmt
+    dabei eine eventuelle Warteraumrolle mit ab.
+
+    Die Rolle gibt es nur mit Zugang laut Profil (`hatZugang`: `is_paid` oder
+    Admin, dieselbe Regel wie bei den Inhalten). Der
+    Einstieg `/api/discord/connect` prüft das zwar schon, aber zwischen dem
+    Klick und diesem Rücksprung kann ein Zahlungsfall gesperrt haben — dann
+    tritt die Person bei, bekommt aber keine Mitgliederrolle.
+  */
+  if (discordBotConfigured() && roleId) {
+    try {
+      let zugang = false;
+      try {
+        zugang = await hatZugangLautProfil(service, user.id);
+      } catch (err) {
+        console.error("[discord/callback] Zugang nicht prüfbar, Beitritt ohne Rolle:", err);
+      }
+      const beitritt = await addGuildMember(discordUser.id, tokenData.access_token, zugang ? [roleId] : []);
+      if (beitritt.art === "fehler") {
+        console.error("[discord/callback] guild member PUT failed:", beitritt.status, beitritt.text);
+      } else if (zugang) {
+        await setzeMitgliedsrolle(discordUser.id, true);
+      }
+    } catch (err) {
+      console.error("[discord/callback] Beitritt/Rolle fehlgeschlagen:", err);
     }
   } else {
     console.warn(

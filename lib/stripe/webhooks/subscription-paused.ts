@@ -1,4 +1,5 @@
 import type Stripe from "stripe";
+import { zugangBeendetInDiscord } from "@/lib/discord/warteraum";
 import {
   loadProfileByCustomerId,
   pausiereProfil,
@@ -29,4 +30,7 @@ export async function handleSubscriptionPaused(
 
   // Trial-Pause: Es wurde nie gezahlt, der Zugang endet sofort.
   await pausiereProfil(supabase, profile.id, new Date().toISOString());
+
+  // Und in Discord: Mitgliederrolle weg, Warteraum statt eines leeren Servers.
+  await zugangBeendetInDiscord(supabase, profile.id, "subscription.paused");
 }
