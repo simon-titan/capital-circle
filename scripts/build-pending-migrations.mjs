@@ -22,6 +22,10 @@ const AUSSTEHEND = [
   // Lifetime-Freischaltung: Spalte `profiles.lifetime_offer_group` plus den
   // globalen Schalter in `app_settings`. Additiv, loescht nichts.
   "071_lifetime_freischaltung",
+  // Kündigungsbutton (§ 312k BGB): neue Tabelle `kuendigungen`, RLS an, keine
+  // Policies. Additiv. Solange sie fehlt, nimmt `/kuendigen` Kündigungen trotzdem
+  // an — dann ist nur die Betreiber-Mail der Beleg.
+  "072_kuendigungen",
 ];
 
 const DIR = path.resolve(process.cwd(), "supabase/migrations");
