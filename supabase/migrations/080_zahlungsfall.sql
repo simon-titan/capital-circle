@@ -150,6 +150,12 @@ create table if not exists public.zahlungsfall_nachricht (
   -- ist nicht erreichbar — das ist seine Einstellung, kein Fehler.
   zugestellt boolean,
 
+  -- Ob dieselbe Nachricht zusätzlich als Mail rausging. NULL, wo keine Mail
+  -- vorgesehen war (etwa eine Antwort aus der Fallakte ohne Mail). Die Mail
+  -- ist der verlässliche Weg: Eine Zeile mit „Discord nicht zugestellt" ist
+  -- harmlos, solange hier „ja" steht.
+  mail_gesendet boolean,
+
   erstellt_am timestamptz not null default now()
 );
 

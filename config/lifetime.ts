@@ -40,7 +40,7 @@ export function lifetimeUrl(appUrl: string): string {
  */
 export function lifetimeHinweis(appUrl: string): string {
   return [
-    `Übrigens: Statt monatlich kannst du Capital Circle auch einmalig mit Lifetime freischalten, für ${LIFETIME_PREIS}, ohne weitere Abbuchung. Die Karte dazu findest du nach dem Anmelden unter Einstellungen → Abonnement:`,
+    `Übrigens: Statt eines laufenden Abos kannst du Capital Circle auch einmalig mit Lifetime freischalten, für ${LIFETIME_PREIS}, ohne weitere Abbuchung. Die Karte dazu findest du nach dem Anmelden unter Einstellungen → Abonnement:`,
     lifetimeUrl(appUrl),
   ].join("\n");
 }

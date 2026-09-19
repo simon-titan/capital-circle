@@ -1,9 +1,11 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { findeNutzerZuDiscordId } from "@/lib/discord/konto";
 import {
   ANTWORT,
   INTERAKTION,
   discordIdVon,
+  feldWert,
+  formular,
   interaktionenKonfiguriert,
   nurFuerDich,
   signaturGueltig,
@@ -12,6 +14,7 @@ import {
 import { hilfeWeg } from "@/config/team";
 import { getAppUrl } from "@/lib/site-url";
 import { createServiceClient } from "@/lib/supabase/service";
+import { KNOPF_ZAHLUNG_ANTWORT, meldeAntwortAnTeam, schreibeKundenAntwort } from "@/lib/zahlung/fall";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,6 +50,12 @@ export const dynamic = "force-dynamic";
  * ist. Jeder Zweig kommt mit wenigen Datenbankabfragen aus; alles Langsame
  * (die Mail ans Team) läuft über `after()` nach der Antwort.
  */
+
+/** Das Formular zu einem Zahlungsfall. Die Fall-ID steckt in der `custom_id`. */
+const FORMULAR_ZAHLUNG = "zahlung_text";
+
+/** Wie lang eine Antwort sein darf. Discord nimmt in einer Nachricht 2000 Zeichen. */
+const ANTWORT_MAX = 1800;
 
 export async function POST(request: Request) {
   if (!interaktionenKonfiguriert()) {
@@ -91,7 +100,78 @@ export async function POST(request: Request) {
   const userId = await findeNutzerZuDiscordId(supabase, discordId);
   if (!userId) return NextResponse.json(nurFuerDich(nichtVerknuepft()));
 
+  if (interaktion.type === INTERAKTION.BAUSTEIN) {
+    const customId = interaktion.data?.custom_id ?? "";
+
+    // Der Knopf unter einer Direktnachricht zum Zahlungsfall.
+    if (customId.startsWith(`${KNOPF_ZAHLUNG_ANTWORT}:`)) {
+      return NextResponse.json(zahlungFormular(customId.slice(KNOPF_ZAHLUNG_ANTWORT.length + 1)));
+    }
+
+    return NextResponse.json(nurFuerDich("Diesen Knopf kenne ich nicht."));
+  }
+
+  if (interaktion.type === INTERAKTION.FORMULAR_ABGESCHICKT) {
+    const customId = interaktion.data?.custom_id ?? "";
+
+    if (customId.startsWith(`${FORMULAR_ZAHLUNG}:`)) {
+      return NextResponse.json(
+        await zahlungAntwortSchreiben(userId, customId.slice(FORMULAR_ZAHLUNG.length + 1), interaktion),
+      );
+    }
+  }
+
   return NextResponse.json(nurFuerDich("Damit kann ich nichts anfangen."));
+}
+
+/** Das Formular zu einem Zahlungsfall — eine Fassung für beide Knöpfe. */
+function zahlungFormular(fallId: string) {
+  return formular({
+    customId: `${FORMULAR_ZAHLUNG}:${fallId}`,
+    titel: "Zu deiner Zahlung",
+    felder: [
+      {
+        customId: "text",
+        label: "Was ist los?",
+        lang: true,
+        maxLaenge: ANTWORT_MAX,
+        platzhalter: "Schreib uns kurz, was gerade nicht passt.",
+      },
+    ],
+  });
+}
+
+/**
+ * Die Antwort auf einen Zahlungsfall.
+ *
+ * Die Fall-Nummer aus der `custom_id` ist kein Berechtigungsnachweis:
+ * `schreibeKundenAntwort` verlangt, dass der Fall diesem Konto gehört.
+ *
+ * Hier steht bewusst **kein** Link auf einen Vorgang — einen Zahlungsfall kann
+ * der Kunde nirgends öffnen (im Verlauf stehen interne Notizen). Und keine
+ * Zusage: Ob gestundet wird, entscheidet ein Mensch, nachdem er das gelesen
+ * hat. Die Meldung ans Team läuft nach der Antwort über `after()`.
+ */
+async function zahlungAntwortSchreiben(userId: string, fallId: string, interaktion: Interaktion) {
+  const supabase = createServiceClient();
+  const text = feldWert(interaktion, "text");
+  const ergebnis = await schreibeKundenAntwort(supabase, { userId, fallId, text });
+
+  if (!ergebnis.ok) {
+    if (ergebnis.fehler === "nicht_gefunden") return nurFuerDich("Diesen Vorgang finde ich nicht bei dir.");
+    if (ergebnis.fehler === "leer") return nurFuerDich("Da stand nichts drin.");
+    return nurFuerDich(`Das hat gerade nicht geklappt. Bitte melde dich ${hilfeWeg(getAppUrl())}.`);
+  }
+
+  after(() => meldeAntwortAnTeam(createServiceClient(), { fallId, userId, text }));
+
+  return nurFuerDich(
+    [
+      "**Angekommen.** Wir lesen das und melden uns bei dir, per Mail und hier.",
+      "",
+      `Falls du in der Zwischenzeit zahlen möchtest: ${getAppUrl()}/einstellungen/abonnement`,
+    ].join("\n"),
+  );
 }
 
 /** Kein Konto zu dieser Discord-Kennung: Der Weg ist die Verknüpfung. */
