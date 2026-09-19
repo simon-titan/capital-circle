@@ -1,5 +1,7 @@
 import type Stripe from "stripe";
 import { createSetPasswordLink } from "@/lib/auth/password-link";
+import { synchronisiereNachProfil } from "@/lib/discord/mitgliedschaft";
+import { zugangBeendetInDiscord } from "@/lib/discord/warteraum";
 import { sendWelcomePaid } from "@/lib/email/templates/welcome-paid";
 import { getStripe } from "@/lib/stripe/server";
 import { MEMBERSHIP_PLANS, resolvePlanFromPriceId, type MembershipPlan } from "@/lib/stripe/plan-map";
@@ -142,6 +144,21 @@ export async function handleSubscriptionUpdated(
   }
 
   /**
+   * Lifetime und 1:1 stehen über jedem Abo.
+   *
+   * Wer Lifetime kauft, dessen Monatsabo wird zum Periodenende gekündigt
+   * (`checkout-completed.ts`), und genau das schickt Stripe als `updated`
+   * (Status `active`, `cancel_at_period_end: true`). Bis 19.09.2026 schrieb der
+   * Profil-Sync darunter daraufhin `membership_tier: monthly` über den frisch
+   * gekauften Dauerzugang — und `subscription.deleted` setzte das Konto am
+   * Periodenende auf `free`. Der Kunde hätte 699 € gezahlt und stünde vor der
+   * Bezahlschranke. Die Abo-Zeile oben wird trotzdem gepflegt.
+   */
+  if (profile.membership_tier === "lifetime" || profile.membership_tier === "ht_1on1") {
+    return;
+  }
+
+  /**
    * Eingefrorene Abrechnung (`pause_collection`) laesst den Status auf
    * `active` stehen — Stripe unterscheidet die Pause nicht ueber den Status,
    * sondern ueber dieses Feld. Ohne die Abfrage liefe der Zugang waehrend
@@ -153,6 +170,13 @@ export async function handleSubscriptionUpdated(
     // verlaengert ihn nicht, falls Stripe den Zyklus waehrend der Pause
     // weiterdreht.
     await pausiereProfil(supabase, profile.id, endISO);
+    /*
+      Endet der Zugang damit schon jetzt, gehen Rolle und Warteraum sofort
+      mit. Läuft er bis zum Periodenende weiter, zieht der Nachtlauf beides
+      nach, sobald `access_until` verstrichen ist — dafür gibt es kein
+      Stripe-Ereignis. Wirft nie.
+    */
+    await zugangBeendetInDiscord(supabase, profile.id, "subscription.updated (Pause)");
     return;
   }
 
@@ -182,6 +206,14 @@ export async function handleSubscriptionUpdated(
       `Profil-Sync (sub=${sub.id}, user=${profile.id}) fehlgeschlagen: ${profileError.message}`,
     );
   }
+
+  /*
+    Discord nach dem Profil richten: Wer (wieder) zahlt, bekommt die
+    Mitgliederrolle, und ein Warteraum geht mit ab. Bis 19.09.2026 fasste
+    dieser Handler Discord nicht an — wer nach einer Kündigung neu abschloss,
+    blieb ohne Rolle, bis er Discord neu verknüpfte. Wirft nie.
+  */
+  await synchronisiereNachProfil(supabase, profile.id, "subscription.updated");
 
   if (warSchonZahlend) return;
 

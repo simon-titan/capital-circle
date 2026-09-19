@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
+import { ROLLENENTZUG_MAX_PRO_NACHT } from "@/config/discord";
 import { ERINNERUNG_TAGE } from "@/config/zahlung";
 import { cronBefugt } from "@/lib/cron/auth";
+import { discordBotConfigured } from "@/lib/discord/api";
+import { mitgliedsRolleId } from "@/lib/discord/mitgliedschaft";
+import { reconcileDiscordRoles, type ReconcileResult } from "@/lib/discord/reconcile";
 import { requireAdminRole } from "@/lib/supabase/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import { beendeAbgelaufeneAufschuebe, fuehreFristAus } from "@/lib/zahlung/fall";
@@ -22,6 +26,14 @@ export const maxDuration = 300;
  *    Nachricht, Verlauf.
  * 2. **Der Sieben-Tage-Ablauf.** An Tag 3 und Tag 5 eine Erinnerung, an Tag 7
  *    ruht der Zugang. Zahlen und Wortlaut stehen in `config/zahlung.ts`.
+ * 3. **Die Rollen nachziehen** (`lib/discord/reconcile.ts`). Wer wieder Zugang
+ *    hat, bekommt die Mitgliederrolle zurück und verlässt den Warteraum — das
+ *    Netz für einen Webhook, der einmal ausblieb. Wer keinen Zugang mehr hat,
+ *    aber die Rolle noch trägt, verliert sie und kommt in den Warteraum. Das ist
+ *    in Capital Circle nötig, weil ein Zugang auch **ohne** Stripe-Ereignis
+ *    endet: Eine Pause lässt ihn bis zum Periodenende laufen, und danach kommt
+ *    nichts mehr. Über `ROLLENENTZUG_MAX_PRO_NACHT` wird niemandem etwas
+ *    genommen (Datenfehler, keine Abwanderung).
  *
  * Die Reihenfolge ist Absicht: Ein Fall, dessen Aufschub gerade abgelaufen
  * ist, steht danach auf `beendet` und wird von der Frist nicht noch einmal
@@ -66,16 +78,64 @@ async function lauf() {
   const frist = await fuehreFristAus(supabase);
 
   /*
+    Die Rollen nach der Frist: Sie ist der Lauf, der Zugänge beendet, also ist
+    hier der Zustand der Nacht vollständig.
+  */
+  const rollen = await rollenAbgleich(true);
+
+  /*
     Der Lauf gilt nur als sauber, wenn keine Zeile Ärger gemacht hat. Ein
     `ok: true` neben einer Fehlerliste ist genau der stille Nuller, den man
     wochenlang übersieht.
   */
   return NextResponse.json({
-    ok: aufschuebe.fehler.length === 0 && frist.fehler.length === 0,
+    ok: aufschuebe.fehler.length === 0 && frist.fehler.length === 0 && !rollen.fehler && !rollen.ausgesetzt,
     dauer_ms: Date.now() - start,
     aufschuebe,
     frist,
+    rollen,
   });
+}
+
+/**
+ * Der Rollenabgleich als Schritt des Nachtlaufs. Wirft nie: Ohne Discord-
+ * Einrichtung wird er übersprungen, ein Fehler landet im Bericht.
+ */
+async function rollenAbgleich(schreiben: boolean): Promise<{
+  gelaufen: boolean;
+  geprueft?: number;
+  behoben?: number;
+  entzugGeplant?: number;
+  ausgesetzt?: string;
+  fehler?: string;
+  abweichungen?: Array<Pick<ReconcileResult["details"][number], "userId" | "desired" | "actual" | "fixed" | "note">>;
+}> {
+  if (!discordBotConfigured() || !mitgliedsRolleId()) return { gelaufen: false };
+  try {
+    const ergebnis = await reconcileDiscordRoles({
+      apply: schreiben,
+      triggeredBy: "script",
+      maxEntzug: ROLLENENTZUG_MAX_PRO_NACHT,
+      warteraumSetzen: true,
+    });
+    const abweichungen = ergebnis.details
+      .filter(
+        (d) =>
+          (d.desired === "regular" && d.actual !== "regular" && d.actual !== "not_in_guild") ||
+          (d.desired === "none" && d.actual === "regular"),
+      )
+      .map(({ userId, desired, actual, fixed, note }) => ({ userId, desired, actual, fixed, note }));
+    return {
+      gelaufen: true,
+      geprueft: ergebnis.checkedCount,
+      behoben: ergebnis.fixedCount,
+      entzugGeplant: ergebnis.entzugGeplant,
+      ausgesetzt: ergebnis.entzugAusgesetzt,
+      abweichungen,
+    };
+  } catch (err) {
+    return { gelaufen: false, fehler: err instanceof Error ? err.message : String(err) };
+  }
 }
 
 /**
@@ -137,6 +197,7 @@ async function probe() {
     offeneFaelleMitFrist: faelle.length,
     heute: plan.filter((p) => p.aktion !== "nichts"),
     aufschuebeAbgelaufen: (aufschubRes.data ?? []).length,
+    rollen: await rollenAbgleich(false),
     hinweis:
       "Grob gerechnet. Hat eine Person inzwischen einen anderen Zugang (neues Abo, Lifetime), " +
       "schliesst der echte Lauf den Fall statt zu erinnern oder zu sperren. Hat sie keinen Zugang mehr, " +

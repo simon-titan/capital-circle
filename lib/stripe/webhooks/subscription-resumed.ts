@@ -1,4 +1,5 @@
 import type Stripe from "stripe";
+import { synchronisiereNachProfil } from "@/lib/discord/mitgliedschaft";
 import { resolvePlanFromPriceId } from "@/lib/stripe/plan-map";
 import {
   extractCurrentPeriod,
@@ -51,6 +52,9 @@ export async function handleSubscriptionResumed(
     );
   }
 
+  // Lifetime und 1:1 stehen über jedem Abo (Begründung in subscription-updated.ts).
+  if (profile.membership_tier === "lifetime" || profile.membership_tier === "ht_1on1") return;
+
   const { error } = await supabase
     .from("profiles")
     .update({ membership_tier: plan, is_paid: true, access_until: endISO })
@@ -61,4 +65,7 @@ export async function handleSubscriptionResumed(
       `Profil-Fortsetzung (user=${profile.id}) fehlgeschlagen: ${error.message}`,
     );
   }
+
+  // Zugang ist zurück: Mitgliederrolle wieder an, Warteraum ab. Wirft nie.
+  await synchronisiereNachProfil(supabase, profile.id, "subscription.resumed");
 }

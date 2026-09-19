@@ -14,7 +14,13 @@ import {
 import { hilfeWeg } from "@/config/team";
 import { getAppUrl } from "@/lib/site-url";
 import { createServiceClient } from "@/lib/supabase/service";
-import { KNOPF_ZAHLUNG_ANTWORT, meldeAntwortAnTeam, schreibeKundenAntwort } from "@/lib/zahlung/fall";
+import {
+  juengsterFall,
+  KNOPF_ZAHLUNG_ANTWORT,
+  KNOPF_ZAHLUNG_MELDEN,
+  meldeAntwortAnTeam,
+  schreibeKundenAntwort,
+} from "@/lib/zahlung/fall";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -53,6 +59,9 @@ export const dynamic = "force-dynamic";
 
 /** Das Formular zu einem Zahlungsfall. Die Fall-ID steckt in der `custom_id`. */
 const FORMULAR_ZAHLUNG = "zahlung_text";
+
+/** Das Formular für ein Anliegen ohne Zahlungsfall (wird ein Support-Ticket). */
+const FORMULAR_ANLIEGEN = "anliegen_neu";
 
 /** Wie lang eine Antwort sein darf. Discord nimmt in einer Nachricht 2000 Zeichen. */
 const ANTWORT_MAX = 1800;
@@ -108,6 +117,21 @@ export async function POST(request: Request) {
       return NextResponse.json(zahlungFormular(customId.slice(KNOPF_ZAHLUNG_ANTWORT.length + 1)));
     }
 
+    /*
+      Der Knopf unter der angepinnten Erklärung im Warteraum. Er trägt keine
+      Fall-ID — die Nachricht im Kanal ist für alle dieselbe —, der Fall wird
+      hier gesucht, mit genau einer Abfrage.
+
+      Kein Zahlungsfall ist im Warteraum der Normalfall, seit auch Gekündigte
+      dort sitzen. Sie bekommen das Formular für ein Support-Ticket (Kategorie
+      Abrechnung): Eine Mahnung eröffnen wir, weil wir etwas wollen; wer
+      gekündigt hat und sich meldet, will selbst etwas, und das ist Support.
+    */
+    if (customId === KNOPF_ZAHLUNG_MELDEN) {
+      const fallId = await juengsterFall(supabase, userId);
+      return NextResponse.json(fallId ? zahlungFormular(fallId) : anliegenFormular());
+    }
+
     return NextResponse.json(nurFuerDich("Diesen Knopf kenne ich nicht."));
   }
 
@@ -118,6 +142,10 @@ export async function POST(request: Request) {
       return NextResponse.json(
         await zahlungAntwortSchreiben(userId, customId.slice(FORMULAR_ZAHLUNG.length + 1), interaktion),
       );
+    }
+
+    if (customId === FORMULAR_ANLIEGEN) {
+      return NextResponse.json(await anliegenAnlegen(userId, interaktion));
     }
   }
 
@@ -139,6 +167,61 @@ function zahlungFormular(fallId: string) {
       },
     ],
   });
+}
+
+/** Betreff kurz, Beschreibung lang. Wird ein Support-Ticket der Kategorie Abrechnung. */
+function anliegenFormular() {
+  return formular({
+    customId: FORMULAR_ANLIEGEN,
+    titel: "Anliegen klären",
+    felder: [
+      { customId: "betreff", label: "Worum geht es?", maxLaenge: 120, platzhalter: "Kurz in einem Satz" },
+      { customId: "text", label: "Beschreibung", lang: true, maxLaenge: 4000 },
+    ],
+  });
+}
+
+/**
+ * Ein Support-Ticket aus dem Warteraum anlegen — dieselben Tabellen wie
+ * `/api/support/tickets`, nur über den Service-Client, weil hier keine
+ * Sitzung davorsitzt. Das Konto kommt aus der Discord-Verknüpfung, nie aus
+ * dem Anfragekörper. Beantwortet wird es wie jedes Ticket unter
+ * `/admin/tickets`, der Kunde sieht es unter `/support`.
+ */
+async function anliegenAnlegen(userId: string, interaktion: Interaktion) {
+  const betreff = feldWert(interaktion, "betreff").trim().slice(0, 120);
+  const text = feldWert(interaktion, "text").trim().slice(0, 4000);
+  if (betreff.length < 3 || text.length < 5) {
+    return nurFuerDich("Betreff und Beschreibung dürfen nicht leer sein.");
+  }
+
+  const supabase = createServiceClient();
+  const { data: ticket, error } = await supabase
+    .from("support_tickets")
+    .insert({ user_id: userId, subject: betreff, category: "billing" })
+    .select("id")
+    .single();
+
+  if (error || !ticket) {
+    console.warn("[discord] Ticket aus dem Warteraum nicht anlegbar:", error?.message);
+    return nurFuerDich(`Das hat gerade nicht geklappt. Bitte melde dich ${hilfeWeg(getAppUrl())}.`);
+  }
+
+  const { error: nachrichtFehler } = await supabase.from("support_ticket_messages").insert({
+    ticket_id: (ticket as { id: string }).id,
+    sender_type: "user",
+    sender_id: userId,
+    body: text,
+  });
+  if (nachrichtFehler) console.warn("[discord] Ticket-Nachricht nicht speicherbar:", nachrichtFehler.message);
+
+  return nurFuerDich(
+    [
+      `**Angekommen:** ${betreff}`,
+      "",
+      `Wir melden uns bei dir. Den Verlauf findest du nach dem Anmelden unter ${getAppUrl()}/support/${(ticket as { id: string }).id}`,
+    ].join("\n"),
+  );
 }
 
 /**
