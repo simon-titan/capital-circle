@@ -26,6 +26,11 @@ const AUSSTEHEND = [
   // Policies. Additiv. Solange sie fehlt, nimmt `/kuendigen` Kündigungen trotzdem
   // an — dann ist nur die Betreiber-Mail der Beleg.
   "072_kuendigungen",
+  // Widerrufsfunktion (§ 356a BGB): neue Tabelle `widerrufe`, RLS an, keine
+  // Policies, Rechte für anon/authenticated entzogen. Additiv. Solange sie
+  // fehlt, nimmt `/widerrufen` Widerrufe trotzdem an — dann ist nur die
+  // Betreiber-Mail der Beleg.
+  "090_widerrufe",
 ];
 
 const DIR = path.resolve(process.cwd(), "supabase/migrations");
