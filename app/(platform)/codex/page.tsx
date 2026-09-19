@@ -2,6 +2,7 @@ import { Box } from "@chakra-ui/react";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/journal/PageHeader";
 import { PageCodexReferenceView } from "@/components/platform/PageCards";
+import { isFreeMember } from "@/lib/membership";
 import { getCurrentUserAndProfile } from "@/lib/server-data";
 
 export default async function CodexPage() {
@@ -9,10 +10,11 @@ export default async function CodexPage() {
   if (!user || !profile) {
     redirect("/einsteig");
   }
-  // Schutz: Nutzer mit ausstehender Bewerbung dürfen die Codex-Referenz nicht sehen
+  // Schutz: Nutzer mit ausstehender Bewerbung dürfen die Codex-Referenz nicht sehen.
+  // Zahlende nicht — für sie ist die Bewerbung erledigt (dieselbe Regel wie in `proxy.ts`).
   const appStatus = (profile as { application_status?: string | null } | null)
     ?.application_status;
-  if (appStatus === "pending" || appStatus === "rejected") {
+  if ((appStatus === "pending" || appStatus === "rejected") && isFreeMember(profile)) {
     redirect("/pending-review");
   }
 

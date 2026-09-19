@@ -21,6 +21,7 @@
     "cf:check": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/check-cloudflare.mjs",
     "cf:link": "node scripts/link-cloudflare-videos.mjs",
     "stripe:preise": "node scripts/stripe-setup-prices.mjs",
+    "stripe:e2e": "npx --yes tsx scripts/stripe-e2e-kaufweg.ts",
     "db:pending": "node scripts/build-pending-migrations.mjs",
     "cf:import-stapel": "node scripts/import-unassigned-cloudflare-videos.mjs",
     "cf:verify": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/verify-video-playback.mjs",

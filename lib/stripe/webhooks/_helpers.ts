@@ -72,17 +72,23 @@ export async function loadProfileByUserId(
  *
  * Idempotent über die E-Mail: Kauft jemand ein zweites Mal oder rüstet ein
  * bestehendes Free-Mitglied auf, liefert die Funktion das vorhandene Konto
- * zurück. `isNew` steuert im Aufrufer, ob eine Willkommensmail mit
- * Passwort-Link rausgeht — eine zweite wäre für den Kunden verwirrend und für
- * ein bestehendes Passwort schlicht falsch.
+ * zurück. `isNew` sagt nur, ob das Konto in diesem Aufruf entstanden ist — ob
+ * die Willkommensmail einen Passwort-Link trägt, entscheidet der Aufrufer
+ * anhand der ersten Anmeldung (siehe `sendeWillkommensmail`).
+ *
+ * `name` (Karteninhaber aus der Kasse) landet über `user_metadata.full_name`
+ * im Profil — der Trigger aus Migration 003 liest genau dieses Feld. Ein
+ * bestehendes Konto behält seinen Namen.
  */
 export async function getOrCreateUserByEmail(
   supabase: WebhookSupabase,
   email: string,
+  name?: string | null,
 ): Promise<{ userId: string; isNew: boolean }> {
   const { data: created, error: createError } = await supabase.auth.admin.createUser({
     email,
     email_confirm: true,
+    ...(name ? { user_metadata: { full_name: name } } : {}),
   });
 
   if (!createError && created.user) {
