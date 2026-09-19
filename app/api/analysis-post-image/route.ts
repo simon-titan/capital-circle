@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getPresignedGetUrl } from "@/lib/storage";
+import { hatInhaltsZugang } from "@/lib/membership";
 
-/** Kurzlebige Signed-URL für Analysis-Post-Bilder (eingeloggt). */
+/**
+ * Kurzlebige Signed-URL für Analysis-Post-Bilder.
+ *
+ * Analysen sind Mitgliederinhalt (Sidebar „Analysen“ = paid, Dashboard lädt sie
+ * nur mit `is_paid`). Die Bilder sind oft der eigentliche Inhalt — deshalb
+ * dieselbe Prüfung hier, unabhängig davon, ob Migration 076 die Zeilen schon
+ * vor Konten ohne Zahlung verbirgt.
+ */
 export async function GET(request: Request) {
   const supabase = await createClient();
   const { data: authData } = await supabase.auth.getUser();
@@ -15,6 +23,15 @@ export async function GET(request: Request) {
   const variant = url.searchParams.get("variant") ?? "inline";
   if (!id) {
     return NextResponse.json({ ok: false, error: "missing_id" }, { status: 400 });
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_admin, is_paid")
+    .eq("id", authData.user.id)
+    .maybeSingle();
+  if (!hatInhaltsZugang(profile)) {
+    return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
   }
 
   const { data: row } = await supabase

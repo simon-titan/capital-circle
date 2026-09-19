@@ -1,8 +1,13 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildThumbnailUrl } from "@/lib/cloudflare-stream";
-import type { createClient } from "@/lib/supabase/server";
 import { getPresignedGetUrl } from "@/lib/storage";
 
-type ServerClient = Awaited<ReturnType<typeof createClient>>;
+/**
+ * Nutzer-Client (Zeilen-Sicherheit greift) oder Service-Client. Der Service-
+ * Client kommt nur für die Paywall-Vorschau zum Einsatz — dort läuft das
+ * Ergebnis durch `playlistAlsVorschau`, bevor es die Seite verlässt.
+ */
+type ServerClient = SupabaseClient;
 
 export type PlaylistVideoRow = {
   id: string;
@@ -320,6 +325,25 @@ export async function getModulePublishedPlaylist(supabase: ServerClient, moduleI
 
   const signedUrls = await Promise.all(raw.map((v) => resolveThumbnail(v)));
   return raw.map((v, i) => ({ ...v, thumbnailSignedUrl: signedUrls[i] ?? null }));
+}
+
+/**
+ * Gliederung einer Playlist ohne Inhalte — für die Vorschau hinter der Paywall
+ * (`ausbildung/[segment]` ohne Zugang). Titel, Reihenfolge, Dauer und Abschnitte
+ * bleiben, damit die verdeckte Seite wie ein Modul aussieht. Entfernt wird alles,
+ * womit sich ein Video abspielen oder ein Bild laden ließe, und die Beschreibung:
+ * Was eine Server-Komponente an den Client gibt, steht im Seiten-Payload, auch
+ * wenn die Paywall es optisch verdeckt.
+ */
+export function playlistAlsVorschau(playlist: PlaylistVideoRow[]): PlaylistVideoRow[] {
+  return playlist.map((v) => ({
+    ...v,
+    description: null,
+    storage_key: "",
+    cloudflare_uid: null,
+    thumbnail_key: null,
+    thumbnailSignedUrl: null,
+  }));
 }
 
 export function totalPlaylistDurationSeconds(videos: PlaylistVideoRow[]): number {

@@ -30,6 +30,8 @@ const PUBLIC_PATHS = [
   "/checkout/success",
   "/checkout/zurueck",
   "/set-password",
+  // „Passwort vergessen" — wer hier landet, kann sich per Definition nicht anmelden.
+  "/passwort-vergessen",
   // Offene Vorschau der Verkaufsseite (`app/vorschau/page.tsx`) — derselbe
   // Inhalt wie `/`, aber ohne Anmeldepflicht, ohne Dashboard-Weiche und
   // ohne Wartungs-Gate (siehe `maintenanceExempt` weiter unten).
@@ -163,11 +165,19 @@ export async function proxy(request: NextRequest) {
   // /admin* oder /login. Nicht-Admins (inkl. nicht eingeloggter Besucher) werden umgeleitet.
   // `/vorschau` ist bewusst dabei: Die Adresse existiert genau dafür, die
   // Verkaufsseite auch dann herzeigen zu koennen, wenn die Plattform zu ist.
+  // Die Passwort-Kette (`/passwort-vergessen` → Mail → `/auth/confirm` →
+  // `/set-password`) ebenfalls: `/login` ist ausgenommen und verlinkt auf
+  // „Passwort vergessen" — ohne die Ausnahme endete der Link fuer einen Admin,
+  // der im Wartungsmodus sein Passwort vergessen hat, auf `/wartung`. Hinter
+  // der Kette liegt `/dashboard`, und das bleibt fuer Nicht-Admins zu.
   const maintenanceExempt =
     pathname === "/wartung" ||
     pathname === "/vorschau" ||
     pathname.startsWith("/admin") ||
     pathname === "/login" ||
+    pathname === "/passwort-vergessen" ||
+    pathname === "/auth/confirm" ||
+    pathname === "/set-password" ||
     isRechtsPfad(pathname);
   if (!maintenanceExempt) {
     const maintenance = await getMaintenanceState();

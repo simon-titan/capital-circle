@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/journal/PageHeader";
 import { LiveSessionCategoryCards } from "@/components/platform/LiveSessionCategoryCards";
 import { getCurrentUserAndProfile } from "@/lib/server-data";
 import { getLiveSessionCategoryOverview } from "@/lib/live-session-overview";
-import { isApprovedFreeMember } from "@/lib/membership";
+import { liveSessionsNurFrei } from "@/lib/membership";
 
 /**
  * Übersicht wie das Institut: die drei Kategorien als Einstiegskarten. Ein
@@ -23,7 +23,7 @@ export default async function LiveSessionPage() {
         title="Live Sessions"
         subtitle="Drei Bereiche, wie im Institut: Kategorie anklicken, dann die Aufzeichnung wählen und die Videos darin ansehen."
       />
-      <LiveSessionCategoryCards categories={categories} isFreeMember={isApprovedFreeMember(profile)} />
+      <LiveSessionCategoryCards categories={categories} isFreeMember={liveSessionsNurFrei(profile)} />
     </Box>
   );
 }

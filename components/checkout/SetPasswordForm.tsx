@@ -1,6 +1,7 @@
 "use client";
 
-import { Box, Button, Input, Stack, Text } from "@chakra-ui/react";
+import { Box, Button, Input, Link, Stack, Text } from "@chakra-ui/react";
+import type { AuthError } from "@supabase/supabase-js";
 import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -17,6 +18,46 @@ const eingabeStil = {
   _focusVisible: { borderColor: "var(--cc-gold-line)", boxShadow: "outline" },
 } as const;
 
+interface Fehler {
+  text: string;
+  /** Der Ausweg direkt neben der Meldung, z. B. ein neuer Link, wenn der alte nicht mehr taugt. */
+  ausweg?: { href: string; label: string };
+}
+
+/**
+ * Supabase-Fehler beim Passwortsetzen in Sätze, mit denen man etwas anfangen
+ * kann. Häufigster Fall: Der Einmal-Link war schon benutzt oder die Sitzung
+ * ist abgelaufen, es gibt also keine Sitzung mehr.
+ */
+function fehlerAus(error: AuthError): Fehler {
+  const code = error.code ?? "";
+  if (
+    error.name === "AuthSessionMissingError" ||
+    code === "session_not_found" ||
+    code === "session_expired" ||
+    code === "reauthentication_needed" ||
+    error.message.toLowerCase().includes("session")
+  ) {
+    return {
+      text: "Dieser Link ist nicht mehr gültig.",
+      ausweg: { href: "/passwort-vergessen", label: "Neuen Link anfordern" },
+    };
+  }
+  if (code === "same_password") {
+    // Die Sitzung steht bereits — mit dem alten Passwort geht es also einfach weiter.
+    return {
+      text: "Das ist schon dein aktuelles Passwort. Wähle ein anderes oder mach einfach damit weiter.",
+      ausweg: { href: "/dashboard", label: "Zum Dashboard" },
+    };
+  }
+  if (code === "weak_password") {
+    return {
+      text: "Dieses Passwort ist zu leicht zu erraten. Nimm ein längeres, am besten mit Zahlen und Sonderzeichen.",
+    };
+  }
+  return { text: error.message };
+}
+
 /**
  * Passwort setzen mit der Sitzung, die `/auth/confirm` gerade in die Cookies
  * geschrieben hat.
@@ -32,7 +73,7 @@ const eingabeStil = {
 export function SetPasswordForm() {
   const [passwort, setPasswort] = useState("");
   const [wiederholung, setWiederholung] = useState("");
-  const [fehler, setFehler] = useState<string | null>(null);
+  const [fehler, setFehler] = useState<Fehler | null>(null);
   const [laeuft, setLaeuft] = useState(false);
 
   async function absenden(e: FormEvent) {
@@ -40,24 +81,18 @@ export function SetPasswordForm() {
     setFehler(null);
 
     if (passwort.length < MIN_LAENGE) {
-      setFehler(`Mindestens ${MIN_LAENGE} Zeichen.`);
+      setFehler({ text: `Mindestens ${MIN_LAENGE} Zeichen.` });
       return;
     }
     if (passwort !== wiederholung) {
-      setFehler("Die beiden Eingaben stimmen nicht überein.");
+      setFehler({ text: "Die beiden Eingaben stimmen nicht überein." });
       return;
     }
 
     setLaeuft(true);
     const { error } = await createClient().auth.updateUser({ password: passwort });
     if (error) {
-      // Häufigster Fall: Der Einmal-Link war schon benutzt, es gibt also keine
-      // Sitzung mehr. Der ehrliche Hinweis ist der Weg über „Passwort vergessen".
-      setFehler(
-        error.message.toLowerCase().includes("session")
-          ? "Der Link ist nicht mehr gültig. Fordere über die Anmeldeseite einen neuen an."
-          : error.message,
-      );
+      setFehler(fehlerAus(error));
       setLaeuft(false);
       return;
     }
@@ -93,7 +128,24 @@ export function SetPasswordForm() {
 
         {fehler ? (
           <Text role="alert" fontSize="13px" color="var(--cc-danger)" lineHeight={1.5}>
-            {fehler}
+            {fehler.text}
+            {fehler.ausweg ? (
+              <>
+                {" "}
+                {/* Bares `<a>`: volle Navigation, damit `proxy.ts` die Sitzung sicher sieht. */}
+                <Link
+                  href={fehler.ausweg.href}
+                  color="var(--cc-gold-light)"
+                  fontWeight={600}
+                  textDecoration="underline"
+                  textDecorationColor="var(--cc-gold-line)"
+                  textUnderlineOffset="3px"
+                  _hover={{ color: "var(--cc-gold)" }}
+                >
+                  {fehler.ausweg.label}
+                </Link>
+              </>
+            ) : null}
           </Text>
         ) : (
           <Text fontSize="13px" color="var(--cc-text-3)" lineHeight={1.5}>
