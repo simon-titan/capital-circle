@@ -26,6 +26,14 @@ const AUSSTEHEND = [
   // Policies. Additiv. Solange sie fehlt, nimmt `/kuendigen` Kündigungen trotzdem
   // an — dann ist nur die Betreiber-Mail der Beleg.
   "072_kuendigungen",
+  // Mahn- und Warteraum-System (agent/retention, 19.09.2026). Alle drei
+  // additiv, loeschen nichts. 080 zuerst: Ohne `zahlungsfall` eroeffnet der
+  // Webhook keine Faelle und der Nachtlauf mahnt nicht (beides laeuft dann
+  // ohne Fehler leer). 081: Schalter „keine Discord-DMs" in den Einstellungen.
+  // 082: Kampagnen-Merkliste und der Schalter der Rueckgewinnungs-Mail (aus).
+  "080_zahlungsfall",
+  "081_discord_dm_widerspruch",
+  "082_rueckgewinnung",
 ];
 
 const DIR = path.resolve(process.cwd(), "supabase/migrations");
