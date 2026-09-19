@@ -9,6 +9,7 @@ import { RechtsLinks } from "@/components/legal/RechtsFusszeile";
 import { ladeKaufStatus, type KaufStatus } from "@/lib/checkout/kauf-status";
 import { createClient } from "@/lib/supabase/server";
 import { preiskarten } from "@/config/landing-membership";
+import { getDiscordAuthUrl } from "@/lib/discord";
 
 export const metadata: Metadata = {
   title: "Zahlung bestätigt — Capital Circle",
@@ -215,12 +216,24 @@ export default async function CheckoutSuccessPage({
               </Heading>
 
               {zugang.art === "eingeloggt" ? (
+                /*
+                 * Discord steht hier vor dem Dashboard (Wunsch Simon,
+                 * 20.09.2026): Die Verknuepfung ist der einzige Schritt, der
+                 * spaeter niemand mehr nachholt, und genau jetzt ist die
+                 * Sitzung frisch. Der Weg ist derselbe wie im Konto
+                 * (`/api/discord/connect`), er faellt also nicht auseinander.
+                 * Bares `<a>`, weil die Route zu Discord weiterleitet.
+                 */
                 <Stack spacing={4} align="flex-start">
                   <Text fontSize="15px" lineHeight={1.6} color="var(--cc-text-2)">
-                    Du bist eingeloggt. Der nächste Schritt wartet im Dashboard.
+                    Du bist eingeloggt. Verbinde noch Discord, dann bist du direkt in der Community und bekommst die
+                    Live-Sessions mit.
                   </Text>
-                  <Box as="a" {...goldKnopf} href="/dashboard">
-                    Zum Dashboard
+                  <Box as="a" {...goldKnopf} href={getDiscordAuthUrl()}>
+                    Discord verbinden
+                  </Box>
+                  <Box as="a" {...leiserLink} href="/dashboard">
+                    Später verbinden, zum Dashboard
                   </Box>
                 </Stack>
               ) : zugang.art === "passwort_waehlen" ? (
@@ -335,7 +348,7 @@ export default async function CheckoutSuccessPage({
           </Text>
 
           {/* Impressum · Datenschutz · AGB · Widerruf · Verträge hier kündigen */}
-          <RechtsLinks borderTop="1px solid var(--cc-line)" pt={5} />
+          <RechtsLinks ohneVertragswege borderTop="1px solid var(--cc-line)" pt={5} />
         </Stack>
       </Flex>
     </Box>

@@ -28,13 +28,21 @@ import { rechtsPfade, widerrufsfunktionPfad } from "@/config/legal";
 
 type Eintrag = { href: string; label: string; betont?: boolean };
 
-function eintraege(): Eintrag[] {
+/**
+ * `ohneVertragswege` laesst „Vertrag widerrufen" und „Vertraege hier kuendigen"
+ * weg. Gedacht fuer die Kauf-Erfolgsseite: Wer gerade bezahlt hat, soll dort
+ * nicht als Naechstes zwei Ausstiege angeboten bekommen. Beide Wege bleiben
+ * auf jeder anderen Seite und im Konto erreichbar, die Pflicht nach
+ * § 312k BGB ist damit gewahrt.
+ */
+function eintraege(ohneVertragswege = false): Eintrag[] {
   const liste: Eintrag[] = [
     { href: rechtsPfade.impressum, label: "Impressum" },
     { href: rechtsPfade.datenschutz, label: "Datenschutz" },
     { href: rechtsPfade.agb, label: "AGB" },
     { href: rechtsPfade.widerruf, label: "Widerruf" },
   ];
+  if (ohneVertragswege) return liste;
   if (widerrufsfunktionPfad) liste.push({ href: widerrufsfunktionPfad, label: "Vertrag widerrufen", betont: true });
   liste.push({ href: rechtsPfade.kuendigen, label: "Verträge hier kündigen", betont: true });
   return liste;
@@ -43,11 +51,13 @@ function eintraege(): Eintrag[] {
 export interface RechtsLinksProps extends FlexProps {
   /** `kompakt` = Sidebar: linksbündig, 12px. Standard = zentriert unter Seiteninhalten, 13px. */
   kompakt?: boolean;
+  /** Ohne „Vertrag widerrufen" und „Verträge hier kündigen" (siehe `eintraege`). */
+  ohneVertragswege?: boolean;
 }
 
 /** Nur die Linkzeile — zum Einsetzen in bestehende Fußbereiche. */
-export function RechtsLinks({ kompakt = false, ...rest }: RechtsLinksProps) {
-  const liste = eintraege();
+export function RechtsLinks({ kompakt = false, ohneVertragswege = false, ...rest }: RechtsLinksProps) {
+  const liste = eintraege(ohneVertragswege);
   return (
     <Flex
       role="navigation"
