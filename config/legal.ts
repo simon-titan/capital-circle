@@ -55,7 +55,7 @@ export const anbieter: Anbieter = {
   ort: "Vlotho",
   land: "Deutschland",
   email: "contact@capitalcircletrading.com",
-  telefon: null,
+  telefon: "+49 1515 6028485",
   ustIdNr: null,
 };
 

@@ -37,32 +37,33 @@ export const WARTERAUM_KNOPF = "Anliegen klären";
  */
 export function warteraumNachricht(appUrl: string): string {
   return [
-    "**Dein Zugang zu Capital Circle ruht gerade**",
+    "**Warum du diesen Kanal siehst**",
     "",
-    "Du siehst diesen Kanal, weil deine Mitgliedschaft im Moment nicht aktiv ist. Entweder ist dein Abo beendet oder pausiert, oder bei einer Zahlung ist etwas schiefgegangen, oft nur eine abgelaufene Karte.",
-    "",
-    "Schreiben kannst du hier nicht, das ist kein Versehen.",
+    "Deine Mitgliedschaft bei Capital Circle ist gerade nicht aktiv. Deshalb hast du die Rolle „Zugang Pausiert“ und siehst statt der Mitglieder-Kanäle nur diesen hier. Schreiben kannst du hier nicht, das ist kein Versehen.",
     "",
     /*
-      Der Weg zum Geld steht vor dem Weg zum Reden, dieselbe Reihenfolge wie in
-      der Mahnung: Die häufigste Ursache ist eine abgelaufene Karte, und wer sie
-      ersetzt, braucht mit niemandem zu sprechen.
+      Zwei Gruppen landen hier: wer gekündigt oder pausiert hat, und wessen
+      Zahlung nicht durchging. Eine gemeinsame Erklärung war für beide unklar
+      (Rückmeldung Simon, 20.09.2026) — „ist etwas schiefgegangen" liest sich
+      für eine gewollte Kündigung wie ein Fehler. Deshalb stehen die Fälle
+      getrennt, und jeder liest nur seinen.
+
+      Kein Lifetime-Hinweis im Kanal (dieselbe Entscheidung): Der Warteraum
+      erklärt, er verkauft nicht. Das Angebot steht auf der Abo-Seite.
     */
-    `**So kommst du zurück:** Melde dich auf unserer Webseite an und öffne Einstellungen → Abonnement: ${appUrl}/einstellungen/abonnement (${passwortVergessen(appUrl)})`,
-    /*
-      Kein Lifetime-Hinweis im Kanal (Entscheidung Simon, 20.09.2026): Der
-      Warteraum soll erklären, warum jemand hier steht, und nicht verkaufen.
-      Das Angebot steht auf der Abo-Seite, die unten ohnehin verlinkt ist.
-    */
-    "Dort kannst du eine offene Rechnung bezahlen oder dein Abo wieder aufnehmen. Sobald das erledigt ist, bist du automatisch wieder drin.",
+    "**Du hast gekündigt oder dein Abo pausiert:** Dann ist alles in Ordnung, du musst nichts tun. Dein Konto, dein Journal und dein Fortschritt bleiben gespeichert. Wenn du zurückkommen willst, buchst du hier wieder:",
+    `${appUrl}/einstellungen/abonnement`,
     "",
-    `**Wenn etwas dazwischengekommen ist**, drück unten auf „${WARTERAUM_KNOPF}“. Du schreibst uns in einem kurzen Formular, was los ist, und wir melden uns bei dir. Ohne Discord erreichst du uns per Mail an ${TEAM_POSTFACH}.`,
+    "**Eine Zahlung ist nicht durchgegangen:** Meist ist es nur eine abgelaufene Karte. Sobald die offene Rechnung bezahlt ist, bist du automatisch wieder drin, auch hier auf Discord:",
+    `${appUrl}/einstellungen/abonnement (${passwortVergessen(appUrl)})`,
+    "",
+    `**Etwas anderes?** Drück unten auf „${WARTERAUM_KNOPF}“ und schreib uns in einem kurzen Formular, was los ist. Wir melden uns bei dir. Ohne Discord erreichst du uns per Mail an ${TEAM_POSTFACH}.`,
     "",
     /*
       Der unbequeme Satz, und er gehört dazu. Die Zahl kommt aus
       `config/discord.ts`, nicht aus dem Text, sonst nennt sie nach der ersten
       Änderung eine Frist, die es nicht mehr gibt.
     */
-    `Wenn wir gar nichts von dir hören, nehmen wir dich nach ${KARENZ_TAGE} Tagen vom Server. Das ist kein Abschied für immer: Dein Konto, dein Journal und dein Fortschritt bleiben gespeichert, und du kannst jederzeit wiederkommen.`,
+    `Wenn wir gar nichts von dir hören, nehmen wir dich nach ${KARENZ_TAGE} Tagen vom Server. Das ist kein Abschied für immer: Dein Konto bleibt bestehen, und du kannst jederzeit wiederkommen.`,
   ].join("\n");
 }
