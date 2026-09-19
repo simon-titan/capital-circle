@@ -17,6 +17,7 @@
     "import:whop-members": "node scripts/import-whop-members-to-platform-segment.mjs",
     "verify:journal": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/verify-journal-import.mjs",
     "discord:sync": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/discord-role-sync.mjs",
+    "discord:check": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/discord-check.mjs",
     "migrate:videos-to-cloudflare": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/migrate-videos-to-cloudflare.mjs",
     "cf:check": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/check-cloudflare.mjs",
     "cf:link": "node scripts/link-cloudflare-videos.mjs",
