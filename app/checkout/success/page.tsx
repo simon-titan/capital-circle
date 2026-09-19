@@ -3,6 +3,7 @@ import { Box, Flex, Heading, Stack, Text } from "@chakra-ui/react";
 import { Check } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { ZugangForm } from "@/components/checkout/ZugangForm";
+import { RechtsLinks } from "@/components/legal/RechtsFusszeile";
 import { ladeKaufStatus } from "@/lib/checkout/kauf-status";
 import { preiskarten } from "@/config/landing-membership";
 
@@ -221,6 +222,9 @@ export default async function CheckoutSuccessPage({
             Keine Mail erhalten? Schau kurz im Spam-Ordner nach — sie kommt von Capital Circle. Die Rechnung schickt
             dir unser Zahlungsdienstleister separat.
           </Text>
+
+          {/* Impressum · Datenschutz · AGB · Widerruf · Verträge hier kündigen */}
+          <RechtsLinks borderTop="1px solid var(--cc-line)" pt={5} />
         </Stack>
       </Flex>
     </Box>

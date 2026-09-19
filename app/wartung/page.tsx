@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Box, Stack, Text } from "@chakra-ui/react";
+import { RechtsLinks } from "@/components/legal/RechtsFusszeile";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +26,8 @@ export default async function WartungPage() {
       position="relative"
       minH="100vh"
       display="flex"
+      flexDirection="column"
+      gap={6}
       alignItems="center"
       justifyContent="center"
       bg="var(--cc-bg)"
@@ -80,6 +83,10 @@ export default async function WartungPage() {
           {message ?? "Wir führen gerade kurz Wartungsarbeiten durch. Bitte schau in ein paar Minuten wieder vorbei."}
         </Text>
       </Stack>
+
+      {/* Rechtstexte und Kündigungsbutton bleiben auch im Wartungsmodus
+          erreichbar (Ausnahme in `proxy.ts`). */}
+      <RechtsLinks position="relative" zIndex={1} maxW="520px" />
     </Box>
   );
 }

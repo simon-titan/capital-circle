@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Box, Grid, Stack, Text } from "@chakra-ui/react";
+import { RechtsLinks } from "@/components/legal/RechtsFusszeile";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getPresignedGetUrl } from "@/lib/storage";
 
@@ -161,6 +162,9 @@ export default async function ErfolgePage() {
             ))}
           </Grid>
         )}
+
+        {/* Impressum · Datenschutz · AGB · Widerruf · Verträge hier kündigen */}
+        <RechtsLinks borderTop="1px solid var(--cc-line)" pt={6} />
       </Stack>
     </Box>
   );

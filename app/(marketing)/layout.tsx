@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Box } from "@chakra-ui/react";
+import { RechtsFusszeile } from "@/components/legal/RechtsFusszeile";
 
 /**
  * Marketing-Layout — bewusst minimal: kein Auth-Gate, keine Plattform-Chrome.
@@ -19,6 +20,10 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
       <Box position="relative" zIndex={1}>
         {children}
       </Box>
+      {/* Rechtliche Links für alle Seiten dieser Gruppe (/free, /apply, /survey).
+          Ohne eigene Haarlinie: Die Seiten schließen selbst mit einem
+          Hinweisblock ab, die Linkzeile setzt direkt darunter an. */}
+      <RechtsFusszeile ohneLinie />
     </Box>
   );
 }

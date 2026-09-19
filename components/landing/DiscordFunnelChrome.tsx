@@ -4,6 +4,7 @@ import { Box, Flex, HStack, Stack, Text, type StackProps } from "@chakra-ui/reac
 import { Lock } from "lucide-react";
 import type { ReactNode } from "react";
 import { Logo } from "@/components/brand/Logo";
+import { RechtsLinks } from "@/components/legal/RechtsFusszeile";
 
 /**
  * Gemeinsamer Rahmen der Funnel-Seiten (/discord, /discord/termin, /termin, /video)
@@ -224,6 +225,8 @@ export function FunnelFooter({ children, lock = true }: { children: ReactNode; l
             © {new Date().getFullYear()} Capital Circle Institut
           </Text>
         </HStack>
+        {/* Impressum · Datenschutz · AGB · Widerruf · Verträge hier kündigen */}
+        <RechtsLinks pt={2} />
       </Stack>
     </Box>
   );

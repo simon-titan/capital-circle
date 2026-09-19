@@ -14,6 +14,7 @@ import {
 import { ArrowRight, Lock, Play } from "lucide-react";
 import { Children, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Logo } from "@/components/brand/Logo";
+import { RechtsLinks } from "@/components/legal/RechtsFusszeile";
 import { GlassVideoPlayer } from "@/components/ui/GlassVideoPlayer";
 
 /*
@@ -453,6 +454,8 @@ export function LandingFooter({ applicationNote = false }: { applicationNote?: b
         <Text fontSize="12px" color="var(--cc-text-3)" className="cc-num">
           © {new Date().getFullYear()} Capital Circle Institut
         </Text>
+        {/* Impressum · Datenschutz · AGB · Widerruf · Verträge hier kündigen */}
+        <RechtsLinks pt={2} maxW="720px" mx="auto" />
       </Stack>
     </Box>
   );
