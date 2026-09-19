@@ -62,7 +62,7 @@ interface PaymentLogRow {
   amountEur: number;
   currency: string;
   status: string;
-  type: "monthly" | "lifetime" | "unknown";
+  type: AboPlan | "unknown";
   createdAt: string;
   paidAt: string | null;
   stripeInvoiceId: string | null;
@@ -88,15 +88,30 @@ interface EmailPerfRow {
   clickRatePct: number;
 }
 
+type AboPlan = "monthly" | "quarterly" | "yearly";
+
+/** Kurzform für Kacheln und Zahlungsliste (die Langform steht auf den Preiskarten). */
+const PLAN_KURZ: Record<AboPlan, string> = {
+  monthly: "Monatlich",
+  quarterly: "Quartal",
+  yearly: "Jährlich",
+};
+
 interface AnalyticsResponse {
   ok: true;
   generatedAt: string;
   mrr: {
+    /** Monatlich wiederkehrend: Quartal ÷ 3, Jahr ÷ 12; ohne Lifetime und 1:1. */
     mrrEur: number;
-    monthlyActiveSubs: number;
+    aktiveAbos: Record<AboPlan, number>;
+    aktiveAbosGesamt: number;
+    preiseEur: Record<AboPlan, number | null>;
+    /** Laufzeiten mit aktiven Abos, aber ohne lesbaren Preis — fehlen im MRR. */
+    ohnePreis: AboPlan[];
     lifetimeActive: number;
-    lifetimeRevenue30dEur: number;
-    monthlyPriceEur: number;
+    ht1on1Active: number;
+    /** Alle erfolgreichen Zahlungen der letzten 30 Tage. */
+    umsatz30dEur: number;
   };
   churn: {
     canceled30d: number;
@@ -266,13 +281,21 @@ function KpiRow({ data }: { data: AnalyticsResponse }) {
         icon={<Wallet size={16} strokeWidth={1.75} />}
         label="MRR (Monthly Recurring)"
         value={eurFmt.format(data.mrr.mrrEur)}
-        sublabel={`${data.mrr.monthlyActiveSubs} aktive Monats-Abos · ${eurFmt.format(data.mrr.monthlyPriceEur)} / Monat`}
+        sublabel={
+          `${data.mrr.aktiveAbosGesamt} aktive Abos · ` +
+          (Object.keys(PLAN_KURZ) as AboPlan[])
+            .map((plan) => `${data.mrr.aktiveAbos[plan]} ${PLAN_KURZ[plan]}`)
+            .join(" · ") +
+          (data.mrr.ohnePreis.length > 0
+            ? ` · ohne Preis, nicht im MRR: ${data.mrr.ohnePreis.map((plan) => PLAN_KURZ[plan]).join(", ")}`
+            : "")
+        }
       />
       <StatWidget
         icon={<Wallet size={16} strokeWidth={1.75} />}
-        label="Lifetime-Umsatz · 30d"
-        value={eurFmt.format(data.mrr.lifetimeRevenue30dEur)}
-        sublabel={`${data.mrr.lifetimeActive} aktive Lifetime-Mitglieder gesamt`}
+        label="Umsatz · 30d"
+        value={eurFmt.format(data.mrr.umsatz30dEur)}
+        sublabel={`Alle Zahlungen · ${data.mrr.lifetimeActive} Lifetime · ${data.mrr.ht1on1Active} 1:1 (nicht im MRR)`}
       />
       <StatWidget
         icon={<TrendingDown size={16} strokeWidth={1.75} />}
@@ -505,13 +528,7 @@ function PaymentsSection({ payments }: { payments: PaymentLogRow[] }) {
                 </Stack>
               </GridItem>
               <GridItem>
-                <StatusPill
-                  tone="neutral"
-                  textTransform="capitalize"
-                  color={p.type === "lifetime" ? "var(--cc-text)" : undefined}
-                >
-                  {p.type === "unknown" ? "—" : p.type}
-                </StatusPill>
+                <StatusPill tone="neutral">{p.type === "unknown" ? "—" : PLAN_KURZ[p.type]}</StatusPill>
               </GridItem>
               <GridItem
                 textAlign={{ base: "left", md: "right" }}

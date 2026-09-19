@@ -57,13 +57,20 @@ export function WeekTaskCard({ homework, isPaid }: { homework: HomeworkSummary; 
     );
   }
 
-  const { official, tasks, customDone, customTotal } = homework;
+  const { official, tasks, customDone, customTotal, moreOpen } = homework;
+  // Weitere offene Aufgaben stehen neben dem Knopf statt als eigene Zeile —
+  // die Karte soll nicht höher werden als ihre Nachbarn in der Reihe.
   const openButton = (
-    <Box mt="auto" pt={5}>
+    <Flex mt="auto" pt={5} align="center" gap={3} wrap="wrap">
       <Button as={NextLink} href="/hausaufgabe" variant="line">
-        Aufgabe öffnen
+        {moreOpen > 0 ? "Aufgaben öffnen" : "Aufgabe öffnen"}
       </Button>
-    </Box>
+      {moreOpen > 0 ? (
+        <Text className="cc-num" fontSize="14px" color="var(--cc-text-2)">
+          {moreOpen === 1 ? "+1 weitere offen" : `+${moreOpen} weitere offen`}
+        </Text>
+      ) : null}
+    </Flex>
   );
 
   if (!official) {
