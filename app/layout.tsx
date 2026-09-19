@@ -6,11 +6,18 @@ import { Providers } from "@/components/providers";
 export const metadata: Metadata = {
   title: "Capital Circle Institut",
   description: "Exklusive Trading-Lernplattform",
+  /*
+   * Eigene Dateinamen statt `/new-apple.png` (20.09.2026): Browser halten
+   * Favicons hartnäckig im Zwischenspeicher, teils über Wochen. Nach dem
+   * Logowechsel blieb deshalb das alte Zeichen stehen. Eine neue Adresse ist
+   * der einzige zuverlässige Weg, das aufzulösen — wer das Zeichen erneut
+   * ändert, vergibt wieder einen neuen Namen.
+   */
   icons: {
-    icon: [{ url: "/new-apple.png", sizes: "512x512", type: "image/png" }],
-    shortcut: "/new-apple.png",
+    icon: [{ url: "/logo/favicon-512.png", sizes: "512x512", type: "image/png" }],
+    shortcut: "/logo/favicon-512.png",
     // Zusätzlich public/apple-touch-icon.png (Kopie) — Safari holt die URL oft direkt
-    apple: [{ url: "/new-apple.png", sizes: "512x512", type: "image/png" }],
+    apple: [{ url: "/logo/apple-touch-180.png", sizes: "180x180", type: "image/png" }],
   },
 };
 

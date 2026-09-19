@@ -37,5 +37,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, items: data ?? [] });
+  /*
+   * Die ausführlichen Stimmen zuerst (Wunsch Simon, 20.09.2026): Wer die
+   * Bewertungen überfliegt, sieht dann zuerst die, die etwas erzählen — und
+   * nicht drei Zeilen „Top!". Sortiert wird nach der Länge des Textes, bei
+   * gleicher Länge bleibt die Reihenfolge aus der Datenbank (`sort_order`,
+   * dann Datum) erhalten.
+   *
+   * Warum in JavaScript und nicht in der Abfrage: PostgREST kann nicht nach
+   * `length(body)` ordnen, und eine eigene Spalte dafür müsste bei jeder
+   * Änderung im Admin mitgepflegt werden.
+   */
+  const laenge = (r: { body?: string | null; title?: string | null }) =>
+    (r.body?.trim().length ?? 0) + (r.title?.trim().length ?? 0);
+
+  const items = [...(data ?? [])].sort((a, b) => laenge(b) - laenge(a));
+
+  return NextResponse.json({ ok: true, items });
 }
