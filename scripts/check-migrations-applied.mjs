@@ -74,10 +74,18 @@ const dateien = readdirSync(DIR)
 console.log(`${dateien.length} Migrationsdateien werden gegen die Datenbank geprueft …\n`);
 
 const offen = [];
+/**
+ * Migrationen, die nur Policies/Trigger/Funktionen aendern, legen nichts an, was
+ * sich hier abfragen liesse. Sie tragen die Kopfzeile `-- nachweis: npm run
+ * db:check-rls` und werden am Ende nur aufgelistet — sonst meldete dieses Skript
+ * „Alle Migrationen sind eingespielt“, auch wenn sie fehlen.
+ */
+const nurUeberVerhalten = [];
 
 for (const datei of dateien) {
   const sql = readFileSync(path.join(DIR, datei), "utf8");
   const fehlend = [];
+  if (/^--\s*nachweis:\s*npm run db:check-rls/im.test(sql)) nurUeberVerhalten.push(datei);
 
   for (const t of new Set(tabellenAus(sql))) {
     if (!(await tabelleExistiert(t))) fehlend.push(`Tabelle ${t}`);
@@ -103,5 +111,9 @@ if (offen.length === 0) {
   console.log(`${offen.length} Migration(en) fehlen in der Datenbank:`);
   for (const o of offen) console.log(`  ${o.datei}`);
   console.log(`\nMit "node scripts/build-pending-migrations.mjs" eine Sammeldatei daraus bauen.`);
+}
+if (nurUeberVerhalten.length > 0) {
+  console.log(`\nHier nicht pruefbar (nur Policies/Trigger) — Nachweis mit "npm run db:check-rls":`);
+  for (const d of nurUeberVerhalten) console.log(`  ${d}`);
 }
 process.exit(offen.length === 0 ? 0 : 1);
