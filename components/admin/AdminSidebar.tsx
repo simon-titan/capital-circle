@@ -22,6 +22,7 @@ import {
   ShieldCheck,
   Star,
   Ticket,
+  Truck,
   Undo2,
   Users,
   Video,
@@ -80,6 +81,9 @@ const groups: AdminGroup[] = [
     links: [
       { href: "/admin/tracking", label: "Tracking Links", icon: Link2 },
       { href: "/admin/discord-funnel", label: "Discord Funnel", icon: Funnel },
+      // Die letzten Whop-Zahler holen (`config/whop-umzug.ts`). Nur Ansicht —
+      // verschickt wird über `npm run whop:umzug`.
+      { href: "/admin/whop-umzug", label: "Whop-Umzug", icon: Truck },
       { href: "/admin/gutscheine", label: "Gutscheine", icon: Ticket },
       { href: "/admin/zahlungsstoerungen", label: "Zahlungsstörungen", icon: CreditCard },
       // Eingänge über den Kündigungsbutton `/kuendigen` (§ 312k BGB).

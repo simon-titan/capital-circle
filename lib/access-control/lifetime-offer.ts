@@ -11,7 +11,10 @@ import { createServiceClient } from "@/lib/supabase/service";
  * In dieser Reihenfolge:
  *   1. Wer bereits Lifetime hat oder im 1:1-Mentoring ist, sieht es nicht —
  *      beiden würde man etwas verkaufen, das sie schon haben.
- *   2. Kaufen darf, wer **zahlt oder je gezahlt hat**: ein laufendes Abo
+ *   2. Kaufen darf, wer **zahlt oder je gezahlt hat** — seit dem Whop-Umzug
+ *      (20.09.2026) zählt auch, wer bei Whop gezahlt hat und importiert wurde
+ *      (`profiles.whop_umzug_am`, Migration 100); davon steht in
+ *      `subscriptions`/`payments` nichts. Im Einzelnen: ein laufendes Abo
  *      (monatlich, vierteljährlich, jährlich) oder — seit 19.09.2026 — eine
  *      Stripe-Vergangenheit (ein Abo in `subscriptions`, gleich welcher
  *      Status, oder eine erfolgreiche Zahlung in `payments`). Entscheidung
@@ -106,11 +109,25 @@ export async function pruefeLifetimeAngebot(userId: string): Promise<LifetimeAng
   }
 
   const supabase = createServiceClient();
-  const { data, error } = await supabase
+
+  /*
+    `whop_umzug_am` kommt erst mit Migration 100. Solange sie nicht eingespielt
+    ist, antwortet PostgREST auf die Spalte mit einem Fehler — und der sähe
+    hier aus wie „kein Profil", womit die Lifetime-Karte für **alle**
+    verschwände, bis jemand den Zusammenhang findet. Deshalb ein zweiter
+    Versuch ohne die Spalte; dieselbe Vorsichtsmassnahme wie in
+    `app/api/admin/users/route.ts` für `lifetime_offer_group`.
+  */
+  const SPALTEN = "membership_tier,access_until,lifetime_offer_group";
+  let { data, error } = await supabase
     .from("profiles")
-    .select("membership_tier,access_until,lifetime_offer_group")
+    .select(`${SPALTEN},whop_umzug_am`)
     .eq("id", userId)
     .maybeSingle();
+
+  if (error && /whop_umzug_am|does not exist|schema cache/i.test(error.message)) {
+    ({ data, error } = await supabase.from("profiles").select(SPALTEN).eq("id", userId).maybeSingle());
+  }
 
   if (error || !data) return { erlaubt: false, grund: "kein_profil", gruppe: null };
 
@@ -118,6 +135,7 @@ export async function pruefeLifetimeAngebot(userId: string): Promise<LifetimeAng
     membership_tier: string | null;
     access_until: string | null;
     lifetime_offer_group: string | null;
+    whop_umzug_am?: string | null;
   };
   const gruppe = profil.lifetime_offer_group?.trim() || null;
   const tier = profil.membership_tier ?? "free";
@@ -131,8 +149,23 @@ export async function pruefeLifetimeAngebot(userId: string): Promise<LifetimeAng
 
   let ehemalig = false;
   if (!aboLaeuft) {
-    // Gekündigt, ausgelaufen, gesperrt oder pausiert: erlaubt, wenn je gezahlt.
-    if (!(await hatStripeVergangenheit(supabase, userId))) {
+    /*
+      Gekündigt, ausgelaufen, gesperrt oder pausiert: erlaubt, wenn je gezahlt.
+
+      „Je gezahlt" heisst seit dem Whop-Umzug (20.09.2026) nicht mehr nur „bei
+      Stripe gezahlt". Die 29 umgezogenen Mitglieder haben bezahlt — nur eben
+      bei Whop, und davon steht in `subscriptions` und `payments` nichts. Ohne
+      diese Zeile stünde in Mail 1 des Umzugs ein Lifetime-Angebot, dessen
+      Karte nach dem Anmelden gar nicht erscheint; der Kaufknopf liefe in den
+      `kein_zahlendes_abo`-Zweig der Kasse.
+
+      Sie stehen bewusst auf `ehemalig`, auch solange ihr Whop-Zeitraum noch
+      läuft: Das Feld sagt „hier endet kein laufendes Abo automatisch", und
+      genau so ist es — ihr Abo liegt bei einem Anbieter, den wir nicht
+      steuern, und sie müssen es selbst kündigen.
+    */
+    const ausWhopUmzug = Boolean(profil.whop_umzug_am);
+    if (!ausWhopUmzug && !(await hatStripeVergangenheit(supabase, userId))) {
       return {
         erlaubt: false,
         grund: ZAHLENDE_ABOS.has(tier) ? "abo_abgelaufen" : "kein_zahlendes_abo",

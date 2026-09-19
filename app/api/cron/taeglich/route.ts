@@ -13,6 +13,8 @@ import { mitgliedsRolleId } from "@/lib/discord/mitgliedschaft";
 import { reconcileDiscordRoles, type ReconcileResult } from "@/lib/discord/reconcile";
 import { requireAdminRole } from "@/lib/supabase/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
+import { beendeAbgelaufeneWhopZugaenge } from "@/lib/whop-umzug/ablauf";
+import { ladeUmzugKreis, zaehleKreis } from "@/lib/whop-umzug/kreis";
 import { beendeAbgelaufeneAufschuebe, fuehreFristAus } from "@/lib/zahlung/fall";
 
 export const runtime = "nodejs";
@@ -32,6 +34,11 @@ export const maxDuration = 300;
  *    Nachricht, Verlauf.
  * 2. **Der Sieben-Tage-Ablauf.** An Tag 3 und Tag 5 eine Erinnerung, an Tag 7
  *    ruht der Zugang. Zahlen und Wortlaut stehen in `config/zahlung.ts`.
+ * 2a. **Abgelaufene Whop-Zugänge beenden** (`lib/whop-umzug/ablauf.ts`): Wer
+ *    aus dem Whop-Umzug stammt, dessen bei Whop bezahlter Zeitraum vorbei ist
+ *    und der bei uns nichts abgeschlossen hat, verliert `is_paid`. Die Rolle
+ *    nimmt ihm Schritt 3, nach derselben Regel wie jedem anderen — deshalb
+ *    steht dieser Schritt davor und nicht danach.
  * 3. **Die Rollen nachziehen** (`lib/discord/reconcile.ts`), nach derselben
  *    Regel wie die Inhalte (`is_paid` oder Admin). Wer wieder Zugang hat,
  *    bekommt die Mitgliederrolle zurück und verlässt den Warteraum; wer keinen
@@ -90,6 +97,13 @@ async function lauf() {
   const frist = await fuehreFristAus(supabase);
 
   /*
+    Der Whop-Umzug vor dem Rollenabgleich: Er nimmt nur `is_paid`, die Rolle
+    nimmt der Abgleich gleich danach — mit seiner Obergrenze und seinem
+    Protokoll. Zwei Stellen, die Discord-Rollen entziehen, soll es nicht geben.
+  */
+  const whopAblauf = await beendeAbgelaufeneWhopZugaenge(supabase, true);
+
+  /*
     Die Rollen nach der Frist: Sie ist der Lauf, der Zugänge beendet, also ist
     hier der Zustand der Nacht vollständig.
   */
@@ -109,12 +123,16 @@ async function lauf() {
     ok:
       aufschuebe.fehler.length === 0 &&
       frist.fehler.length === 0 &&
+      whopAblauf.fehler.length === 0 &&
+      !whopAblauf.ausgesetzt &&
       !rollen.fehler &&
       !rollen.ausgesetzt &&
       (entfernt.gelaufen || !discordBotConfigured()),
     dauer_ms: Date.now() - start,
     aufschuebe,
     frist,
+    whopAblauf,
+    whopKampagne: await whopKampagneStand(),
     rollen,
     entfernt,
   });
@@ -159,6 +177,26 @@ async function rollenAbgleich(schreiben: boolean): Promise<{
       ausgesetzt: ergebnis.entzugAusgesetzt,
       abweichungen,
     };
+  } catch (err) {
+    return { gelaufen: false, fehler: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+/**
+ * Was der Whop-Umzug heute bräuchte — **gemeldet, nicht verschickt**.
+ *
+ * Der Nachtlauf sagt, welche Stufe bei wie vielen fällig wäre; ausgelöst wird
+ * sie von Hand über `/api/admin/whop-umzug` bzw. `npm run whop:umzug`. Die
+ * Trennung ist Absicht: Ein Cron, der Kundenpost ohne Auslöser verschickt, ist
+ * genau eine falsche Zeile davon entfernt, 29 Leuten dasselbe dreimal zu
+ * schicken.
+ *
+ * Wirft nie: Ohne Migration 100 gibt es den Kreis nicht, und das ist kein
+ * Grund, den Nachtlauf rot zu färben.
+ */
+async function whopKampagneStand() {
+  try {
+    return { gelaufen: true, ...zaehleKreis(await ladeUmzugKreis()) };
   } catch (err) {
     return { gelaufen: false, fehler: err instanceof Error ? err.message : String(err) };
   }
@@ -223,6 +261,8 @@ async function probe() {
     offeneFaelleMitFrist: faelle.length,
     heute: plan.filter((p) => p.aktion !== "nichts"),
     aufschuebeAbgelaufen: (aufschubRes.data ?? []).length,
+    whopAblauf: await beendeAbgelaufeneWhopZugaenge(supabase, false),
+    whopKampagne: await whopKampagneStand(),
     rollen: await rollenAbgleich(false),
     rauswurf: await rauswurfProbe(supabase),
     hinweis:
