@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getPresignedGetUrl } from "@/lib/storage";
+import { liveSessionIstFrei } from "@/lib/access-control/inhalt-zugang";
+import { hatInhaltsZugang } from "@/lib/membership";
 
 /**
- * Signed URL für Live-Session-Videos (Hetzner-Key in live_session_videos.storage_key).
- * Nur eingeloggte Nutzer; Key muss einer Zeile in live_session_videos entsprechen.
+ * Signed URL für Live-Session-Videos (R2-Key in live_session_videos.storage_key).
+ *
+ * Zugang: Der Key muss einer Zeile in live_session_videos entsprechen, und
+ * - mit Zahlung (`profiles.is_paid`) oder als Admin: jedes Video,
+ * - ohne Zahlung: nur Videos der freien Kategorie (`live-session-free.ts`).
+ *
+ * Nachgeschlagen wird über den Service-Client, geprüft wird hier — so hängt
+ * die Sperre nicht davon ab, ob Migration 076 schon eingespielt ist.
  */
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -14,22 +22,32 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
-  const key = url.searchParams.get("key");
+  const key = url.searchParams.get("key")?.trim();
   if (!key) {
     return NextResponse.json({ ok: false, error: "missing_key" }, { status: 400 });
   }
 
-  const { data: row } = await supabase
-    .from("live_session_videos")
-    .select("id, storage_key")
-    .eq("storage_key", key)
-    .maybeSingle();
+  const service = createServiceClient();
+  const [{ data: profile }, { data: row }] = await Promise.all([
+    supabase.from("profiles").select("is_admin, is_paid").eq("id", authData.user.id).maybeSingle(),
+    service
+      .from("live_session_videos")
+      .select("id, storage_key, session_id")
+      .eq("storage_key", key)
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
-  if (!row) {
+  const video = row as { id: string; storage_key: string | null; session_id: string | null } | null;
+  if (!video?.storage_key) {
     return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
   }
 
-  const signedUrl = await getPresignedGetUrl(key);
+  if (!hatInhaltsZugang(profile) && !(await liveSessionIstFrei(service, video.session_id))) {
+    return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+  }
+
+  const signedUrl = await getPresignedGetUrl(video.storage_key);
   const expiresInSeconds = 60 * 15;
   return NextResponse.json({
     ok: true,

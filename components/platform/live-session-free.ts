@@ -9,6 +9,10 @@
  * der Datenbank an, eine feste UUID im Code würde beim nächsten Neuaufsetzen
  * wieder ins Leere zeigen. Wer Free-Mitgliedern gar nichts mehr zeigen will,
  * setzt die Konstante auf einen leeren String — dann greift die Prüfung nie.
+ *
+ * Derselbe Titelvergleich steht in der Datenbank: `public.live_session_ist_frei()`
+ * (Migration 076) entscheidet danach, welche Live-Session-Videos Konten ohne
+ * Zahlung lesen dürfen. Wer den Wert hier ändert, ändert ihn dort mit.
  */
 export const FREE_LIVE_SESSION_CATEGORY = "wochenrecap";
 
