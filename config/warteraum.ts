@@ -15,7 +15,6 @@
  */
 
 import { KARENZ_TAGE } from "@/config/discord";
-import { LIFETIME_PREIS } from "@/config/lifetime";
 import { passwortVergessen, TEAM_POSTFACH } from "@/config/team";
 
 /** Beschriftung des Knopfes unter der Erklärung. Discord erlaubt 80 Zeichen. */
@@ -50,8 +49,12 @@ export function warteraumNachricht(appUrl: string): string {
       ersetzt, braucht mit niemandem zu sprechen.
     */
     `**So kommst du zurück:** Melde dich auf unserer Webseite an und öffne Einstellungen → Abonnement: ${appUrl}/einstellungen/abonnement (${passwortVergessen(appUrl)})`,
-    "Dort kannst du eine offene Rechnung bezahlen, dein Abo wieder aufnehmen oder einmalig Lifetime wählen " +
-      `(${LIFETIME_PREIS}, danach keine Abbuchung mehr). Sobald das erledigt ist, bist du automatisch wieder drin.`,
+    /*
+      Kein Lifetime-Hinweis im Kanal (Entscheidung Simon, 20.09.2026): Der
+      Warteraum soll erklären, warum jemand hier steht, und nicht verkaufen.
+      Das Angebot steht auf der Abo-Seite, die unten ohnehin verlinkt ist.
+    */
+    "Dort kannst du eine offene Rechnung bezahlen oder dein Abo wieder aufnehmen. Sobald das erledigt ist, bist du automatisch wieder drin.",
     "",
     `**Wenn etwas dazwischengekommen ist**, drück unten auf „${WARTERAUM_KNOPF}“. Du schreibst uns in einem kurzen Formular, was los ist, und wir melden uns bei dir. Ohne Discord erreichst du uns per Mail an ${TEAM_POSTFACH}.`,
     "",
