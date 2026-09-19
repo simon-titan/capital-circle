@@ -1,5 +1,6 @@
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe/server";
+import { MEMBERSHIP_PLANS } from "@/lib/stripe/plan-map";
 import { addGuildMemberRole, getGuildMember, removeGuildMemberRole } from "@/lib/discord/roles";
 import {
   extractCurrentPeriod,
@@ -7,6 +8,32 @@ import {
   unixToISO,
   type WebhookSupabase,
 } from "./_helpers";
+
+const ABO_STUFEN: ReadonlySet<string> = new Set(MEMBERSHIP_PLANS);
+
+/**
+ * Abo-ID einer Rechnung.
+ *
+ * Seit API `basil` steht sie weder auf `invoice.subscription` noch auf
+ * `lines.data[].subscription`, sondern unter `invoice.parent`. Genau dort hat
+ * der Handler bis 19.09.2026 nicht gesucht — `subId` war immer `null`, der
+ * Perioden-Refresh unten lief nie, und nach einer nachgeholten Zahlung hing
+ * `access_until` am Ende der 48-Stunden-Gnadenfrist, bis zufällig noch ein
+ * `subscription.updated` kam. Die alten Felder bleiben als Rückfall für
+ * Ereignisse, die mit einer älteren API-Version gerendert wurden.
+ */
+function aboIdAusRechnung(invoice: Stripe.Invoice): string | null {
+  const ausParent = invoice.parent?.subscription_details?.subscription;
+  if (ausParent) return typeof ausParent === "string" ? ausParent : ausParent.id;
+
+  for (const zeile of invoice.lines?.data ?? []) {
+    const ausZeile = zeile.parent?.subscription_item_details?.subscription;
+    if (ausZeile) return ausZeile;
+    const alt = (zeile as { subscription?: string | { id: string } | null }).subscription;
+    if (alt) return typeof alt === "string" ? alt : alt.id;
+  }
+  return null;
+}
 
 /**
  * `invoice.paid`
@@ -29,8 +56,26 @@ export async function handleInvoicePaid(
     throw new Error(`Invoice ${invoice.id} ohne customer-ID`);
   }
 
+  const subId = aboIdAusRechnung(invoice);
+
   const profile = await loadProfileByCustomerId(supabase, customerId);
   if (!profile) {
+    /*
+      Abo-Rechnung ohne Profil heißt fast immer: Das Konto entsteht gerade
+      erst, in `subscription.created`/`.updated` — und Stripe hat die Rechnung
+      zuerst zugestellt. Bei synchron bezahlten Abos ist das sogar die
+      natürliche Reihenfolge (`invoice.paid` vor `subscription.created`).
+      Bis 19.09.2026 stand hier ein stilles `return`: Stripe bekam 200, und die
+      erste Zahlung fehlte für immer in `payments` (Umsatz, Rechnungsliste).
+      Werfen lässt Stripe wiederholen; beim nächsten Versuch steht das Konto.
+      Rechnungen ohne Abo (von Hand im Dashboard angelegt) gehören zu keinem
+      Kaufweg und bleiben beim Protokolleintrag.
+    */
+    if (subId) {
+      throw new Error(
+        `invoice.paid: Profil für customer=${customerId} (sub=${subId}) noch nicht angelegt — Stripe soll wiederholen`,
+      );
+    }
     console.warn(
       `[stripe-webhook] invoice.paid: Kein Profil für customer=${customerId} (invoice=${invoice.id})`,
     );
@@ -65,14 +110,7 @@ export async function handleInvoicePaid(
   }
 
   // Subscription-spezifischer Periodendaten-Refresh (nur bei
-  // Subscription-Invoices). `invoice.subscription` ist deprecated im neuen
-  // API — wir lesen aus dem ersten Line-Item.
-  const lineSub = invoice.lines?.data?.find((l) => l.subscription);
-  const subId =
-    typeof lineSub?.subscription === "string"
-      ? lineSub.subscription
-      : (lineSub?.subscription?.id ?? null);
-
+  // Subscription-Invoices).
   if (subId) {
     try {
       const sub = await getStripe().subscriptions.retrieve(subId);
@@ -95,7 +133,10 @@ export async function handleInvoicePaid(
     }
   }
 
-  if (profile.membership_tier === "monthly") {
+  // Alle drei Abo-Laufzeiten, nicht nur `monthly`: Bis 19.09.2026 blieben die
+  // Zähler bei Quartals- und Jahresmitgliedern nach einer nachgeholten Zahlung
+  // stehen, und beim nächsten Ausfall ging Mail 1 nicht mehr raus.
+  if (profile.membership_tier && ABO_STUFEN.has(profile.membership_tier)) {
     await supabase
       .from("profiles")
       .update({
