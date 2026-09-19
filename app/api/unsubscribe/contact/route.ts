@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyContactUnsubscribeToken } from "@/lib/email/unsubscribe-token";
 import { getResend } from "@/lib/email/resend";
+import { findeUserIdZuEmail } from "@/lib/checkout/user-lookup";
+import { createServiceClient } from "@/lib/supabase/service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,11 +14,16 @@ const HTML_HEADERS = { "Content-Type": "text/html; charset=utf-8" } as const;
  * Zeile (z. B. `whop_migration`, Empfänger aus einem Resend-Segment). Anders
  * als `/api/unsubscribe` (userId-Token) trägt das Token hier die Email-Adresse
  * direkt — die Abmeldung greift auf Resend selbst (unsubscribed=true am
- * Contact, sperrt alle künftigen Segment-/Broadcast-Sends). Bewusst KEIN
- * Abgleich gegen `profiles`: die Tabelle hat keine `email`-Spalte (die liegt
- * in `auth.users`), ein Lookup dafür bräuchte einen vollen `listUsers()`-Scan
- * pro Klick — für ein Best-effort-Flag nicht gerechtfertigt. Resend bleibt
- * hier die alleinige Quelle der Wahrheit.
+ * Contact, sperrt alle künftigen Segment-/Broadcast-Sends).
+ *
+ * Seit 19.09.2026 zusätzlich: Gibt es ein Konto mit derselben Adresse, wird
+ * auch `profiles.unsubscribed_at` gesetzt. Ein Widerspruch gegen Werbung gilt
+ * für alle Werbe-Mails (§ 7 Abs. 3 UWG, Art. 21 Abs. 3 DSGVO), nicht nur für
+ * die Kampagne, aus der der Link kam — und die Seite unten verspricht genau
+ * das. Der `listUsers()`-Scan (`findeUserIdZuEmail`) läuft nur bei einem Klick
+ * auf „Abmelden" und ist best-effort: Scheitert er, bleibt die Abmeldung bei
+ * Resend trotzdem gültig. Gegenstück: `/api/unsubscribe` meldet den
+ * Resend-Kontakt mit ab.
  */
 function htmlPage(opts: { title: string; heading: string; body: string; ok: boolean }): string {
   // Wie /api/unsubscribe: DESIGN.md v3.2 „Champagner auf Graphit“ als Literale (kein globals.css,
@@ -143,6 +150,22 @@ export async function GET(req: NextRequest) {
       }),
       { status: 500, headers: HTML_HEADERS },
     );
+  }
+
+  // Konto mit derselben Adresse ebenfalls abmelden (best-effort, siehe oben).
+  try {
+    const service = createServiceClient();
+    const userId = await findeUserIdZuEmail(service, email);
+    if (userId) {
+      const { error } = await service
+        .from("profiles")
+        .update({ unsubscribed_at: new Date().toISOString() })
+        .eq("id", userId)
+        .is("unsubscribed_at", null);
+      if (error) console.error("[unsubscribe/contact] Profil nicht abgemeldet:", error.message);
+    }
+  } catch (err) {
+    console.error("[unsubscribe/contact] Kontosuche fehlgeschlagen:", err);
   }
 
   return new NextResponse(

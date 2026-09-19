@@ -468,6 +468,7 @@ const PRIVAT = [
   "coupon_redemptions",
   "cancellations",
   "kuendigungen",
+  "widerrufe",
   "applications",
   "high_ticket_applications",
   "step2_applications",

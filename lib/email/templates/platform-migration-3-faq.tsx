@@ -30,7 +30,6 @@ export default function PlatformMigrationMail3({
       hideFooter={false}
       unsubscribeUrl={unsubscribeUrl}
       bodyFontFamily={T.fontBody}
-      headFontLinkHref={T.fontLinkHref}
     >
       <CampaignHeading>Die 3 Fragen, die uns zum Wechsel am häufigsten gestellt werden</CampaignHeading>
 

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
 import { EmailText, EmailButton, EmailHighlight } from "../layout/components";
+import { abmeldeUrl } from "../abmeldung";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 
@@ -10,10 +11,10 @@ interface Props {
   userId: string;
 }
 
-export default function FreeCourseDay5Email({ firstName }: Pick<Props, "firstName">) {
+export default function FreeCourseDay5Email({ firstName, abmeldeLink }: Pick<Props, "firstName"> & { abmeldeLink?: string }) {
   const appUrl = getAppUrl();
   return (
-    <BaseEmail previewText="Die Bewerbung für Capital Circle steht dir jetzt offen.">
+    <BaseEmail previewText="Die Bewerbung für Capital Circle steht dir jetzt offen." unsubscribeUrl={abmeldeLink}>
       <EmailText>Hey {firstName},</EmailText>
       <EmailText>
         wenn du die letzten Tage richtig genutzt hast, dann solltest du
@@ -55,7 +56,7 @@ export async function sendFreeCourseDay5(props: Props): Promise<SendResult> {
     to: props.email,
     subject: "Nicht jeder bekommt die Möglichkeit, den nächsten Schritt zu gehen.",
     jsx: (
-      <FreeCourseDay5Email firstName={props.firstName} />
+      <FreeCourseDay5Email firstName={props.firstName} abmeldeLink={abmeldeUrl({ userId: props.userId, email: props.email })} />
     ),
     log: {
       userId: props.userId,

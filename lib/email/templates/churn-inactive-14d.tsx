@@ -6,6 +6,7 @@ import {
   EmailButton,
   EmailHighlight,
 } from "../layout/components";
+import { abmeldeUrl } from "../abmeldung";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 
@@ -15,10 +16,10 @@ interface Props {
   userId: string;
 }
 
-export default function ChurnInactive14dEmail({ firstName }: Pick<Props, "firstName">) {
+export default function ChurnInactive14dEmail({ firstName, abmeldeLink }: Pick<Props, "firstName"> & { abmeldeLink?: string }) {
   const appUrl = getAppUrl();
   return (
-    <BaseEmail previewText={`Hey ${firstName}, alles okay bei dir?`}>
+    <BaseEmail previewText={`Hey ${firstName}, alles okay bei dir?`} unsubscribeUrl={abmeldeLink}>
       <EmailHeading>Hey {firstName}, alles okay bei dir?</EmailHeading>
       <EmailText>
         zwei Wochen ohne Login — wir wollten kurz nachfragen. Trading ist
@@ -50,7 +51,7 @@ export async function sendChurnInactive14d(props: Props): Promise<SendResult> {
     to: props.email,
     subject: `Hey ${props.firstName}, alles okay bei dir?`,
     jsx: (
-      <ChurnInactive14dEmail firstName={props.firstName} />
+      <ChurnInactive14dEmail firstName={props.firstName} abmeldeLink={abmeldeUrl({ userId: props.userId, email: props.email })} />
     ),
     log: {
       userId: props.userId,

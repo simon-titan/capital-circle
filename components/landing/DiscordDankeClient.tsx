@@ -1,23 +1,23 @@
 "use client";
 
-import { Box, Flex, Stack, Text } from "@chakra-ui/react";
+import { Box, Stack, Text } from "@chakra-ui/react";
 import { Calendar } from "lucide-react";
-import Script from "next/script";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Logo } from "@/components/brand/Logo";
+import { CalendlyZweiKlick } from "@/components/marketing/CalendlyZweiKlick";
 import { FunnelFooter, FunnelGround, FunnelPageStyles, FunnelSplash, GoldIconTile } from "./DiscordFunnelChrome";
 
 /**
  * Calendly-Buchungsseite für den Discord-Funnel (analog /bewerbung/danke), Look nach DESIGN.md v3.2.
  * Attribution: utm_content = Lead-Token; ohne Token greift der E-Mail-Fallback im Webhook.
+ * Der Kalender lädt erst nach Klick (Zwei-Klick-Lösung, `CalendlyZweiKlick`).
  */
 export function DiscordDankeClient() {
   const searchParams = useSearchParams();
   const lid = (searchParams.get("lid") ?? "").trim();
 
   const [loading, setLoading] = useState(true);
-  const [widgetReady, setWidgetReady] = useState(false);
   const [booked, setBooked] = useState(false);
   const [leadInfo, setLeadInfo] = useState<{ firstName: string | null; email: string | null }>({
     firstName: null,
@@ -43,18 +43,11 @@ export function DiscordDankeClient() {
     if (typeof e.data !== "object" || e.data === null) return;
     const event = (e.data as { event?: string }).event;
     if (event === "calendly.event_scheduled") setBooked(true);
-    if (event === "calendly.page_height" || event === "calendly.date_and_time_selected") {
-      setWidgetReady(true);
-    }
   }, []);
 
   useEffect(() => {
     window.addEventListener("message", handleMessage);
-    const timer = setTimeout(() => setWidgetReady(true), 5000);
-    return () => {
-      window.removeEventListener("message", handleMessage);
-      clearTimeout(timer);
-    };
+    return () => window.removeEventListener("message", handleMessage);
   }, [handleMessage]);
 
   const calendlyUrl = (() => {
@@ -137,45 +130,7 @@ export function DiscordDankeClient() {
               <Box className="cc-card cc-card--hero cc-card--still">
                 {/* Innerer Clip, damit die Gold-Kante (::before) der Karte sichtbar bleibt */}
                 <Box position="relative" borderRadius="11px" overflow="hidden">
-                  {!widgetReady && (
-                    <Flex
-                      position="absolute"
-                      inset={0}
-                      zIndex={1}
-                      direction="column"
-                      align="center"
-                      justify="center"
-                      gap={5}
-                      bg="var(--cc-surface)"
-                      role="status"
-                    >
-                      <Box
-                        w="40px"
-                        h="40px"
-                        borderRadius="full"
-                        border="3px solid rgba(212, 176, 128, 0.15)"
-                        borderTopColor="var(--cc-gold)"
-                        aria-hidden
-                        sx={{
-                          animation: "calSpin 0.8s linear infinite",
-                          "@keyframes calSpin": {
-                            "0%": { transform: "rotate(0deg)" },
-                            "100%": { transform: "rotate(360deg)" },
-                          },
-                        }}
-                      />
-                      <Text fontSize="14px" color="var(--cc-text-2)">
-                        Termine werden geladen…
-                      </Text>
-                    </Flex>
-                  )}
-
-                  <div
-                    className="calendly-inline-widget"
-                    data-url={calendlyUrl}
-                    style={{ minWidth: "320px", height: "700px", width: "100%" }}
-                  />
-                  <Script src="https://assets.calendly.com/assets/external/widget.js" strategy="lazyOnload" />
+                  <CalendlyZweiKlick url={calendlyUrl} flaeche="var(--cc-surface)" />
                 </Box>
               </Box>
             ) : (

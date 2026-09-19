@@ -31,7 +31,6 @@ export default function WhopMigrationMail1({
       hideFooter={false}
       unsubscribeUrl={unsubscribeUrl}
       bodyFontFamily={T.fontBody}
-      headFontLinkHref={T.fontLinkHref}
     >
       <CampaignBadge>Capital Circle Monatlich ist live</CampaignBadge>
       <CampaignHeading>Der Grund, warum du nicht dabei bist</CampaignHeading>

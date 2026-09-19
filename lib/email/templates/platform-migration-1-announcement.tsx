@@ -31,7 +31,6 @@ export default function PlatformMigrationMail1({
       hideFooter={false}
       unsubscribeUrl={unsubscribeUrl}
       bodyFontFamily={T.fontBody}
-      headFontLinkHref={T.fontLinkHref}
     >
       <CampaignBadge>Capital Circle ist zurück auf der eigenen Plattform</CampaignBadge>
       <CampaignHeading>Dein Zugang wartet auf dich</CampaignHeading>
