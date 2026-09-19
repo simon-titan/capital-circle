@@ -3,9 +3,8 @@ import { BaseEmail } from "../layout/BaseEmail";
 import {
   EmailButton,
   EmailDivider,
-  EmailEyebrow,
   EmailHeading,
-  EmailHighlight,
+  EmailQuote,
   EmailLink,
   EmailSmall,
   EmailText,
@@ -45,10 +44,8 @@ export default function WhopUmzug2Erinnerung({ vorname, zugangBis, tageRest, abm
   return (
     <BaseEmail
       previewText={`Dein bezahlter Zeitraum endet ${rest}, am ${bis}`}
-      hideFooter={false}
       unsubscribeUrl={abmeldeLink}
     >
-      <EmailEyebrow>Whop-Umzug</EmailEyebrow>
       <EmailHeading>
         {vorname ? `${vorname}, dein Zeitraum endet ${rest}` : `Dein Zeitraum endet ${rest}`}
       </EmailHeading>
@@ -57,12 +54,12 @@ export default function WhopUmzug2Erinnerung({ vorname, zugangBis, tageRest, abm
         kurze Erinnerung, mehr ist es nicht: Der Zeitraum, den du bei Whop bezahlt hast, läuft am {bis} aus.
       </EmailText>
 
-      <EmailHighlight>
-        <strong style={{ color: T.goldLight }}>Danach ruht dein Zugang.</strong>
+      <EmailQuote>
+        <strong style={{ color: T.gold }}>Danach ruht dein Zugang.</strong>
         <br />
         Institut und Mitgliederkanäle sind dann zu. Dein Konto, dein Fortschritt und deine Notizen bleiben
         gespeichert — du machst später genau dort weiter, wo du aufgehört hast.
-      </EmailHighlight>
+      </EmailQuote>
 
       <EmailText>Wenn du dabeibleiben möchtest, reicht ein Klick:</EmailText>
       <EmailButton href={kaufUrl(appUrl, "monthly")}>Mitgliedschaft fortsetzen</EmailButton>

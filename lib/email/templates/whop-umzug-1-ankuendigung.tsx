@@ -2,9 +2,8 @@ import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
 import {
   EmailDivider,
-  EmailEyebrow,
   EmailHeading,
-  EmailHighlight,
+  EmailQuote,
   EmailLink,
   EmailSmall,
   EmailSubheading,
@@ -59,10 +58,8 @@ export default function WhopUmzug1Ankuendigung({ vorname, zugangBis, abmeldeLink
   return (
     <BaseEmail
       previewText={`Dein Zugang bleibt bis zum ${bis} — was jetzt zu tun ist`}
-      hideFooter={false}
       unsubscribeUrl={abmeldeLink}
     >
-      <EmailEyebrow>Capital Circle zieht um</EmailEyebrow>
       <EmailHeading>
         {vorname ? `${vorname}, wir sind weg von Whop` : "Wir sind weg von Whop"}
       </EmailHeading>
@@ -73,12 +70,12 @@ export default function WhopUmzug1Ankuendigung({ vorname, zugangBis, abmeldeLink
         abgerechnet wird: bei uns direkt statt über Whop.
       </EmailText>
 
-      <EmailHighlight>
-        <strong style={{ color: T.goldLight }}>Dein Zugang bleibt bis zum {bis}.</strong>
+      <EmailQuote>
+        <strong style={{ color: T.gold }}>Dein Zugang bleibt bis zum {bis}.</strong>
         <br />
         Das ist das Ende des Zeitraums, den du bei Whop bereits bezahlt hast. Bis dahin ändert sich für dich
         nichts — du zahlst nichts doppelt und verlierst keinen Tag.
-      </EmailHighlight>
+      </EmailQuote>
 
       <EmailDivider />
 
@@ -114,10 +111,10 @@ export default function WhopUmzug1Ankuendigung({ vorname, zugangBis, abmeldeLink
               <td
                 style={{
                   padding: "12px 16px",
-                  border: `1px solid ${T.border}`,
+                  border: `1px solid ${T.line}`,
                   borderRadius: "8px",
                   backgroundColor: T.bgCard,
-                  fontFamily: T.fontBody,
+                  fontFamily: T.font,
                   fontSize: "15px",
                   color: T.text,
                 }}
@@ -169,7 +166,7 @@ function SchritteListe({ schritte }: { schritte: readonly string[] }) {
               valign="top"
               style={{
                 padding: "4px 0 10px",
-                fontFamily: T.fontBody,
+                fontFamily: T.font,
                 fontSize: "14px",
                 fontWeight: 700,
                 color: T.gold,
@@ -181,10 +178,10 @@ function SchritteListe({ schritte }: { schritte: readonly string[] }) {
               valign="top"
               style={{
                 padding: "4px 0 10px",
-                fontFamily: T.fontBody,
+                fontFamily: T.font,
                 fontSize: "14px",
                 lineHeight: 1.6,
-                color: T.textSoft,
+                color: T.textMuted,
               }}
             >
               {s}

@@ -3,9 +3,8 @@ import { BaseEmail } from "../layout/BaseEmail";
 import {
   EmailButton,
   EmailDivider,
-  EmailEyebrow,
   EmailHeading,
-  EmailHighlight,
+  EmailQuote,
   EmailLink,
   EmailSmall,
   EmailText,
@@ -49,10 +48,8 @@ export default function WhopUmzug3Ende({ vorname, zugangBis, abmeldeLink }: Prop
   return (
     <BaseEmail
       previewText="Dein Zugang ruht — dein Konto und dein Fortschritt bleiben"
-      hideFooter={false}
       unsubscribeUrl={abmeldeLink}
     >
-      <EmailEyebrow>Whop-Umzug</EmailEyebrow>
       <EmailHeading>{vorname ? `${vorname}, dein Zugang ruht jetzt` : "Dein Zugang ruht jetzt"}</EmailHeading>
 
       <EmailText>
@@ -60,13 +57,13 @@ export default function WhopUmzug3Ende({ vorname, zugangBis, abmeldeLink }: Prop
         und zu den Mitgliederkanälen bis auf Weiteres zu. Danke, dass du bis zum letzten Tag dabei warst.
       </EmailText>
 
-      <EmailHighlight>
-        <strong style={{ color: T.goldLight }}>Verloren ist nichts.</strong>
+      <EmailQuote>
+        <strong style={{ color: T.gold }}>Verloren ist nichts.</strong>
         <br />
         Dein Konto, dein Lernfortschritt und deine Notizen bleiben gespeichert. Schliesst du wieder ab, machst du in
         derselben Lektion weiter, in der du aufgehört hast — und dein Platz auf dem Discord-Server ist auch wieder
         da.
-      </EmailHighlight>
+      </EmailQuote>
 
       <EmailText>Der Weg zurück ist derselbe Knopf wie vorher:</EmailText>
       <EmailButton href={kaufUrl(appUrl, "monthly")}>Wieder einsteigen</EmailButton>
