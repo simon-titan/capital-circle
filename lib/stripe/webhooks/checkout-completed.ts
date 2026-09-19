@@ -25,7 +25,7 @@ export async function handleCheckoutCompleted(
   session: Stripe.Checkout.Session,
   supabase: WebhookSupabase,
 ): Promise<void> {
-  await schreibeTrichter(supabase, session.id, "completed");
+  await schreibeTrichter(supabase, session, "completed");
 
   /**
    * Der Abo-Fall verlässt die Funktion, BEVOR `metadata.user_id` verlangt
@@ -147,7 +147,7 @@ export async function handleCheckoutExpired(
   session: Stripe.Checkout.Session,
   supabase: WebhookSupabase,
 ): Promise<void> {
-  await schreibeTrichter(supabase, session.id, "expired");
+  await schreibeTrichter(supabase, session, "expired");
 }
 
 /**
@@ -161,24 +161,40 @@ export async function handleCheckoutExpired(
  * `.eq("status", "started")` schützt die Reihenfolge: `completed` und
  * `expired` können in beliebiger Folge eintreffen, und ein abgelaufenes
  * Ereignis darf einen bereits verbuchten Kauf nicht überschreiben.
+ *
+ * Beim Abschluss kommt der Nachweis der Zustimmung aus der Kasse mit
+ * (Migration 091): `consent.terms_of_service`, der Zeitpunkt und der Stand
+ * der Rechtstexte aus den Metadaten. Fehlen die Spalten noch, wird ohne sie
+ * wiederholt — der Trichter darf an einer nicht eingespielten Migration nicht
+ * hängen bleiben.
  */
 async function schreibeTrichter(
   supabase: WebhookSupabase,
-  sessionId: string,
+  session: Stripe.Checkout.Session,
   status: "completed" | "expired",
 ): Promise<void> {
-  const { error } = await supabase
-    .from("checkout_sessions")
-    .update({
-      status,
-      ...(status === "completed"
-        ? { bezahlt_am: new Date().toISOString() }
-        : { abgebrochen_am: new Date().toISOString() }),
-    })
-    .eq("id", sessionId)
-    .eq("status", "started");
+  const jetzt = new Date().toISOString();
+  const basis = { status, ...(status === "completed" ? { bezahlt_am: jetzt } : { abgebrochen_am: jetzt }) };
+  const zustimmung = session.consent?.terms_of_service ?? null;
+  const nachweis =
+    status === "completed"
+      ? {
+          agb_zustimmung: zustimmung,
+          zustimmung_am: zustimmung === "accepted" ? jetzt : null,
+          rechtstexte_version: session.metadata?.rechtstexte_version ?? null,
+        }
+      : {};
+
+  const schreibe = (felder: Record<string, unknown>) =>
+    supabase.from("checkout_sessions").update(felder).eq("id", session.id).eq("status", "started");
+
+  let { error } = await schreibe({ ...basis, ...nachweis });
+  if (error && status === "completed" && /agb_zustimmung|zustimmung_am|rechtstexte_version|PGRST204/i.test(`${error.code} ${error.message}`)) {
+    console.warn(`[stripe-webhook] Zustimmung nicht gespeichert (Migration 091 fehlt?): ${error.message}`);
+    ({ error } = await schreibe(basis));
+  }
 
   if (error) {
-    console.warn(`[stripe-webhook] Trichter-Update (${sessionId} → ${status}) fehlgeschlagen: ${error.message}`);
+    console.warn(`[stripe-webhook] Trichter-Update (${session.id} → ${status}) fehlgeschlagen: ${error.message}`);
   }
 }

@@ -140,7 +140,8 @@ export default function DatenschutzPage() {
       <p>
         Rechtsgrundlagen sind Art. 6 Abs. 1 lit. b DSGVO (Vertrag) und lit. c (steuer- und handelsrechtliche
         Aufbewahrung). Deine Zustimmung zu AGB und sofortigem Leistungsbeginn in der Kasse speichert Stripe mit der
-        Bestellung; wir halten zusätzlich fest, welcher Stand unserer Rechtstexte beim Kauf galt.
+        Bestellung; wir halten zusätzlich fest, dass und wann du zugestimmt hast und welcher Stand unserer
+        Rechtstexte beim Kauf galt, um das später belegen zu können (Art. 6 Abs. 1 lit. f DSGVO).
       </p>
       <p>
         Für jede geöffnete Kasse halten wir außerdem den gewählten Plan, eine Kennzeichnung der Quelle, die Seite, von
