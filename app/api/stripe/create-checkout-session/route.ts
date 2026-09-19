@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAppUrl } from "@/lib/site-url";
 import { getStripe } from "@/lib/stripe/server";
+import { kassenRechtsangaben, kassenRechtsMetadata } from "@/lib/stripe/kasse-recht";
 import {
   isMembershipPlan,
   lifetimePriceId,
@@ -182,10 +183,16 @@ export async function POST(request: NextRequest) {
     ...(promotionCodeId
       ? { discounts: [{ promotion_code: promotionCodeId }] }
       : { allow_promotion_codes: true }),
+    // Pflicht-Häkchen (AGB + sofortiger Leistungsbeginn), Laufzeit am
+    // Bezahlknopf, deutsche Kasse — siehe `lib/stripe/kasse-recht.ts`. Nach
+    // den Prüfungen oben ist `plan` entweder ein Abo-Plan oder "lifetime".
+    ...kassenRechtsangaben(appUrl, isMembershipPlan(plan) ? plan : "lifetime"),
     // `metadata.user_id` ist beim Lifetime-Kauf die einzige Bruecke zum Konto:
     // `checkout-completed.ts` schreibt den Dauerzugang daraufhin.
-    metadata: { user_id: user.id, plan },
-    ...(istLifetime ? {} : { subscription_data: { metadata: { user_id: user.id, plan } } }),
+    metadata: { user_id: user.id, plan, ...kassenRechtsMetadata },
+    ...(istLifetime
+      ? {}
+      : { subscription_data: { metadata: { user_id: user.id, plan, ...kassenRechtsMetadata } } }),
   });
 
   return NextResponse.json({
