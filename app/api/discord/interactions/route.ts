@@ -11,7 +11,7 @@ import {
   signaturGueltig,
   type Interaktion,
 } from "@/lib/discord/interaktionen";
-import { hilfeWeg } from "@/config/team";
+import { hilfeWeg, passwortVergessen } from "@/config/team";
 import { getAppUrl } from "@/lib/site-url";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
@@ -262,7 +262,7 @@ function nichtVerknuepft(): string {
   return [
     "Dein Discord-Konto ist noch nicht mit deinem Capital-Circle-Zugang verknüpft, deshalb kann ich dein Anliegen niemandem zuordnen.",
     "",
-    `Verknüpfen kannst du es nach dem Anmelden unter Einstellungen → Profil: ${getAppUrl()}/einstellungen/profil`,
+    `Verknüpfen kannst du es nach dem Anmelden unter Einstellungen → Profil: ${getAppUrl()}/einstellungen/profil (${passwortVergessen(getAppUrl())})`,
     "",
     `Ohne Discord erreichst du uns ${hilfeWeg(getAppUrl())}.`,
   ].join("\n");

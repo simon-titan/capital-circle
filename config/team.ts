@@ -24,3 +24,13 @@ export const TEAM_POSTFACH = "contact@capitalcircletrading.com";
 export function hilfeWeg(appUrl: string): string {
   return `über den Support im Mitgliederbereich (${appUrl}/support) oder per Mail an ${TEAM_POSTFACH}`;
 }
+
+/**
+ * Der Satz für alle, die sich lange nicht angemeldet haben: Ehemalige im
+ * Warteraum, vor dem Rauswurf, in der Rückgewinnung. Seit 19.09.2026 gibt es
+ * `/passwort-vergessen`; ohne diesen Hinweis endet „melde dich an" für viele
+ * an einem Passwort, das sie nicht mehr kennen.
+ */
+export function passwortVergessen(appUrl: string): string {
+  return `Passwort vergessen? ${appUrl}/passwort-vergessen`;
+}

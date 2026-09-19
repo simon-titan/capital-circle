@@ -16,7 +16,7 @@
 
 import { KARENZ_TAGE } from "@/config/discord";
 import { LIFETIME_PREIS } from "@/config/lifetime";
-import { TEAM_POSTFACH } from "@/config/team";
+import { passwortVergessen, TEAM_POSTFACH } from "@/config/team";
 
 /** Beschriftung des Knopfes unter der Erklärung. Discord erlaubt 80 Zeichen. */
 export const WARTERAUM_KNOPF = "Anliegen klären";
@@ -49,7 +49,7 @@ export function warteraumNachricht(appUrl: string): string {
       der Mahnung: Die häufigste Ursache ist eine abgelaufene Karte, und wer sie
       ersetzt, braucht mit niemandem zu sprechen.
     */
-    `**So kommst du zurück:** Melde dich auf unserer Webseite an und öffne Einstellungen → Abonnement: ${appUrl}/einstellungen/abonnement`,
+    `**So kommst du zurück:** Melde dich auf unserer Webseite an und öffne Einstellungen → Abonnement: ${appUrl}/einstellungen/abonnement (${passwortVergessen(appUrl)})`,
     "Dort kannst du eine offene Rechnung bezahlen, dein Abo wieder aufnehmen oder einmalig Lifetime wählen " +
       `(${LIFETIME_PREIS}, danach keine Abbuchung mehr). Sobald das erledigt ist, bist du automatisch wieder drin.`,
     "",

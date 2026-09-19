@@ -239,10 +239,10 @@ export async function handleSubscriptionUpdated(
  * raus. Wir bekämen ausschließlich Fehlalarme.
  *
  * Was der Kunde stattdessen hat: Sein Konto steht, und das Passwort setzt er
- * direkt auf `/checkout/success`. Ein „Passwort vergessen" gibt es (Stand
- * 19.09.2026) nicht — die Erfolgsseite ist damit der einzige Weg ohne Mail.
- * Nebeneffekt: Der Kaufweg lässt sich vollständig testen, ohne dass der
- * Mailversand eingerichtet sein muss.
+ * direkt auf `/checkout/success`. Wer den Link dort verpasst, holt sich über
+ * `/passwort-vergessen` selbst einen (`lib/auth/passwort-reset.ts`, dieselbe
+ * `createSetPasswordLink()` wie hier). Nebeneffekt: Der Kaufweg lässt sich
+ * vollständig testen, ohne dass der Mailversand eingerichtet sein muss.
  */
 async function sendeWillkommensmail(
   supabase: WebhookSupabase,

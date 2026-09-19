@@ -8,7 +8,7 @@
  */
 
 import { lifetimeHinweis } from "@/config/lifetime";
-import { hilfeWeg } from "@/config/team";
+import { hilfeWeg, passwortVergessen } from "@/config/team";
 
 /**
  * Rollen, deren Träger nie vom Server entfernt werden, unabhängig von allem
@@ -110,7 +110,7 @@ export function abschiedNachKarenz(p: {
     "",
     `Deine Mitgliedschaft ist vor mehr als ${p.tage} Tagen ausgelaufen. Wir räumen den Server regelmässig auf, deshalb nehmen wir dich jetzt heraus.`,
     "",
-    `Das ist kein Abschied für immer: Dein Konto, dein Journal und dein Fortschritt bleiben gespeichert, und du kannst jederzeit wieder einsteigen. Nach dem Anmelden unter Einstellungen → Abonnement: ${p.appUrl}/einstellungen/abonnement`,
+    `Das ist kein Abschied für immer: Dein Konto, dein Journal und dein Fortschritt bleiben gespeichert, und du kannst jederzeit wieder einsteigen. Nach dem Anmelden unter Einstellungen → Abonnement: ${p.appUrl}/einstellungen/abonnement (${passwortVergessen(p.appUrl)})`,
     ...(p.mitLifetime ? ["", lifetimeHinweis(p.appUrl)] : []),
     "",
     `Wenn das ein Irrtum ist und du bezahlt hast, melde dich bitte kurz ${hilfeWeg(p.appUrl)}.`,
