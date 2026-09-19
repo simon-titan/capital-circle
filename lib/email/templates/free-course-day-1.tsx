@@ -1,6 +1,7 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
 import { EmailText } from "../layout/components";
+import { abmeldeUrl } from "../abmeldung";
 import { sendEmail, type SendResult } from "../send";
 
 interface Props {
@@ -9,9 +10,9 @@ interface Props {
   userId: string;
 }
 
-export default function FreeCourseDay1Email({ firstName }: Pick<Props, "firstName">) {
+export default function FreeCourseDay1Email({ firstName, abmeldeLink }: Pick<Props, "firstName"> & { abmeldeLink?: string }) {
   return (
-    <BaseEmail previewText="Sie scheitern daran, dass sie jahrelang die falschen Dinge lernen.">
+    <BaseEmail previewText="Sie scheitern daran, dass sie jahrelang die falschen Dinge lernen." unsubscribeUrl={abmeldeLink}>
       <EmailText>Hey {firstName},</EmailText>
       <EmailText>
         die meisten Trader scheitern nicht daran, dass sie es nicht ernst meinen.
@@ -44,7 +45,7 @@ export async function sendFreeCourseDay1(props: Props): Promise<SendResult> {
   return sendEmail({
     to: props.email,
     subject: "Die meisten Trader scheitern nicht an Motivation",
-    jsx: <FreeCourseDay1Email firstName={props.firstName} />,
+    jsx: <FreeCourseDay1Email firstName={props.firstName} abmeldeLink={abmeldeUrl({ userId: props.userId, email: props.email })} />,
     log: {
       userId: props.userId,
       recipientEmail: props.email,

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
 import { EmailText, EmailHighlight } from "../layout/components";
+import { abmeldeUrl } from "../abmeldung";
 import { sendEmail, type SendResult } from "../send";
 
 interface Props {
@@ -9,9 +10,9 @@ interface Props {
   userId: string;
 }
 
-export default function FreeCourseDay2Email({ firstName }: Pick<Props, "firstName">) {
+export default function FreeCourseDay2Email({ firstName, abmeldeLink }: Pick<Props, "firstName"> & { abmeldeLink?: string }) {
   return (
-    <BaseEmail previewText="Es fehlt nicht an Strategie — es fehlt am Fundament.">
+    <BaseEmail previewText="Es fehlt nicht an Strategie — es fehlt am Fundament." unsubscribeUrl={abmeldeLink}>
       <EmailText>Hey {firstName},</EmailText>
       <EmailText>
         viele glauben, sie bräuchten einfach nur eine bessere Strategie.
@@ -47,7 +48,7 @@ export async function sendFreeCourseDay2(props: Props): Promise<SendResult> {
     to: props.email,
     subject: "Warum die meisten nie wirklich lernen, den Markt zu lesen",
     jsx: (
-      <FreeCourseDay2Email firstName={props.firstName} />
+      <FreeCourseDay2Email firstName={props.firstName} abmeldeLink={abmeldeUrl({ userId: props.userId, email: props.email })} />
     ),
     log: {
       userId: props.userId,

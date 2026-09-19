@@ -327,18 +327,23 @@ export default function DatenschutzPage() {
           E-Mails zu deinem Vertrag und Konto — Bestätigungen, Passwort, Zahlungsprobleme, Antworten des Supports (Art.
           6 Abs. 1 lit. b DSGVO);
         </li>
-        <li>nach der Anmeldung zum kostenlosen Einstiegskurs die zugehörige Folge von Kurs-E-Mails (Art. 6 Abs. 1 lit. b DSGVO);</li>
+        <li>
+          nach der Anmeldung zum kostenlosen Einstiegskurs die zugehörige Folge von Kurs-E-Mails, die auch auf unsere
+          Mitgliedschaft hinweist (Art. 6 Abs. 1 lit. b und f DSGVO);
+        </li>
         <li>
           als Kundin oder Kunde Hinweise zu unseren eigenen, ähnlichen Angeboten: Erinnerungen, wenn du länger nicht
-          aktiv warst, Angebote nach einer Kündigung, Informationen zum 1:1-Mentoring und zu Änderungen der Plattform
-          (Art. 6 Abs. 1 lit. f DSGVO in Verbindung mit § 7 Abs. 3 UWG).
+          aktiv warst, die Bitte um Feedback und Angebote nach einer Kündigung, Informationen zum 1:1-Mentoring und zu
+          Änderungen der Plattform (Art. 6 Abs. 1 lit. f DSGVO in Verbindung mit § 7 Abs. 3 UWG).
         </li>
       </ul>
+      {/* Abmeldelink: `lib/email/abmeldung.ts`, Hinweis im Footer von `BaseEmail`. */}
       <p>
-        Den E-Mails der letzten Gruppe kannst du jederzeit widersprechen, per E-Mail an{" "}
-        <a href={`mailto:${anbieter.email}`}>{anbieter.email}</a> oder über den Abmeldelink, wo die E-Mail einen
-        enthält. Dafür entstehen dir keine anderen als die Übermittlungskosten nach den Basistarifen. Öffnungen und
-        Klicks in unseren E-Mails werten wir nicht aus.
+        Den E-Mails der letzten beiden Gruppen kannst du jederzeit widersprechen, per E-Mail an{" "}
+        <a href={`mailto:${anbieter.email}`}>{anbieter.email}</a> oder über den Abmeldelink, den jede dieser E-Mails
+        enthält. Dafür entstehen dir keine anderen als die Übermittlungskosten nach den Basistarifen. Nach einem
+        Widerspruch erhältst du nur noch E-Mails zu deinem Vertrag und Konto. Öffnungen und Klicks in unseren E-Mails
+        werten wir nicht aus.
       </p>
 
       <h2 id="speicher">15. Cookies und Speicher im Browser</h2>

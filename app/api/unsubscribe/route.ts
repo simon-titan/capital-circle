@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyUnsubscribeToken } from "@/lib/email/unsubscribe-token";
+import { getResend } from "@/lib/email/resend";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export const runtime = "nodejs";
@@ -137,6 +138,22 @@ export async function GET(req: NextRequest) {
       }),
       { status: 500, headers: HTML_HEADERS },
     );
+  }
+
+  // Den Resend-Kontakt derselben Adresse mit abmelden, damit auch die
+  // Segment-Kampagnen (Migrations-Mails) aufhören — der Widerspruch gilt für
+  // alle Werbe-Mails. Best-effort; Gegenstück in `/api/unsubscribe/contact`.
+  try {
+    const { data } = await supabase.auth.admin.getUserById(userId);
+    const email = data.user?.email;
+    if (email) {
+      const { error: resendFehler } = await getResend().contacts.update({ email, unsubscribed: true });
+      if (resendFehler && resendFehler.name !== "not_found") {
+        console.error("[unsubscribe] Resend-Kontakt nicht abgemeldet:", resendFehler.message);
+      }
+    }
+  } catch (err) {
+    console.error("[unsubscribe] Resend-Abgleich fehlgeschlagen:", err);
   }
 
   return new NextResponse(
