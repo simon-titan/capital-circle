@@ -9,6 +9,7 @@ import {
   ChartLine,
   ChevronRight,
   CreditCard,
+  FileX,
   Funnel,
   LayoutDashboard,
   LifeBuoy,
@@ -79,6 +80,8 @@ const groups: AdminGroup[] = [
       { href: "/admin/discord-funnel", label: "Discord Funnel", icon: Funnel },
       { href: "/admin/gutscheine", label: "Gutscheine", icon: Ticket },
       { href: "/admin/zahlungsstoerungen", label: "Zahlungsstörungen", icon: CreditCard },
+      // Eingänge über den Kündigungsbutton `/kuendigen` (§ 312k BGB).
+      { href: "/admin/kuendigungen", label: "Kündigungen", icon: FileX },
     ],
   },
   {
