@@ -1,12 +1,6 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
-import {
-  CampaignButton,
-  CampaignHeading,
-  CampaignQuestion,
-  CampaignText,
-} from "../campaigns/whop-migration/components";
-import { CAMPAIGN_TOKENS as T } from "../campaigns/whop-migration/styles";
+import { EmailButton, EmailHeading, EmailSubheading, EmailText } from "../layout/components";
 import { sendEmail, type SendResult } from "../send";
 import { generateContactUnsubscribeToken } from "../unsubscribe-token";
 import { getAppUrl } from "../resend";
@@ -27,39 +21,40 @@ export default function PlatformMigrationMail3({
   return (
     <BaseEmail
       previewText="Die 3 Fragen, die uns zum Wechsel am häufigsten gestellt werden."
-      hideFooter={false}
       unsubscribeUrl={unsubscribeUrl}
-      bodyFontFamily={T.fontBody}
     >
-      <CampaignHeading>Die 3 Fragen, die uns zum Wechsel am häufigsten gestellt werden</CampaignHeading>
+      <EmailHeading>Die 3 Fragen, die uns zum Wechsel am häufigsten gestellt werden</EmailHeading>
 
-      <CampaignText>Hey {firstName},</CampaignText>
-      <CampaignText>die 3 Fragen, die wir zum Plattform-Wechsel am häufigsten bekommen:</CampaignText>
+      <EmailText>Hey {firstName},</EmailText>
+      <EmailText>die 3 Fragen, die wir zum Plattform-Wechsel am häufigsten bekommen:</EmailText>
 
-      <CampaignQuestion number={1} question="Verliere ich beim Wechsel etwas?">
+      <EmailSubheading>1. Verliere ich beim Wechsel etwas?</EmailSubheading>
+      <EmailText muted>
         Nein. Warst du früher schon bei uns registriert, sind dein Profil und
         dein Verlauf noch da. Bist du über Whop dazugekommen, legst du beim
         Wechsel einmalig ein Konto auf der eigenen Plattform an — der Zugang
         zu allen Inhalten ist ab dann sofort da.
-      </CampaignQuestion>
+      </EmailText>
 
-      <CampaignQuestion number={2} question="Was mache ich mit meinem Whop-Abo?">
+      <EmailSubheading>2. Was mache ich mit meinem Whop-Abo?</EmailSubheading>
+      <EmailText muted>
         Kündige es einmal selbst in deinem Whop-Account (Mitgliedschaften →
         Kündigen), sobald dein Zugang auf der eigenen Plattform aktiv ist —
         sonst läuft dein Abo dort parallel weiter und du zahlst doppelt.
         Dein Zugang bei uns ist davon unabhängig und bleibt bestehen.
-      </CampaignQuestion>
+      </EmailText>
 
-      <CampaignQuestion number={3} question="Kostet der Wechsel extra?">
+      <EmailSubheading>3. Kostet der Wechsel extra?</EmailSubheading>
+      <EmailText muted>
         Nein. Einheitlich 99&nbsp;€/Monat, jederzeit kündbar, keine
         Wechselgebühr, keine versteckten Kosten.
-      </CampaignQuestion>
+      </EmailText>
 
-      <CampaignButton href={PLATFORM_MIGRATION.joinUrl}>
+      <EmailButton href={PLATFORM_MIGRATION.joinUrl}>
         Jetzt wechseln — 99&nbsp;€/Monat
-      </CampaignButton>
+      </EmailButton>
 
-      <CampaignText muted>Emre</CampaignText>
+      <EmailText muted>Emre</EmailText>
     </BaseEmail>
   );
 }

@@ -1,6 +1,6 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
-import { EmailButton, EmailHeading, EmailHighlight, EmailText } from "../layout/components";
+import { EmailButton, EmailHeading, EmailText } from "../layout/components";
 import { abmeldeUrl } from "../abmeldung";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
@@ -52,10 +52,10 @@ export default function ReactivationOfferEmail({
       </EmailText>
 
       {mitLifetime ? (
-        <EmailHighlight>
+        <EmailText>
           Wenn dich die laufende Abbuchung gestört hat: Mit Lifetime zahlst du einmalig {LIFETIME_PREIS} und bist
           dauerhaft dabei, ohne Abo und ohne Verlängerung.
-        </EmailHighlight>
+        </EmailText>
       ) : null}
 
       <EmailButton href={mitLifetime ? lifetimeUrl(appUrl) : `${appUrl}/einstellungen/abonnement`}>

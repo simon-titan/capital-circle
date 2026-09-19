@@ -2,13 +2,12 @@ import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
 import {
   EmailButton,
-  EmailEyebrow,
+  EmailError,
   EmailHeading,
-  EmailHighlight,
+  EmailRows,
   EmailSmall,
   EmailText,
 } from "../layout/components";
-import { EMAIL_TOKENS as T } from "../layout/styles";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 import {
@@ -79,69 +78,22 @@ export default function KuendigungBetreiberEmail({ beleg, info, adminUrl }: Prop
 
   return (
     <BaseEmail previewText={`${STATUS_LABEL[info.status]}: ${beleg.name} (${beleg.referenz})`}>
-      <EmailEyebrow>Kündigungsbutton · {handlungsbedarf ? "Bitte prüfen" : "Automatisch ausgeführt"}</EmailEyebrow>
+      <EmailSmall>Kündigungsbutton · {handlungsbedarf ? "Bitte prüfen" : "Automatisch ausgeführt"}</EmailSmall>
       <EmailHeading>Neue Kündigung über /kuendigen</EmailHeading>
       <EmailText>
         {beleg.name} ({beleg.email}) hat am {eingang.komplett} gekündigt.
       </EmailText>
 
-      {info.pruefHinweis ? <EmailHighlight>{info.pruefHinweis}</EmailHighlight> : null}
+      {info.pruefHinweis ? <EmailText>{info.pruefHinweis}</EmailText> : null}
 
       {!info.gespeichert ? (
-        <EmailText>
-          <strong style={{ color: T.red }}>
-            Die Kündigung konnte nicht in der Datenbank gespeichert werden. Diese Mail ist der einzige Beleg —
-            bitte aufbewahren.
-          </strong>
-        </EmailText>
+        <EmailError>
+          Die Kündigung konnte nicht in der Datenbank gespeichert werden. Diese Mail ist der einzige Beleg —
+          bitte aufbewahren.
+        </EmailError>
       ) : null}
 
-      <table
-        role="presentation"
-        width="100%"
-        cellSpacing={0}
-        cellPadding={0}
-        style={{
-          backgroundColor: T.bgCard,
-          border: `1px solid ${T.border}`,
-          borderRadius: "10px",
-          margin: "16px 0",
-        }}
-      >
-        <tbody>
-          {zeilen.map(([label, wert], i) => (
-            <tr key={label}>
-              <td
-                style={{
-                  padding: "8px 14px",
-                  borderTop: i === 0 ? "none" : `1px solid ${T.border}`,
-                  fontFamily: T.fontBody,
-                  fontSize: "12px",
-                  color: T.textMuted,
-                  verticalAlign: "top",
-                  width: "38%",
-                }}
-              >
-                {label}
-              </td>
-              <td
-                style={{
-                  padding: "8px 14px",
-                  borderTop: i === 0 ? "none" : `1px solid ${T.border}`,
-                  fontFamily: T.fontBody,
-                  fontSize: "13px",
-                  color: T.text,
-                  verticalAlign: "top",
-                  wordBreak: "break-word",
-                  whiteSpace: "pre-wrap",
-                }}
-              >
-                {wert}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <EmailRows rows={zeilen} />
 
       <EmailButton href={adminUrl}>Kündigungen im Admin öffnen</EmailButton>
       <EmailSmall>

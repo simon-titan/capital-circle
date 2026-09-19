@@ -3,12 +3,10 @@ import { BaseEmail } from "../layout/BaseEmail";
 import {
   EmailButton,
   EmailDivider,
-  EmailEyebrow,
   EmailHeading,
   EmailSmall,
   EmailText,
 } from "../layout/components";
-import { EMAIL_TOKENS as T } from "../layout/styles";
 import { sendEmail, type SendResult } from "../send";
 
 /**
@@ -37,11 +35,10 @@ interface Props {
 export default function PasswortZuruecksetzenEmail({ link, email }: Props) {
   return (
     <BaseEmail previewText="Dein Link für ein neues Passwort bei Capital Circle">
-      <EmailEyebrow>Passwort zurücksetzen</EmailEyebrow>
       <EmailHeading>Neues Passwort wählen</EmailHeading>
       <EmailText>
-        Für dein Konto <strong style={{ color: T.text }}>{email}</strong> wurde gerade ein neues Passwort
-        angefordert. Über den Knopf wählst du eins — danach bist du direkt eingeloggt.
+        Für dein Konto <strong>{email}</strong> wurde gerade ein neues Passwort angefordert. Über den Knopf
+        wählst du eins — danach bist du direkt eingeloggt.
       </EmailText>
 
       <EmailButton href={link}>Neues Passwort wählen</EmailButton>
@@ -53,18 +50,7 @@ export default function PasswortZuruecksetzenEmail({ link, email }: Props) {
 
       <EmailDivider />
       <EmailSmall>Der Knopf funktioniert nicht? Kopiere diese Adresse in deinen Browser:</EmailSmall>
-      <p
-        style={{
-          margin: "0 0 16px",
-          fontFamily: T.fontBody,
-          fontSize: "12px",
-          lineHeight: 1.5,
-          color: T.goldLight,
-          wordBreak: "break-all",
-        }}
-      >
-        {link}
-      </p>
+      <EmailSmall>{link}</EmailSmall>
       <EmailSmall>
         Du hast kein neues Passwort angefordert? Dann ignoriere diese Mail einfach. Dein bisheriges Passwort bleibt
         gültig, und ohne diesen Link lässt sich daran nichts ändern.

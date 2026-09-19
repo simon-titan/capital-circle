@@ -1,12 +1,6 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
-import {
-  EmailHeading,
-  EmailText,
-  EmailButton,
-  EmailSubheading,
-  EmailHighlight,
-} from "../layout/components";
+import { EmailButton, EmailHeading, EmailSubheading, EmailText } from "../layout/components";
 import { abmeldeUrl } from "../abmeldung";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
@@ -40,10 +34,10 @@ export default function HtUpsell60dEmail({ firstName, abmeldeLink }: Pick<Props,
         ist genau das der Weg.
       </EmailText>
 
-      <EmailHighlight>
+      <EmailText>
         Wir nehmen pro Quartal nur eine sehr begrenzte Zahl an Trader:innen
         auf — die Auswahl läuft über ein Erstgespräch.
-      </EmailHighlight>
+      </EmailText>
 
       <EmailButton href={calendlyUrl}>Erstgespräch buchen</EmailButton>
 

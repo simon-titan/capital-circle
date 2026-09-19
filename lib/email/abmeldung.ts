@@ -19,7 +19,7 @@ import { createServiceClient } from "@/lib/supabase/service";
  *
  * § 7 Abs. 3 Nr. 4 UWG verlangt bei **jeder** Verwendung einen klaren Hinweis
  * auf das Widerspruchsrecht — den Satz dazu rendert `BaseEmail`, sobald eine
- * `unsubscribeUrl` übergeben wird (und `hideFooter={false}`).
+ * `unsubscribeUrl` übergeben wird.
  *
  * ── Zwei Wege, ein Ergebnis ────────────────────────────────────────────────
  *   - Mit Konto: `/api/unsubscribe?token=…` (signierte `userId`) setzt

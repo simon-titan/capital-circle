@@ -1,6 +1,6 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
-import { EmailText, EmailHighlight, EmailButton } from "../layout/components";
+import { EmailButton, EmailText } from "../layout/components";
 import { abmeldeUrl } from "../abmeldung";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
@@ -19,10 +19,10 @@ export default function FreeCourseDay3Email({ firstName, abmeldeLink }: Pick<Pro
       <EmailText>
         als Teil dieses Zugangs bekommst du nicht nur die Inhalte des Free Kurses.
       </EmailText>
-      <EmailHighlight>
+      <EmailText>
         Du bekommst auch kostenlos Einblick in meinen Sonntags-Call, in dem ich
         die Märkte vor der Woche einordne und mein Framework offen zeige.
-      </EmailHighlight>
+      </EmailText>
       <EmailText>
         Auch das ist nicht selbstverständlich.
       </EmailText>

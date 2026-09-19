@@ -1,6 +1,6 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
-import { EmailText, EmailHighlight } from "../layout/components";
+import { EmailText } from "../layout/components";
 import { abmeldeUrl } from "../abmeldung";
 import { sendEmail, type SendResult } from "../send";
 
@@ -21,10 +21,10 @@ export default function FreeCourseDay2Email({ firstName, abmeldeLink }: Pick<Pro
         In Wirklichkeit fehlt ihnen meistens etwas ganz anderes:
         ein sauberes Verständnis dafür, wie Märkte wirklich funktionieren.
       </EmailText>
-      <EmailHighlight>
+      <EmailText>
         Kontext. Auktion. Volumen. Liquidität. Struktur. Teilnehmerverhalten.
         Fundamentale Einordnung.
-      </EmailHighlight>
+      </EmailText>
       <EmailText>
         Solange diese Dinge nicht sauber zusammenspielen, bleibt Trading für
         die meisten Stückwerk.

@@ -1,6 +1,6 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
-import { EmailText, EmailButton, EmailHighlight } from "../layout/components";
+import { EmailButton, EmailText } from "../layout/components";
 import { abmeldeUrl } from "../abmeldung";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
@@ -21,10 +21,10 @@ export default function FreeCourseDay5Email({ firstName, abmeldeLink }: Pick<Pro
         inzwischen gemerkt haben, dass es hier um deutlich mehr geht als nur
         um einen Free Kurs.
       </EmailText>
-      <EmailHighlight>
+      <EmailText>
         Capital Circle ist kein öffentlicher Bereich und kein Ort für Leute,
         die einfach nur ein bisschen Content konsumieren wollen.
-      </EmailHighlight>
+      </EmailText>
       <EmailText>
         Es ist ein exklusiver Raum für Menschen, die Trading wirklich verstehen,
         sauber lernen und mit der richtigen Struktur vorankommen wollen.

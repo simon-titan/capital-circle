@@ -1,12 +1,6 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
-import {
-  EmailHeading,
-  EmailText,
-  EmailButton,
-  EmailHighlight,
-} from "../layout/components";
-import { EMAIL_TOKENS as T } from "../layout/styles";
+import { EmailButton, EmailHeading, EmailRows, EmailText } from "../layout/components";
 
 interface Props {
   email: string;
@@ -37,55 +31,13 @@ export default function AdminCredentialsEmail({
         Anmeldedaten:
       </EmailText>
 
-      <EmailHighlight>
-        <span
-          style={{
-            display: "block",
-            fontSize: "11px",
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-            color: T.textMuted,
-            marginBottom: "4px",
-          }}
-        >
-          E-Mail
-        </span>
-        <span
-          style={{
-            display: "block",
-            fontFamily: T.fontMono,
-            fontSize: "15px",
-            color: T.text,
-            wordBreak: "break-all",
-            marginBottom: "16px",
-          }}
-        >
-          {email}
-        </span>
-        <span
-          style={{
-            display: "block",
-            fontSize: "11px",
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-            color: T.textMuted,
-            marginBottom: "4px",
-          }}
-        >
-          Passwort
-        </span>
-        <span
-          style={{
-            display: "block",
-            fontFamily: T.fontMono,
-            fontSize: "15px",
-            color: T.text,
-            wordBreak: "break-all",
-          }}
-        >
-          {password}
-        </span>
-      </EmailHighlight>
+      <EmailRows
+        mono
+        rows={[
+          ["E-Mail", email],
+          ["Passwort", password],
+        ]}
+      />
 
       <EmailButton href={loginUrl}>Zur Anmeldung</EmailButton>
 

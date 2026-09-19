@@ -1,10 +1,6 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
-import {
-  EmailText,
-  EmailButton,
-  EmailHighlight,
-} from "../layout/components";
+import { EmailButton, EmailText } from "../layout/components";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 
@@ -18,17 +14,17 @@ export default function WelcomeFreeCourseEmail({ firstName }: Pick<Props, "first
   const appUrl = getAppUrl();
   return (
     <BaseEmail
-      previewText={`Deine Bewerbung wurde angenommen — lies das hier durch.`}
+      previewText="Deine Bewerbung wurde angenommen — lies das hier durch."
     >
       <EmailText>Hey {firstName},</EmailText>
       <EmailText>
         deine Bewerbung wurde geprüft und du wurdest für den Free Kurs angenommen.
       </EmailText>
-      <EmailHighlight>
+      <EmailText>
         Wichtig ist, dass du verstehst: Dieser Zugang ist nicht dafür gedacht,
         einfach nur ein paar kostenlose Inhalte mitzunehmen und dann wieder
         weiterzuziehen.
-      </EmailHighlight>
+      </EmailText>
       <EmailText>
         Du hast hier gerade die Möglichkeit bekommen, Einblicke in eine Denkweise
         und Herangehensweise zu bekommen, die die meisten Trader nie wirklich lernen.
