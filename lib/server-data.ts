@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { buildThumbnailUrl } from "@/lib/cloudflare-stream";
 import { getPresignedGetUrl } from "@/lib/storage";
 import {
@@ -1536,7 +1536,7 @@ export async function getNewsPostInteractions(postId: string, userId: string | n
       : Promise.resolve({ data: null }),
     supabase
       .from("news_comments")
-      .select("id, post_id, user_id, body, created_at, updated_at, profiles:profiles!news_comments_user_id_fkey(full_name, username, avatar_url)")
+      .select("id, post_id, user_id, body, created_at, updated_at")
       .eq("post_id", postId)
       .order("created_at", { ascending: false }),
   ]);
@@ -1553,16 +1553,30 @@ export async function getNewsPostInteractions(postId: string, userId: string | n
     body: string;
     created_at: string;
     updated_at: string;
-    profiles:
-      | { full_name: string | null; username: string | null; avatar_url: string | null }
-      | { full_name: string | null; username: string | null; avatar_url: string | null }[]
-      | null;
   };
+  type AutorRow = { id: string; full_name: string | null; username: string | null; avatar_url: string | null };
 
   const rawComments = (commentsRes.data as CommentRowRaw[] | null) ?? [];
+
+  /*
+   * Autorennamen ueber den Service-Client: Seit Migration 074 liest der
+   * Nutzer-Client nur noch das eigene Profil, ein Embed `profiles(...)` kaeme fuer
+   * fremde Kommentare leer zurueck. Die Kommentare selbst stammen weiter aus dem
+   * Nutzer-Client (RLS entscheidet, wer sie sieht) — nachgeladen werden nur Name,
+   * Nutzername und Avatar genau dieser Autoren, keine weiteren Profilspalten.
+   */
+  const autorIds = [...new Set(rawComments.map((c) => c.user_id))];
+  let autorById = new Map<string, AutorRow>();
+  if (autorIds.length > 0) {
+    const { data: autoren } = await createServiceClient()
+      .from("profiles")
+      .select("id, full_name, username, avatar_url")
+      .in("id", autorIds);
+    autorById = new Map(((autoren as AutorRow[] | null) ?? []).map((a) => [a.id, a]));
+  }
+
   const comments: NewsCommentRow[] = rawComments.map((c) => {
-    const profileRaw = c.profiles;
-    const profile = Array.isArray(profileRaw) ? profileRaw[0] ?? null : profileRaw;
+    const profile = autorById.get(c.user_id) ?? null;
     const name = profile?.full_name?.trim() || profile?.username?.trim() || null;
     return {
       id: c.id,
