@@ -1,17 +1,22 @@
 import { NextResponse } from "next/server";
+import { RESET_SEQUENZ } from "@/lib/auth/passwort-reset";
+import { MEMBERSHIP_PLANS, type MembershipPlan } from "@/lib/stripe/plan-map";
+import { PLAN_MONATE, planPreiseEur } from "@/lib/stripe/plan-preise";
 import { requireAdmin } from "@/lib/supabase/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/**
- * Capital Circle Monthly = 99 € (siehe Master-Prompt §6).
- * Falls dieser Preis sich ändert, hier UND in Stripe synchron halten.
- */
-const MONTHLY_PRICE_EUR = 99;
-
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Sequenzen, deren `step` kein Schritt einer Serie ist, sondern nur die
+ * Eindeutigkeit im Log sichert (bei `passwort_reset` die Minute der
+ * Anforderung). In der Mail-Statistik fallen sie auf eine Zeile zusammen —
+ * sonst stünde dort je Anforderung eine eigene.
+ */
+const SEQUENZEN_OHNE_SCHRITTE = new Set<string>([RESET_SEQUENZ]);
 
 interface PaymentRow {
   id: string;
@@ -44,7 +49,7 @@ interface ProfileFunnelRow {
   id: string;
   created_at: string;
   is_paid: boolean;
-  membership_tier: "free" | "monthly" | "lifetime" | "ht_1on1" | null;
+  membership_tier: "free" | "monthly" | "quarterly" | "yearly" | "lifetime" | "ht_1on1" | null;
 }
 
 interface EmailLogRow {
@@ -67,14 +72,32 @@ export async function GET() {
   const since60 = isoDaysAgo(60);
   const since7 = isoDaysAgo(7);
 
-  // ── MRR & Lifetime-Revenue ────────────────────────────────────────────────
-  // Monthly active = profiles with membership_tier='monthly' AND is_paid=true
-  // Lifetime active = profiles with membership_tier='lifetime' (für Info)
-  // Revenue 30d = SUM(payments.amount_cents) WHERE status='succeeded' & created_at > now()-30d
+  // ── MRR & Umsatz ──────────────────────────────────────────────────────────
+  // Aktive Abos = Profile mit is_paid=true je Laufzeit (monthly/quarterly/yearly).
+  //   Bis 19.09.2026 zählte hier nur `monthly` — Quartals- und Jahresmitglieder
+  //   fehlten im MRR vollständig.
+  // MRR = Summe (Anzahl × Preis ÷ Monate der Laufzeit). Preise aus den
+  //   Preiskarten (`lib/stripe/plan-preise.ts`), nicht als Konstante hier.
+  // Lifetime und 1:1-Mentoring zahlen, sind aber kein wiederkehrender Umsatz:
+  //   nur gezählt, nicht im MRR.
+  // Umsatz 30d = SUM(payments.amount_cents) WHERE status='succeeded', letzte 30 Tage
+  //   — alle Zahlungen, nicht nur Lifetime (hieß bis 19.09.2026 irreführend
+  //   „Lifetime-Umsatz").
+  // Grenze: Eine im Admin von Hand gesetzte Stufe zählt mit, auch ohne Stripe-Abo.
+
+  const zaehleAbo = (plan: MembershipPlan) =>
+    supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("membership_tier", plan)
+      .eq("is_paid", true);
 
   const [
     monthlyActiveRes,
+    quarterlyActiveRes,
+    yearlyActiveRes,
     lifetimeActiveRes,
+    ht1on1ActiveRes,
     revenue30dRes,
     canceled30dRes,
     activeAtStartRes,
@@ -82,15 +105,18 @@ export async function GET() {
     cancellationsRes,
     emailLogRes,
   ] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("id", { count: "exact", head: true })
-      .eq("membership_tier", "monthly")
-      .eq("is_paid", true),
+    zaehleAbo("monthly"),
+    zaehleAbo("quarterly"),
+    zaehleAbo("yearly"),
     supabase
       .from("profiles")
       .select("id", { count: "exact", head: true })
       .eq("membership_tier", "lifetime"),
+    supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("membership_tier", "ht_1on1")
+      .eq("is_paid", true),
     supabase
       .from("payments")
       .select("amount_cents,status,created_at")
@@ -138,9 +164,23 @@ export async function GET() {
       0,
     ) / 100;
 
-  const monthlyActive = monthlyActiveRes.count ?? 0;
+  const aktiveAbos: Record<MembershipPlan, number> = {
+    monthly: monthlyActiveRes.count ?? 0,
+    quarterly: quarterlyActiveRes.count ?? 0,
+    yearly: yearlyActiveRes.count ?? 0,
+  };
+  const aktiveAbosGesamt = MEMBERSHIP_PLANS.reduce((acc, plan) => acc + aktiveAbos[plan], 0);
   const lifetimeActive = lifetimeActiveRes.count ?? 0;
-  const mrrFromSubs = monthlyActive * MONTHLY_PRICE_EUR;
+  const ht1on1Active = ht1on1ActiveRes.count ?? 0;
+
+  const preiseEur = planPreiseEur();
+  // Laufzeiten ohne lesbaren Preis fließen nicht mit 0 ein, sondern werden
+  // benannt — ein MRR, der still zu niedrig ist, wäre schlimmer als eine Lücke.
+  const ohnePreis = MEMBERSHIP_PLANS.filter((plan) => preiseEur[plan] === null && aktiveAbos[plan] > 0);
+  const mrrEur = MEMBERSHIP_PLANS.reduce((acc, plan) => {
+    const preis = preiseEur[plan];
+    return preis === null ? acc : acc + (aktiveAbos[plan] * preis) / PLAN_MONATE[plan];
+  }, 0);
 
   // ── Churn-Rate (canceled 30d / aktiv zu Beginn 30d) ───────────────────────
   const canceled30d = canceled30dRes.count ?? 0;
@@ -199,7 +239,7 @@ export async function GET() {
       amountEur: (p.amount_cents ?? 0) / 100,
       currency: p.currency,
       status: p.status,
-      type: inferPaymentType(p),
+      type: inferPaymentType(p, preiseEur),
       createdAt: p.created_at,
       paidAt: p.paid_at,
       stripeInvoiceId: p.stripe_invoice_id,
@@ -226,10 +266,11 @@ export async function GET() {
     { sequence: string; step: number; sent: number; opened: number; clicked: number }
   >();
   for (const row of emailLogs) {
-    const key = `${row.sequence}::${row.step}`;
+    const step = SEQUENZEN_OHNE_SCHRITTE.has(row.sequence) ? 0 : row.step;
+    const key = `${row.sequence}::${step}`;
     const cur =
       emailAgg.get(key) ??
-      { sequence: row.sequence, step: row.step, sent: 0, opened: 0, clicked: 0 };
+      { sequence: row.sequence, step, sent: 0, opened: 0, clicked: 0 };
     cur.sent += 1;
     if (row.opened_at) cur.opened += 1;
     if (row.clicked_at) cur.clicked += 1;
@@ -251,11 +292,14 @@ export async function GET() {
     ok: true,
     generatedAt: new Date().toISOString(),
     mrr: {
-      mrrEur: mrrFromSubs,
-      monthlyActiveSubs: monthlyActive,
+      mrrEur: Math.round(mrrEur * 100) / 100,
+      aktiveAbos,
+      aktiveAbosGesamt,
+      preiseEur,
+      ohnePreis,
       lifetimeActive,
-      lifetimeRevenue30dEur: revenue30dEur,
-      monthlyPriceEur: MONTHLY_PRICE_EUR,
+      ht1on1Active,
+      umsatz30dEur: revenue30dEur,
     },
     churn: {
       canceled30d,
@@ -271,13 +315,27 @@ export async function GET() {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-function inferPaymentType(p: PaymentRow): "monthly" | "lifetime" | "unknown" {
-  // Heuristik: Lifetime ≥ 500 €, Monthly < 200 €. Bei Bedarf später per
-  // stripe_price_id-Lookup ersetzen.
+/**
+ * Laufzeit einer Zahlung am Betrag erkennen: Trifft er genau einen
+ * Laufzeitpreis, ist es diese Laufzeit, sonst „unknown".
+ *
+ * Die alte Heuristik (≥ 500 € = Lifetime, ≤ 200 € = Monthly) hielt jede
+ * Jahreszahlung (990 €) für Lifetime und kannte das Quartal (267 €) gar nicht.
+ * Lifetime-Käufe landen ohnehin nicht in `payments` — die Tabelle füllt nur
+ * `invoice.paid`, und Lifetime ist eine Einmalzahlung ohne Rechnung.
+ * Rabattierte Beträge (Gutscheine) bleiben „unknown"; genauer ginge es nur
+ * über die Preis-ID der Rechnung, die `payments` nicht speichert.
+ */
+function inferPaymentType(
+  p: PaymentRow,
+  preiseEur: Record<MembershipPlan, number | null>,
+): MembershipPlan | "unknown" {
   if (!p.amount_cents) return "unknown";
-  if (p.amount_cents >= 50_000) return "lifetime";
-  if (p.amount_cents <= 20_000) return "monthly";
-  return "unknown";
+  const treffer = MEMBERSHIP_PLANS.find((plan) => {
+    const preis = preiseEur[plan];
+    return preis !== null && Math.round(preis * 100) === p.amount_cents;
+  });
+  return treffer ?? "unknown";
 }
 
 interface FunnelWindow {
