@@ -8,15 +8,15 @@
  *   npm run discord:sync -- --apply              (Abweichungen wirklich beheben)
  *   npm run discord:sync -- --apply --warteraum  (wer die Rolle verliert, kommt in den Warteraum)
  *
- * Seit 19.09.2026 zählt der Zugang (Stufe plus `access_until`), nicht die
- * letzte Zahlung. Eine vorhandene Warteraumrolle bei jemandem ohne Zugang ist
+ * Seit 19.09.2026 zählt der Zugang (`is_paid` oder Admin, dieselbe Regel wie
+ * bei den Inhalten), nicht die letzte Zahlung. Entzogen wird nur mit Enddatum
+ * im Profil (`access_until`). Eine vorhandene Warteraumrolle bei jemandem ohne Zugang ist
  * **keine** Abweichung und wird nie entzogen.
  */
 
 import { existsSync } from "node:fs";
 import { register } from "node:module";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 
 for (const file of [".env.local", ".env"]) {
