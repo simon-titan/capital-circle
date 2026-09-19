@@ -11,6 +11,7 @@ import type {
   TerminZeile,
 } from "@/components/platform/dashboard/types";
 import { evaluateAccess } from "@/lib/access-control/has-access";
+import { getLektionsFenster } from "@/lib/dashboard-lektion";
 import { clockLabel, daysFromToday, relativeDayLabel, shortDateLabel } from "@/lib/dashboard-time";
 import {
   berlinCalendarDayKey,
@@ -31,7 +32,6 @@ import {
   getHomeworkWeekTotal,
   getLastWatchedModule,
   getLatestAnalysisPost,
-  getLessonNeighbourHrefs,
   getLiveWindowEvents,
   getRecommendedAcademyModuleFromOverview,
   getWelcomeDashboardMetricsFromOverview,
@@ -72,8 +72,10 @@ function modulBeschreibung(rows: AcademyModuleRow[], moduleId: string): string |
 
 /**
  * Die Pfeile in „Als nächstes“ blättern Lektionen statt Module (Nutzerwunsch
- * 17.09.2026) — die Ziele rechnet `getLessonNeighbourHrefs` entlang des
- * Lernpfads aus, deshalb ist der Aufbau der Karte hier asynchron.
+ * 17.09.2026), und seit 20.09.2026 blättern sie die Karte selbst, statt ins
+ * Institut zu navigieren. Welche Lektion gerade zu sehen ist und welche links
+ * und rechts davon liegt, rechnet `getLektionsFenster` entlang des Lernpfads
+ * aus — deshalb ist der Aufbau der Karte hier asynchron.
  */
 async function toContinueItem(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -99,7 +101,7 @@ async function toContinueItem(
       startAtSeconds,
       description: modulBeschreibung(academyRows, module.id),
       // `lessonNumber` zählt ab 1, die Playlist ab 0.
-      ...(await getLessonNeighbourHrefs(supabase, academyRows, module.id, (lessonNumber ?? 1) - 1)),
+      ...(await getLektionsFenster(supabase, academyRows, module.id, (lessonNumber ?? 1) - 1)),
     };
   }
 
@@ -117,7 +119,7 @@ async function toContinueItem(
       startAtSeconds: 0,
       description: modulBeschreibung(academyRows, module.id),
       // Noch nicht begonnen: Der Einstieg ist die erste Lektion des Moduls.
-      ...(await getLessonNeighbourHrefs(supabase, academyRows, module.id, 0)),
+      ...(await getLektionsFenster(supabase, academyRows, module.id, 0)),
     };
   }
 

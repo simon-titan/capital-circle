@@ -14,7 +14,6 @@ import {
   isCourseUnlockedFromMaps,
   isModuleUnlockedFromMaps,
 } from "@/lib/progress";
-import { lessonHref } from "@/lib/module-route";
 import { teileHausaufgaben } from "@/lib/hausaufgaben";
 import { berlinCalendarDayKey } from "@/lib/learning-daily";
 import type { WelcomeDashboardMetrics } from "@/lib/welcome-metrics";
@@ -451,60 +450,12 @@ export async function getRecommendedAcademyModule(userId: string): Promise<Recom
   return getRecommendedAcademyModuleFromOverview(supabase, rows);
 }
 
-/**
- * Die Lektion vor und nach der aktuellen — entlang des Lernpfads, nicht entlang
- * der Module.
- *
- * Die Reihenfolge der Ausbildung steckt bereits in der Institut-Übersicht
- * (Kurs-Sortierung, dann `order_index`), die Reihenfolge innerhalb eines Moduls
- * in seiner veröffentlichten Playlist. Am Modulrand wird deshalb schlicht über
- * die Grenze hinweg weitergezählt: Die letzte Lektion eines Moduls grenzt an die
- * erste des nächsten. Dass dabei das Modul wechselt, ist Folge des Sprungs, nicht
- * sein Maß.
- *
- * Nachbarn in Modulen, die der Nutzer nicht öffnen darf (kein Zugriff, Sperre,
- * Reihenfolge), geben `null` zurück — der Pfeil bleibt dann sichtbar, aber tot.
+/*
+ * Die Lektionsreihenfolge hinter den Pfeilen in „Als nächstes“ steht seit
+ * 20.09.2026 in `lib/dashboard-lektion.ts` (`getLektionsFenster`). Sie gibt
+ * Video-IDs statt Adressen aus, weil die Pfeile die Karte blättern, statt das
+ * Dashboard zu verlassen.
  */
-export async function getLessonNeighbourHrefs(
-  supabase: ServerSupabase,
-  rows: AcademyModuleRow[],
-  moduleId: string,
-  /** 0-basierte Position der aktuellen Lektion in der Playlist des Moduls. */
-  lessonIndex: number,
-): Promise<{ prevHref: string | null; nextHref: string | null }> {
-  const i = rows.findIndex((m) => m.id === moduleId);
-  if (i < 0) return { prevHref: null, nextHref: null };
-
-  const offen = (m: AcademyModuleRow | undefined): AcademyModuleRow | null =>
-    m && m.hasAccess && m.unlocked && !m.isLocked ? m : null;
-  const davor = offen(rows[i - 1]);
-  const danach = offen(rows[i + 1]);
-
-  // Ein Bulk-Aufruf für höchstens drei Module — die Playlists selbst stehen
-  // nicht in `rows`, dort steht nur ihre Länge.
-  const playlists = await getModulePublishedPlaylistsBulk(
-    supabase,
-    [moduleId, davor?.id, danach?.id].filter((id): id is string => Boolean(id)),
-  );
-
-  const aktuell = playlists.get(moduleId) ?? [];
-  const imModul = (position: number): string | null => {
-    const v = aktuell[position];
-    return v ? lessonHref({ id: moduleId, slug: rows[i].slug }, v.id) : null;
-  };
-  const imNachbarn = (m: AcademyModuleRow | null, kante: "erste" | "letzte"): string | null => {
-    if (!m) return null;
-    const list = playlists.get(m.id) ?? [];
-    const v = kante === "erste" ? list[0] : list[list.length - 1];
-    return v ? lessonHref({ id: m.id, slug: m.slug }, v.id) : null;
-  };
-
-  const hier = Math.min(Math.max(0, lessonIndex), Math.max(0, aktuell.length - 1));
-  return {
-    prevHref: hier > 0 ? imModul(hier - 1) : imNachbarn(davor, "letzte"),
-    nextHref: hier < aktuell.length - 1 ? imModul(hier + 1) : imNachbarn(danach, "erste"),
-  };
-}
 
 export async function getAcademyModulesOverview(
   userId: string,
