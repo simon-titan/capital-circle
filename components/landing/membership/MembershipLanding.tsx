@@ -43,8 +43,15 @@ import { VergleichSection } from "./VergleichSection";
  * Beitritts-Dialog, und die Abschnitte darin bleiben serverseitig gerendert,
  * weil sie ihm nur als `children` durchgereicht werden.
  */
-/** Bewertungen der Verkaufsseite: eigene Stimmen plus die seitenübergreifenden. */
-const BEWERTUNGS_KATEGORIEN = ["membership", "global"];
+/**
+ * Bewertungen der Verkaufsseite: **nur** die Kategorie `global`.
+ *
+ * Unter `membership` liegen vier ältere Stimmen, die nicht mehr gezeigt werden
+ * sollen (Entscheidung Simon, 20.09.2026). Sie bleiben im Admin stehen, damit
+ * sie sich ohne Datenverlust wieder einschalten lassen — hier reicht dafür ein
+ * Eintrag in dieser Liste.
+ */
+const BEWERTUNGS_KATEGORIEN = ["global"];
 
 export async function MembershipLanding() {
   // Eine Abfrage fuer beide Sternezeilen — dieselbe Quelle wie die Liste
