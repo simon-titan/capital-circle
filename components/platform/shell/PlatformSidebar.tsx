@@ -56,7 +56,9 @@ function useViewer(): Viewer {
         const isPaid = Boolean(p.is_paid);
         setViewer({
           isPaid,
-          isPending: p.application_status === "pending",
+          // Zahlende sperrt eine offene Bewerbung nicht (Regel wie in `proxy.ts`) —
+          // sonst stünde ein Käufer mit Altbewerbung vor einer komplett gesperrten Navigation.
+          isPending: !isPaid && p.application_status === "pending",
           showApplyCta: !isPaid && p.application_status === "approved" && p.step2_application_status == null,
         });
       } catch {

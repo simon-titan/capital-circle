@@ -231,7 +231,10 @@ export async function proxy(request: NextRequest) {
   // Bewerbungs-Gating (Paket 3): pending/rejected User landen auf /pending-review.
   // Admins werden hiervon ausgenommen, damit Admin-Konten ohne Application
   // nicht versehentlich umgeleitet werden.
-  const appStatus = profile?.application_status ?? null;
+  // Zahlende ebenfalls: Die Bewerbung ist das Tor zum kostenlosen Programm.
+  // Kaufte ein Free-Konto mit offener oder abgelehnter Bewerbung über `/go/`,
+  // hing es bis 19.09.2026 trotz Zahlung auf /pending-review fest.
+  const appStatus = isFreeMember(profile) ? (profile?.application_status ?? null) : null;
   if (!profile?.is_admin) {
     if (
       (appStatus === "pending" || appStatus === "rejected") &&
