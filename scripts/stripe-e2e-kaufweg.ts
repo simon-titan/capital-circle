@@ -5,6 +5,11 @@
  *   npm run stripe:e2e -- a d          nur ausgewählte Szenarien (a–h)
  *   npm run stripe:e2e -- --aufraeumen nur Reste früherer Läufe entfernen
  *
+ * Auch nach einem Klicktest im Browser: Wer dort mit einer Adresse
+ * `delivered+cc-e2e-<n>@resend.dev` (n ≤ 30) kauft, bekommt mit
+ * `--aufraeumen` Konto, Profil, Abo-/Zahlungs-/Trichterzeilen, Webhook-Log und
+ * den Stripe-Kunden wieder entfernt.
+ *
  * ── Was hier echt ist ──────────────────────────────────────────────────────
  * Stripe-Objekte (Customer, Abo, Rechnungen, Test Clocks) entstehen wirklich
  * im Testmodus. Die daraus entstehenden **echten Events** holt das Skript per
@@ -827,9 +832,14 @@ async function aufraeumen(ctx: Ctx): Promise<boolean> {
   for (const m of mails) {
     for await (const k of stripe.customers.list({ email: m, limit: 100 })) kundenIds.add(k.id);
   }
+  // Kassen-Sitzungen: Ein Klicktest über `/go/<plan>` legt eine Trichterzeile
+  // in `checkout_sessions` an — als Gast ohne `user_id`, also nur über die ID
+  // der Sitzung zu finden.
+  const kassenIds = new Set<string>();
   for (const k of kundenIds) {
     for await (const r of stripe.invoices.list({ customer: k, limit: 100 })) if (r.id) rechnungsIds.add(r.id);
     for await (const s of stripe.subscriptions.list({ customer: k, status: "all", limit: 100 })) aboIds.add(s.id);
+    for await (const cs of stripe.checkout.sessions.list({ customer: k, limit: 100 })) kassenIds.add(cs.id);
   }
   const eventIds = new Set(ctx.zugestellt);
   for await (const ev of stripe.events.list({ created: { gte: Math.floor(Date.now() / 1000) - 3 * 24 * 3600 }, limit: 100 })) {
@@ -850,6 +860,7 @@ async function aufraeumen(ctx: Ctx): Promise<boolean> {
     schritte.push(["subscriptions (Nutzer)", () => sb.from("subscriptions").delete().in("user_id", userIds)]);
   }
   if (aboIds.size) schritte.push(["subscriptions (Abos)", () => sb.from("subscriptions").delete().in("stripe_subscription_id", inListe(aboIds))]);
+  if (kassenIds.size) schritte.push(["checkout_sessions (Kassen)", () => sb.from("checkout_sessions").delete().in("id", inListe(kassenIds))]);
   schritte.push(["email_sequence_log", () => sb.from("email_sequence_log").delete().in("recipient_email", mails)]);
   const evListe = inListe(eventIds);
   for (let i = 0; i < evListe.length; i += 100) {
@@ -879,7 +890,7 @@ async function aufraeumen(ctx: Ctx): Promise<boolean> {
       // mit der Test Clock bereits gelöscht
     }
   }
-  info(`entfernt: ${nutzer.length} Konten, ${kundenIds.size} Stripe-Kunden, ${rechnungsIds.size} Rechnungen, ${aboIds.size} Abos, ${eventIds.size} Events`);
+  info(`entfernt: ${nutzer.length} Konten, ${kundenIds.size} Stripe-Kunden, ${rechnungsIds.size} Rechnungen, ${aboIds.size} Abos, ${kassenIds.size} Kassen, ${eventIds.size} Events`);
 
   // ── Restabfrage: alles muss leer sein ────────────────────────────────────
   const rest: Record<string, number> = {};
@@ -892,6 +903,7 @@ async function aufraeumen(ctx: Ctx): Promise<boolean> {
   await zaehle("email_sequence_log", sb.from("email_sequence_log").select("id", { count: "exact", head: true }).in("recipient_email", mails));
   await zaehle("payments", sb.from("payments").select("id", { count: "exact", head: true }).in("stripe_invoice_id", rechnungsIds.size ? inListe(rechnungsIds) : ["-"]));
   await zaehle("subscriptions", sb.from("subscriptions").select("id", { count: "exact", head: true }).in("stripe_customer_id", kundenIds.size ? inListe(kundenIds) : ["-"]));
+  await zaehle("checkout_sessions", sb.from("checkout_sessions").select("id", { count: "exact", head: true }).in("id", kassenIds.size ? inListe(kassenIds) : ["-"]));
   await zaehle("stripe_webhook_events", sb.from("stripe_webhook_events").select("id", { count: "exact", head: true }).in("id", evListe.length ? evListe.slice(0, 300) : ["-"]));
   let kundenRest = 0;
   for (const m of mails) kundenRest += (await stripe.customers.list({ email: m, limit: 100 })).data.length;
