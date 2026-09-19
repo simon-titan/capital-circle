@@ -236,7 +236,8 @@ export default function DatenschutzPage() {
 
       {/* Bewerbungen: `app/api/applications/*`, `app/api/ht-applications/*`,
           `app/api/discord-funnel/lead` (IP + User-Agent). Calendly-Widget auf
-          /bewerbung/danke, /discord/termin/danke, /termin/danke; Webhook
+          /bewerbung/danke, /discord/termin/danke, /termin/danke — erst nach
+          Klick (`components/marketing/CalendlyZweiKlick.tsx`); Webhook
           `app/api/integrations/calendly/webhook`. */}
       <h2 id="bewerbungen">11. Bewerbungen, Anfragen und Terminbuchung</h2>
       <p>Je nach Formular verarbeiten wir:</p>
@@ -269,11 +270,15 @@ export default function DatenschutzPage() {
       </p>
       <p>
         <strong>Terminbuchung mit Calendly:</strong> Auf den Bestätigungsseiten nach einer Bewerbung oder Anfrage
-        binden wir den Buchungskalender von Calendly (Calendly LLC, USA) ein. Schon beim Laden dieser Seiten stellt
-        dein Browser eine Verbindung zu Calendly her; Calendly verarbeitet dabei deine IP-Adresse und kann Cookies
-        setzen. Zum Vorausfüllen übergeben wir Vorname und E-Mail-Adresse sowie eine interne Kennung, mit der wir die
-        Buchung deiner Anfrage zuordnen. Nach einer Buchung meldet Calendly uns E-Mail-Adresse, Termin und diese
-        Kennung (Art. 6 Abs. 1 lit. b DSGVO). Für die Verarbeitung bei Calendly gilt die{" "}
+        kannst du einen Termin über den Buchungskalender von Calendly (Calendly LLC, USA) buchen. Der Kalender wird
+        erst geladen, wenn du auf „Termin-Kalender laden“ klickst; vorher stellt dein Browser keine Verbindung zu
+        Calendly her. Mit dem Klick willigst du ein, dass der Kalender geladen wird: Dein Browser verbindet sich mit
+        Calendly, Calendly verarbeitet dabei deine IP-Adresse und kann Cookies setzen (Art. 6 Abs. 1 lit. a DSGVO,
+        § 25 Abs. 1 TDDDG). Du kannst die Einwilligung jederzeit für die Zukunft widerrufen, indem du den Kalender
+        nicht erneut lädst und die Cookies von Calendly in deinem Browser löschst. Zum Vorausfüllen übergeben wir
+        Vorname und E-Mail-Adresse sowie eine interne Kennung, mit der wir die Buchung deiner Anfrage zuordnen. Nach
+        einer Buchung meldet Calendly uns E-Mail-Adresse, Termin und diese Kennung (Art. 6 Abs. 1 lit. b DSGVO). Für
+        die Verarbeitung bei Calendly gilt die{" "}
         <a href="https://calendly.com/privacy" target="_blank" rel="noopener noreferrer">
           Datenschutzerklärung von Calendly
         </a>
@@ -377,7 +382,8 @@ export default function DatenschutzPage() {
       <p>
         Das Anmelde-Cookie und die technisch notwendigen Einträge sind nach § 25 Abs. 2 Nr. 2 TDDDG ohne Einwilligung
         zulässig. Dazu kommen die Cookies von Stripe in der Kasse (<a href="#zahlung">Abschnitt 5</a>) und von
-        Calendly auf den Seiten zur Terminbuchung (<a href="#bewerbungen">Abschnitt 11</a>).
+        Calendly auf den Seiten zur Terminbuchung, sobald du dort den Kalender lädst (
+        <a href="#bewerbungen">Abschnitt 11</a>).
       </p>
 
       <h2 id="drittland">16. Empfänger und Übermittlung in Drittländer</h2>
