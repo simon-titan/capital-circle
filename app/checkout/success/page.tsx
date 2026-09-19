@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Box, Flex, Heading, Stack, Text } from "@chakra-ui/react";
 import { Check } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
+import { KontoWarten } from "@/components/checkout/KontoWarten";
 import { ZugangForm } from "@/components/checkout/ZugangForm";
 import { ladeKaufStatus } from "@/lib/checkout/kauf-status";
 import { preiskarten } from "@/config/landing-membership";
@@ -166,10 +167,11 @@ export default async function CheckoutSuccessPage({
               ) : (
                 <Text fontSize="15px" lineHeight={1.6} color="var(--cc-text-2)">
                   {status.grund === "account_pending"
-                    ? "Dein Konto wird gerade angelegt. Lade die Seite in ein paar Sekunden neu."
+                    ? "Dein Konto wird gerade angelegt. Die Seite aktualisiert sich gleich von selbst."
                     : status.grund === "session_expired"
                       ? "Der Kauf ist länger her. Setz dein Passwort über den Link in der E-Mail, die wir dir geschickt haben."
                       : "Setz dein Passwort über den Link in der E-Mail, die wir dir geschickt haben."}
+                  {status.grund === "account_pending" ? <KontoWarten /> : null}
                 </Text>
               )}
             </Stack>
