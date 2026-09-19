@@ -85,6 +85,7 @@ export type HomeworkSummary = {
     subtitle: string | null;
     /** „Woche 4 von 12“ bzw. „Woche 4“, wenn die Gesamtzahl unbekannt ist. */
     weekLabel: string | null;
+    /** „fällig morgen“, „seit 3 Tagen fällig“ — bei Aufgaben ohne Datum „ohne Frist“. */
     dueLabel: string | null;
     overdue: boolean;
     done: boolean;
@@ -92,6 +93,11 @@ export type HomeworkSummary = {
   tasks: WeekTask[];
   customDone: number;
   customTotal: number;
+  /**
+   * Weitere offene Hausaufgaben neben der gezeigten. Seit 19.09.2026 können
+   * mehrere gleichzeitig aktuell sein (z. B. fristlose neben einer mit Frist).
+   */
+  moreOpen: number;
 };
 
 export type AnalysisSummary = {

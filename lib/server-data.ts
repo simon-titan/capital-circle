@@ -15,6 +15,8 @@ import {
   isModuleUnlockedFromMaps,
 } from "@/lib/progress";
 import { lessonHref } from "@/lib/module-route";
+import { teileHausaufgaben } from "@/lib/hausaufgaben";
+import { berlinCalendarDayKey } from "@/lib/learning-daily";
 import type { WelcomeDashboardMetrics } from "@/lib/welcome-metrics";
 export type { WelcomeDashboardMetrics } from "@/lib/welcome-metrics";
 
@@ -800,30 +802,29 @@ export type HomeworkRow = {
   is_active: boolean | null;
   link: string | null;
   link_label: string | null;
+  /** Seit Migration 078 — davor fehlt die Spalte (`select("*")` liefert sie dann nicht). */
+  created_at?: string | null;
 };
 
-export async function getActiveHomework(): Promise<HomeworkRow | null> {
+/**
+ * Alle Hausaufgaben, geteilt in „aktuell“ und „vergangen“ (Regel und
+ * Reihenfolge: `lib/hausaufgaben.ts`), plus der heutige Berliner Kalendertag,
+ * aus dem die Einteilung stammt — die Client-Ansichten rechnen damit weiter,
+ * statt selbst `new Date()` zu lesen.
+ *
+ * Ersetzt `getActiveHomework` / `getPastHomework` (19.09.2026). Die lieferten
+ * genau eine aktive Aufgabe (früheste Frist, fristlose zuletzt): eine
+ * abgelaufene verdeckte damit jede neuere, fristlose erschienen nie.
+ */
+export async function getHomeworkOverview(): Promise<{
+  aktuell: HomeworkRow[];
+  vergangen: HomeworkRow[];
+  todayKey: string;
+}> {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("homework")
-    .select("*")
-    .eq("is_active", true)
-    .order("due_date", { ascending: true, nullsFirst: false })
-    .limit(1)
-    .maybeSingle();
-
-  return data as HomeworkRow | null;
-}
-
-export async function getPastHomework(): Promise<HomeworkRow[]> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("homework")
-    .select("*")
-    .eq("is_active", false)
-    .order("due_date", { ascending: false, nullsFirst: true });
-
-  return (data ?? []) as HomeworkRow[];
+  const { data } = await supabase.from("homework").select("*");
+  const todayKey = berlinCalendarDayKey(new Date());
+  return { ...teileHausaufgaben((data ?? []) as HomeworkRow[], todayKey), todayKey };
 }
 
 export type HomeworkCustomTaskRow = {
@@ -834,39 +835,38 @@ export type HomeworkCustomTaskRow = {
   sort_order: number;
 };
 
-/** Fortschritt & eigene Aufgaben für die Dashboard-Wochenaufgabe (Tabellen `homework_user_*`). */
+/**
+ * Erledigt-Häkchen & eigene Aufgaben eines Mitglieds (Tabellen `homework_user_*`).
+ *
+ * `officialDone` gilt je Hausaufgabe (`homework_id` → erledigt). Die eigenen
+ * Aufgaben sind seit 19.09.2026 nicht mehr an die gerade aktuelle Hausaufgabe
+ * gebunden: Welche das ist, wechselt jetzt mit dem Datum (Frist + Nachfrist),
+ * und eine gebundene Checkliste wäre dabei unbemerkt verschwunden. Die Liste
+ * zeigt deshalb alle eigenen Aufgaben — weg ist eine erst, wenn das Mitglied
+ * sie löscht. `homework_id` bleibt in der Tabelle als bloßer Kontext stehen
+ * (und wird beim Löschen einer Hausaufgabe per FK auf `null` gesetzt).
+ */
 export async function getHomeworkDashboardState(
   userId: string,
-  homework: HomeworkRow | null,
-): Promise<{ officialDone: boolean; customTasks: HomeworkCustomTaskRow[] }> {
+): Promise<{ officialDone: Record<string, boolean>; customTasks: HomeworkCustomTaskRow[] }> {
   const supabase = await createClient();
-  if (!homework) {
-    const { data } = await supabase
-      .from("homework_user_custom_tasks")
-      .select("id, title, notes, done, sort_order")
-      .eq("user_id", userId)
-      .is("homework_id", null)
-      .order("sort_order", { ascending: true });
-    return { officialDone: false, customTasks: (data ?? []) as HomeworkCustomTaskRow[] };
-  }
-
   const [officialRes, tasksRes] = await Promise.all([
-    supabase
-      .from("homework_user_official_done")
-      .select("done")
-      .eq("user_id", userId)
-      .eq("homework_id", homework.id)
-      .maybeSingle(),
+    supabase.from("homework_user_official_done").select("homework_id").eq("user_id", userId).eq("done", true),
     supabase
       .from("homework_user_custom_tasks")
       .select("id, title, notes, done, sort_order")
       .eq("user_id", userId)
-      .eq("homework_id", homework.id)
+      .order("created_at", { ascending: true })
       .order("sort_order", { ascending: true }),
   ]);
 
+  const officialDone: Record<string, boolean> = {};
+  for (const row of (officialRes.data ?? []) as Array<{ homework_id: string }>) {
+    officialDone[row.homework_id] = true;
+  }
+
   return {
-    officialDone: Boolean(officialRes.data?.done),
+    officialDone,
     customTasks: (tasksRes.data ?? []) as HomeworkCustomTaskRow[],
   };
 }

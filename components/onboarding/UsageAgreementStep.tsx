@@ -1,16 +1,27 @@
 "use client";
 
-import { Box, Button, Stack, Text, type HTMLChakraProps } from "@chakra-ui/react";
+import { Box, Button, Link, Stack, Text, type HTMLChakraProps } from "@chakra-ui/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { glassPrimaryButtonProps } from "@/components/ui/glassButtonStyles";
-import { usageAgreementLeadParagraphs, usageAgreementSections } from "@/components/onboarding/usageAgreementContent";
+import {
+  usageAgreementDocumentTitle,
+  usageAgreementLeadParagraphs,
+  usageAgreementSections,
+  usageAgreementVersionLine,
+} from "@/components/onboarding/usageAgreementContent";
 import { AcceptanceCheck, OnboardingHeading } from "@/components/onboarding/OnboardingParts";
 
-/** Rendert *hervorgehobenen* Text in Gold hell (600) — Inter, ohne Kursive. */
+const LINK_MUSTER = /^\[([^\]]+)\]\(([^)]+)\)$/;
+
+/**
+ * Rendert *hervorgehobenen* Text in Gold hell (600) — Inter, ohne Kursive —
+ * und `[Text](/pfad)` als Link. Links öffnen in einem neuen Tab, damit das
+ * Onboarding nicht verlassen wird (Stil wie in `RechtstextSeite`).
+ */
 function TextWithEmphasis({ text, baseProps }: { text: string; baseProps: HTMLChakraProps<"p"> }) {
-  const parts = text.split(/(\*[^*]+\*)/g).filter(Boolean);
+  const parts = text.split(/(\*[^*]+\*|\[[^\]]+\]\([^)]+\))/g).filter(Boolean);
   return (
     <Text {...baseProps}>
       {parts.map((part, i) => {
@@ -19,6 +30,23 @@ function TextWithEmphasis({ text, baseProps }: { text: string; baseProps: HTMLCh
             <Text as="em" key={i} fontStyle="normal" fontWeight={600} color="var(--cc-gold-light)">
               {part.slice(1, -1)}
             </Text>
+          );
+        }
+        const link = LINK_MUSTER.exec(part);
+        if (link) {
+          return (
+            <Link
+              key={i}
+              href={link[2]}
+              isExternal
+              color="var(--cc-gold-light)"
+              textDecoration="underline"
+              textUnderlineOffset="3px"
+              textDecorationColor="rgba(232, 192, 148, 0.4)"
+              _hover={{ textDecorationColor: "var(--cc-gold-light)" }}
+            >
+              {link[1]}
+            </Link>
           );
         }
         return <span key={i}>{part}</span>;
@@ -123,7 +151,7 @@ export function UsageAgreementStep() {
 
         <Box
           role="region"
-          aria-label="Vereinbarung zur Nutzung und Vertraulichkeit"
+          aria-label={usageAgreementDocumentTitle}
           tabIndex={0}
           flex={{ base: "none", md: "1 1 0" }}
           minH={{ base: "auto", md: 0 }}
@@ -151,6 +179,15 @@ export function UsageAgreementStep() {
           py={{ base: 4, md: 5 }}
         >
           <Stack spacing={5}>
+            {/* Titel und Fassung — damit erkennbar ist, welcher Stand angenommen wird. */}
+            <Stack spacing={1} pb={4} borderBottom="1px solid var(--cc-line)">
+              <Text fontSize={{ base: "15px", md: "16px" }} fontWeight={600} lineHeight={1.35} color="var(--cc-text)">
+                {usageAgreementDocumentTitle}
+              </Text>
+              <Text fontSize="13px" color="var(--cc-text-3)" className="cc-num">
+                {usageAgreementVersionLine}
+              </Text>
+            </Stack>
             {usageAgreementSections.map((section) => (
               <Box key={section.heading}>
                 <Text
@@ -185,7 +222,7 @@ export function UsageAgreementStep() {
             isChecked={accepted}
             onChange={setAccepted}
             title="Ich akzeptiere diese Vereinbarung"
-            text="Mit dem Haken bestätigst du, den Text gelesen zu haben und an die Bedingungen gebunden zu sein."
+            text="Mit dem Haken nimmst du die Vereinbarung an. An Preis, Laufzeit, Kündigung und Widerruf deines Vertrags ändert sie nichts."
           />
 
           {error ? (
