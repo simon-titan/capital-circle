@@ -16,13 +16,22 @@ import { createServiceClient } from "@/lib/supabase/service";
  */
 export type Bewertungsspiegel = { anzahl: number; schnitt: string } | null;
 
-export async function ladeBewertungsspiegel(slug: string): Promise<Bewertungsspiegel> {
+/**
+ * `slug` darf mehrere Kategorien tragen (`"membership,global"` oder ein Feld).
+ * Der Spiegel muss dieselbe Menge zählen, die die Liste darunter zeigt —
+ * sonst steht über vier Karten wieder eine Zahl, die dazu nicht passt.
+ */
+export async function ladeBewertungsspiegel(slug: string | string[]): Promise<Bewertungsspiegel> {
+  const kategorien = (Array.isArray(slug) ? slug : slug.split(","))
+    .map((s) => s.trim())
+    .filter(Boolean);
+
   try {
     const service = createServiceClient();
     const { data, error } = await service
       .from("landing_reviews")
       .select("rating")
-      .eq("landing_slug", slug)
+      .in("landing_slug", kategorien.length > 0 ? kategorien : ["global"])
       .eq("visible", true);
 
     if (error || !data || data.length === 0) return null;

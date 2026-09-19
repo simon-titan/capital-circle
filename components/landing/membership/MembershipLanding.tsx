@@ -43,10 +43,19 @@ import { VergleichSection } from "./VergleichSection";
  * Beitritts-Dialog, und die Abschnitte darin bleiben serverseitig gerendert,
  * weil sie ihm nur als `children` durchgereicht werden.
  */
+/** Bewertungen der Verkaufsseite: eigene Stimmen plus die seitenübergreifenden. */
+const BEWERTUNGS_KATEGORIEN = ["membership", "global"];
+
 export async function MembershipLanding() {
   // Eine Abfrage fuer beide Sternezeilen — dieselbe Quelle wie die Liste
   // weiter unten, damit Zahl und Liste nicht auseinanderlaufen.
-  const bewertungen = await ladeBewertungsspiegel("membership");
+  /*
+    Beide Kategorien: `membership` sind die Stimmen zur Mitgliedschaft,
+    `global` die, die auf jede Verkaufsseite passen (25 Stück, bis zum
+    20.09.2026 nirgends sichtbar). Der Spiegel zaehlt dieselbe Menge, die die
+    Liste unten zeigt.
+  */
+  const bewertungen = await ladeBewertungsspiegel(BEWERTUNGS_KATEGORIEN);
 
   return (
     <Box position="relative" minH="100vh" w="full" bg="var(--cc-bg)" color="var(--cc-text)" overflowX="clip">
@@ -82,7 +91,7 @@ export async function MembershipLanding() {
             <ErgebnisseSection />
             <GoldGlowDivider />
 
-            <ReviewSection landingSlug="membership" />
+            <ReviewSection landingSlug={BEWERTUNGS_KATEGORIEN.join(",")} />
             <GoldGlowDivider />
 
             <ProzessSection />
