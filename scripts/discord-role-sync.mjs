@@ -47,6 +47,7 @@ try {
     (d) => (d.desired === "regular" && d.actual !== "regular" && d.actual !== "not_in_guild") ||
       (d.desired === "none" && d.actual === "regular"),
   );
+  if (result.entzugAusgesetzt) console.log(`\nEntzug ausgesetzt: ${result.entzugAusgesetzt}`);
   if (mismatches.length === 0) {
     console.log("\n✅ Keine Abweichungen gefunden.\n");
   } else {

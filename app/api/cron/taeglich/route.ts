@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
-import { ROLLENENTZUG_MAX_PRO_NACHT } from "@/config/discord";
+import { ENTFERNEN_MAX_PRO_NACHT, KARENZ_TAGE, ROLLENENTZUG_MAX_PRO_NACHT } from "@/config/discord";
 import { ERINNERUNG_TAGE } from "@/config/zahlung";
 import { cronBefugt } from "@/lib/cron/auth";
 import { discordBotConfigured } from "@/lib/discord/api";
+import {
+  baldFaellig,
+  entferneFaelligeAutomatisch,
+  faelligeEntfernungen,
+  ladeAufraeumstand,
+} from "@/lib/discord/aufraeumen";
 import { mitgliedsRolleId } from "@/lib/discord/mitgliedschaft";
 import { reconcileDiscordRoles, type ReconcileResult } from "@/lib/discord/reconcile";
 import { requireAdminRole } from "@/lib/supabase/admin-auth";
@@ -34,6 +40,12 @@ export const maxDuration = 300;
  *    endet: Eine Pause lässt ihn bis zum Periodenende laufen, und danach kommt
  *    nichts mehr. Über `ROLLENENTZUG_MAX_PRO_NACHT` wird niemandem etwas
  *    genommen (Datenfehler, keine Abwanderung).
+ * 4. **Der Rauswurf nach der Karenz** (`lib/discord/aufraeumen.ts`): Wer seit
+ *    `KARENZ_TAGE` keinen Zugang mehr hat, bekommt eine Abschiedsnachricht und
+ *    wird vom Server entfernt. Die einzige Handlung hier, die sich nicht
+ *    zurücknehmen lässt; die Schranken stehen in der Datei. Er läuft zuletzt,
+ *    damit er auf dem Zustand arbeitet, den die Schritte davor hergestellt
+ *    haben. **Vor dem ersten scharfen Lauf `?probe=1` ansehen.**
  *
  * Die Reihenfolge ist Absicht: Ein Fall, dessen Aufschub gerade abgelaufen
  * ist, steht danach auf `beendet` und wird von der Frist nicht noch einmal
@@ -83,17 +95,28 @@ async function lauf() {
   */
   const rollen = await rollenAbgleich(true);
 
+  // Zuletzt der Rauswurf. Ohne Discord-Einrichtung übersprungen.
+  const entfernt = discordBotConfigured()
+    ? await entferneFaelligeAutomatisch(supabase)
+    : { gelaufen: false, faellig: 0, entfernt: 0, ergebnisse: [], grund: "Discord-Bot nicht eingerichtet." };
+
   /*
     Der Lauf gilt nur als sauber, wenn keine Zeile Ärger gemacht hat. Ein
     `ok: true` neben einer Fehlerliste ist genau der stille Nuller, den man
     wochenlang übersieht.
   */
   return NextResponse.json({
-    ok: aufschuebe.fehler.length === 0 && frist.fehler.length === 0 && !rollen.fehler && !rollen.ausgesetzt,
+    ok:
+      aufschuebe.fehler.length === 0 &&
+      frist.fehler.length === 0 &&
+      !rollen.fehler &&
+      !rollen.ausgesetzt &&
+      (entfernt.gelaufen || !discordBotConfigured()),
     dauer_ms: Date.now() - start,
     aufschuebe,
     frist,
     rollen,
+    entfernt,
   });
 }
 
@@ -198,9 +221,32 @@ async function probe() {
     heute: plan.filter((p) => p.aktion !== "nichts"),
     aufschuebeAbgelaufen: (aufschubRes.data ?? []).length,
     rollen: await rollenAbgleich(false),
+    rauswurf: await rauswurfProbe(supabase),
     hinweis:
       "Grob gerechnet. Hat eine Person inzwischen einen anderen Zugang (neues Abo, Lifetime), " +
       "schliesst der echte Lauf den Fall statt zu erinnern oder zu sperren. Hat sie keinen Zugang mehr, " +
       "wird sofort gesperrt.",
   });
+}
+
+/**
+ * Wen der Rauswurf heute träfe und wen in den nächsten sieben Tagen. Ändert
+ * nichts. `wuerdeLaufen` ist falsch, sobald die Obergrenze überschritten ist
+ * oder eine Schutzrolle fehlt — dann entfernt der echte Lauf niemanden.
+ */
+async function rauswurfProbe(supabase: ReturnType<typeof createServiceClient>) {
+  if (!discordBotConfigured()) return { gelaufen: false, grund: "Discord-Bot nicht eingerichtet." };
+  const stand = await ladeAufraeumstand(supabase);
+  if (stand.fehler.length > 0) return { gelaufen: false, grund: stand.fehler.join(" ") };
+  const faellig = faelligeEntfernungen(stand);
+  return {
+    gelaufen: true,
+    karenzTage: KARENZ_TAGE,
+    grenze: ENTFERNEN_MAX_PRO_NACHT,
+    wuerdeLaufen: faellig.length <= ENTFERNEN_MAX_PRO_NACHT && stand.schutzrollenFehlend.length === 0,
+    schutzrollenFehlend: stand.schutzrollenFehlend,
+    zaehler: stand.zaehler,
+    faellig: faellig.map((p) => ({ name: p.username, userId: p.userId, gesperrtSeit: p.gesperrtSeit, warteraum: p.warteraum })),
+    demnaechst: baldFaellig(stand).map((p) => ({ name: p.username, userId: p.userId, faelligAm: p.faelligAm })),
+  };
 }

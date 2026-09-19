@@ -71,8 +71,9 @@ export function computeDesiredRoleState(params: {
  *   Warteraum abnehmen. Das Netz für einen Webhook, der einmal ausblieb.
  * - Kein Zugang, aber Mitgliederrolle → Rolle nehmen und, mit
  *   `warteraumSetzen`, in den Warteraum. Das deckt die Fälle ab, für die es
- *   kein Stripe-Ereignis gibt: das Ende einer Pause am Periodenende, oder ein
- *   Zugang, der vor diesem System endete.
+ *   kein Stripe-Ereignis gibt, vor allem das Ende einer Pause am
+ *   Periodenende. **Nur mit Enddatum** (`access_until` gesetzt): Wer die Rolle
+ *   ohne je einen Stripe-Zugang trägt, wird nicht angefasst (siehe unten).
  *
  * ── Die Obergrenze beim Entzug ──────────────────────────────────────────────
  *
@@ -208,8 +209,24 @@ export async function reconcileDiscordRoles({
     const zeile: ReconcileDetail = { userId, discordUserId, desired, actual, fixed: false };
     details.push(zeile);
 
-    if (desired === "regular" && actual !== "regular") zurueck.push(zeile);
-    else if (desired === "none" && actual === "regular") entzug.push(zeile);
+    if (desired === "regular" && actual !== "regular") {
+      zurueck.push(zeile);
+    } else if (desired === "none" && actual === "regular") {
+      /*
+        ── Ohne Enddatum kein Entzug ──────────────────────────────────────────
+
+        Entzogen wird nur, wessen Zugang nachweislich **an einem Datum**
+        geendet hat (`access_until` gesetzt und vorbei). Gemessen am
+        19.09.2026 tragen 33 von 37 verknüpften Konten die Mitgliederrolle
+        „CC OG", obwohl ihr Profil `free` ohne jedes Datum ist — die Rolle
+        stammt aus der Zeit vor dem Stripe-Kaufweg (Whop, von Hand). Über sie
+        hat dieses System nie entschieden, also nimmt es ihnen auch nichts.
+        Sobald jemand über Stripe zahlt und wieder aufhört, steht ein Datum
+        da, und ab dann gilt die Regel.
+      */
+      if (p?.access_until) entzug.push(zeile);
+      else zeile.note = "Kein Enddatum im Profil — Rolle stammt nicht aus einem Stripe-Zugang, bleibt unangetastet.";
+    }
   }
 
   let entzugAusgesetzt: string | undefined;
