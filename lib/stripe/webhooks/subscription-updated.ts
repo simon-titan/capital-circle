@@ -42,9 +42,23 @@ const ACTIVE_STATUSES: ReadonlySet<Stripe.Subscription.Status> = new Set(["activ
  * als `updated`, der Zugang soll aber bis Periodenende bestehen bleiben.
  */
 export async function handleSubscriptionUpdated(
-  sub: Stripe.Subscription,
+  ereignisAbo: Stripe.Subscription,
   supabase: WebhookSupabase,
 ): Promise<void> {
+  /**
+   * Den aktuellen Stand bei Stripe lesen, nicht den Schnappschuss im Event.
+   *
+   * Stripe garantiert keine Reihenfolge. Bei der Kasse entstehen
+   * `subscription.created` (Status `incomplete`) und `subscription.updated`
+   * (`active`) in derselben Sekunde; kommt das ältere Ereignis zuletzt an,
+   * schrieb der Upsert unten bis 19.09.2026 `incomplete` über ein laufendes
+   * Abo — und die Abo-Verwaltung meldete „kein aktives Abo". Genauso konnte
+   * ein verspätetes `updated` (active) nach `subscription.deleted` ein
+   * gekündigtes Abo wiederbeleben. Mit dem frischen Stand ist die Reihenfolge
+   * egal: Jedes Ereignis schreibt, was jetzt gilt.
+   */
+  const sub = await getStripe().subscriptions.retrieve(ereignisAbo.id);
+
   const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
   if (!customerId) {
     throw new Error(`Subscription ${sub.id} ohne customer-ID`);
@@ -76,19 +90,18 @@ export async function handleSubscriptionUpdated(
   const plan: MembershipPlan = erkannterPlan ?? "monthly";
 
   let profile = await loadProfileByCustomerId(supabase, customerId);
-  let neuesKonto = false;
   let email: string | null = null;
 
   if (!profile) {
-    email = await ladeStripeKundenEmail(sub);
+    const kunde = await ladeStripeKunde(sub);
+    email = kunde.email;
     if (!email) {
       throw new Error(
         `Subscription ${sub.id}: kein Profil und keine Customer-E-Mail, Konto kann nicht angelegt werden`,
       );
     }
 
-    const { userId, isNew } = await getOrCreateUserByEmail(supabase, email);
-    neuesKonto = isNew;
+    const { userId } = await getOrCreateUserByEmail(supabase, email, kunde.name);
 
     const { error: kundeFehler } = await supabase
       .from("profiles")
@@ -180,7 +193,6 @@ export async function handleSubscriptionUpdated(
     firstName: pickFirstName(profile),
     userId: profile.id,
     plan,
-    neuesKonto,
   });
 }
 
@@ -190,27 +202,37 @@ export async function handleSubscriptionUpdated(
  * Das klingt nachlässig, ist aber die einzige Variante, die etwas verbessert:
  * Der Zugang steht an dieser Stelle bereits vollständig. Würden wir werfen,
  * antwortete der Webhook mit 500 und Stripe wiederholte den Aufruf drei Tage
- * lang. Beim ersten Wiederholungsversuch existiert das Konto aber schon, damit
- * ist `neuesKonto` false und `warSchonZahlend` true — die Mail ginge also
- * **nie** raus. Wir bekämen ausschließlich Fehlalarme.
+ * lang. Beim ersten Wiederholungsversuch steht das Profil aber schon auf der
+ * bezahlten Stufe, `warSchonZahlend` ist true — die Mail ginge also **nie**
+ * raus. Wir bekämen ausschließlich Fehlalarme.
  *
- * Was der Kunde stattdessen hat: Sein Konto steht, das Passwort setzt er
- * direkt auf `/checkout/success`, und über „Passwort vergessen" kommt er
- * ohnehin hinein. Nebeneffekt: Der Kaufweg lässt sich vollständig testen, ohne
- * dass der Mailversand eingerichtet sein muss.
+ * Was der Kunde stattdessen hat: Sein Konto steht, und das Passwort setzt er
+ * direkt auf `/checkout/success`. Ein „Passwort vergessen" gibt es (Stand
+ * 19.09.2026) nicht — die Erfolgsseite ist damit der einzige Weg ohne Mail.
+ * Nebeneffekt: Der Kaufweg lässt sich vollständig testen, ohne dass der
+ * Mailversand eingerichtet sein muss.
  */
 async function sendeWillkommensmail(
   supabase: WebhookSupabase,
-  daten: { email: string; firstName: string; userId: string; plan: MembershipPlan; neuesKonto: boolean },
+  daten: { email: string; firstName: string; userId: string; plan: MembershipPlan },
 ): Promise<void> {
   try {
     /**
-     * Nur für frisch angelegte Konten ein Passwort-Link. Wer schon ein
-     * Passwort hat (Free-Mitglied, das aufrüstet), bekommt den normalen
-     * Dashboard-Knopf — ein „Passwort setzen" wäre für ihn eine Aufforderung,
-     * etwas zu reparieren, das nicht kaputt ist.
+     * Passwort-Link für jedes Konto, an dem sich noch nie jemand angemeldet
+     * hat. Wer das schon getan hat (Free-Mitglied, das aufrüstet), bekommt
+     * den normalen Dashboard-Knopf — ein „Passwort setzen" wäre für ihn eine
+     * Aufforderung, etwas zu reparieren, das nicht kaputt ist.
+     *
+     * Bis 19.09.2026 hing der Link daran, ob das Konto *in diesem Ereignis*
+     * entstanden war. Bei der Kasse ist es das nie: Das Konto entsteht mit
+     * `subscription.created` (Status `incomplete`), die Mail geht erst mit
+     * `subscription.updated` (`active`) raus — dort war das Konto „alt", und
+     * jeder Gastkäufer bekam einen Dashboard-Knopf für ein Konto ohne
+     * Passwort. Dieselbe Frage stellt `ladeKaufStatus` auf der Erfolgsseite.
      */
-    const setPasswordUrl = daten.neuesKonto
+    const { data: authNutzer } = await supabase.auth.admin.getUserById(daten.userId);
+    const nochNieAngemeldet = !authNutzer?.user?.last_sign_in_at;
+    const setPasswordUrl = nochNieAngemeldet
       ? await createSetPasswordLink(supabase, daten.email)
       : undefined;
 
@@ -230,11 +252,17 @@ async function sendeWillkommensmail(
   }
 }
 
-/** Stripe liefert auf `Subscription` nur die Customer-ID, nicht die E-Mail — separat nachladen. */
-async function ladeStripeKundenEmail(sub: Stripe.Subscription): Promise<string | null> {
+/**
+ * Stripe liefert auf `Subscription` nur die Customer-ID, nicht die E-Mail — separat nachladen.
+ *
+ * Der Name kommt mit, weil die Kasse ihn als Karteninhaber abfragt. Ohne ihn
+ * legte der Trigger das Profil mit leerem `full_name` an, und die
+ * Willkommensmail begrüßte den Käufer mit dem Teil seiner Adresse vor dem @.
+ */
+async function ladeStripeKunde(sub: Stripe.Subscription): Promise<{ email: string | null; name: string | null }> {
   const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
-  if (!customerId) return null;
+  if (!customerId) return { email: null, name: null };
   const customer = await getStripe().customers.retrieve(customerId);
-  if (customer.deleted) return null;
-  return customer.email ?? null;
+  if (customer.deleted) return { email: null, name: null };
+  return { email: customer.email ?? null, name: customer.name?.trim() || null };
 }
