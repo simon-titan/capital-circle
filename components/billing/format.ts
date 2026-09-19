@@ -30,7 +30,7 @@ export const TIER_LABEL: Record<Tier, string> = {
 export const TIER_PREIS: Partial<Record<Tier, { betrag: string; periode: string; proMonat?: string }>> = {
   monthly: { betrag: "99 €", periode: "pro Monat" },
   quarterly: { betrag: "267 €", periode: "alle 3 Monate", proMonat: "89 €/Monat" },
-  yearly: { betrag: "990 €", periode: "pro Jahr", proMonat: "82,50 €/Monat" },
+  yearly: { betrag: "599 €", periode: "pro Jahr", proMonat: "49,92 €/Monat" },
 };
 
 /** Stripe-Abostatus auf Deutsch; Unbekanntes bleibt im Original sichtbar. */

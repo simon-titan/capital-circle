@@ -5,6 +5,7 @@ import { Check, Infinity as InfinityIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { DashCard, IconTile, Meta } from "@/components/platform/dashboard/primitives";
+import { LIFETIME_PREIS } from "@/config/lifetime";
 
 /**
  * Lifetime-Angebot für zahlende Mitglieder.
@@ -72,7 +73,7 @@ export function LifetimeOffer({ ehemalig = false }: { ehemalig?: boolean }) {
             </IconTile>
             <Stack spacing={1} minW={0}>
               <Text className="cc-num" fontSize={{ base: "24px", md: "28px" }} fontWeight={600} color="var(--cc-text)">
-                699 €
+                {LIFETIME_PREIS}
               </Text>
               <Meta>einmalig, keine weitere Abbuchung</Meta>
             </Stack>

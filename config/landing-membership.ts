@@ -609,9 +609,9 @@ export const preiskarten: Preiskarte[] = [
   {
     plan: "yearly",
     laufzeit: "Jährlich",
-    preis: "990 €",
+    preis: "599 €",
     periode: "pro Jahr",
-    hinweis: "= 82,50 €/Monat · 2 Monate geschenkt",
+    hinweis: "= 49,92 €/Monat · 50 % gespart",
     bindung: "12 Monate Laufzeit, danach kündbar",
   },
 ];
@@ -668,5 +668,5 @@ export const faq = {
 
 export const finalerCta = {
   zeilen: ["Du kennst das Problem.", "Und jetzt auch den Weg.", "Ab hier gehst du ihn nicht mehr allein."],
-  feinabdruck: "99 € im Monat, monatlich kündbar · mit Laufzeit ab 82,50 €",
+  feinabdruck: "99 € im Monat, monatlich kündbar · mit Laufzeit ab 49,92 €",
 } as const;

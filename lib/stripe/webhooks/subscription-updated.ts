@@ -151,7 +151,7 @@ export async function handleSubscriptionUpdated(
    * (Status `active`, `cancel_at_period_end: true`). Bis 19.09.2026 schrieb der
    * Profil-Sync darunter daraufhin `membership_tier: monthly` über den frisch
    * gekauften Dauerzugang — und `subscription.deleted` setzte das Konto am
-   * Periodenende auf `free`. Der Kunde hätte 699 € gezahlt und stünde vor der
+   * Periodenende auf `free`. Der Kunde hätte 997 € gezahlt und stünde vor der
    * Bezahlschranke. Die Abo-Zeile oben wird trotzdem gepflegt.
    */
   if (profile.membership_tier === "lifetime" || profile.membership_tier === "ht_1on1") {

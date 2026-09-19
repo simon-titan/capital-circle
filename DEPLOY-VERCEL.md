@@ -86,11 +86,11 @@ Alle acht 1:1 aus `.env.local` übernehmen:
 ### Stripe-Preise
 
 `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_QUARTERLY`, `STRIPE_PRICE_YEARLY`.
-Die aktuellen IDs sind **Testmodus** (99 € / 267 € / 990 €, am 19.09. gegen Stripe aufgelöst).
+Die aktuellen IDs sind **Testmodus** (99 € / 267 € / 599 €, am 19.09. gegen Stripe aufgelöst).
 Für Produktion `npm run stripe:preise` mit einem `sk_live_…`-Key laufen lassen und die drei
 neuen IDs eintragen.
 
-`STRIPE_PRICE_LIFETIME` (699 € einmalig, internes Angebot in `/einstellungen/abonnement`):
+`STRIPE_PRICE_LIFETIME` (997 € einmalig, internes Angebot in `/einstellungen/abonnement`):
 **Die lokal eingetragene ID existiert im Stripe-Konto nicht** (`resource_missing`, 19.09.).
 Solange sie gesetzt ist und `app_settings.lifetime_offer_enabled` an ist, zeigt die Seite das
 Angebot, der Kauf scheitert aber. Also entweder im Live-Modus einen Einmalpreis anlegen und

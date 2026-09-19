@@ -30,7 +30,7 @@
  */
 
 /** Der Preis, wie er auf der Abo-Seite steht (`components/billing/LifetimeOffer.tsx`). */
-export const LIFETIME_PREIS = "699 €";
+export const LIFETIME_PREIS = "997 €";
 
 /** Wohin der Hinweis führt: die Lifetime-Karte auf der Abo-Seite. */
 export function lifetimeUrl(appUrl: string): string {

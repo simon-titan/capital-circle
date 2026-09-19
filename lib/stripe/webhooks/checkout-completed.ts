@@ -120,7 +120,7 @@ export async function handleCheckoutCompleted(
  * Ein bezahltes Abo endet zum Periodenende (der laufende Monat ist bezahlt).
  * Ein Abo mit gescheiterter Abbuchung (`past_due`, `unpaid`) endet **sofort**:
  * Zum Periodenende gekuendigt, versuchte Stripe die offene Rechnung weiter
- * einzuziehen, und gelaenge das, zahlte der Kunde neben 699 € noch einen
+ * einzuziehen, und gelaenge das, zahlte der Kunde neben 997 € noch einen
  * Monat, den er nicht mehr braucht. Bei der sofortigen Kuendigung stellt
  * Stripe den automatischen Einzug offener Rechnungen ein; die Rechnung selbst
  * bleibt offen (kein Erlass — sie steht in der Fallakte).

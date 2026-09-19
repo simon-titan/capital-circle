@@ -320,7 +320,7 @@ export async function GET() {
  * Laufzeitpreis, ist es diese Laufzeit, sonst „unknown".
  *
  * Die alte Heuristik (≥ 500 € = Lifetime, ≤ 200 € = Monthly) hielt jede
- * Jahreszahlung (990 €) für Lifetime und kannte das Quartal (267 €) gar nicht.
+ * Jahreszahlung (990 €, jetzt 599 €) für Lifetime und kannte das Quartal (267 €) gar nicht.
  * Lifetime-Käufe landen ohnehin nicht in `payments` — die Tabelle füllt nur
  * `invoice.paid`, und Lifetime ist eine Einmalzahlung ohne Rechnung.
  * Rabattierte Beträge (Gutscheine) bleiben „unknown"; genauer ginge es nur

@@ -21,8 +21,8 @@ Mitgliedschafts-Stufen in `profiles.membership_tier`:
 | `free` | kostenlos | Discord-Funnel / Free-Kurs |
 | `monthly` | 99 €/Monat | Gast-Checkout (`/` → `/go/monthly` → Stripe) |
 | `quarterly` | 267 €/3 Monate | Gast-Checkout (`/` → `/go/quarterly` → Stripe) |
-| `yearly` | 990 €/Jahr | Gast-Checkout (`/` → `/go/yearly` → Stripe) |
-| `lifetime` | 699 € einmalig | **nur intern** (17.09.2026) — Angebot in `/einstellungen/abonnement` für Mitglieder mit aktivem, zahlendem Abo; kein öffentlicher Preis, kein Link von der Landingpage |
+| `yearly` | 599 €/Jahr | Gast-Checkout (`/` → `/go/yearly` → Stripe) |
+| `lifetime` | 997 € einmalig | **nur intern** (17.09.2026) — Angebot in `/einstellungen/abonnement` für Mitglieder mit aktivem, zahlendem Abo; kein öffentlicher Preis, kein Link von der Landingpage |
 | `ht_1on1` | individuell | Bewerbung + Calendly-Call, kein Self-Checkout |
 
 Seit 16.09.2026 ist `/` die Sales-Landing mit Gast-Checkout (Konto entsteht erst nach der
@@ -167,7 +167,7 @@ Whop-Migration (siehe Meilensteine unten), nur umgekehrte Richtung:
   hinterlegten Testmodus-Key nicht auflösen (`404 resource_missing`).~~
   **Am 16.09.2026 geklärt und behoben:** Die Preis-ID gehörte zu einem *anderen
   Stripe-Konto* als der `sk_test`-Key — daher der 404. Ersetzt durch die drei per
-  `npm run stripe:preise -- --apply` erzeugten Preise (99 € / 267 € / 990 €, Produkt
+  `npm run stripe:preise -- --apply` erzeugten Preise (99 € / 267 € / 599 €, Produkt
   `prod_VGo4kOUjnyWCfp`). Für den Live-Betrieb müssen sie im Live-Modus neu angelegt
   werden.
 - Whop-Mitgliederexport (CSV) einmalig aus dem Whop-Dashboard ziehen und mit
@@ -280,7 +280,7 @@ hochladen", sondern: Live-Zahlung scharf schalten, Rechtliches nachziehen, Wartu
   16.09. bei `STRIPE_PRICE_MONTHLY` (ID aus einem anderen Konto). Weil die Variable
   gesetzt und `lifetime_offer_enabled` an ist, **erscheint das Lifetime-Angebot in
   `/einstellungen/abonnement`, der Kauf scheitert aber an Stripe.** Lösung: Lifetime-Preis
-  (699 € einmalig) im richtigen Konto anlegen — für Live im Live-Modus — oder die Variable
+  (997 € einmalig) im richtigen Konto anlegen — für Live im Live-Modus — oder die Variable
   leer lassen, dann ist das Angebot sauber aus.
 - **Widerrufs-Checkbox im Checkout** (am 06.09. entschieden, nicht gebaut) — gehört
   zum Rechtstexte-Paket. Weder `/go/[plan]` noch die Checkout-Session setzen

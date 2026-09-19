@@ -1,5 +1,5 @@
 /**
- * Legt die drei Membership-Preise (99 €/Monat, 267 €/Quartal, 990 €/Jahr) in
+ * Legt die drei Membership-Preise (99 €/Monat, 267 €/Quartal, 599 €/Jahr) in
  * Stripe an — idempotent über `lookup_key`. Gibt die Price-IDs aus.
  *
  *   node scripts/stripe-setup-prices.mjs          Dry-Run: zeigt Produkt/Preise, legt nichts an
@@ -26,7 +26,7 @@ console.log(`Modus: ${key.startsWith("sk_live") ? "LIVE" : "TEST"} · ${apply ? 
 const PLANS = [
   { lookup: "cc_membership_monthly", nickname: "Capital Circle — Monatlich", amount: 9900, interval: "month", count: 1 },
   { lookup: "cc_membership_quarterly", nickname: "Capital Circle — Vierteljährlich", amount: 26700, interval: "month", count: 3 },
-  { lookup: "cc_membership_yearly", nickname: "Capital Circle — Jährlich", amount: 99000, interval: "year", count: 1 },
+  { lookup: "cc_membership_yearly", nickname: "Capital Circle — Jährlich", amount: 59900, interval: "year", count: 1 },
 ];
 
 // Bestand zeigen

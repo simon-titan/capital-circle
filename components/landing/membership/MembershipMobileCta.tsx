@@ -42,7 +42,7 @@ export function MembershipMobileCta() {
 
   // `preiskarten[0]` ist der **Monats**plan und damit der teuerste Monatspreis —
   // „Ab" davor war in die falsche Richtung falsch: Der guenstigste Monatspreis
-  // steckt im Jahresplan (82,50 €). Hier steht jetzt schlicht der Einstiegspreis.
+  // steckt im Jahresplan (49,92 €). Hier steht jetzt schlicht der Einstiegspreis.
   const einstieg = preiskarten[0];
 
   return (

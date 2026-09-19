@@ -57,7 +57,7 @@ const TIER_LABELS: Record<Tier, string> = {
   free: "Free",
   monthly: "Monatlich (99 €)",
   quarterly: "Vierteljährlich (267 €)",
-  yearly: "Jährlich (990 €)",
+  yearly: "Jährlich (599 €)",
   lifetime: "Lifetime",
   ht_1on1: "High-Ticket 1on1",
 };

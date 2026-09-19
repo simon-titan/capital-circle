@@ -12,7 +12,7 @@
  * auch über den Gast-Checkout `/go/<plan>`.
  *
  * Die Preise sind in Stripe mit `tax_behavior: "inclusive"` angelegt: Die
- * angezeigten 99 / 267 / 990 € sind Endpreise inkl. MwSt. (B2C Deutschland).
+ * angezeigten 99 / 267 / 599 € sind Endpreise inkl. MwSt. (B2C Deutschland).
  */
 export type MembershipPlan = "monthly" | "quarterly" | "yearly";
 
