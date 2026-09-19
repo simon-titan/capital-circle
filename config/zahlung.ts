@@ -101,7 +101,8 @@ export interface NachrichtDaten {
   /**
    * Der Lifetime-Hinweis, fertig formuliert, oder `null`. `null`, wenn die
    * Person Werbung widersprochen hat oder Lifetime für sie nicht kaufbar ist
-   * (`config/lifetime.ts`).
+   * (`config/lifetime.ts`). Erscheint nur in der Direktnachricht, nie in der
+   * Mail (siehe `mitLifetime`).
    */
   lifetime: string | null;
   /**
@@ -126,8 +127,19 @@ function discordSatz(d: NachrichtDaten, zeit: "kuenftig" | "jetzt"): string | nu
     : `Du bleibst auf dem Discord-Server. Statt der Mitglieder-Kanäle siehst du ab jetzt den Kanal „${WARTERAUM_KANAL}“, dort steht alles Weitere.`;
 }
 
-function mitLifetime(d: NachrichtDaten): string[] {
-  return d.lifetime ? ["", d.lifetime] : [];
+/**
+ * Der Lifetime-Hinweis, **nur in der Direktnachricht**.
+ *
+ * Die Mail zur Zahlung ist eine Transaktionsmail: Sie geht auch an
+ * Abgemeldete und trägt keinen Abmeldelink (`lib/email/abmeldung.ts`, Linie
+ * der Rechtstexte vom 19.09.2026). Ein Kaufangebot darin machte sie zur
+ * Werbe-Mail, und die bräuchte bei jeder Verwendung den Widerspruchshinweis.
+ * In Discord gibt es den Widerspruch über die Einstellung „keine
+ * Direktnachrichten", und wer Werbung abbestellt hat, bekommt den Hinweis dort
+ * ohnehin nicht (`lifetimeFuer` in `lib/zahlung/fall.ts`).
+ */
+function mitLifetime(d: NachrichtDaten, kanal: Kanal): string[] {
+  return d.lifetime && kanal === "discord" ? ["", d.lifetime] : [];
 }
 
 /**
@@ -145,7 +157,7 @@ export function nachrichtErster(d: NachrichtDaten, kanal: Kanal = "discord"): st
     "",
     `Bis zum ${d.fristDatum} ändert sich nichts an deinem Zugang. Wenn du die offene Summe begleichen oder eine andere Zahlungsmethode hinterlegen möchtest, kannst du das direkt hier erledigen:`,
     d.url,
-    ...mitLifetime(d),
+    ...mitLifetime(d, kanal),
     "",
     rueckweg(kanal, d.appUrl),
   ].join("\n");
@@ -171,7 +183,7 @@ export function nachrichtErinnerung(d: NachrichtDaten, kanal: Kanal = "discord")
     "",
     "Hier kannst du zahlen oder eine andere Zahlungsmethode hinterlegen:",
     d.url,
-    ...mitLifetime(d),
+    ...mitLifetime(d, kanal),
     "",
     rueckweg(kanal, d.appUrl) + " Wir finden eine Lösung.",
   ].join("\n");
@@ -208,7 +220,7 @@ export function nachrichtGesperrt(d: NachrichtDaten, kanal: Kanal = "discord"): 
           `Wenn sich in ${KARENZ_TAGE} Tagen nichts tut, nehmen wir dich vom Discord-Server. Auch das ist kein Abschied für immer, du kannst jederzeit wiederkommen.`,
         ]
       : []),
-    ...mitLifetime(d),
+    ...mitLifetime(d, kanal),
     "",
     rueckweg(kanal, d.appUrl),
   ].join("\n");

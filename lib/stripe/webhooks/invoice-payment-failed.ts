@@ -175,7 +175,6 @@ async function bearbeiteFall(
         knopfText: "Zahlung erledigen",
         knopfUrl: daten.url,
         absaetze: nachrichtErster(daten, "mail").split("\n\n"),
-        mitAbmeldung: Boolean(daten.lifetime),
       });
       console.warn(
         `[stripe-webhook] invoice.payment_failed: Kein Zahlungsfall anlegbar (Migration 080?), ` +
@@ -214,7 +213,6 @@ async function bearbeiteFall(
         knopfText: "Zahlung erledigen",
         knopfUrl: daten.url,
         absaetze: nachrichtErster(daten, "mail").split("\n\n"),
-        mitAbmeldung: Boolean(daten.lifetime),
       },
     });
 

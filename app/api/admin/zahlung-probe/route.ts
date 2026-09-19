@@ -126,7 +126,6 @@ export async function POST(request: Request) {
       knopfText: "Zahlung erledigen",
       knopfUrl: daten.url,
       absaetze: textVon(daten, "mail").split("\n\n"),
-      mitAbmeldung: Boolean(daten.lifetime),
     },
   });
 

@@ -8,8 +8,6 @@ interface Props {
   absaetze: string[];
   knopfText: string;
   knopfUrl: string;
-  /** Abmeldelink im Fuss, sobald die Mail einen Werbehinweis trägt (Lifetime). */
-  abmeldeToken?: string;
 }
 
 interface SendProps extends Props {
@@ -42,8 +40,9 @@ interface SendProps extends Props {
  * ── Transaktional ───────────────────────────────────────────────────────────
  *
  * Sie betrifft den bezahlten Zugang des Empfängers und geht deshalb auch an
- * Abgemeldete. Trägt sie den Lifetime-Hinweis (nur ohne Werbewiderspruch),
- * bekommt sie den Abmeldelink im Fuss.
+ * Abgemeldete, ohne Abmeldelink (`lib/email/abmeldung.ts`). Werbung gehört
+ * deshalb nicht hinein: Der Lifetime-Hinweis steht nur in der
+ * Direktnachricht (`config/zahlung.ts`, `mitLifetime`).
  */
 
 const URL_MUSTER = /(https?:\/\/[^\s]+)/g;
@@ -71,13 +70,9 @@ function Absatz({ text }: { text: string }) {
   );
 }
 
-export default function ZahlungNachrichtEmail({ ueberschrift, absaetze, knopfText, knopfUrl, abmeldeToken }: Props) {
+export default function ZahlungNachrichtEmail({ ueberschrift, absaetze, knopfText, knopfUrl }: Props) {
   return (
-    <BaseEmail
-      previewText={ueberschrift}
-      hideFooter={!abmeldeToken}
-      unsubscribeToken={abmeldeToken}
-    >
+    <BaseEmail previewText={ueberschrift}>
       <EmailHeading>{ueberschrift}</EmailHeading>
       {absaetze.map((a, i) => (
         <Absatz key={i} text={a} />
@@ -97,7 +92,6 @@ export async function sendZahlungNachricht(props: SendProps): Promise<SendResult
         absaetze={props.absaetze}
         knopfText={props.knopfText}
         knopfUrl={props.knopfUrl}
-        abmeldeToken={props.abmeldeToken}
       />
     ),
   });

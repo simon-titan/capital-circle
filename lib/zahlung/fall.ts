@@ -417,8 +417,6 @@ export interface FallMail {
    * (Überschrift und Knopf).
    */
   absaetze: string[];
-  /** Die Mail trägt einen Werbehinweis (Lifetime) und bekommt deshalb den Abmeldelink. */
-  mitAbmeldung?: boolean;
 }
 
 /** Mail zum Fall. **Wirft nie**; gibt zurück, ob sie rausging. */
@@ -440,12 +438,6 @@ export async function sendeFallMail(supabase: SupabaseClient, userId: string, ma
       )
       .filter(Boolean);
 
-    let abmeldeToken: string | undefined;
-    if (mail.mitAbmeldung) {
-      const { generateUnsubscribeToken } = await import("@/lib/email/unsubscribe-token");
-      abmeldeToken = generateUnsubscribeToken(userId);
-    }
-
     const { sendZahlungNachricht } = await import("@/lib/email/templates/zahlung-nachricht");
     await sendZahlungNachricht({
       an,
@@ -454,7 +446,6 @@ export async function sendeFallMail(supabase: SupabaseClient, userId: string, ma
       absaetze,
       knopfText: mail.knopfText,
       knopfUrl: mail.knopfUrl,
-      abmeldeToken,
     });
     return true;
   } catch (err) {
@@ -740,7 +731,6 @@ export async function fuehreFristAus(supabase: SupabaseClient): Promise<FristBer
           knopfText: "Jetzt bezahlen",
           knopfUrl: daten.url,
           absaetze: nachrichtErinnerung(daten, "mail").split("\n\n"),
-          mitAbmeldung: Boolean(daten.lifetime),
         },
       });
 
@@ -844,7 +834,6 @@ async function sperreFall(supabase: SupabaseClient, fall: OffenerFall, bericht: 
       knopfText: aboBeendet ? "Wieder einsteigen" : "Rechnung bezahlen",
       knopfUrl: daten.url,
       absaetze: nachrichtGesperrt(daten, "mail").split("\n\n"),
-      mitAbmeldung: Boolean(daten.lifetime),
     },
   });
 
@@ -998,8 +987,7 @@ export async function beendeAbgelaufeneAufschuebe(supabase: SupabaseClient): Pro
         knopfText: "Rechnung bezahlen",
         knopfUrl: daten.url,
         absaetze: nachrichtGesperrt(daten, "mail").split("\n\n"),
-        mitAbmeldung: Boolean(daten.lifetime),
-      },
+        },
     });
 
     const { synchronisiereRollen } = await import("@/lib/discord/mitgliedschaft");

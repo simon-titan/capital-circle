@@ -16,10 +16,17 @@
  *
  * ── Werbung, und deshalb mit Widerspruch ────────────────────────────────────
  *
- * Eine Mahnung ist Vertragspost, ein Kaufangebot darin ist Werbung. Wer sich
- * von Werbemails abgemeldet hat (`profiles.unsubscribed_at`), bekommt den
- * Hinweis deshalb nicht, weder in der Mail noch in der Direktnachricht. Die
- * Mahnung selbst bekommt er natürlich trotzdem.
+ * Eine Mahnung ist Vertragspost, ein Kaufangebot darin ist Werbung. Deshalb:
+ *
+ * - **Mahn-Mails tragen den Hinweis nie.** Sie sind Transaktionsmails ohne
+ *   Abmeldelink (`lib/email/abmeldung.ts`) und sollen es bleiben.
+ * - **Direktnachrichten** (Mahnung, Abschied) tragen ihn nur, wenn die Person
+ *   Werbung nicht widersprochen hat (`profiles.unsubscribed_at`) und
+ *   Direktnachrichten nicht abbestellt hat.
+ * - **Der Warteraum-Kanal** nennt Lifetime als einen der Wege zurück; das ist
+ *   eine Erklärung an alle, keine persönliche Nachricht.
+ * - **Die Rückgewinnungs-Mail und -Kampagne** sind Werbung und tragen den
+ *   Abmeldelink samt Widerspruchshinweis.
  */
 
 /** Der Preis, wie er auf der Abo-Seite steht (`components/billing/LifetimeOffer.tsx`). */
