@@ -9,10 +9,9 @@ import {
   nachrichtGesperrt,
   type NachrichtDaten,
 } from "@/config/zahlung";
-import { evaluateAccess, type AccessTier } from "@/lib/access-control/has-access";
 import { sendeDirektnachricht } from "@/lib/discord/api";
 import { discordIdFuerNachricht, discordIdRoh } from "@/lib/discord/konto";
-import { warteraumRolleId } from "@/lib/discord/mitgliedschaft";
+import { hatZugang, warteraumRolleId } from "@/lib/discord/mitgliedschaft";
 import { getAppUrl } from "@/lib/site-url";
 import type { ZahlungsfallStatus } from "./aufschub";
 
@@ -24,22 +23,23 @@ import type { ZahlungsfallStatus } from "./aufschub";
  * Nachtlauf (`app/api/cron/taeglich`), gelesen und beantwortet im Adminbereich
  * (`lib/admin/zahlungsfaelle.ts`).
  *
- * ── Der Unterschied zu MoonTrading: `access_until` ist die Schranke ─────────
+ * ── Zwei Schranken, beide werden gepflegt ──────────────────────────────────
  *
- * In MoonTrading hängt der Zugang an `is_paid`, `access_until` ist dort nur
- * eine Angabe. In Capital Circle entscheidet `evaluateAccess()` über Stufe plus
- * `access_until`. Deshalb:
+ * Inhalte und Discord geben nach `is_paid` (oder Admin) frei
+ * (`hatInhaltsZugang`, `public.hat_zugang()`), das Trading Journal nach
+ * `evaluateAccess()` (Stufe plus `access_until`). Deshalb bewegt das
+ * Mahnsystem beide:
  *
- * - `invoice.payment_failed` verlängert `access_until` auf das Fristende —
- *   aber nur beim **neuen** Fall und **nie nach hinten**. Ein späterer
- *   Fehlversuch derselben Rechnung darf eine bereits vollzogene Sperre nicht
- *   wieder aufheben.
- * - Die Sperre setzt `access_until` auf jetzt und `is_paid` auf falsch, lässt
+ * - `invoice.payment_failed` fasst `is_paid` nicht an und verlängert
+ *   `access_until` auf das Fristende — nur beim **neuen** Fall und **nie nach
+ *   hinten**. Ein späterer Fehlversuch derselben Rechnung darf eine bereits
+ *   vollzogene Sperre nicht wieder aufheben.
+ * - Die Sperre setzt `is_paid` auf falsch und `access_until` auf jetzt, lässt
  *   die Stufe aber stehen (wie `pausiereProfil`): Zahlt der Kunde doch noch,
  *   stellt `subscription.updated` den Zugang her, ohne ihn für einen
  *   Neukunden zu halten.
- * - Ein Aufschub verlängert `access_until` bis zu seinem Ende
- *   (`gewaehreAufschub` im Adminbereich).
+ * - Ein Aufschub setzt `is_paid` und verlängert `access_until` bis zu seinem
+ *   Ende (`gewaehreAufschub` im Adminbereich).
  *
  * ── Mail immer, Discord als Zugabe ─────────────────────────────────────────
  *
@@ -94,6 +94,7 @@ interface ProfilKurz {
   username: string | null;
   membership_tier: string | null;
   is_paid: boolean | null;
+  is_admin: boolean | null;
   access_until: string | null;
   unsubscribed_at: string | null;
 }
@@ -101,7 +102,7 @@ interface ProfilKurz {
 async function ladeProfilKurz(supabase: SupabaseClient, userId: string): Promise<ProfilKurz | null> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("full_name,username,membership_tier,is_paid,access_until,unsubscribed_at")
+    .select("full_name,username,membership_tier,is_paid,is_admin,access_until,unsubscribed_at")
     .eq("id", userId)
     .maybeSingle();
   if (error) {
@@ -708,13 +709,7 @@ export async function fuehreFristAus(supabase: SupabaseClient): Promise<FristBer
         wird sofort gesperrt, mit dem passenden Text.
       */
       const profil = await ladeProfilKurz(supabase, fall.user_id);
-      const zugangNoch = profil
-        ? evaluateAccess({
-            membership_tier: profil.membership_tier as AccessTier | null,
-            is_paid: profil.is_paid,
-            access_until: profil.access_until,
-          }).hasAccess
-        : false;
+      const zugangNoch = hatZugang(profil);
 
       if (fristMs <= jetzt || !zugangNoch) {
         await sperreFall(supabase, fall, bericht);
@@ -1030,9 +1025,15 @@ export async function beendeAbgelaufeneAufschuebe(supabase: SupabaseClient): Pro
  * Hat diese Person neben dem Fall noch einen anderen Zugang?
  *
  * Gibt den Grund als Satz zurück (für den Verlauf) oder `null`. Gezählt wird:
- * Lifetime, 1:1-Mentoring, oder ein **anderes** laufendes Abo. Das Abo des
- * Falls selbst zählt nicht — steht es bei uns noch auf `active`, weil ein
- * Webhook hinterherhängt, schlösse der Lauf sonst jeden Fall am ersten Tag.
+ * Adminkonto, Lifetime, 1:1-Mentoring, oder ein **anderes** laufendes Abo. Das
+ * Abo des Falls selbst zählt nicht — steht es bei uns noch auf `active`, weil
+ * ein Webhook hinterherhängt, schlösse der Lauf sonst jeden Fall am ersten Tag.
+ *
+ * `is_paid` zählt hier ausdrücklich **nicht**, obwohl es sonst die Regel für
+ * Inhalte und Discord ist: Während der sieben Tage steht es bei jedem
+ * Gemahnten noch auf wahr — genau das beendet die Sperre. Der Whop-Altbestand
+ * (Stufe `free`, `is_paid` wahr) kann keinen Fall haben, solange er kein
+ * Stripe-Abo hat; hat er eines, ist er ein Stripe-Kunde wie jeder andere.
  *
  * ── Ein Abfragefehler darf hier nicht „kein Zugang" heissen ───────────────
  *
@@ -1047,7 +1048,7 @@ export async function hatAnderenZugang(
   ausserAboId?: string | null,
 ): Promise<string | null> {
   const [profilRes, aboRes] = await Promise.all([
-    supabase.from("profiles").select("membership_tier").eq("id", userId).maybeSingle(),
+    supabase.from("profiles").select("membership_tier,is_admin").eq("id", userId).maybeSingle(),
     supabase
       .from("subscriptions")
       .select("stripe_subscription_id,status")
@@ -1062,7 +1063,9 @@ export async function hatAnderenZugang(
     throw new Error(`Zugang nicht prüfbar (subscriptions, user=${userId}): ${aboRes.error.message}`);
   }
 
-  const tier = (profilRes.data as { membership_tier: string | null } | null)?.membership_tier ?? null;
+  const profil = profilRes.data as { membership_tier: string | null; is_admin: boolean | null } | null;
+  const tier = profil?.membership_tier ?? null;
+  if (profil?.is_admin) return "Adminkonto.";
   if (tier === "lifetime") return "Lifetime-Zugang besteht.";
   if (tier === "ht_1on1") return "Zugang über das 1:1-Mentoring.";
 

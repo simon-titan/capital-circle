@@ -1,6 +1,6 @@
 import type Stripe from "stripe";
 import { FRIST_TAGE, nachrichtErster } from "@/config/zahlung";
-import { evaluateAccess, type AccessTier } from "@/lib/access-control/has-access";
+import { hatZugangLautProfil } from "@/lib/discord/mitgliedschaft";
 import {
   datumVon,
   eroeffneZahlungsfall,
@@ -155,8 +155,8 @@ async function bearbeiteFall(
       `null` heisst fast immer: Migration 080 ist noch nicht eingespielt. Dann
       darf der Kunde nicht schlechter dastehen als mit der alten Mahnstrecke:
       Beim ersten Versuch wird der Zugang bis zur Frist gehalten und die erste
-      Mail verschickt. Erinnerungen gibt es ohne Fall keine; der Zugang endet
-      trotzdem pünktlich, weil `access_until` die Schranke ist.
+      Mail verschickt. Erinnerungen und Sperre gibt es ohne Fall keine — gesperrt wird dann
+      erst, wenn Stripe das Abo beendet (`subscription.deleted`).
     */
     if (!fall) {
       if (versuche > 1 || !istAbo) return;
@@ -247,14 +247,11 @@ async function halteZugangBisFrist(supabase: WebhookSupabase, userId: string, fr
   }
 }
 
+/** Zugang laut Profil (`is_paid` oder Admin). Wirft nie: im Zweifel „nein", dann keine Nachricht. */
 async function hatZugang(supabase: WebhookSupabase, userId: string): Promise<boolean> {
-  const { data } = await supabase
-    .from("profiles")
-    .select("membership_tier,is_paid,access_until")
-    .eq("id", userId)
-    .maybeSingle();
-  if (!data) return false;
-  return evaluateAccess(
-    data as { membership_tier: AccessTier | null; is_paid: boolean | null; access_until: string | null },
-  ).hasAccess;
+  try {
+    return await hatZugangLautProfil(supabase, userId);
+  } catch {
+    return false;
+  }
 }

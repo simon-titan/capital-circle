@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { evaluateAccess, type AccessTier } from "@/lib/access-control/has-access";
 import { addRole, discordBotConfigured, getGuildMember, removeRole } from "@/lib/discord/api";
 import { discordIdRoh } from "@/lib/discord/konto";
+import { hatInhaltsZugang } from "@/lib/membership";
 
 /**
  * Die Mitgliederrolle an den Zugang angleichen — aufgerufen aus den
@@ -30,13 +30,32 @@ import { discordIdRoh } from "@/lib/discord/konto";
  * demselben Grund entzieht der Bestandsabgleich (`lib/discord/reconcile.ts`)
  * die Warteraumrolle nie von sich aus.
  *
- * ── Die Datenbank ist die Wahrheit ─────────────────────────────────────────
+ * ── Die Datenbank ist die Wahrheit, und zwar dieselbe wie bei den Inhalten ──
  *
- * Ob jemand Zugang hat, entscheidet `evaluateAccess()` — Stufe plus
- * `access_until`, dieselbe Regel wie im Mitgliederbereich. `is_paid` allein
- * reicht nicht: Eine Pause setzt `is_paid` sofort auf falsch, der Zugang läuft
- * aber bis zum Ende der bezahlten Periode weiter.
+ * Ob jemand Zugang hat, entscheidet `hatZugang()` unten, und das ist
+ * `hatInhaltsZugang()` aus `lib/membership.ts`: **`is_paid` oder Admin** —
+ * dieselbe Regel, nach der Institut, Videos und Anhänge freigeben und die als
+ * `public.hat_zugang()` in der Datenbank steht (Migration 076).
+ *
+ * Bewusst **nicht** `evaluateAccess()` (Stufe plus `access_until`): Der
+ * Whop-Altbestand steht auf `membership_tier = 'free'` mit `is_paid = true`
+ * (58 Profile, 36 davon mit Discord-Verknüpfung, Stand 19.09.2026).
+ * `evaluateAccess()` hielte sie für Ehemalige — Rolle weg, Warteraum, nach
+ * dreissig Tagen Rauswurf. Eine Discord-Regel, die von der Inhaltsregel
+ * abweicht, hiesse ausserdem: Zugang zum Institut, aber kein Discord, oder
+ * umgekehrt. Deshalb setzt jede Stelle, die einen Zugang beendet (Sperre am
+ * siebten Tag, Kündigung, Pause, Ende eines Aufschubs), `is_paid` auf falsch,
+ * und jede, die ihn herstellt, auf wahr.
  */
+
+/**
+ * Die eine Zugangsregel für Discord: Mitgliederrolle, Warteraum, Rauswurf.
+ * Identisch mit der Inhaltsregel (`hatInhaltsZugang`); hier nur, damit die
+ * Discord-Stellen einen Namen haben, an dem man sie findet.
+ */
+export function hatZugang(profil: { is_paid?: boolean | null; is_admin?: boolean | null } | null | undefined): boolean {
+  return hatInhaltsZugang(profil);
+}
 
 export function mitgliedsRolleId(): string | null {
   return process.env.DISCORD_ROLE_ID?.trim() || null;
@@ -98,15 +117,9 @@ export async function setzeMitgliedsrolle(discordId: string, zugang: boolean): P
  * heissen, sonst nähme ein Datenbank-Aussetzer einem zahlenden Kunden die Rolle.
  */
 export async function hatZugangLautProfil(supabase: SupabaseClient, userId: string): Promise<boolean> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("membership_tier,is_paid,access_until")
-    .eq("id", userId)
-    .maybeSingle();
+  const { data, error } = await supabase.from("profiles").select("is_paid,is_admin").eq("id", userId).maybeSingle();
   if (error) throw new Error(`Profil nicht lesbar (user=${userId}): ${error.message}`);
-  if (!data) return false;
-  const profil = data as { membership_tier: AccessTier | null; is_paid: boolean | null; access_until: string | null };
-  return evaluateAccess(profil).hasAccess;
+  return hatZugang(data as { is_paid: boolean | null; is_admin: boolean | null } | null);
 }
 
 /**
@@ -169,7 +182,7 @@ export async function synchronisiereRollen(
  * Die Rolle nach dem richten, was im Profil steht. **Wirft nie.**
  *
  * Für Webhooks, die den Zugang gerade geändert haben und nicht selbst
- * ausrechnen sollen, ob er jetzt besteht: Das weiss nur `evaluateAccess()`.
+ * ausrechnen sollen, ob er jetzt besteht: Das weiss nur `hatZugang()`.
  */
 export async function synchronisiereNachProfil(
   supabase: SupabaseClient,

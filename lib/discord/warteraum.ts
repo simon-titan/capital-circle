@@ -84,7 +84,8 @@ export async function setzeWarteraumrolle(discordId: string, an: boolean): Promi
  * 1. **Ein verknüpftes Discord-Konto** — gelesen ohne Rücksicht auf den
  *    DM-Widerspruch: Wer keine Direktnachricht will, soll trotzdem den Kanal
  *    mit der Erklärung sehen.
- * 2. **Kein Zugang laut Profil** (`evaluateAccess`). Die Sicherung gegen den
+ * 2. **Kein Zugang laut Profil** (`hatZugang`: `is_paid` oder Admin, dieselbe
+ *    Regel wie bei den Inhalten). Die Sicherung gegen den
  *    Wettlauf: Zahlt die Person zwischen dem Ende des alten Vertrags und
  *    diesem Aufruf schon wieder, gehört sie nicht in den Warteraum.
  * 3. **Kein laufender Aufschub.** Ein Warteraum wäre die sichtbare Gegenrede

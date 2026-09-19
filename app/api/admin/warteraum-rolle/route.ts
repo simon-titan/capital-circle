@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { KARENZ_TAGE, SCHUTZROLLEN } from "@/config/discord";
-import { evaluateAccess, type AccessTier } from "@/lib/access-control/has-access";
 import { cronBefugt } from "@/lib/cron/auth";
 import { discordBotConfigured, listGuildMembers, listGuildRoles } from "@/lib/discord/api";
-import { mitgliedsRolleId, warteraumRolleId } from "@/lib/discord/mitgliedschaft";
+import { hatZugang, mitgliedsRolleId, warteraumRolleId } from "@/lib/discord/mitgliedschaft";
 import { setzeWarteraumrolle } from "@/lib/discord/warteraum";
 import { requireAdminRole } from "@/lib/supabase/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -101,13 +100,20 @@ async function ladeStand(): Promise<Stand> {
   );
 
   const [profilRes, verbindungRes] = await Promise.all([
-    supabase.from("profiles").select("id,discord_id,membership_tier,is_paid,access_until").not("discord_id", "is", null),
+    supabase.from("profiles").select("id,discord_id,membership_tier,is_paid,is_admin,access_until").not("discord_id", "is", null),
     supabase.from("discord_connections").select("user_id,discord_user_id"),
   ]);
   if (profilRes.error) throw new Error(`Profile nicht lesbar: ${profilRes.error.message}`);
   if (verbindungRes.error) throw new Error(`discord_connections nicht lesbar: ${verbindungRes.error.message}`);
 
-  type P = { id: string; discord_id: string | null; membership_tier: string | null; is_paid: boolean | null; access_until: string | null };
+  type P = {
+    id: string;
+    discord_id: string | null;
+    membership_tier: string | null;
+    is_paid: boolean | null;
+    is_admin: boolean | null;
+    access_until: string | null;
+  };
   const profilJeId = new Map(((profilRes.data ?? []) as P[]).map((p) => [p.id, p]));
   const userJeDiscord = new Map<string, string>();
   for (const p of profilJeId.values()) if (p.discord_id) userJeDiscord.set(p.discord_id, p.id);
@@ -118,7 +124,7 @@ async function ladeStand(): Promise<Stand> {
   if (fehlend.length > 0) {
     const { data, error } = await supabase
       .from("profiles")
-      .select("id,discord_id,membership_tier,is_paid,access_until")
+      .select("id,discord_id,membership_tier,is_paid,is_admin,access_until")
       .in("id", fehlend);
     if (error) throw new Error(`Profile nicht nachladbar: ${error.message}`);
     for (const p of (data ?? []) as P[]) profilJeId.set(p.id, p);
@@ -150,12 +156,10 @@ async function ladeStand(): Promise<Stand> {
       continue;
     }
 
-    const zugang = evaluateAccess({
-      membership_tier: (profil.membership_tier ?? "free") as AccessTier,
-      is_paid: profil.is_paid,
-      access_until: profil.access_until,
-    }).hasAccess;
-    if (zugang) continue;
+    // Dieselbe Zugangsregel wie Inhalte und Rollen: `is_paid` oder Admin.
+    if (hatZugang(profil)) continue;
+    // Ohne Enddatum hat dieses System nie einen Zugang beendet — nicht anfassen.
+    if (!profil.access_until) continue;
 
     if (m.roles.includes(mitglied)) {
       stand.mitRolleOhneZugang.push(zeile);

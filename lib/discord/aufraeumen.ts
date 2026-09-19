@@ -1,6 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ENTFERNEN_MAX_PRO_NACHT, KARENZ_TAGE, SCHUTZROLLEN, abschiedNachKarenz } from "@/config/discord";
-import { evaluateAccess, type AccessTier } from "@/lib/access-control/has-access";
 import {
   discordBotConfigured,
   kickGuildMember,
@@ -8,7 +7,7 @@ import {
   listGuildRoles,
   sendeDirektnachricht,
 } from "@/lib/discord/api";
-import { mitgliedsRolleId, setzeMitgliedsrolle, warteraumRolleId } from "@/lib/discord/mitgliedschaft";
+import { hatZugang, mitgliedsRolleId, setzeMitgliedsrolle, warteraumRolleId } from "@/lib/discord/mitgliedschaft";
 import { getAppUrl } from "@/lib/site-url";
 
 /**
@@ -35,9 +34,10 @@ import { getAppUrl } from "@/lib/site-url";
  *    Rauswurf über den Funnel zurückkam), wird nie fällig.
  * 2. **Ein verknüpftes Konto** — ohne Konto keine Zahlungsdaten, also auch
  *    kein Urteil.
- * 3. **Kein Zugang** (`evaluateAccess`), **kein laufendes Abo**, **kein
- *    Aufschub**. Jede davon schützt, und zwar in dieser Reihenfolge vor
- *    allem anderen.
+ * 3. **Kein Zugang** (`hatZugang`: `is_paid` oder Admin, dieselbe Regel wie
+ *    bei den Inhalten — der Whop-Altbestand mit `free` und `is_paid` ist
+ *    damit geschützt), **kein Lifetime/1:1**, **kein laufendes Abo**, **kein
+ *    Aufschub**. Jede davon schützt, vor allem anderen.
  * 4. **Keine Schutzrolle** (`SCHUTZROLLEN`). Fehlt eine davon auf dem Server,
  *    läuft gar nichts, bis die Liste stimmt.
  * 5. **Ein Datum.** Fällig ist nur, wessen `access_until` länger als
@@ -111,11 +111,9 @@ export async function ladeAufraeumstand(service: SupabaseClient): Promise<Aufrae
     return { ...leer, fehler: [`Discord antwortet nicht: ${(err as Error).message}`] };
   }
 
-  const [profilRes, verbindungRes, aboRes, aufschubRes] = await Promise.all([
-    service
-      .from("profiles")
-      .select("id,discord_id,membership_tier,is_paid,access_until,unsubscribed_at,discord_dm_widerspruch")
-      .limit(20000),
+  const profilSpalten = "id,discord_id,membership_tier,is_paid,is_admin,access_until,unsubscribed_at";
+  const [ersterProfilRes, verbindungRes, aboRes, aufschubRes] = await Promise.all([
+    service.from("profiles").select(`${profilSpalten},discord_dm_widerspruch`).limit(20000),
     service.from("discord_connections").select("user_id,discord_user_id").limit(20000),
     service.from("subscriptions").select("user_id").in("status", ["active", "trialing"]).limit(20000),
     service
@@ -125,6 +123,17 @@ export async function ladeAufraeumstand(service: SupabaseClient): Promise<Aufrae
       .gt("aufschub_bis", new Date().toISOString())
       .limit(20000),
   ]);
+
+  /*
+    Fehlt `discord_dm_widerspruch` (Migration 081 nicht eingespielt), wird ohne
+    die Spalte gelesen — dann gibt es auch noch keinen Widerspruch. Ohne diesen
+    Rückfall stünde der Rauswurf bis zur Migration still, und der Nachtlauf
+    meldete jede Nacht einen Fehler.
+  */
+  const profilRes =
+    ersterProfilRes.error && (ersterProfilRes.error.code === "42703" || ersterProfilRes.error.code === "PGRST204")
+      ? await service.from("profiles").select(profilSpalten).limit(20000)
+      : ersterProfilRes;
 
   const fehler: string[] = [];
   if (profilRes.error) fehler.push(`profiles: ${profilRes.error.message}`);
@@ -141,6 +150,7 @@ export async function ladeAufraeumstand(service: SupabaseClient): Promise<Aufrae
     discord_id: string | null;
     membership_tier: string | null;
     is_paid: boolean | null;
+    is_admin: boolean | null;
     access_until: string | null;
     unsubscribed_at: string | null;
     discord_dm_widerspruch?: boolean | null;
@@ -182,11 +192,9 @@ export async function ladeAufraeumstand(service: SupabaseClient): Promise<Aufrae
     } else if (!profil) {
       einordnung = "ohne_konto";
     } else if (
-      evaluateAccess({
-        membership_tier: (profil.membership_tier ?? "free") as AccessTier,
-        is_paid: profil.is_paid,
-        access_until: profil.access_until,
-      }).hasAccess ||
+      hatZugang(profil) ||
+      profil.membership_tier === "lifetime" ||
+      profil.membership_tier === "ht_1on1" ||
       mitAbo.has(profil.id) ||
       mitAufschub.has(profil.id)
     ) {

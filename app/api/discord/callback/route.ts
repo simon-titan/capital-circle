@@ -108,7 +108,8 @@ export async function GET(request: Request) {
     aktiver Mitgliedschaftsprüfung kein Verlass. `setzeMitgliedsrolle` nimmt
     dabei eine eventuelle Warteraumrolle mit ab.
 
-    Die Rolle gibt es nur mit Zugang laut Profil (`evaluateAccess`). Der
+    Die Rolle gibt es nur mit Zugang laut Profil (`hatZugang`: `is_paid` oder
+    Admin, dieselbe Regel wie bei den Inhalten). Der
     Einstieg `/api/discord/connect` prüft das zwar schon, aber zwischen dem
     Klick und diesem Rücksprung kann ein Zahlungsfall gesperrt haben — dann
     tritt die Person bei, bekommt aber keine Mitgliederrolle.

@@ -1,7 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/server";
-import { evaluateAccess, type AccessTier } from "@/lib/access-control/has-access";
 import { discordBotConfigured, listGuildMembers } from "@/lib/discord/api";
-import { mitgliedsRolleId, setzeMitgliedsrolle, warteraumRolleId } from "@/lib/discord/mitgliedschaft";
+import { hatZugang, mitgliedsRolleId, setzeMitgliedsrolle, warteraumRolleId } from "@/lib/discord/mitgliedschaft";
 
 export type DesiredRoleState = "regular" | "waiting_room" | "none";
 export type ActualRoleState = DesiredRoleState | "not_in_guild";
@@ -34,11 +33,12 @@ export interface ReconcileResult {
  * Bis hierher galt „bezahlt, Zugang läuft, letzte Zahlung `failed`" als
  * Warteraum. Damit sass jedes Mitglied ab der ersten gescheiterten Abbuchung
  * sofort im Warteraum, obwohl es sieben Tage lang vollwertig bleiben soll
- * (Mahnsystem wie MoonTrading, `config/zahlung.ts`), und `is_paid` allein
- * übersah, dass eine Pause den Zugang bis zum Periodenende weiterlaufen lässt.
+ * (Mahnsystem wie MoonTrading, `config/zahlung.ts`).
  *
- * Jetzt: Zugang laut `evaluateAccess()` (Stufe plus `access_until`) heisst
- * Mitgliederrolle, sonst keine. Ein laufender Aufschub zählt als Zugang.
+ * Jetzt: Zugang laut `hatZugang()` — `is_paid` oder Admin, dieselbe Regel wie
+ * bei den Inhalten (`lib/discord/mitgliedschaft.ts` erklärt, warum nicht
+ * `evaluateAccess()`: Der Whop-Altbestand steht auf `free` mit `is_paid`).
+ * Ein laufender Aufschub zählt ebenfalls als Zugang.
  *
  * ── Den Warteraum setzt dieser Abgleich nicht als Soll ──────────────────────
  *
@@ -49,18 +49,12 @@ export interface ReconcileResult {
  * hat wieder Zugang. Sonst räumte jeder Abgleich den Warteraum leer.
  */
 export function computeDesiredRoleState(params: {
-  membershipTier: string | null;
   isPaid: boolean;
-  accessUntil: string | null;
+  isAdmin?: boolean;
   aufschub?: boolean;
 }): DesiredRoleState {
   if (params.aufschub) return "regular";
-  const zugang = evaluateAccess({
-    membership_tier: (params.membershipTier ?? "free") as AccessTier,
-    is_paid: params.isPaid,
-    access_until: params.accessUntil,
-  }).hasAccess;
-  return zugang ? "regular" : "none";
+  return hatZugang({ is_paid: params.isPaid, is_admin: params.isAdmin ?? false }) ? "regular" : "none";
 }
 
 /**
@@ -70,10 +64,10 @@ export function computeDesiredRoleState(params: {
  * - Zugang, aber keine Mitgliederrolle (oder im Warteraum) → Rolle geben,
  *   Warteraum abnehmen. Das Netz für einen Webhook, der einmal ausblieb.
  * - Kein Zugang, aber Mitgliederrolle → Rolle nehmen und, mit
- *   `warteraumSetzen`, in den Warteraum. Das deckt die Fälle ab, für die es
- *   kein Stripe-Ereignis gibt, vor allem das Ende einer Pause am
- *   Periodenende. **Nur mit Enddatum** (`access_until` gesetzt): Wer die Rolle
- *   ohne je einen Stripe-Zugang trägt, wird nicht angefasst (siehe unten).
+ *   `warteraumSetzen`, in den Warteraum. Das Netz für einen Entzug, der im
+ *   Webhook an Discord scheiterte. **Nur mit Enddatum** (`access_until`
+ *   gesetzt): Wer die Rolle trägt, ohne dass hier je ein Zugang beendet wurde,
+ *   wird nicht angefasst (siehe unten).
  *
  * ── Die Obergrenze beim Entzug ──────────────────────────────────────────────
  *
@@ -90,11 +84,22 @@ export async function reconcileDiscordRoles({
   triggeredBy,
   maxEntzug,
   warteraumSetzen = false,
+  ohneProtokoll = false,
+  zurueckNurAusWarteraum = false,
 }: {
   apply: boolean;
   triggeredBy: "admin" | "script";
   maxEntzug?: number;
   warteraumSetzen?: boolean;
+  /** Keine Zeile in `discord_sync_log` — für Probeläufe, die nichts schreiben dürfen. */
+  ohneProtokoll?: boolean;
+  /**
+   * Die Rolle nur denen zurückgeben, die im Warteraum sitzen (der Nachtlauf).
+   * Wer Zugang hat, aber weder Mitglieder- noch Warteraumrolle trägt, hat die
+   * Rolle vielleicht bewusst nicht (von Hand entzogen, anderer Weg). Das
+   * entscheidet ein Mensch über den Knopf im Admin, nicht die Nacht.
+   */
+  zurueckNurAusWarteraum?: boolean;
 }): Promise<ReconcileResult> {
   const roleId = mitgliedsRolleId();
   if (!discordBotConfigured() || !roleId) {
@@ -110,7 +115,7 @@ export async function reconcileDiscordRoles({
     service.from("discord_connections").select("user_id, discord_user_id"),
     service
       .from("profiles")
-      .select("id, membership_tier, is_paid, access_until, discord_id")
+      .select("id, is_paid, is_admin, access_until, discord_id")
       .not("discord_id", "is", null),
     service
       .from("zahlungsfall")
@@ -134,8 +139,8 @@ export async function reconcileDiscordRoles({
 
   type ProfilZeile = {
     id: string;
-    membership_tier: string | null;
     is_paid: boolean | null;
+    is_admin: boolean | null;
     access_until: string | null;
     discord_id: string | null;
   };
@@ -153,7 +158,7 @@ export async function reconcileDiscordRoles({
   if (fehlend.length > 0) {
     const { data, error } = await service
       .from("profiles")
-      .select("id, membership_tier, is_paid, access_until, discord_id")
+      .select("id, is_paid, is_admin, access_until, discord_id")
       .in("id", fehlend);
     if (error) throw new Error(`profiles nachladen fehlgeschlagen: ${error.message}`);
     for (const p of (data ?? []) as ProfilZeile[]) profile.set(p.id, p);
@@ -163,6 +168,7 @@ export async function reconcileDiscordRoles({
     return writeLogAndReturn(service, {
       apply,
       triggeredBy,
+      ohneProtokoll,
       checkedCount: 0,
       fixedCount: 0,
       entzugGeplant: 0,
@@ -181,9 +187,8 @@ export async function reconcileDiscordRoles({
   for (const [userId, discordUserId] of verknuepft) {
     const p = profile.get(userId);
     const desired = computeDesiredRoleState({
-      membershipTier: p?.membership_tier ?? null,
       isPaid: Boolean(p?.is_paid),
-      accessUntil: p?.access_until ?? null,
+      isAdmin: Boolean(p?.is_admin),
       aufschub: mitAufschub.has(userId),
     });
 
@@ -210,19 +215,18 @@ export async function reconcileDiscordRoles({
     details.push(zeile);
 
     if (desired === "regular" && actual !== "regular") {
-      zurueck.push(zeile);
+      if (!zurueckNurAusWarteraum || actual === "waiting_room") zurueck.push(zeile);
+      else zeile.note = "Zugang ohne Mitgliederrolle — der Nachtlauf gibt sie nur aus dem Warteraum zurück.";
     } else if (desired === "none" && actual === "regular") {
       /*
         ── Ohne Enddatum kein Entzug ──────────────────────────────────────────
 
         Entzogen wird nur, wessen Zugang nachweislich **an einem Datum**
-        geendet hat (`access_until` gesetzt und vorbei). Gemessen am
-        19.09.2026 tragen 33 von 37 verknüpften Konten die Mitgliederrolle
-        „CC OG", obwohl ihr Profil `free` ohne jedes Datum ist — die Rolle
-        stammt aus der Zeit vor dem Stripe-Kaufweg (Whop, von Hand). Über sie
-        hat dieses System nie entschieden, also nimmt es ihnen auch nichts.
-        Sobald jemand über Stripe zahlt und wieder aufhört, steht ein Datum
-        da, und ab dann gilt die Regel.
+        geendet hat (`access_until` gesetzt). Das ist eine zweite Sicherung
+        neben `is_paid`: Wer die Mitgliederrolle trägt, ohne dass dieses
+        System je einen Zugang für ihn beendet hat (Rolle von Hand, aus der
+        Whop-Zeit), wird nicht angefasst. Jede Stelle, die einen Zugang
+        beendet, setzt ein Datum.
       */
       if (p?.access_until) entzug.push(zeile);
       else zeile.note = "Kein Enddatum im Profil — Rolle stammt nicht aus einem Stripe-Zugang, bleibt unangetastet.";
@@ -271,6 +275,7 @@ export async function reconcileDiscordRoles({
   return writeLogAndReturn(service, {
     apply,
     triggeredBy,
+    ohneProtokoll,
     checkedCount: verknuepft.size,
     fixedCount,
     entzugGeplant: entzug.length,
@@ -281,19 +286,21 @@ export async function reconcileDiscordRoles({
 
 async function writeLogAndReturn(
   service: ReturnType<typeof createServiceClient>,
-  params: ReconcileResult & { triggeredBy: "admin" | "script" },
+  params: ReconcileResult & { triggeredBy: "admin" | "script"; ohneProtokoll: boolean },
 ): Promise<ReconcileResult> {
   const { apply, triggeredBy, checkedCount, fixedCount, details } = params;
 
-  const { error: logError } = await service.from("discord_sync_log").insert({
-    triggered_by: triggeredBy,
-    dry_run: !apply,
-    checked_count: checkedCount,
-    fixed_count: fixedCount,
-    details,
-  });
-  if (logError) {
-    console.error("[discord/reconcile] discord_sync_log INSERT fehlgeschlagen:", logError.message);
+  if (!params.ohneProtokoll) {
+    const { error: logError } = await service.from("discord_sync_log").insert({
+      triggered_by: triggeredBy,
+      dry_run: !apply,
+      checked_count: checkedCount,
+      fixed_count: fixedCount,
+      details,
+    });
+    if (logError) {
+      console.error("[discord/reconcile] discord_sync_log INSERT fehlgeschlagen:", logError.message);
+    }
   }
 
   return {

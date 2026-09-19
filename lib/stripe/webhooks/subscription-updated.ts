@@ -171,10 +171,10 @@ export async function handleSubscriptionUpdated(
     // weiterdreht.
     await pausiereProfil(supabase, profile.id, endISO);
     /*
-      Endet der Zugang damit schon jetzt, gehen Rolle und Warteraum sofort
-      mit. Läuft er bis zum Periodenende weiter, zieht der Nachtlauf beides
-      nach, sobald `access_until` verstrichen ist — dafür gibt es kein
-      Stripe-Ereignis. Wirft nie.
+      `pausiereProfil` setzt `is_paid` auf falsch, und nach `is_paid` richten
+      sich Inhalte und Discord gleichermassen: Mitgliederrolle weg, Warteraum.
+      Beim Fortsetzen (`subscription.resumed` bzw. wieder aktiv) kommt beides
+      zurück. Wirft nie.
     */
     await zugangBeendetInDiscord(supabase, profile.id, "subscription.updated (Pause)");
     return;

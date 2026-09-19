@@ -32,14 +32,14 @@ export const maxDuration = 300;
  *    Nachricht, Verlauf.
  * 2. **Der Sieben-Tage-Ablauf.** An Tag 3 und Tag 5 eine Erinnerung, an Tag 7
  *    ruht der Zugang. Zahlen und Wortlaut stehen in `config/zahlung.ts`.
- * 3. **Die Rollen nachziehen** (`lib/discord/reconcile.ts`). Wer wieder Zugang
- *    hat, bekommt die Mitgliederrolle zurück und verlässt den Warteraum — das
- *    Netz für einen Webhook, der einmal ausblieb. Wer keinen Zugang mehr hat,
- *    aber die Rolle noch trägt, verliert sie und kommt in den Warteraum. Das ist
- *    in Capital Circle nötig, weil ein Zugang auch **ohne** Stripe-Ereignis
- *    endet: Eine Pause lässt ihn bis zum Periodenende laufen, und danach kommt
- *    nichts mehr. Über `ROLLENENTZUG_MAX_PRO_NACHT` wird niemandem etwas
- *    genommen (Datenfehler, keine Abwanderung).
+ * 3. **Die Rollen nachziehen** (`lib/discord/reconcile.ts`), nach derselben
+ *    Regel wie die Inhalte (`is_paid` oder Admin). Wer wieder Zugang hat,
+ *    bekommt die Mitgliederrolle zurück und verlässt den Warteraum; wer keinen
+ *    mehr hat und die Rolle noch trägt, verliert sie und kommt in den
+ *    Warteraum — aber nur mit Enddatum im Profil. Das Netz für einen Webhook,
+ *    der einmal ausblieb oder an Discord scheiterte. Über
+ *    `ROLLENENTZUG_MAX_PRO_NACHT` wird niemandem etwas genommen (Datenfehler,
+ *    keine Abwanderung).
  * 4. **Der Rauswurf nach der Karenz** (`lib/discord/aufraeumen.ts`): Wer seit
  *    `KARENZ_TAGE` keinen Zugang mehr hat, bekommt eine Abschiedsnachricht und
  *    wird vom Server entfernt. Die einzige Handlung hier, die sich nicht
@@ -140,11 +140,14 @@ async function rollenAbgleich(schreiben: boolean): Promise<{
       triggeredBy: "script",
       maxEntzug: ROLLENENTZUG_MAX_PRO_NACHT,
       warteraumSetzen: true,
+      // Die Probe schreibt nichts, auch keine Protokollzeile.
+      ohneProtokoll: !schreiben,
+      zurueckNurAusWarteraum: true,
     });
     const abweichungen = ergebnis.details
       .filter(
         (d) =>
-          (d.desired === "regular" && d.actual !== "regular" && d.actual !== "not_in_guild") ||
+          (d.desired === "regular" && d.actual === "waiting_room") ||
           (d.desired === "none" && d.actual === "regular"),
       )
       .map(({ userId, desired, actual, fixed, note }) => ({ userId, desired, actual, fixed, note }));

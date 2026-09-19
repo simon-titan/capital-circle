@@ -40,5 +40,19 @@ export async function resolve(specifier, context, nextResolve) {
     }
   }
 
-  return nextResolve(specifier, context);
+  try {
+    return await nextResolve(specifier, context);
+  } catch (err) {
+    /*
+      Paket-Unterpfade ohne `exports`-Eintrag (etwa `next/headers`, das
+      `lib/supabase/server.ts` importiert) löst Nodes ESM-Auflösung nur mit
+      Endung auf. Der Bundler ergänzt sie stillschweigend, Node nicht — ohne
+      diesen Rückfall scheiterte jedes Skript, das über `lib/supabase/server`
+      läuft (z. B. `npm run discord:sync`), schon beim Laden.
+    */
+    if (err?.code === "ERR_MODULE_NOT_FOUND" && /^[a-z@][^:]*\/[^.]+$/i.test(specifier)) {
+      return nextResolve(`${specifier}.js`, context);
+    }
+    throw err;
+  }
 }

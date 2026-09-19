@@ -30,7 +30,7 @@ export async function GET() {
 
   const [usersRes, profilesRes, dcRes] = await Promise.all([
     service.auth.admin.listUsers({ perPage: 500 }),
-    service.from("profiles").select("id, full_name, username, created_at, is_paid, access_until, membership_tier"),
+    service.from("profiles").select("id, full_name, username, created_at, is_paid, is_admin"),
     service.from("discord_connections").select("user_id, discord_username, discord_user_id, connected_at"),
   ]);
 
@@ -48,8 +48,8 @@ export async function GET() {
   const dcMap = new Map((dcRes.data ?? []).map((d) => [d.user_id as string, d]));
 
   /*
-    Soll-Status nach dem Zugang (Stufe plus `access_until`), dieselbe Regel wie
-    im Bestandsabgleich (`lib/discord/reconcile.ts`). Bis 19.09.2026 zählte hier
+    Soll-Status nach dem Zugang (`is_paid` oder Admin, wie bei den Inhalten),
+    dieselbe Regel wie im Bestandsabgleich (`lib/discord/reconcile.ts`). Bis 19.09.2026 zählte hier
     die letzte Zahlung: Wer einmal eine gescheiterte Abbuchung hatte, stand als
     „Warteraum", obwohl er sieben Tage lang vollwertig bleibt.
   */
@@ -62,9 +62,8 @@ export async function GET() {
     const connected = Boolean(dc?.discord_user_id);
     const roleStatus = connected
       ? computeDesiredRoleState({
-          membershipTier: (p?.membership_tier as string | null) ?? null,
           isPaid: Boolean(p?.is_paid),
-          accessUntil: (p?.access_until as string | null) ?? null,
+          isAdmin: Boolean(p?.is_admin),
         })
       : null;
     return {
