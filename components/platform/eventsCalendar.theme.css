@@ -16,7 +16,7 @@
   --fc-event-bg-color: rgba(212, 176, 128, 0.18);
   --fc-event-border-color: rgba(232, 192, 148, 0.5);
   --fc-event-text-color: var(--cc-text);
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: var(--font-body);
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
   color: var(--cc-text-soft);

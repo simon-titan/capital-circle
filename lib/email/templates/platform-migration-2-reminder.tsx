@@ -30,7 +30,6 @@ export default function PlatformMigrationMail2({
       hideFooter={false}
       unsubscribeUrl={unsubscribeUrl}
       bodyFontFamily={T.fontBody}
-      headFontLinkHref={T.fontLinkHref}
     >
       <CampaignHeading>Falls das hier bei dir untergegangen ist</CampaignHeading>
 

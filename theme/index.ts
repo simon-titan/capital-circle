@@ -8,10 +8,11 @@ const config: ThemeConfig = {
 export const theme = extendTheme({
   config,
   // v3.2: Inter für alles — auch Überschriften und Zahlen (tabellarische Ziffern über `.cc-num`).
+  // `--font-inter` kommt von next/font (`app/fonts.ts`, selbst gehostet, am <html> gesetzt).
   fonts: {
-    heading: "'Inter', system-ui, sans-serif",
-    body: "'Inter', system-ui, sans-serif",
-    mono: "'Inter', system-ui, sans-serif",
+    heading: "var(--font-inter), system-ui, sans-serif",
+    body: "var(--font-inter), system-ui, sans-serif",
+    mono: "var(--font-inter), system-ui, sans-serif",
   },
   colors: {
     // v3.2 „Champagner auf Graphit“ (DESIGN.md) — brand.500 = --cc-gold
@@ -90,7 +91,7 @@ export const theme = extendTheme({
     },
     Button: {
       baseStyle: {
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "body",
         borderRadius: "button",
       },
       variants: {

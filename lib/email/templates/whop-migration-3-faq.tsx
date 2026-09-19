@@ -30,7 +30,6 @@ export default function WhopMigrationMail3({
       hideFooter={false}
       unsubscribeUrl={unsubscribeUrl}
       bodyFontFamily={T.fontBody}
-      headFontLinkHref={T.fontLinkHref}
     >
       <CampaignHeading>Die 3 Fragen, die mir am häufigsten gestellt werden</CampaignHeading>
 

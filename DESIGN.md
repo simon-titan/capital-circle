@@ -240,7 +240,7 @@ Warmneutrales Graphit mit einer einzigen Akzentfamilie: Champagner-Gold in drei 
 **Display Font:** Inter (mit system-ui, sans-serif)
 **Body Font:** Inter
 **Label/Mono Font:** Inter mit tabellarischen Ziffern (`tnum`); keine Monospace-Schrift.
-**Geladen:** nur Inter (Google Fonts in `app/layout.tsx`); Chakra `fonts.heading/body/mono` = Inter. Keine weiteren Webfonts.
+**Geladen:** nur Inter, selbst gehostet über `next/font/google` (`app/fonts.ts`, CSS-Variable `--font-inter` am `<html>`; kein Request an Google). `--font-heading/-body/-mono` und Chakra `fonts.heading/body/mono` zeigen auf `var(--font-inter)` — ein wörtliches `"Inter"` trifft die gehashte Familie nicht. E-Mails nutzen Systemschriften. Keine weiteren Webfonts.
 
 **Character:** Eine sachliche Grotesk in wenigen Gewichten (400/500/600). Die Ordnung kommt aus Größe, Gewicht und Grau. Gold als Textfarbe setzt Betonung, eine zweite Schrift braucht es dafür nicht.
 

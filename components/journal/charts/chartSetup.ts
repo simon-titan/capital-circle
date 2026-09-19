@@ -14,6 +14,14 @@ import {
   RadialLinearScale,
   Tooltip,
 } from "chart.js";
+import { inter } from "@/app/fonts";
+
+/**
+ * Canvas kennt keine CSS-Variablen, und der Familienname der selbst gehosteten
+ * Inter ist ein Hash (`__Inter_…`, siehe `app/fonts.ts`) — ein wörtliches
+ * `'Inter'` fiele auf die Systemschrift zurück. Deshalb der Name aus next/font.
+ */
+const SCHRIFT = `${inter.style.fontFamily}, system-ui, sans-serif`;
 
 /**
  * Nur die tatsächlich genutzten chart.js-Bausteine registrieren — `registerables`
@@ -41,7 +49,7 @@ Chart.register(
   Tooltip,
 );
 
-Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.font.family = SCHRIFT;
 Chart.defaults.color = "rgba(255,255,255,0.45)";
 
 /**
@@ -85,8 +93,8 @@ export const TOOLTIP_STYLE = {
   borderWidth: 1,
   titleColor: "#f2f3f5",
   bodyColor: "#d4d7db",
-  titleFont: { family: "'Inter', sans-serif", size: 11, weight: 600 as const },
-  bodyFont: { family: "'Inter', sans-serif", size: 12 },
+  titleFont: { family: SCHRIFT, size: 11, weight: 600 as const },
+  bodyFont: { family: SCHRIFT, size: 12 },
   padding: 10,
   cornerRadius: 8,
   displayColors: false,

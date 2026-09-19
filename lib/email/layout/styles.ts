@@ -8,8 +8,11 @@
  * Linien sind als Volltöne auf der Kartenfläche vorgerechnet (kein rgba), weil
  * Outlook & Co. Alpha-Rahmen nicht zuverlässig darstellen.
  *
- * Schrift: Inter für alles. Per `<link>` geladen (Apple/iOS Mail u. a.), sonst
- * greift der System-Sans-Fallback im Stack.
+ * Schrift: Inter, falls auf dem Gerät installiert, sonst die Systemschrift aus
+ * dem Stack. Bewusst **ohne** Webfont-`<link>`: Bis 19.09.2026 luden die Mails
+ * Inter von fonts.googleapis.com — beim Öffnen ging so die IP-Adresse des
+ * Empfängers an Google. Die App liefert Inter selbst aus (`app/fonts.ts`), für
+ * Mails gibt es keinen gleichwertigen Weg, also Systemschrift.
  */
 const INTER_STACK =
   "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
@@ -44,7 +47,6 @@ export const EMAIL_TOKENS = {
   fontBody: INTER_STACK,
   /** Nur für Zugangsdaten (Passwort/E-Mail zum Abtippen): System-Monospace, keine Webfont. */
   fontMono: "ui-monospace, 'SF Mono', Menlo, Consolas, 'Courier New', monospace",
-  fontLinkHref: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
 } as const;
 
 export type EmailTokens = typeof EMAIL_TOKENS;

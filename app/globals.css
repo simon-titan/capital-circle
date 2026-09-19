@@ -31,10 +31,12 @@
   --color-accent-glow: rgba(212, 176, 128, 0.28);
   --color-white: #ffffff;
   /* Design System: DESIGN.json — Typografie */
-  /* v3.2: Inter für alles — Überschriften und Zahlen eingeschlossen */
-  --font-heading: "Inter", system-ui, sans-serif;
-  --font-body: "Inter", sans-serif;
-  --font-mono: "Inter", system-ui, sans-serif;
+  /* v3.2: Inter für alles — Überschriften und Zahlen eingeschlossen.
+     `--font-inter` setzt next/font am <html> (app/fonts.ts, selbst gehostet);
+     der Familienname ist ein Hash, ein wörtliches "Inter" trifft ihn nicht. */
+  --font-heading: var(--font-inter), system-ui, sans-serif;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-inter), system-ui, sans-serif;
 }
 
 /*

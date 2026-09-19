@@ -24,14 +24,13 @@ interface BaseEmailProps {
   accentGradient?: string;
   /** Farbe der Footer-Links (Impressum/Datenschutz/Abmelden). Standard: Champagner. */
   footerLinkColor?: string;
-  /** Überschreibt `fontFamily` von Body + Footer. Standard: `EMAIL_TOKENS.fontBody` (Inter). */
-  bodyFontFamily?: string;
   /**
-   * Stylesheet im `<head>` (Standard: Inter von Google Fonts). Nur Clients, die
-   * externe Stylesheets laden (u. a. Apple/iOS Mail), nutzen es; sonst greift
-   * der System-Fallback im Font-Stack.
+   * Überschreibt `fontFamily` von Body + Footer. Standard: `EMAIL_TOKENS.fontBody`
+   * (Inter, falls auf dem Gerät installiert, sonst Systemschrift). Kein
+   * Webfont-Stylesheet: Ein `<link>` auf Google Fonts übertrüge beim Öffnen
+   * der Mail die IP-Adresse an Google.
    */
-  headFontLinkHref?: string;
+  bodyFontFamily?: string;
 }
 
 /**
@@ -56,7 +55,6 @@ export function BaseEmail({
   accentGradient,
   footerLinkColor,
   bodyFontFamily,
-  headFontLinkHref,
 }: BaseEmailProps) {
   const appUrl = getAppUrl();
   const unsubscribeUrl =
@@ -64,7 +62,6 @@ export function BaseEmail({
     (unsubscribeToken ? `${appUrl}/api/unsubscribe?token=${unsubscribeToken}` : null);
   const linkColor = footerLinkColor ?? T.gold;
   const bodyFont = bodyFontFamily ?? T.fontBody;
-  const fontHref = headFontLinkHref ?? T.fontLinkHref;
 
   const footerLink = { color: linkColor, textDecoration: "none", margin: "0 8px" } as const;
 
@@ -78,7 +75,6 @@ export function BaseEmail({
         <meta name="color-scheme" content="dark" />
         <meta name="supported-color-schemes" content="dark" />
         <title>Capital Circle</title>
-        <link rel="stylesheet" href={fontHref} />
       </head>
       <body
         style={{
