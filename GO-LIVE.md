@@ -241,45 +241,85 @@ siehe "Was jetzt noch zu tun ist" am Ende.
 
 ## Was jetzt noch zu tun ist
 
-*Stand 16.09.2026, gegen Datenbank und Repo geprüft — nicht aus dem Gedächtnis.*
+*Stand 19.09.2026, gegen Produktion, Datenbank, Stripe, R2 und Repo geprüft — nicht aus
+dem Gedächtnis.*
+
+**Wo wir stehen.** Die Seite ist bereits auf Vercel deployt (Projekt
+`capital-circle-s5bg`, Region fra1): `capitalcircletrading.com` leitet auf `www.`, und dort
+läuft der Stand von `fd20fc8` (17.09.) — die Prozess-Section ist auf `/vorschau` sichtbar,
+der Vercel-Build ist also grün. `master` = `origin/master`, jeder Push geht direkt raus.
+Alle 74 Migrationsdateien sind eingespielt (`npm run db:check`). Der **Wartungsmodus ist
+AN**: Außer `/vorschau`, `/wartung`, `/login` und `/admin*` landet alles auf `/wartung`
+(auch `/ergebnisse` und `robots.txt`). „Deployment" heißt damit nicht mehr „erstmals
+hochladen", sondern: Live-Zahlung scharf schalten, Rechtliches nachziehen, Wartung aus.
 
 🔒 **Blockierend vor dem echten Go-Live:**
 
+- **In Vercel fehlt `STRIPE_SECRET_KEY`** (Abgleich per Vercel-CLI, 19.09.). Ohne ihn
+  scheitert jeder Kauf serverseitig. Details in [`DEPLOY-VERCEL.md`](DEPLOY-VERCEL.md).
+  ~~`CRON_SECRET` fehlte ebenfalls~~ — die sieben `/api/cron/*`-Routen waren dadurch
+  öffentlich auslösbar. **Am 19.09. behoben:** neues Zufalls-Secret in Production + Preview,
+  Produktion neu deployt, `/api/cron/process-dunning` antwortet ohne Secret mit 401.
 - **Rechtstexte.** `/impressum`, `/datenschutz`, `/agb`, `/widerruf` existieren im
-  App-Router **nicht**. `/datenschutz` ist bereits aus `app/(marketing)/apply/page.tsx`
-  und `app/(marketing)/free/page.tsx` verlinkt und läuft dort auf 404. Details und die
+  App-Router **nicht** (19.09. erneut geprüft). `/datenschutz` ist aus vier Stellen
+  verlinkt (`apply`, `free`, `Step2ApplicationModal`, `DiscordQuestionsModal`) und läuft
+  dort auf 404. **Die Verkaufsseite `/` und `/ergebnisse` verlinken gar keine
+  Rechtstexte** — es fehlt ein Fuß mit Impressum/Datenschutz/AGB/Widerruf. Details und die
   vier fehlenden Pflichtangaben siehe eigener Abschnitt unten.
-- **Stripe läuft vollständig im Testmodus.** Für Live gebraucht werden: `sk_live`-/
-  `pk_live`-Schlüssel, drei im Live-Modus neu angelegte Preise
-  (`npm run stripe:preise -- --apply`) und ein Webhook-Endpoint auf
-  `https://capitalcircletrading.com/api/stripe/webhook` samt `STRIPE_WEBHOOK_SECRET`.
-  **Ohne den Webhook entsteht nach einer Gast-Zahlung kein Konto** — der Käufer zahlt
-  und bekommt nichts.
+- **Stripe läuft vollständig im Testmodus** (Sandbox-Konto „Emre Kopal Sandbox",
+  `charges_enabled=false`). Für Live gebraucht werden: `sk_live`-/`pk_live`-Schlüssel,
+  drei im Live-Modus neu angelegte Preise (`npm run stripe:preise -- --apply`) und ein
+  Webhook-Endpoint auf `https://www.capitalcircletrading.com/api/stripe/webhook` samt
+  `STRIPE_WEBHOOK_SECRET`. **Im Stripe-Konto ist derzeit kein einziger Webhook-Endpoint
+  angelegt** (auch im Testmodus nicht). **Ohne den Webhook entsteht nach einer
+  Gast-Zahlung kein Konto** — der Käufer zahlt und bekommt nichts. Welche Events der
+  Endpoint braucht, steht in [`DEPLOY-VERCEL.md`](DEPLOY-VERCEL.md) (die Liste hat sich
+  mit der Abo-Verwaltung vom 17.09. geändert).
+- **`STRIPE_PRICE_LIFETIME` zeigt ins Leere.** Die eingetragene Preis-ID ist im
+  hinterlegten Stripe-Konto unbekannt (`resource_missing`) — dasselbe Muster wie am
+  16.09. bei `STRIPE_PRICE_MONTHLY` (ID aus einem anderen Konto). Weil die Variable
+  gesetzt und `lifetime_offer_enabled` an ist, **erscheint das Lifetime-Angebot in
+  `/einstellungen/abonnement`, der Kauf scheitert aber an Stripe.** Lösung: Lifetime-Preis
+  (699 € einmalig) im richtigen Konto anlegen — für Live im Live-Modus — oder die Variable
+  leer lassen, dann ist das Angebot sauber aus.
 - **Widerrufs-Checkbox im Checkout** (am 06.09. entschieden, nicht gebaut) — gehört
-  zum Rechtstexte-Paket.
+  zum Rechtstexte-Paket. Weder `/go/[plan]` noch die Checkout-Session setzen
+  `consent_collection` oder eine eigene Zustimmung.
+- **Einverständnis der Mitglieder für `/ergebnisse`** und die Auszahlungs-Section auf
+  `/`: Die Nachweise zeigen Klarnamen, Discord-Nicks und Avatare (siehe
+  [`AGENTS.md`](AGENTS.md), 17.09.). Liegt beim Betreiber — vor dem Abschalten der
+  Wartung bestätigen, weil die Seite dann öffentlich ist.
 
-📦 **Inhalte — die Plattform ist technisch fertig, aber halb leer:**
+📦 **Inhalte — deutlich weiter als am 16.09.:**
 
-- **71 Videos liegen im unsortierten Stapel.** Sie haben eine Cloudflare-UID, sind also
-  abspielbar; ihnen fehlt nur die Zuordnung zu einem Modul. Bis dahin sieht sie niemand.
-- **38 Videos haben keine Cloudflare-Quelle** und sind depubliziert
-  (`exports/tote-videos.csv`, Rückweg: `node scripts/unpublish-dead-videos.mjs --zurueck`).
-  Drei **veröffentlichte** Module sind dadurch leer und fallen aus dem Institut:
-  Livetrades (0 von 4), Trade Recaps (0 von 10), Psychology (0 von 0).
-  Die gesunden Module zum Vergleich: Volume Profile + Orderflow 23/26, Fundamentale
-  Analyse 14/15, NYSE iFVG Momentum 13/25, Market Foundations 11/13,
-  Auction Market Theory 9/10, Tools & Indikatoren 4/5, Risk Management 2/6.
-- **R2 ist leer.** **0 von 14 Modulen** haben ein Cover — die Cover-Anzeige im Institut
-  zeigt derzeit bei keinem einzigen Modul etwas. Ebenso fehlen alle Video-Thumbnails,
-  Arsenal-PDFs, Zertifikate und Avatare; sie lagen auf dem verschwundenen
-  Hetzner-Bucket.
+- **Videos: 156 in der Datenbank, 132 veröffentlicht.** Nur noch **10 im Stapel**
+  (vorher 71) und **14 ohne Cloudflare-Quelle** (vorher 38, keins davon veröffentlicht).
+- **Zwei veröffentlichte Module sind leer** und fallen aus dem Institut: *Trade Recaps*
+  (0 von 10 abspielbar) und *Livetrades* (0 von 4). *Psychology* hat inzwischen 2/2.
+  Gesund: Cap Model 32, Value Rejection Model 27, Volume Profile + Orderflow 23,
+  Makro & Fundamentals 15, Market Foundations 13, Auction Market Theory 9,
+  Tools & Indikatoren 6, Risk Management 5. Unveröffentlicht und leer: A–Z Anfänger
+  Guide, Livecalls, Mein Trading Konzept, Capital Circle Interviews, Einführung.
+- **Cover: 0 von 16 Modulen.** R2 enthält erst 11 Dateien (6 × `covers/`, 4 ×
+  `live-sessions/`, 1 × `reviews/`). Keines der 156 Videos hat ein eigenes Thumbnail
+  (der Player nimmt dann das Cloudflare-Vorschaubild), 0 Zertifikate, 5 Arsenal-Karten.
 
 ⚙️ **Konfiguration:**
 
-- **Der Wartungsmodus ist aktuell AN.** `/` leitet für alle außer Admins auf `/wartung`;
-  die Verkaufsseite ist über `/vorschau` trotzdem zu sehen.
+- **Der Wartungsmodus ist aktuell AN** (`app_settings.maintenance_mode`). Umschalten unter
+  `/admin/wartung` — das ist der eigentliche Go-Live-Schalter.
 - **Kein `owner` gesetzt** — 3 Admins, davon 0 mit `admin_role = 'owner'`. Die
   Owner-Regel läuft im Fallback („alle bestehenden Admins dürfen").
+- **58 Profile haben `is_paid = true`, aber `membership_tier = 'free'`** (neben 372
+  freien und 4 Lifetime, zusammen 434). `hasActivePaidAccess()` behandelt sie als
+  `free_tier`. Vermutlich Whop-Altbestand — klären, ob sie nach dem Go-Live Zugang haben
+  sollen.
+- Neue Stripe-Variablen aus der Abo-Verwaltung, beide optional:
+  `STRIPE_UPGRADE_COUPON_ID` (ohne: Upgrade zum vollen Jahrespreis) und
+  `STRIPE_RETENTION_COUPON_ID` (ohne: im Kündigungs-Flow nur Pause, kein Rabatt).
+  Nirgends gesetzt.
+- `UNSUBSCRIBE_TOKEN_SECRET` ist leer (Fallback: Service-Role-Key) — vor der
+  Plattform-Migrations-Kampagne setzen.
 - `DISCORD_WAITING_ROOM_ROLE_ID` ist nirgends gesetzt, die Warteraum-Logik bleibt
   inaktiv (harmlos, aber ungenutzt).
 - **R2-CORS deckt keine Branch-Preview-URLs ab.** Erlaubt sind `capitalcircletrading.com`,
@@ -291,9 +331,11 @@ siehe "Was jetzt noch zu tun ist" am Ende.
 
 ☐ **Nicht blockierend, aber offen:**
 
-- Vier Bild-Uploads laufen noch über den Windows-Dateidialog statt Drag & Drop
-  (`LiveSessionManager` 2×, `NewsManager`, Video-Thumbnails) — genau der Dialog, der
-  den Browser des Nutzers einfriert.
+- Noch mit `<input type="file">`, also mit dem Windows-Dateidialog, der den Browser des
+  Nutzers einfriert (19.09.): `LiveSessionManager`, `ArsenalManager`,
+  `AdminReviewsManager`, `AttachmentManager`, `StandaloneAttachmentManager`,
+  `VideoUploader`, `CloudflareVideoUploader`, `ZertifikateManager`. Ob daneben jeweils
+  Drag & Drop geht, ist nicht einzeln geprüft.
 - Keine Rate-Limits auf Zertifikat-Einreichung oder Ticket-Erstellung.
 - GDPR-Export deckt eine sinnvolle Teilmenge ab (profiles, subscriptions, payments,
   applications), nicht jede Tabelle im Projekt.
