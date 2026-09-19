@@ -33,6 +33,12 @@
  *       Person anzufassen. Die angelegte User-ID steht am Ende — damit
  *       aufräumen:
  *
+ *   npm run whop:import -- --testzeile --email ich@meine.de --discord 1234… --tage 3 --apply
+ *       Dasselbe, aber an die eigene Adresse und das eigene Discord-Konto —
+ *       nur so sieht man Mail und Direktnachricht wirklich. `--tage` steuert,
+ *       welche Stufe danach fällig ist (≤ 5 ergibt die Erinnerung, 0 das
+ *       Ende). Danach genauso aufräumen.
+ *
  *   npm run whop:import -- --aufraeumen <user-id> --apply
  *       Löscht genau diese eine Zeile: erst das Profil, dann den Auth-User.
  *       Eine ID, kein Muster, kein „alle Testkonten".
@@ -209,18 +215,33 @@ let zeilen = [];
 
 if (testzeile) {
   const stempel = new Date().toISOString().replace(/[^0-9]/g, "").slice(0, 14);
-  const ende = new Date(Date.now() + 7 * 86_400_000).toISOString();
+  const tage = Number(arg("tage", 7)) || 7;
+  const ende = new Date(Date.now() + tage * 86_400_000).toISOString();
+  /*
+    `--email` und `--discord` sind für den Einzeltest gedacht: Eine
+    `@resend.dev`-Adresse beweist, dass der Versand durchläuft, aber niemand
+    sieht die Mail, und eine Direktnachricht geht ohne Discord-Kennung gar
+    nicht erst raus. Wer den Weg wirklich prüfen will, setzt hier seine eigene
+    Adresse und seine eigene Discord-ID ein — und räumt die Zeile danach mit
+    `--aufraeumen` wieder ab.
+  */
+  const eigeneMail = typeof arg("email") === "string" ? arg("email").trim().toLowerCase() : null;
+  const eigeneDiscordId = typeof arg("discord") === "string" ? arg("discord").trim() : null;
   zeilen = [
     {
-      email: `delivered+cc-whop-${stempel}@resend.dev`,
+      email: eigeneMail ?? `delivered+cc-whop-${stempel}@resend.dev`,
       name: "Wegwerf Testzeile",
-      discordId: null,
+      discordId: eigeneDiscordId && /^\d{5,25}$/.test(eigeneDiscordId) ? eigeneDiscordId : null,
       discordName: null,
       ende,
-      endeQuelle: "Testzeile (+7 Tage)",
+      endeQuelle: `Testzeile (+${tage} Tage)`,
     },
   ];
-  console.log("→ --testzeile: eine erfundene Zeile, keine CSV.\n");
+  console.log(
+    `→ --testzeile: eine erfundene Zeile, keine CSV.` +
+      `${eigeneMail ? "  ⚠ eigene Adresse statt Wegwerf-Adresse" : ""}` +
+      `${eigeneDiscordId ? "  ⚠ mit Discord-ID (die DM geht wirklich raus)" : ""}\n`,
+  );
 } else {
   if (!csvPfad) {
     console.error('✗ Kein CSV-Pfad. Aufruf: npm run whop:import -- "C:/Pfad/export.csv" [--apply]');
