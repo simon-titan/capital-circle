@@ -762,11 +762,24 @@ async function szenarioF(ctx: Ctx) {
   const zF = await zustand(ctx.sb, mail(n));
   const abo2 = await ctx.stripe.subscriptions.retrieve(kauf.abo.id);
   info(`Stripe-Status nach Ausfall: ${abo2.status}`);
+  /*
+    Mahnsystem seit 19.09.2026 (agent/retention, wie MoonTrading): Der
+    Ausfall eröffnet einen Zahlungsfall mit sieben Tagen Frist; `access_until`
+    wird bis zum Fristende gehalten und **nie verkürzt** (die alte
+    48-Stunden-Grace kürzte hier ein Quartal auf zwei Tage), `is_paid` bleibt.
+  */
   const grace = zF.profil?.access_until ? new Date(zF.profil.access_until as string).getTime() : 0;
-  pruefe(Math.abs(grace - (vorAusfall + 48 * 3600 * 1000)) < 5 * 60 * 1000, "48h-Grace: access_until ≈ jetzt + 48h", `${zF.profil?.access_until}`);
+  pruefe(grace >= vorAusfall + 7 * 86400 * 1000 - 5 * 60 * 1000, "access_until nicht verkürzt, mindestens bis Fristende (7 Tage)", `${zF.profil?.access_until}`);
+  pruefe(gleicheZeit(zF.profil?.access_until, ende1) || grace > ende1 * 1000, "access_until nie vor dem bezahlten Periodenende", `${zF.profil?.access_until} vs ${iso(ende1)}`);
   pruefe(zF.profil?.membership_tier === "quarterly", "Stufe bleibt stehen (Dunning, kein Rauswurf)", String(zF.profil?.membership_tier));
+  pruefe(zF.profil?.is_paid === true, "is_paid bleibt während der Frist", String(zF.profil?.is_paid));
   pruefe(zF.zahlungen.some((p) => p.status === "failed"), "payments-Zeile failed");
-  pruefe(Boolean(zF.profil?.payment_failed_email_1_sent_at), "Dunning-Mail 1 verschickt (payment_failed_email_1_sent_at)");
+  const faelleF = await zahlungsfaelle(ctx.sb, zF.userIds[0]);
+  if (faelleF === null) {
+    info("Tabelle zahlungsfall fehlt (Migration 080) — Fall nicht prüfbar, Rückfall ohne Fall aktiv");
+  } else {
+    pruefe(faelleF.length === 1 && Boolean(faelleF[0]?.frist) && faelleF[0]?.status === "offen", "Zahlungsfall offen, mit Frist", JSON.stringify(faelleF));
+  }
   pruefe(zF.abos.some((a) => a.status === "past_due"), "subscriptions-Zeile past_due", zF.abos.map((a) => a.status).join(","));
 
   // Zahlung nachholen: neue Karte, offene Rechnung bezahlen.
@@ -789,13 +802,27 @@ async function szenarioF(ctx: Ctx) {
   await zustellenMitWiederholung(ctx, evsP.filter((e) => e.type.startsWith("invoice.")));
   const zR = await zustand(ctx.sb, mail(n));
   pruefe(gleicheZeit(zR.profil?.access_until, periodenEnde(abo3)), "invoice.paid allein: access_until wieder = Periodenende", `${zR.profil?.access_until} vs ${iso(periodenEnde(abo3))}`);
-  pruefe(!zR.profil?.payment_failed_email_1_sent_at, "Dunning-Zähler zurückgesetzt (nächster Ausfall startet wieder mit Mail 1)", String(zR.profil?.payment_failed_email_1_sent_at));
+  const faelleR = await zahlungsfaelle(ctx.sb, zR.userIds[0]);
+  if (faelleR !== null) {
+    pruefe(faelleR.length === 1 && faelleR[0]?.status === "bezahlt", "invoice.paid schliesst den Zahlungsfall (bezahlt)", JSON.stringify(faelleR));
+  }
 
   await zustellenMitWiederholung(ctx, evsP.filter((e) => !e.type.startsWith("invoice.")));
   const zP = await zustand(ctx.sb, mail(n));
   pruefe(gleicheZeit(zP.profil?.access_until, periodenEnde(abo3)), "access_until = Periodenende", `${zP.profil?.access_until}`);
   pruefe(zP.abos.some((a) => a.status === "active"), "subscriptions-Zeile wieder active", zP.abos.map((a) => a.status).join(","));
   pruefe(ctx.evaluateAccess(zP.profil as never).hasAccess && zP.profil?.is_paid === true, "voller Zugang wiederhergestellt");
+}
+
+/** Zahlungsfälle eines Kontos, oder `null`, wenn die Tabelle fehlt (Migration 080). */
+async function zahlungsfaelle(
+  sb: SupabaseClient,
+  userId: string | undefined,
+): Promise<Array<{ status: string; frist: string | null }> | null> {
+  if (!userId) return [];
+  const { data, error } = await sb.from("zahlungsfall").select("status,frist").eq("user_id", userId);
+  if (error) return error.code === "PGRST205" || error.code === "42P01" ? null : [];
+  return (data ?? []) as Array<{ status: string; frist: string | null }>;
 }
 
 async function szenarioH(ctx: Ctx) {

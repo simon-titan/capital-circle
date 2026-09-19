@@ -194,6 +194,15 @@ export async function ladeNachrichtDaten(
 /* ── Meldungen ans Team ────────────────────────────────────────────────────── */
 
 /**
+ * Testkonten des Kaufweg-Tests (`scripts/stripe-e2e-kaufweg.ts`) laufen mit
+ * `…@resend.dev`-Adressen gegen die echte Datenbank. Ihr Zahlungsausfall soll
+ * das Team-Postfach nicht erreichen — das ist ein echtes Postfach.
+ */
+function istTestadresse(email: string | null): boolean {
+  return Boolean(email && /@(resend\.dev|example\.(com|org|net))$/i.test(email.trim()));
+}
+
+/**
  * „Bei jemandem ist die Abbuchung geplatzt." **Wirft nie** — sie läuft im
  * Stripe-Webhook.
  */
@@ -202,7 +211,9 @@ export async function meldeZahlungsfallAnTeam(
   p: { fallId: string; userId: string; name: string; paket: string; betrag: string; versuche: number; frist: string },
 ): Promise<void> {
   try {
-    const email = (await ladeEmail(supabase, p.userId)) ?? "ohne Adresse";
+    const adresse = await ladeEmail(supabase, p.userId);
+    if (istTestadresse(adresse)) return;
+    const email = adresse ?? "ohne Adresse";
     const { sendZahlungsfallIntern } = await import("@/lib/email/templates/zahlungsfall-intern");
     await sendZahlungsfallIntern({
       an: TEAM_POSTFACH,
@@ -234,6 +245,7 @@ export async function meldeAntwortAnTeam(
 ): Promise<void> {
   try {
     const [profil, email] = await Promise.all([ladeProfilKurz(supabase, p.userId), ladeEmail(supabase, p.userId)]);
+    if (istTestadresse(email)) return;
     const { sendZahlungsfallIntern } = await import("@/lib/email/templates/zahlungsfall-intern");
     await sendZahlungsfallIntern({
       an: TEAM_POSTFACH,
