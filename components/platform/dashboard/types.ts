@@ -4,6 +4,12 @@ import type { ZeitBezug } from "./zeit-ton";
 
 export type ContinueItem = {
   kind: "resume" | "start";
+  /**
+   * Die gezeigte Lektion. Schlüssel fürs Blättern in der Karte: Damit findet
+   * sie sich nach einem Hin und Her im eigenen Zwischenspeicher wieder.
+   * `null`, wenn das Modul (noch) keine veröffentlichte Lektion hat.
+   */
+  videoId: string | null;
   href: string;
   moduleTitle: string;
   /** „Lektion 7 von 24“ bzw. „24 Lektionen“ */
@@ -19,9 +25,12 @@ export type ContinueItem = {
    * Nachbarlektionen im Lernpfad — die Pfeile oben rechts in der Karte. Sie
    * springen über die Modulgrenze hinaus: Am Modulende führt „weiter“ zur
    * ersten Lektion des nächsten Moduls, nicht einfach zum Modul.
+   *
+   * IDs, keine Adressen: Die Pfeile blättern die Karte (nachgeladen über
+   * `GET /api/dashboard/lektion`), sie navigieren nicht mehr weg vom Dashboard.
    */
-  prevHref: string | null;
-  nextHref: string | null;
+  prevVideoId: string | null;
+  nextVideoId: string | null;
 };
 
 export type StreakDay = {
