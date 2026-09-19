@@ -652,9 +652,15 @@ export function PlatformSidebar() {
         pb={6}
         zIndex={10}
       >
-        <Box px="14px" mb={10}>
+        {/*
+          Waagerecht mittig in der Spalte (Wunsch Simon, 20.09.2026): Vorher
+          stand die Marke links auf der Flucht der Zeilen, dadurch blieb rechts
+          sichtbar mehr Luft. Die Zeilen darunter bleiben linksbündig — die
+          Marke ist Kopf, keine Zeile.
+        */}
+        <Flex justify="center" mb={10}>
           <Wordmark />
-        </Box>
+        </Flex>
         {panel()}
       </Flex>
 
