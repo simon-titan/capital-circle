@@ -104,7 +104,9 @@ function ContinueCardInhalt({ basis }: { basis: ContinueItem }) {
     // Neue Serverdaten (Navigation zurück, Neuladen) setzen die Karte auf die
     // tatsächlich nächste Lektion zurück — ein noch laufender Sprung verfällt.
     laufend.current?.abort();
-    gemerkt.current = new Map(basis.videoId ? [[basis.videoId, basis]] : []);
+    const frisch = new Map<string, ContinueItem>();
+    if (basis.videoId) frisch.set(basis.videoId, basis);
+    gemerkt.current = frisch;
     setItem(basis);
     setLaedt(null);
     setFehler(false);
