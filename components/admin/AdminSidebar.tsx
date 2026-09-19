@@ -22,6 +22,7 @@ import {
   ShieldCheck,
   Star,
   Ticket,
+  Undo2,
   Users,
   Video,
   Wrench,
@@ -82,6 +83,8 @@ const groups: AdminGroup[] = [
       { href: "/admin/zahlungsstoerungen", label: "Zahlungsstörungen", icon: CreditCard },
       // Eingänge über den Kündigungsbutton `/kuendigen` (§ 312k BGB).
       { href: "/admin/kuendigungen", label: "Kündigungen", icon: FileX },
+      // Eingänge über die Widerrufsfunktion `/widerrufen` (§ 356a BGB).
+      { href: "/admin/widerrufe", label: "Widerrufe", icon: Undo2 },
     ],
   },
   {

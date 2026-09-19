@@ -27,12 +27,13 @@ export const metadata: Metadata = {
  * zu haben (Art. 246a § 1 Abs. 2 Satz 2 EGBGB). Deshalb siezt diese Seite als
  * einzige.
  *
- * ── Zwei offene Punkte (siehe Bericht / `config/legal.ts`) ────────────────
+ * ── Offener Punkt (siehe `config/legal.ts`) ───────────────────────────────
  * - Gestaltungshinweis 2 verlangt eine Telefonnummer; solange `telefon`
  *   `null` ist, fehlt sie.
- * - Seit 19.06.2026 muss es für online geschlossene Verträge eine
- *   Widerrufsfunktion geben (§ 356a BGB). Solange sie fehlt, fehlt auch der
- *   Satz nach Gestaltungshinweis 3.
+ *
+ * Der Satz nach Gestaltungshinweis 3 (Widerruf online, § 356a BGB) steht,
+ * seit `widerrufsfunktionPfad` auf `/widerrufen` zeigt. Nicht verwechseln:
+ * `/widerruf` ist diese Belehrung, `/widerrufen` die Funktion selbst.
  *
  * Die Hinweise zum vorzeitigen Erlöschen stehen bewusst **außerhalb** des
  * Musterkastens — sie sind nicht Teil des Musters, sondern ergänzende
@@ -146,6 +147,14 @@ export default function WiderrufPage() {
         </ul>
         <p className="rt-klein">(*) Unzutreffendes streichen.</p>
       </div>
+
+      {widerrufsfunktionPfad ? (
+        <p>
+          Am einfachsten widerrufen Sie online über{" "}
+          <Link href={widerrufsfunktionPfad}>„Vertrag widerrufen“</Link> — ohne Anmeldung, mit sofortiger
+          Eingangsbestätigung per E-Mail.
+        </p>
+      ) : null}
 
       <p className="rt-klein">
         Kündigen statt widerrufen? Das geht jederzeit über{" "}

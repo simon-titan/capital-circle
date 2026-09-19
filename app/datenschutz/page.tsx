@@ -38,7 +38,7 @@ export default function DatenschutzPage() {
         <li><a href="#hosting">3. Hosting und Server-Protokolle</a></li>
         <li><a href="#schrift">4. Schriftart</a></li>
         <li><a href="#konto">5. Konto und Anmeldung</a></li>
-        <li><a href="#zahlung">6. Kauf, Zahlung und Kündigung</a></li>
+        <li><a href="#zahlung">6. Kauf, Zahlung, Kündigung und Widerruf</a></li>
         <li><a href="#videos">7. Videos und Livestreams</a></li>
         <li><a href="#dateien">8. Hochgeladene Dateien</a></li>
         <li><a href="#journal">9. Trading Journal</a></li>
@@ -130,7 +130,7 @@ export default function DatenschutzPage() {
           (`app/api/stripe/create-checkout-session`, Stripe.js nur auf /checkout),
           Kundenportal, Rechnungen, Webhooks. Trichter: Tabelle `checkout_sessions`,
           Cookie `cc_checkout` (`lib/checkout/cookie.ts`). */}
-      <h2 id="zahlung">6. Kauf, Zahlung und Kündigung</h2>
+      <h2 id="zahlung">6. Kauf, Zahlung, Kündigung und Widerruf</h2>
       <p>
         Bezahlt wird über Stripe (Stripe Payments Europe, Ltd., 1 Grand Canal Street Lower, Grand Canal Dock, Dublin,
         Irland). In der Kasse von Stripe gibst du deine E-Mail-Adresse, deine Zahlungsdaten und, soweit abgefragt,
@@ -158,6 +158,16 @@ export default function DatenschutzPage() {
       <p>
         Wenn du kündigst, kannst du freiwillig einen Grund angeben. Wir speichern ihn, um unser Angebot zu verbessern,
         und übermitteln ihn als Notiz zur Kündigung auch an Stripe (Art. 6 Abs. 1 lit. f DSGVO).
+      </p>
+      {/* Kündigungsbutton (`app/kuendigen`, Tabelle `kuendigungen`) und
+          Widerrufsfunktion (`app/widerrufen`, Tabelle `widerrufe`). */}
+      <p>
+        Kündigst oder widerrufst du über „Verträge hier kündigen“ oder „Vertrag widerrufen“, speichern wir deine
+        Erklärung mit Name, E-Mail-Adresse, deinen Angaben zum Vertrag, der Adresse für die Bestätigung und dem
+        Zeitpunkt des Eingangs, ordnen sie deinem Konto und Vertrag zu und schicken dir die gesetzlich vorgeschriebene
+        Bestätigung per E-Mail (Art. 6 Abs. 1 lit. c DSGVO in Verbindung mit § 312k und § 356a BGB). Zum Schutz vor
+        Missbrauch halten wir außerdem einen Hashwert deiner IP-Adresse — nicht die Adresse selbst — und die Kennung
+        deines Browsers fest (Art. 6 Abs. 1 lit. f DSGVO).
       </p>
 
       {/* Cloudflare Stream: `lib/cloudflare-stream.ts`, Player, /stream-iframe. */}
@@ -401,6 +411,10 @@ export default function DatenschutzPage() {
           Angaben aus Bewerbungen, Anfragen und der Auswertung unserer Werbeseiten löschen wir, sobald wir sie für den
           jeweiligen Zweck nicht mehr brauchen oder du der Verarbeitung widersprichst, soweit keine Pflicht zur
           Aufbewahrung besteht.
+        </li>
+        <li>
+          Kündigungs- und Widerrufserklärungen bewahren wir als Nachweis auf, solange aus dem Vertrag noch Ansprüche
+          geltend gemacht werden können, in der Regel drei Jahre ab dem Ende des Jahres der Erklärung (§ 195 BGB).
         </li>
         <li>Veröffentlichte Nachweise nehmen wir von der Seite, sobald du deine Einwilligung widerrufst.</li>
         <li>Für Cookies und Browserspeicher gelten die Zeiten aus Abschnitt 16.</li>
