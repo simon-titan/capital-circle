@@ -57,15 +57,21 @@ export function MembershipNav() {
         <Box
           as="a"
           href="#seitenanfang"
-          fontSize={{ base: "13px", md: "15px" }}
-          fontWeight={400}
-          letterSpacing={{ base: "0.24em", md: "0.32em" }}
-          textTransform="uppercase"
-          color="var(--cc-text)"
-          whiteSpace="nowrap"
+          aria-label="Capital Circle — zum Seitenanfang"
+          display="inline-flex"
+          alignItems="center"
+          lineHeight={1}
           _focusVisible={{ outline: "2px solid var(--cc-gold-line)", outlineOffset: "4px" }}
         >
-          Capital Circle
+          {/* Freigestellte Wortmarke, feste Hoehe: auf 64px-Leiste 18px, ab md 21px. */}
+          <Box
+            as="img"
+            src="/logo/cc-wortmarke-weiss.png"
+            alt=""
+            h={{ base: "18px", md: "21px" }}
+            w="auto"
+            display="block"
+          />
         </Box>
 
         <HStack as="nav" aria-label="Seitenabschnitte" display={{ base: "none", lg: "flex" }} spacing={8}>

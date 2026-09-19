@@ -28,6 +28,7 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useMemo, useSyncExternalStore, type ReactNode } from "react";
@@ -221,20 +222,27 @@ export function AdminSidebar() {
       zIndex={2}
     >
       <Box px="12px" mb={7}>
+        {/*
+          Wortmarke als freigestelltes Bild (seit 20.09.2026). Feste Hoehe,
+          Breite automatisch — so bleibt sie in einer Flucht mit dem
+          Betriebs-Punkt darunter.
+        */}
         <Box
           as={Link}
           href="/admin"
           aria-label="Capital Circle Admin — zur Übersicht"
-          display="inline-block"
-          color="var(--cc-text)"
-          fontSize="13px"
-          letterSpacing="0.3em"
-          fontWeight={400}
+          display="inline-flex"
+          alignItems="center"
           lineHeight={1}
-          whiteSpace="nowrap"
-          textTransform="uppercase"
         >
-          Capital Circle
+          <Image
+            src="/logo/cc-wortmarke-weiss.png"
+            alt=""
+            width={1585}
+            height={199}
+            priority
+            style={{ height: "17px", width: "auto" }}
+          />
         </Box>
         <Flex align="center" gap={2} mt={2.5}>
           <Box

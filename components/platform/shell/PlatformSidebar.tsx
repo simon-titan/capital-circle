@@ -15,6 +15,7 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import { Lock, LogOut, Menu as MenuIcon, MessageCircle, Settings, UserRound, X, type LucideIcon } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -220,22 +221,35 @@ function RowInner({ icon: Icon, label, trailing }: { icon: LucideIcon; label: st
   );
 }
 
+/**
+ * Wortmarke als Bild (Zeichen + Schrift), seit 20.09.2026 statt gesperrtem
+ * Text. Die Datei ist freigestellt und weiß, sie passt damit auf den Graphit
+ * der Schale und braucht keinen Filter.
+ *
+ * Feste Höhe statt fester Breite: Das Seitenverhältnis liegt bei rund 8:1,
+ * über die Höhe bleibt sie in einer Flucht mit den Zeilen darunter. `width`
+ * und `height` tragen nur das Verhältnis für den Platzhalter — die Anzeige
+ * steuert `style`.
+ */
 function Wordmark({ compact = false }: { compact?: boolean }) {
+  const hoehe = compact ? 16 : 19;
   return (
     <Box
       as={Link}
       href="/dashboard"
       aria-label="Capital Circle — zum Dashboard"
-      display="inline-block"
-      color="var(--cc-text)"
-      fontSize={compact ? "13px" : "15px"}
-      letterSpacing={compact ? "0.3em" : "0.32em"}
-      fontWeight={400}
+      display="inline-flex"
+      alignItems="center"
       lineHeight={1}
-      whiteSpace="nowrap"
-      textTransform="uppercase"
     >
-      Capital Circle
+      <Image
+        src="/logo/cc-wortmarke-weiss.png"
+        alt=""
+        width={1585}
+        height={199}
+        priority
+        style={{ height: `${hoehe}px`, width: "auto" }}
+      />
     </Box>
   );
 }
