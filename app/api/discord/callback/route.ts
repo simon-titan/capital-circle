@@ -135,8 +135,9 @@ export async function GET(request: Request) {
         user_id: user.id,
         discord_user_id: discordUser.id,
         discord_username: displayName,
-        discord_access_token: tokenData.access_token,
-        discord_refresh_token: tokenData.refresh_token ?? null,
+        // Keine OAuth-Tokens speichern: Sie werden nur oben für den Server-
+        // Beitritt gebraucht, danach liest sie niemand mehr. Migration 077
+        // leert die bisher gespeicherten.
         connected_at: new Date().toISOString(),
       },
       { onConflict: "user_id" },
@@ -162,8 +163,6 @@ export async function GET(request: Request) {
     .update({
       discord_id: discordUser.id,
       discord_username: displayName,
-      discord_access_token: tokenData.access_token,
-      discord_refresh_token: tokenData.refresh_token ?? null,
     })
     .eq("id", user.id)
     .select("id");

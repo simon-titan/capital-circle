@@ -9,7 +9,7 @@ import { LiveSessionTiles } from "@/components/platform/LiveSessionTiles";
 import { kategorieHinweis } from "@/components/platform/live-session-ui";
 import { getLiveSessionCategory, getLiveSessionsWithCounts } from "@/lib/live-session-overview";
 import { getCurrentUserAndProfile } from "@/lib/server-data";
-import { isApprovedFreeMember } from "@/lib/membership";
+import { liveSessionsNurFrei } from "@/lib/membership";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -48,7 +48,7 @@ export default async function LiveSessionCategoryPage({ params }: PageProps) {
 
   // Free-Mitglieder sehen genau eine Kategorie (siehe live-session-free.ts).
   // Die gesperrte wird benannt statt versteckt — so wie DESIGN.md es vorgibt.
-  if (isApprovedFreeMember(profile) && !isFreeLiveSessionCategory(category.title)) {
+  if (liveSessionsNurFrei(profile) && !isFreeLiveSessionCategory(category.title)) {
     return (
       <Stack spacing={5} align="stretch">
         <Box className="cc-rise">
