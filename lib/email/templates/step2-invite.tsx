@@ -1,11 +1,6 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
-import {
-  EmailHeading,
-  EmailText,
-  EmailHighlight,
-  EmailButton,
-} from "../layout/components";
+import { EmailButton, EmailHeading, EmailText } from "../layout/components";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 
@@ -47,10 +42,10 @@ export default function Step2InviteEmail({
         deine erweiterte Bewerbung bei Capital Circle ist eingegangen. Vielen
         Dank für dein Engagement und die ausführlichen Antworten.
       </EmailText>
-      <EmailHighlight>
+      <EmailText>
         Der nächste Schritt: Buche jetzt dein persönliches Gespräch mit uns.
         Das ist deine erste Chance — bitte halte den Termin unbedingt ein.
-      </EmailHighlight>
+      </EmailText>
       <EmailButton href={bookingUrl}>Termin jetzt buchen</EmailButton>
       <EmailText>
         Wir freuen uns darauf, dich kennenzulernen und gemeinsam zu besprechen,

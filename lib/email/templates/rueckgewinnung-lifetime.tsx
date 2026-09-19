@@ -1,6 +1,6 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
-import { EmailButton, EmailHeading, EmailHighlight, EmailText } from "../layout/components";
+import { EmailButton, EmailHeading, EmailText } from "../layout/components";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 import { LIFETIME_PREIS, lifetimeUrl } from "@/config/lifetime";
@@ -27,10 +27,10 @@ export default function RueckgewinnungLifetimeEmail({ vorname, abmeldeLink }: Pr
         dein Konto, dein Journal und dein Fortschritt im Institut sind noch gespeichert. Wenn du wieder einsteigst, machst
         du genau dort weiter, wo du aufgehört hast.
       </EmailText>
-      <EmailHighlight>
+      <EmailText>
         Neu für ehemalige Mitglieder: Lifetime. Du zahlst einmalig {LIFETIME_PREIS} und bist dauerhaft dabei — ohne
         Abo, ohne Verlängerung, ohne Abbuchung jeden Monat.
-      </EmailHighlight>
+      </EmailText>
       <EmailButton href={lifetimeUrl(appUrl)}>Lifetime ansehen</EmailButton>
       <EmailText muted>
         Nach dem Anmelden findest du unter Einstellungen → Abonnement auch die normalen Laufzeiten. Passwort vergessen?{" "}

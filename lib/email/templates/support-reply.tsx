@@ -1,7 +1,6 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
-import { EmailHeading, EmailText, EmailButton, EmailHighlight } from "../layout/components";
-import { EMAIL_TOKENS as T } from "../layout/styles";
+import { EmailButton, EmailHeading, EmailQuote, EmailText } from "../layout/components";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 
@@ -28,9 +27,9 @@ export default function SupportReplyEmail({ firstName, subject, excerpt, ticketU
         unser Team hat auf dein Support-Ticket geantwortet:
       </EmailText>
       <EmailText muted>
-        <span style={{ color: T.gold }}>Betreff:</span> {subject}
+        <strong>Betreff:</strong> {subject}
       </EmailText>
-      <EmailHighlight>{excerpt}</EmailHighlight>
+      <EmailQuote>{excerpt}</EmailQuote>
       <EmailButton href={ticketUrl}>Ticket öffnen</EmailButton>
       <EmailText muted>
         Antworte direkt im Ticket, wenn du noch Rückfragen hast — wir melden uns so schnell wie möglich.

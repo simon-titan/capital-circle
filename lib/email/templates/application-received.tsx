@@ -1,12 +1,6 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
-import {
-  EmailHeading,
-  EmailText,
-  EmailHighlight,
-  EmailButton,
-} from "../layout/components";
-import { EMAIL_TOKENS as T } from "../layout/styles";
+import { EmailButton, EmailHeading, EmailRows, EmailText } from "../layout/components";
 import { getAppUrl } from "../resend";
 import { sendEmail, type SendResult } from "../send";
 
@@ -41,64 +35,25 @@ export default function ApplicationReceivedEmail({
         Gleichzeitig ist dein Zugang zur Plattform angelegt. So kannst du dich
         später anmelden:
       </EmailText>
-      <EmailHighlight>
-        <span
-          style={{
-            display: "block",
-            fontSize: "11px",
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-            color: T.textMuted,
-            marginBottom: "4px",
-          }}
-        >
-          E-Mail
-        </span>
-        <span
-          style={{
-            display: "block",
-            fontFamily: T.fontMono,
-            fontSize: "15px",
-            color: T.text,
-            wordBreak: "break-all",
-            marginBottom: "16px",
-          }}
-        >
-          {email}
-        </span>
-        <span
-          style={{
-            display: "block",
-            fontSize: "11px",
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-            color: T.textMuted,
-            marginBottom: "4px",
-          }}
-        >
-          Passwort
-        </span>
-        <span
-          style={{
-            display: "block",
-            fontFamily: T.fontMono,
-            fontSize: "15px",
-            color: T.text,
-            wordBreak: "break-all",
-          }}
-        >
-          {password}
-        </span>
-      </EmailHighlight>
+
+      <EmailRows
+        mono
+        rows={[
+          ["E-Mail", email],
+          ["Passwort", password],
+        ]}
+      />
+
       <EmailButton href={loginUrl}>Zur Anmeldung</EmailButton>
+
       <EmailText muted>
         Aus Sicherheitsgründen empfehlen wir dir, das Passwort nach dem ersten
         Login in den Kontoeinstellungen zu ändern.
       </EmailText>
-      <EmailHighlight>
+      <EmailText>
         Wir prüfen deine Bewerbung innerhalb von 24–48 Stunden und melden uns
         anschließend per E-Mail bei dir.
-      </EmailHighlight>
+      </EmailText>
       <EmailText>
         Solange deine Bewerbung in Prüfung ist, steht die Plattform noch nicht
         offen. Sobald wir eine Entscheidung getroffen haben, bekommst du sofort

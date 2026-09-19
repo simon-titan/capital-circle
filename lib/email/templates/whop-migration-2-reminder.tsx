@@ -1,12 +1,6 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
-import {
-  CampaignButton,
-  CampaignHeading,
-  CampaignHighlight,
-  CampaignText,
-} from "../campaigns/whop-migration/components";
-import { CAMPAIGN_TOKENS as T } from "../campaigns/whop-migration/styles";
+import { EmailButton, EmailHeading, EmailText } from "../layout/components";
 import { sendEmail, type SendResult } from "../send";
 import { generateContactUnsubscribeToken } from "../unsubscribe-token";
 import { getAppUrl } from "../resend";
@@ -27,24 +21,22 @@ export default function WhopMigrationMail2({
   return (
     <BaseEmail
       previewText="Kurz nochmal, falls das von vorhin bei dir nicht angekommen ist."
-      hideFooter={false}
       unsubscribeUrl={unsubscribeUrl}
-      bodyFontFamily={T.fontBody}
     >
-      <CampaignHeading>Falls das hier bei dir untergegangen ist</CampaignHeading>
+      <EmailHeading>Falls das hier bei dir untergegangen ist</EmailHeading>
 
-      <CampaignText>Hey {firstName},</CampaignText>
-      <CampaignText>
+      <EmailText>Hey {firstName},</EmailText>
+      <EmailText>
         kurz nochmal, falls das von vorhin bei dir nicht angekommen ist:
-      </CampaignText>
+      </EmailText>
 
-      <CampaignHighlight>
+      <EmailText>
         Capital Circle gibt&apos;s jetzt monatlich für 99&nbsp;€, nicht mehr
         nur als 899&nbsp;€-Lifetime-Zahlung. Jederzeit kündbar, kein Invest
         im Voraus.
-      </CampaignHighlight>
+      </EmailText>
 
-      <CampaignText>
+      <EmailText>
         <strong>Was du bekommst:</strong>
         <br />
         Montag 14:30 Uhr: Wochenvorbereitung, alles Wichtige + Bias für die
@@ -57,21 +49,21 @@ export default function WhopMigrationMail2({
         Wochen-Recap
         <br />
         Zugang zur gesamten exklusiven Discord-Community
-      </CampaignText>
+      </EmailText>
 
-      <CampaignText>
+      <EmailText>
         Kein größeres Risiko als ein Monatsabo. Du testest einen Monat,
         entscheidest danach neu. Jederzeit kündbar. Keine versteckten
         Fristen.
-      </CampaignText>
+      </EmailText>
 
-      <CampaignText>Der Markt läuft so oder so weiter, mit oder ohne dich.</CampaignText>
+      <EmailText>Der Markt läuft so oder so weiter, mit oder ohne dich.</EmailText>
 
-      <CampaignButton href={WHOP_MIGRATION.joinUrl}>
+      <EmailButton href={WHOP_MIGRATION.joinUrl}>
         Jetzt für 99&nbsp;€/Monat starten
-      </CampaignButton>
+      </EmailButton>
 
-      <CampaignText muted>Emre</CampaignText>
+      <EmailText muted>Emre</EmailText>
     </BaseEmail>
   );
 }

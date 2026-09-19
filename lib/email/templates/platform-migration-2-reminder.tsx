@@ -1,12 +1,6 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
-import {
-  CampaignButton,
-  CampaignHeading,
-  CampaignHighlight,
-  CampaignText,
-} from "../campaigns/whop-migration/components";
-import { CAMPAIGN_TOKENS as T } from "../campaigns/whop-migration/styles";
+import { EmailButton, EmailHeading, EmailText } from "../layout/components";
 import { sendEmail, type SendResult } from "../send";
 import { generateContactUnsubscribeToken } from "../unsubscribe-token";
 import { getAppUrl } from "../resend";
@@ -27,24 +21,22 @@ export default function PlatformMigrationMail2({
   return (
     <BaseEmail
       previewText="Kurz nochmal, falls das von vorhin bei dir nicht angekommen ist."
-      hideFooter={false}
       unsubscribeUrl={unsubscribeUrl}
-      bodyFontFamily={T.fontBody}
     >
-      <CampaignHeading>Falls das hier bei dir untergegangen ist</CampaignHeading>
+      <EmailHeading>Falls das hier bei dir untergegangen ist</EmailHeading>
 
-      <CampaignText>Hey {firstName},</CampaignText>
-      <CampaignText>
+      <EmailText>Hey {firstName},</EmailText>
+      <EmailText>
         kurz nochmal, falls das von vorhin in der Inbox untergegangen ist:
         Capital Circle läuft wieder auf der eigenen Plattform.
-      </CampaignText>
+      </EmailText>
 
-      <CampaignHighlight>
+      <EmailText>
         Dein Zugang läuft nahtlos weiter, du musst nur einmal wechseln.
         Einheitlich 99&nbsp;€/Monat, jederzeit kündbar.
-      </CampaignHighlight>
+      </EmailText>
 
-      <CampaignText>
+      <EmailText>
         <strong>Kurz zusammengefasst:</strong>
         <br />
         Alles, was du von Whop kennst, gibt es auch auf der eigenen
@@ -53,18 +45,18 @@ export default function PlatformMigrationMail2({
         Trading Journal, Live Sessions und Discord-Zugang unverändert
         <br />
         Der Wechsel selbst dauert etwa zwei Minuten
-      </CampaignText>
+      </EmailText>
 
-      <CampaignText>
+      <EmailText>
         Kein zusätzlicher Aufwand, keine neuen Kosten — nur ein anderer Ort,
         an dem du eingeloggt bist.
-      </CampaignText>
+      </EmailText>
 
-      <CampaignButton href={PLATFORM_MIGRATION.joinUrl}>
+      <EmailButton href={PLATFORM_MIGRATION.joinUrl}>
         Jetzt wechseln — 99&nbsp;€/Monat
-      </CampaignButton>
+      </EmailButton>
 
-      <CampaignText muted>Emre</CampaignText>
+      <EmailText muted>Emre</EmailText>
     </BaseEmail>
   );
 }

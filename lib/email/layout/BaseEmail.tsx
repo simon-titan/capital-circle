@@ -5,6 +5,7 @@ import { anbieter } from "@/config/legal";
 
 interface BaseEmailProps {
   children: React.ReactNode;
+  /** Der Satz, den Postfächer neben dem Betreff als Vorschau zeigen. */
   previewText: string;
   /**
    * Abmeldelink für Werbe-Mails. Baut `${appUrl}/api/unsubscribe?token=...`.
@@ -15,67 +16,66 @@ interface BaseEmailProps {
   unsubscribeToken?: string;
   /**
    * Vollständige Abmelde-URL — hat Vorrang vor `unsubscribeToken`. Ist eine
-   * gesetzt, erscheint der Footer immer (auch ohne `hideFooter={false}`) mit
-   * dem Widerspruchshinweis nach § 7 Abs. 3 Nr. 4 UWG und dem Link „Abmelden".
+   * gesetzt, erscheinen in der Fußzeile der Link „Abmelden" und der
+   * Widerspruchshinweis nach § 7 Abs. 3 Nr. 4 UWG.
    */
   unsubscribeUrl?: string;
-  /** Standard: Wortmarke „CAPITAL CIRCLE“ in Weiß. Bei `false` in Champagner. */
-  headerLogo?: boolean;
-  /**
-   * Standard: kein rechtlicher Footer (Transaktionsmails). Bei `false`
-   * Impressum und Datenschutz; mit Abmelde-URL zusätzlich Hinweis und Link.
-   */
-  hideFooter?: boolean;
-  /**
-   * Optionaler CSS-`background-image` für die Lichtkante unter der Wortmarke.
-   * Standard: Champagner-Verlauf (Vollton-Fallback bleibt die Champagner-Haarlinie).
-   */
-  accentGradient?: string;
-  /** Farbe der Footer-Links (Impressum/Datenschutz/Abmelden). Standard: Champagner. */
-  footerLinkColor?: string;
-  /**
-   * Überschreibt `fontFamily` von Body + Footer. Standard: `EMAIL_TOKENS.fontBody`
-   * (Inter, falls auf dem Gerät installiert, sonst Systemschrift). Kein
-   * Webfont-Stylesheet: Ein `<link>` auf Google Fonts übertrüge beim Öffnen
-   * der Mail die IP-Adresse an Google.
-   */
-  bodyFontFamily?: string;
 }
 
 /**
- * Basis-Layout für ALLE Capital-Circle-Mails — v3.2 „Champagner auf Graphit“.
+ * Das Gerüst aller Capital-Circle-Mails.
  *
- * Render-Pipeline: JSX -> `@react-email/render` -> HTML-String -> Resend.
+ * Render-Pipeline: JSX → `@react-email/render` → HTML-String → Resend.
  *
- * Layout-Strategie:
- *   - Outer-Wrapper-Table für Outlook-Kompatibilität, Graphit-Grund
- *   - max-width 600px (Mail-Standard)
- *   - PreviewText: hidden span, das in Inbox-Listen als Snippet erscheint
- *   - Kopf: Wortmarke als Text (wie `components/brand/Logo.tsx`), darunter Champagner-Lichtkante
- *   - Optional: `headerLogo={false}` / `hideFooter={false}` / `unsubscribeToken` für klassisches Layout
+ * ── Der Aufbau, und warum er so kurz ist (20.09.2026) ──────────────────────
+ *
+ * Wortmarke, eine Karte, Fußzeile. Mehr nicht. Vorher stand über dem Inhalt
+ * eine Wortmarke aus gesperrtem Text mit einer Champagner-Lichtkante darunter,
+ * der Inhalt lag frei auf dem Grund, und jede zweite Vorlage baute sich aus
+ * Panel-Kästen mit Goldrahmen ihre eigene Gliederung. Auf Wunsch des Nutzers
+ * ist das raus: „so schlicht wie möglich".
+ *
+ * Geblieben ist der Grund (Graphit), das Gold (nur Knopf und Link) und die
+ * Marke — jetzt als echtes Logo statt als Schriftzug.
+ *
+ * ── Warum das Logo absolut verlinkt ist ────────────────────────────────────
+ *
+ * Eine Mail hat keine Basis-URL. `/logo/cc-wortmarke-weiss.png` zeigt im
+ * Postfach ins Leere, deshalb steht `getAppUrl()` davor. Breite und Höhe
+ * stehen als Attribut **und** im Stil: Outlook nimmt sonst die Originalgröße
+ * der Datei (1585 px) und sprengt das Layout.
+ *
+ * Der `alt`-Text ist gestaltet, nicht nur gesetzt. Viele Postfächer laden
+ * Bilder erst auf Klick; dann steht an der Stelle des Logos „Capital Circle"
+ * in Versalien und hell auf Graphit, und die Mail sieht immer noch nach etwas
+ * aus.
+ *
+ * ── Dunkel bleibt dunkel ───────────────────────────────────────────────────
+ *
+ * `color-scheme: dark` sagt den Clients, dass die Mail bereits dunkel ist —
+ * ohne das kehren einige sie im Dunkelmodus ein zweites Mal um. Zusätzlich
+ * trägt jede Fläche ihre Farbe als `bgcolor`-Attribut, weil Outlook (Word-
+ * Engine) `background-color` auf `<body>` ignoriert.
  */
 export function BaseEmail({
   children,
   previewText,
   unsubscribeToken,
   unsubscribeUrl: unsubscribeUrlProp,
-  headerLogo = true,
-  hideFooter = true,
-  accentGradient,
-  footerLinkColor,
-  bodyFontFamily,
 }: BaseEmailProps) {
   const appUrl = getAppUrl();
   const unsubscribeUrl =
     unsubscribeUrlProp ??
     (unsubscribeToken ? `${appUrl}/api/unsubscribe?token=${unsubscribeToken}` : null);
-  const linkColor = footerLinkColor ?? T.gold;
-  const bodyFont = bodyFontFamily ?? T.fontBody;
-  // Eine Werbe-Mail ohne sichtbaren Abmeldehinweis wäre schlimmer als ein
-  // Footer, den niemand bestellt hat — deshalb erzwingt die URL den Footer.
-  const zeigeFooter = !hideFooter || Boolean(unsubscribeUrl);
 
-  const footerLink = { color: linkColor, textDecoration: "none", margin: "0 8px" } as const;
+  const fussText = {
+    margin: `0 0 8px`,
+    fontFamily: T.font,
+    fontSize: T.sizeFooter,
+    lineHeight: T.lineHeight,
+    color: T.textMuted,
+  } as const;
+  const fussLink = { color: T.textMuted, textDecoration: "underline" } as const;
 
   return (
     <html lang="de">
@@ -94,7 +94,7 @@ export function BaseEmail({
           padding: 0,
           backgroundColor: T.bgPage,
           color: T.text,
-          fontFamily: bodyFont,
+          fontFamily: T.font,
           WebkitFontSmoothing: "antialiased",
         }}
       >
@@ -117,143 +117,123 @@ export function BaseEmail({
           width="100%"
           cellSpacing={0}
           cellPadding={0}
-          style={{
-            backgroundColor: T.bgPage,
-            padding: "32px 16px",
-          }}
+          bgcolor={T.bgPage}
+          style={{ backgroundColor: T.bgPage }}
         >
           <tbody>
             <tr>
-              <td align="center">
+              {/*
+                Der Seitenrand sitzt auf der Zelle, nicht auf der Tabelle:
+                `width="100%"` plus `padding` an derselben Tabelle ergibt
+                Fensterbreite **plus** 32 px, und die Mail lässt sich auf dem
+                Handy seitwärts schieben.
+              */}
+              <td
+                align="center"
+                bgcolor={T.bgPage}
+                style={{ padding: "32px 16px", backgroundColor: T.bgPage }}
+              >
                 <table
                   role="presentation"
                   width="100%"
                   cellSpacing={0}
                   cellPadding={0}
-                  style={{ maxWidth: "600px", margin: "0 auto" }}
+                  style={{ maxWidth: T.maxWidth, margin: "0 auto" }}
                 >
                   <tbody>
+                    {/* Marke */}
                     <tr>
-                      <td style={{ padding: "8px 0 0", textAlign: "center" }}>
-                        <span
+                      <td
+                        align="center"
+                        bgcolor={T.bgPage}
+                        style={{ padding: "0 0 28px", backgroundColor: T.bgPage }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element -- Eine Mail hat kein next/image; das Postfach lädt die Datei selbst */}
+                        <img
+                          src={`${appUrl}/logo/cc-wortmarke-weiss.png`}
+                          alt="Capital Circle"
+                          width={T.logoWidth}
+                          height={T.logoHeight}
                           style={{
-                            fontFamily: T.fontHeading,
-                            fontSize: "15px",
+                            display: "block",
+                            width: `${T.logoWidth}px`,
+                            maxWidth: `${T.logoWidth}px`,
+                            height: `${T.logoHeight}px`,
+                            border: 0,
+                            outline: "none",
+                            textDecoration: "none",
+                            fontFamily: T.font,
+                            fontSize: "13px",
                             fontWeight: 600,
-                            letterSpacing: "0.32em",
+                            letterSpacing: "0.28em",
                             textTransform: "uppercase",
-                            color: headerLogo ? T.text : T.goldLight,
+                            color: T.text,
                           }}
-                        >
-                          Capital Circle
-                        </span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style={{ padding: "14px 0 28px" }}>
-                        <div
-                          style={{
-                            height: "1px",
-                            lineHeight: "1px",
-                            fontSize: "1px",
-                            width: "100%",
-                            backgroundColor: T.borderGold,
-                            backgroundImage:
-                              accentGradient ??
-                              `linear-gradient(90deg, ${T.bgPage} 0%, ${T.gold} 35%, ${T.goldLight} 50%, ${T.gold} 65%, ${T.bgPage} 100%)`,
-                          }}
-                        >
-                          &nbsp;
-                        </div>
+                        />
                       </td>
                     </tr>
 
+                    {/* Die eine Karte */}
                     <tr>
-                      <td>{children}</td>
+                      <td
+                        bgcolor={T.bgCard}
+                        style={{
+                          backgroundColor: T.bgCard,
+                          border: `1px solid ${T.line}`,
+                          borderRadius: T.radius,
+                          padding: T.cardPadding,
+                        }}
+                      >
+                        {children}
+                      </td>
                     </tr>
 
-                    {zeigeFooter ? (
-                      <tr>
-                        <td
-                          style={{
-                            paddingTop: "32px",
-                            borderTop: `1px solid ${T.border}`,
-                            marginTop: "24px",
-                            textAlign: "center",
-                          }}
-                        >
-                          <p
-                            style={{
-                              margin: "16px 0 8px",
-                              fontFamily: bodyFont,
-                              fontSize: "12px",
-                              color: T.textFooter,
-                              lineHeight: 1.6,
-                            }}
-                          >
-                            Capital Circle Institut
-                          </p>
-                          <p
-                            style={{
-                              margin: "0 0 12px",
-                              fontFamily: bodyFont,
-                              fontSize: "12px",
-                              color: T.textFooter,
-                              lineHeight: 1.6,
-                            }}
-                          >
-                            <a href={`${appUrl}/impressum`} style={footerLink}>
-                              Impressum
-                            </a>
-                            <span style={{ color: T.textFooter }}>·</span>
-                            <a href={`${appUrl}/datenschutz`} style={footerLink}>
-                              Datenschutz
-                            </a>
-                            {unsubscribeUrl && (
-                              <>
-                                <span style={{ color: T.textFooter }}>·</span>
-                                <a href={unsubscribeUrl} style={footerLink}>
-                                  Abmelden
-                                </a>
-                              </>
-                            )}
-                          </p>
+                    {/* Fußzeile */}
+                    <tr>
+                      <td
+                        align="center"
+                        bgcolor={T.bgPage}
+                        style={{
+                          padding: "28px 8px 0",
+                          textAlign: "center",
+                          backgroundColor: T.bgPage,
+                        }}
+                      >
+                        <p style={fussText}>Capital Circle Institut</p>
+                        <p style={fussText}>
+                          <a href={`${appUrl}/impressum`} style={fussLink}>
+                            Impressum
+                          </a>
+                          <span> · </span>
+                          <a href={`${appUrl}/datenschutz`} style={fussLink}>
+                            Datenschutz
+                          </a>
                           {unsubscribeUrl ? (
-                            // Hinweis nach § 7 Abs. 3 Nr. 4 UWG — bei jeder Werbe-Mail, klar und deutlich.
-                            <p
-                              style={{
-                                margin: "0 auto 12px",
-                                maxWidth: "480px",
-                                fontFamily: bodyFont,
-                                fontSize: "12px",
-                                color: T.textFooter,
-                                lineHeight: 1.6,
-                              }}
-                            >
-                              Du möchtest solche E-Mails nicht mehr bekommen? Du kannst ihnen jederzeit
-                              widersprechen:{" "}
-                              <a href={unsubscribeUrl} style={{ color: linkColor, textDecoration: "underline" }}>
-                                hier abmelden
-                              </a>{" "}
-                              oder per E-Mail an {anbieter.email}. Dafür entstehen dir keine anderen als die
-                              Übermittlungskosten nach den Basistarifen.
-                            </p>
+                            <>
+                              <span> · </span>
+                              <a href={unsubscribeUrl} style={fussLink}>
+                                Abmelden
+                              </a>
+                            </>
                           ) : null}
-                          <p
-                            style={{
-                              margin: "16px 0 0",
-                              fontFamily: bodyFont,
-                              fontSize: "11px",
-                              color: T.textFooter,
-                              opacity: 0.7,
-                            }}
-                          >
-                            © {new Date().getFullYear()} Capital Circle. Alle
-                            Rechte vorbehalten.
+                        </p>
+                        {unsubscribeUrl ? (
+                          // Hinweis nach § 7 Abs. 3 Nr. 4 UWG — bei jeder Werbe-Mail, klar und deutlich.
+                          <p style={{ ...fussText, maxWidth: "440px", margin: "0 auto 8px" }}>
+                            Du möchtest solche E-Mails nicht mehr bekommen? Du kannst ihnen jederzeit
+                            widersprechen:{" "}
+                            <a href={unsubscribeUrl} style={fussLink}>
+                              hier abmelden
+                            </a>{" "}
+                            oder per E-Mail an {anbieter.email}. Dafür entstehen dir keine anderen als die
+                            Übermittlungskosten nach den Basistarifen.
                           </p>
-                        </td>
-                      </tr>
-                    ) : null}
+                        ) : null}
+                        <p style={{ ...fussText, margin: 0 }}>
+                          © {new Date().getFullYear()} Capital Circle
+                        </p>
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
               </td>

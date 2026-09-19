@@ -1,13 +1,6 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
-import {
-  CampaignBadge,
-  CampaignButton,
-  CampaignHeading,
-  CampaignHighlight,
-  CampaignText,
-} from "../campaigns/whop-migration/components";
-import { CAMPAIGN_TOKENS as T } from "../campaigns/whop-migration/styles";
+import { EmailButton, EmailHeading, EmailSmall, EmailText } from "../layout/components";
 import { sendEmail, type SendResult } from "../send";
 import { generateContactUnsubscribeToken } from "../unsubscribe-token";
 import { getAppUrl } from "../resend";
@@ -28,26 +21,24 @@ export default function PlatformMigrationMail1({
   return (
     <BaseEmail
       previewText="Capital Circle läuft wieder auf der eigenen Plattform — dein Zugang wartet."
-      hideFooter={false}
       unsubscribeUrl={unsubscribeUrl}
-      bodyFontFamily={T.fontBody}
     >
-      <CampaignBadge>Capital Circle ist zurück auf der eigenen Plattform</CampaignBadge>
-      <CampaignHeading>Dein Zugang wartet auf dich</CampaignHeading>
+      <EmailSmall>Capital Circle ist zurück auf der eigenen Plattform</EmailSmall>
+      <EmailHeading>Dein Zugang wartet auf dich</EmailHeading>
 
-      <CampaignText>Hey {firstName},</CampaignText>
-      <CampaignText>
+      <EmailText>Hey {firstName},</EmailText>
+      <EmailText>
         kurze Info: Capital Circle läuft ab sofort wieder auf unserer eigenen
         Plattform statt über Whop. Für dich ändert sich inhaltlich nichts —
         nur der Ort, an dem du eingeloggt bist.
-      </CampaignText>
+      </EmailText>
 
-      <CampaignHighlight>
+      <EmailText>
         Einheitlicher Preis: 99&nbsp;€/Monat, jederzeit kündbar. Der Wechsel
         dauert etwa zwei Minuten.
-      </CampaignHighlight>
+      </EmailText>
 
-      <CampaignText>
+      <EmailText>
         <strong>Was dich auf der eigenen Plattform erwartet:</strong>
         <br />
         Live Trading Sessions, Wochenvorbereitung &amp; Community Call wie
@@ -58,19 +49,19 @@ export default function PlatformMigrationMail1({
         Schnellerer Support direkt im Mitgliederbereich
         <br />
         Zugang zur exklusiven Discord-Community bleibt bestehen
-      </CampaignText>
+      </EmailText>
 
-      <CampaignText>
+      <EmailText>
         Dein Whop-Zugang bleibt so lange aktiv, wie du ihn nicht selbst
         kündigst — mehr dazu in einer der nächsten Mails, falls du noch
         Fragen zum Ablauf hast.
-      </CampaignText>
+      </EmailText>
 
-      <CampaignButton href={PLATFORM_MIGRATION.joinUrl}>
+      <EmailButton href={PLATFORM_MIGRATION.joinUrl}>
         Jetzt wechseln — 99&nbsp;€/Monat
-      </CampaignButton>
+      </EmailButton>
 
-      <CampaignText muted>Emre</CampaignText>
+      <EmailText muted>Emre</EmailText>
     </BaseEmail>
   );
 }

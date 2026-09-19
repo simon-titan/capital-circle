@@ -1,7 +1,6 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
-import { EmailButton, EmailEyebrow, EmailHeading, EmailHighlight, EmailText } from "../layout/components";
-import { EMAIL_TOKENS as T } from "../layout/styles";
+import { EmailButton, EmailHeading, EmailSmall, EmailText } from "../layout/components";
 import { sendEmail, type SendResult } from "../send";
 
 interface DiscordInviteEmailProps {
@@ -15,49 +14,28 @@ interface SendDiscordInviteProps {
   inviteUrl: string;
 }
 
-/* ── Trust-Zeile (wie „100% kostenlos · Kein Risiko · Sofortiger Zugang“ auf /discord) ── */
-function DiscordTrust() {
-  return (
-    <p
-      style={{
-        margin: "0 0 24px",
-        textAlign: "center",
-        fontFamily: T.fontBody,
-        fontSize: "12px",
-        letterSpacing: "0.03em",
-        color: T.textMuted,
-      }}
-    >
-      100% kostenlos · Kein Risiko · Sofortiger Zugang
-    </p>
-  );
-}
-
-/** Discord-Einladung im Look der /discord-Landingpage (v3.2: Champagner auf Graphit). */
+/** Discord-Einladung. */
 export default function DiscordInviteEmail({
   firstName,
   inviteUrl,
 }: DiscordInviteEmailProps) {
   return (
     <BaseEmail previewText={`Dein Discord-Zugang zu Capital Circle, ${firstName}`}>
-      <EmailEyebrow>Kostenloser Discord-Zugang</EmailEyebrow>
       <EmailHeading>Willkommen, {firstName}!</EmailHeading>
       <EmailText>
         schön, dass du dabei bist. Dein Platz in der
         Capital-Circle-Discord-Community ist reserviert — der Ort, an dem du
-        lernst, wie du innerhalb weniger Wochen deinen ersten{" "}
-        <span style={{ color: T.goldLight, fontWeight: 600 }}>Payout</span>{" "}
-        erzielst.
+        lernst, wie du innerhalb weniger Wochen deinen ersten Payout erzielst.
       </EmailText>
 
-      <EmailHighlight>
+      <EmailText>
         Klick auf den Button, um direkt beizutreten. Der Link gehört nur dir —
         bitte nicht weitergeben.
-      </EmailHighlight>
+      </EmailText>
 
       <EmailButton href={inviteUrl}>Discord jetzt joinen</EmailButton>
 
-      <DiscordTrust />
+      <EmailSmall>100% kostenlos · Kein Risiko · Sofortiger Zugang</EmailSmall>
 
       <EmailText>
         Im nächsten Schritt: Schau dir das kurze Video an und buche dein

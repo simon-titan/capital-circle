@@ -2,15 +2,13 @@ import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
 import {
   EmailDivider,
-  EmailEyebrow,
   EmailHeading,
-  EmailHighlight,
   EmailLink,
+  EmailRows,
   EmailSmall,
   EmailSubheading,
   EmailText,
 } from "../layout/components";
-import { EMAIL_TOKENS as T } from "../layout/styles";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 import { rechtsPfade, rechtsUrl } from "@/config/legal";
@@ -41,11 +39,10 @@ export default function WiderrufEingangEmail({ beleg, appUrl, kopieAnKonto = fal
 
   return (
     <BaseEmail previewText={`Eingang deines Widerrufs am ${eingang.komplett}`}>
-      <EmailEyebrow>Widerruf eingegangen</EmailEyebrow>
       <EmailHeading>Dein Widerruf ist bei uns eingegangen.</EmailHeading>
       <EmailText>
-        Wir bestätigen den Eingang deines Widerrufs am <strong style={{ color: T.text }}>{eingang.datum}</strong> um{" "}
-        <strong style={{ color: T.text }}>{eingang.uhrzeit}</strong>.
+        Wir bestätigen den Eingang deines Widerrufs am <strong>{eingang.datum}</strong> um{" "}
+        <strong>{eingang.uhrzeit}</strong>.
       </EmailText>
 
       {kopieAnKonto ? (
@@ -57,57 +54,10 @@ export default function WiderrufEingangEmail({ beleg, appUrl, kopieAnKonto = fal
       ) : null}
 
       <EmailSubheading>Wie es weitergeht</EmailSubheading>
-      <EmailHighlight>{weiterText()}</EmailHighlight>
+      <EmailText>{weiterText()}</EmailText>
 
       <EmailSubheading>Inhalt deines Widerrufs</EmailSubheading>
-      <table
-        role="presentation"
-        width="100%"
-        cellSpacing={0}
-        cellPadding={0}
-        style={{
-          backgroundColor: T.bgCard,
-          border: `1px solid ${T.border}`,
-          borderRadius: "10px",
-          margin: "0 0 16px",
-        }}
-      >
-        <tbody>
-          {zeilen.map(([label, wert], i) => (
-            <tr key={label}>
-              <td
-                style={{
-                  padding: "10px 16px",
-                  borderTop: i === 0 ? "none" : `1px solid ${T.border}`,
-                  fontFamily: T.fontBody,
-                  fontSize: "13px",
-                  lineHeight: 1.5,
-                  color: T.textMuted,
-                  verticalAlign: "top",
-                  width: "40%",
-                }}
-              >
-                {label}
-              </td>
-              <td
-                style={{
-                  padding: "10px 16px",
-                  borderTop: i === 0 ? "none" : `1px solid ${T.border}`,
-                  fontFamily: T.fontBody,
-                  fontSize: "14px",
-                  lineHeight: 1.5,
-                  color: T.text,
-                  verticalAlign: "top",
-                  wordBreak: "break-word",
-                  whiteSpace: "pre-wrap",
-                }}
-              >
-                {wert}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <EmailRows rows={zeilen} />
 
       <EmailText muted>
         Die Folgen des Widerrufs stehen in der{" "}

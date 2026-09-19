@@ -1,14 +1,13 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
 import {
-  EmailHeading,
-  EmailText,
   EmailButton,
-  EmailSubheading,
-  EmailHighlight,
   EmailDivider,
-  EmailSmall,
+  EmailHeading,
   EmailLink,
+  EmailSmall,
+  EmailSubheading,
+  EmailText,
 } from "../layout/components";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
@@ -59,13 +58,13 @@ export default function WelcomePaidEmail({
       </EmailText>
 
       <EmailSubheading>Was du jetzt tun solltest</EmailSubheading>
-      <EmailHighlight>
+      <EmailText>
         {setPasswordUrl ? "1. Setz dein Passwort über den Knopf unten" : "1. Vervollständige dein Profil im Dashboard"}
         <br />
         2. Tritt unserem Discord-Server bei (Link im Dashboard)
         <br />
         3. Schau in den Live-Session-Kalender und blockiere dir den nächsten Termin
-      </EmailHighlight>
+      </EmailText>
 
       <EmailButton href={setPasswordUrl ?? `${appUrl}/dashboard`}>
         {setPasswordUrl ? "Passwort setzen" : "Zum Dashboard"}

@@ -1,7 +1,6 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
-import { EmailButton, EmailEyebrow, EmailHeading, EmailHighlight, EmailSmall, EmailText } from "../layout/components";
-import { EMAIL_TOKENS as T } from "../layout/styles";
+import { EmailButton, EmailError, EmailHeading, EmailRows, EmailSmall, EmailText } from "../layout/components";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
 import { BETREIBER_EMAIL, erstattungFaelligBis, formatEingang, formatTag, PLAN_LABEL, type WiderrufsBeleg } from "@/lib/widerruf/shared";
@@ -65,69 +64,22 @@ export default function WiderrufBetreiberEmail({ beleg, info, adminUrl }: Props)
 
   return (
     <BaseEmail previewText={`Widerruf: ${beleg.name} (${beleg.referenz})`}>
-      <EmailEyebrow>Widerrufsfunktion · Bitte prüfen</EmailEyebrow>
+      <EmailSmall>Widerrufsfunktion · Bitte prüfen</EmailSmall>
       <EmailHeading>Neuer Widerruf über /widerrufen</EmailHeading>
       <EmailText>
         {beleg.name} ({beleg.email}) hat am {eingang.komplett} den Vertrag widerrufen.
       </EmailText>
 
-      <EmailHighlight>{info.pruefHinweis}</EmailHighlight>
+      <EmailText>{info.pruefHinweis}</EmailText>
 
       {!info.gespeichert ? (
-        <EmailText>
-          <strong style={{ color: T.red }}>
-            Der Widerruf konnte nicht in der Datenbank gespeichert werden. Diese Mail ist der einzige Beleg — bitte
-            aufbewahren.
-          </strong>
-        </EmailText>
+        <EmailError>
+          Der Widerruf konnte nicht in der Datenbank gespeichert werden. Diese Mail ist der einzige Beleg — bitte
+          aufbewahren.
+        </EmailError>
       ) : null}
 
-      <table
-        role="presentation"
-        width="100%"
-        cellSpacing={0}
-        cellPadding={0}
-        style={{
-          backgroundColor: T.bgCard,
-          border: `1px solid ${T.border}`,
-          borderRadius: "10px",
-          margin: "16px 0",
-        }}
-      >
-        <tbody>
-          {zeilen.map(([label, wert], i) => (
-            <tr key={label}>
-              <td
-                style={{
-                  padding: "8px 14px",
-                  borderTop: i === 0 ? "none" : `1px solid ${T.border}`,
-                  fontFamily: T.fontBody,
-                  fontSize: "12px",
-                  color: T.textMuted,
-                  verticalAlign: "top",
-                  width: "38%",
-                }}
-              >
-                {label}
-              </td>
-              <td
-                style={{
-                  padding: "8px 14px",
-                  borderTop: i === 0 ? "none" : `1px solid ${T.border}`,
-                  fontFamily: T.fontBody,
-                  fontSize: "13px",
-                  color: T.text,
-                  verticalAlign: "top",
-                  wordBreak: "break-word",
-                  whiteSpace: "pre-wrap",
-                }}
-              >
-                {wert}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <EmailRows rows={zeilen} />
 
       <EmailButton href={adminUrl}>Widerrufe im Admin öffnen</EmailButton>
       <EmailSmall>

@@ -1,13 +1,6 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
-import {
-  CampaignBadge,
-  CampaignButton,
-  CampaignHeading,
-  CampaignHighlight,
-  CampaignText,
-} from "../campaigns/whop-migration/components";
-import { CAMPAIGN_TOKENS as T } from "../campaigns/whop-migration/styles";
+import { EmailButton, EmailHeading, EmailSmall, EmailText } from "../layout/components";
 import { sendEmail, type SendResult } from "../send";
 import { generateContactUnsubscribeToken } from "../unsubscribe-token";
 import { getAppUrl } from "../resend";
@@ -28,28 +21,26 @@ export default function WhopMigrationMail1({
   return (
     <BaseEmail
       previewText="Ab heute ist der Grund vom Tisch, warum du bisher nicht dabei warst."
-      hideFooter={false}
       unsubscribeUrl={unsubscribeUrl}
-      bodyFontFamily={T.fontBody}
     >
-      <CampaignBadge>Capital Circle Monatlich ist live</CampaignBadge>
-      <CampaignHeading>Der Grund, warum du nicht dabei bist</CampaignHeading>
+      <EmailSmall>Capital Circle Monatlich ist live</EmailSmall>
+      <EmailHeading>Der Grund, warum du nicht dabei bist</EmailHeading>
 
-      <CampaignText>Hey {firstName},</CampaignText>
-      <CampaignText>
+      <EmailText>Hey {firstName},</EmailText>
+      <EmailText>
         wenn du bei Capital Circle bisher nicht eingestiegen bist, war der
         Grund in den meisten Fällen der gleiche: der Preis.
-      </CampaignText>
-      <CampaignText>
+      </EmailText>
+      <EmailText>
         <strong>Ab heute ist das vom Tisch.</strong>
-      </CampaignText>
+      </EmailText>
 
-      <CampaignHighlight>
+      <EmailText>
         Capital Circle gibt&apos;s jetzt monatlich für 99&nbsp;€, statt
         899&nbsp;€ auf einmal. Jederzeit kündbar, kein Invest im Voraus.
-      </CampaignHighlight>
+      </EmailText>
 
-      <CampaignText>
+      <EmailText>
         <strong>Was du bekommst:</strong>
         <br />
         Live Trading Sessions Di–Do, 15:30 Uhr (NY AM Session)
@@ -62,25 +53,25 @@ export default function WhopMigrationMail1({
         Tägliche Bias-Posts im Discord
         <br />
         Zugang zur exklusiven Discord-Community
-      </CampaignText>
+      </EmailText>
 
-      <CampaignText>
+      <EmailText>
         Kein größeres Risiko als ein Monatsabo. Du testest einen Monat,
         entscheidest danach neu. Jederzeit kündbar. Keine versteckten
         Fristen.
-      </CampaignText>
+      </EmailText>
 
-      <CampaignText>
+      <EmailText>
         Der Markt läuft so oder so weiter, jeden Tag, mit oder ohne dich. Die
         einzige Frage ist, ob du irgendwann anfängst, das systematisch zu
         nutzen, oder in einem Jahr an der gleichen Stelle stehst wie heute.
-      </CampaignText>
+      </EmailText>
 
-      <CampaignButton href={WHOP_MIGRATION.joinUrl}>
+      <EmailButton href={WHOP_MIGRATION.joinUrl}>
         Jetzt für 99&nbsp;€/Monat starten
-      </CampaignButton>
+      </EmailButton>
 
-      <CampaignText muted>Emre</CampaignText>
+      <EmailText muted>Emre</EmailText>
     </BaseEmail>
   );
 }

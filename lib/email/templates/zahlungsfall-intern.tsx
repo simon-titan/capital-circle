@@ -1,7 +1,7 @@
 import * as React from "react";
 import { getAppUrl } from "@/lib/site-url";
 import { BaseEmail } from "../layout/BaseEmail";
-import { EmailButton, EmailHeading, EmailHighlight, EmailText } from "../layout/components";
+import { EmailButton, EmailHeading, EmailQuote, EmailRows, EmailText } from "../layout/components";
 import { sendEmail, type SendResult } from "../send";
 
 type Props =
@@ -53,7 +53,7 @@ export default function ZahlungsfallInternEmail(props: Props) {
             {props.name} · {props.email}
           </strong>
         </EmailText>
-        <EmailHighlight>{props.auszug}</EmailHighlight>
+        <EmailQuote>{props.auszug}</EmailQuote>
         <EmailText muted>
           Geschrieben über den Knopf in Discord. Beantwortet wird in der Fallakte — die Antwort geht als
           Direktnachricht und per Mail an den Kunden.
@@ -66,15 +66,15 @@ export default function ZahlungsfallInternEmail(props: Props) {
   return (
     <BaseEmail previewText={`Zahlung fehlgeschlagen: ${props.name}, ${props.betrag}`}>
       <EmailHeading>Zahlung fehlgeschlagen</EmailHeading>
-      <EmailText>
-        <strong>
-          {props.name} · {props.betrag}
-        </strong>
-      </EmailText>
-      <EmailText muted>
-        {props.email} · Tarif {props.paket} · {props.versuche <= 1 ? "erster Versuch" : `${props.versuche}. Versuch`} ·
-        Zugang ruht ab {props.frist}
-      </EmailText>
+      <EmailRows
+        rows={[
+          ["Kunde", `${props.name} · ${props.email}`],
+          ["Betrag", props.betrag],
+          ["Tarif", props.paket],
+          ["Versuch", props.versuche <= 1 ? "erster Versuch" : `${props.versuche}. Versuch`],
+          ["Zugang ruht ab", props.frist],
+        ]}
+      />
       <EmailText muted>
         Der Kunde hat eine Mail und, falls Discord verknüpft ist, eine Direktnachricht mit dem Zahlungslink bekommen.
         Antwortet er über den Knopf, landet die Antwort in der Fallakte.

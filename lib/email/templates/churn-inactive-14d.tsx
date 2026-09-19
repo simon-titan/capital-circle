@@ -1,11 +1,6 @@
 import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
-import {
-  EmailHeading,
-  EmailText,
-  EmailButton,
-  EmailHighlight,
-} from "../layout/components";
+import { EmailButton, EmailHeading, EmailText } from "../layout/components";
 import { abmeldeUrl } from "../abmeldung";
 import { sendEmail, type SendResult } from "../send";
 import { getAppUrl } from "../resend";
@@ -27,11 +22,11 @@ export default function ChurnInactive14dEmail({ firstName, abmeldeLink }: Pick<P
         steht, ist das vollkommen normal.
       </EmailText>
 
-      <EmailHighlight>
+      <EmailText>
         Wenn du eine kurze Pause brauchst: Sag uns Bescheid (einfach auf diese
         Mail antworten). Wir können den Account auch temporär pausieren, ohne
         dass du den Zugang verlierst.
-      </EmailHighlight>
+      </EmailText>
 
       <EmailText>
         Falls du einfach den Wiedereinstieg suchst — der einfachste Weg ist
