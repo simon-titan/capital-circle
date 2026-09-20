@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getPresignedGetUrl } from "@/lib/storage";
+import { buildManifestUrl } from "@/lib/cloudflare-stream";
 import { liveSessionIstFrei } from "@/lib/access-control/inhalt-zugang";
 import { hatInhaltsZugang } from "@/lib/membership";
 
+// jsonwebtoken (RS256) braucht Node-crypto, siehe `app/api/video-url/route.ts`.
+export const runtime = "nodejs";
+
 /**
- * Signed URL für Live-Session-Videos (R2-Key in live_session_videos.storage_key).
+ * Signed URL für Live-Session-Videos: Cloudflare Stream (signiertes HLS-Manifest,
+ * `live_session_videos.cloudflare_uid`) oder, für Altbestand, ein R2-Key
+ * (`storage_key`). Der Parameter `key` trägt die Stream-ID bzw. den Schlüssel.
  *
  * Zugang: Der Key muss einer Zeile in live_session_videos entsprechen, und
  * - mit Zahlung (`profiles.is_paid`) oder als Admin: jedes Video,
@@ -28,18 +34,25 @@ export async function GET(request: Request) {
   }
 
   const service = createServiceClient();
-  const [{ data: profile }, { data: row }] = await Promise.all([
+  type Zeile = { id: string; storage_key: string | null; cloudflare_uid: string | null; session_id: string | null };
+  const SPALTEN = "id, storage_key, cloudflare_uid, session_id";
+
+  const [{ data: profile }, { data: perStreamId }] = await Promise.all([
     supabase.from("profiles").select("is_admin, is_paid").eq("id", authData.user.id).maybeSingle(),
-    service
-      .from("live_session_videos")
-      .select("id, storage_key, session_id")
-      .eq("storage_key", key)
-      .limit(1)
-      .maybeSingle(),
+    service.from("live_session_videos").select(SPALTEN).eq("cloudflare_uid", key).limit(1).maybeSingle(),
   ]);
 
-  const video = row as { id: string; storage_key: string | null; session_id: string | null } | null;
-  if (!video?.storage_key) {
+  let video = perStreamId as Zeile | null;
+  if (!video) {
+    const { data: perSchluessel } = await service
+      .from("live_session_videos")
+      .select(SPALTEN)
+      .eq("storage_key", key)
+      .limit(1)
+      .maybeSingle();
+    video = perSchluessel as Zeile | null;
+  }
+  if (!video || (!video.cloudflare_uid && !video.storage_key)) {
     return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
   }
 
@@ -47,7 +60,22 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
   }
 
-  const signedUrl = await getPresignedGetUrl(video.storage_key);
+  if (video.cloudflare_uid) {
+    const expiresInSeconds = 4 * 60 * 60;
+    try {
+      return NextResponse.json({
+        ok: true,
+        url: buildManifestUrl(video.cloudflare_uid, { signed: true, ttlSeconds: expiresInSeconds }),
+        expiresInSeconds,
+        expiresAt: Date.now() + expiresInSeconds * 1000,
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "cloudflare_signing_failed";
+      return NextResponse.json({ ok: false, error: msg }, { status: 500 });
+    }
+  }
+
+  const signedUrl = await getPresignedGetUrl(video.storage_key as string);
   const expiresInSeconds = 60 * 15;
   return NextResponse.json({
     ok: true,

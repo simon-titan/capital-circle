@@ -206,6 +206,58 @@ export async function getVideoStatus(uid: string): Promise<CloudflareVideoStatus
   };
 }
 
+export type CloudflareVideoListItem = {
+  uid: string;
+  name: string;
+  durationSeconds: number | null;
+  readyToStream: boolean;
+  state: CloudflareVideoStatus["state"];
+  /** Erstellzeit (ISO). Zugleich Cursor für die nächste Seite (`before`). */
+  createdAt: string;
+};
+
+/**
+ * Videos des Stream-Kontos, neueste zuerst — für die Auswahl im Admin
+ * (Live-Sessions). Die API kennt keine Seitenzahl, sondern schneidet über
+ * `before` (Erstellzeit): Der Aufrufer reicht `next` der letzten Antwort weiter.
+ *
+ * `search` sucht im Namen (`meta.name`) und trifft auch auf Teilstücke.
+ */
+export async function listVideos(params: {
+  search?: string;
+  before?: string;
+  limit?: number;
+}): Promise<{ items: CloudflareVideoListItem[]; next: string | null }> {
+  const limit = Math.min(Math.max(params.limit ?? 40, 1), 100);
+  const q = new URLSearchParams({ limit: String(limit), asc: "false" });
+  if (params.search?.trim()) q.set("search", params.search.trim());
+  if (params.before) q.set("before", params.before);
+
+  const result = await cfFetch<
+    {
+      uid: string;
+      created?: string;
+      readyToStream?: boolean;
+      status?: { state?: string };
+      duration?: number;
+      meta?: { name?: string; filename?: string };
+    }[]
+  >(`?${q.toString()}`);
+
+  const items = (result ?? []).map((v) => ({
+    uid: v.uid,
+    name: (v.meta?.name || v.meta?.filename || v.uid).trim(),
+    durationSeconds: typeof v.duration === "number" && v.duration > 0 ? Math.round(v.duration) : null,
+    readyToStream: Boolean(v.readyToStream),
+    state: (v.status?.state as CloudflareVideoStatus["state"]) ?? "queued",
+    createdAt: v.created ?? "",
+  }));
+
+  // Volle Seite heißt: Es kann mehr geben. Der Cursor ist die Erstellzeit des letzten Eintrags.
+  const next = items.length >= limit ? (items[items.length - 1]?.createdAt || null) : null;
+  return { items, next };
+}
+
 export async function deleteVideo(uid: string): Promise<void> {
   await cfFetch<null>(`/${encodeURIComponent(uid)}`, { method: "DELETE" });
 }

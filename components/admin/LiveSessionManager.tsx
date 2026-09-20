@@ -7,7 +7,6 @@ import {
   HStack,
   IconButton,
   Input,
-  Progress,
   Select,
   Stack,
   Tab,
@@ -18,10 +17,12 @@ import {
   Text,
   Textarea,
 } from "@chakra-ui/react";
-import { uploadSmallFilePresigned, uploadViaPresigned } from "@/lib/admin-upload-presigned";
+import { uploadSmallFilePresigned } from "@/lib/admin-upload-presigned";
+import { CloudflareVideoPicker, type CloudflareVideoPick } from "@/components/admin/CloudflareVideoPicker";
+import { CloudflareVideoUploader, type CloudflareVideoUploadedPayload } from "@/components/admin/CloudflareVideoUploader";
 import { createClient } from "@/lib/supabase/client";
 import { Trash2 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type EventOpt = { id: string; title: string; start_time: string; event_type: string | null };
 
@@ -46,11 +47,17 @@ type VideoRow = {
   subcategory_id: string | null;
   title: string;
   description: string | null;
-  storage_key: string;
+  /** Altbestand (R2) oder externe Adresse; bei Cloudflare-Videos leer. */
+  storage_key: string | null;
+  /** Cloudflare-Stream-ID (Migration 103). */
+  cloudflare_uid: string | null;
   thumbnail_key: string | null;
   duration_seconds: number | null;
   position: number;
 };
+
+/** Quelle des Videos im Schnell-Recap. `keep` gibt es nur beim Bearbeiten. */
+type RecapSource = "cloudflare" | "url" | "keep";
 
 /** Für `<input type="datetime-local" />` (lokale Zeit). */
 function toDatetimeLocalValue(iso: string): string {
@@ -119,51 +126,10 @@ const tabSx = {
   },
 } as const;
 
-/** Upload-Fortschritt in Champagner (die gefüllte Spur ist das direkte Kind-`div`). */
-const progressSx = {
-  bg: "rgba(255, 255, 255, 0.07)",
-  "& > div": { bgColor: "var(--cc-gold)", boxShadow: "0 0 10px rgba(212, 176, 128, 0.35)" },
-} as const;
-
 const cardSx = { className: "cc-card cc-card--still", p: { base: 5, md: 6 } } as const;
 
 async function uploadCover(file: File): Promise<string> {
   return uploadSmallFilePresigned(file, { folder: "covers" });
-}
-
-function readVideoDuration(file: File): Promise<number | null> {
-  return new Promise((resolve) => {
-    const url = URL.createObjectURL(file);
-    const video = document.createElement("video");
-    video.preload = "metadata";
-    video.onloadedmetadata = () => {
-      URL.revokeObjectURL(url);
-      const d = video.duration;
-      resolve(Number.isFinite(d) ? Math.floor(d) : null);
-    };
-    video.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve(null);
-    };
-    video.src = url;
-  });
-}
-
-function uploadLiveSessionVideoViaProxy(
-  file: File,
-  meta: { sessionId: string; videoId: string },
-  onProgress: (pct: number) => void,
-): Promise<string> {
-  return uploadViaPresigned(
-    file,
-    {
-      folder: "live-sessions",
-      sessionId: meta.sessionId,
-      videoId: meta.videoId,
-      kind: "original",
-    },
-    onProgress,
-  );
 }
 
 async function uploadLiveSessionThumb(file: File, sessionId: string, videoId: string): Promise<string> {
@@ -202,26 +168,22 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
   const [videoDesc, setVideoDesc] = useState("");
   const [videoSubId, setVideoSubId] = useState("");
   const [videoBusy, setVideoBusy] = useState(false);
-  const [videoProgress, setVideoProgress] = useState(0);
   const [videoStatus, setVideoStatus] = useState<string | null>(null);
 
   const [status, setStatus] = useState<string | null>(null);
   const [thumbBusy, setThumbBusy] = useState(false);
-  const videoFileRef = useRef<HTMLInputElement>(null);
 
   const [recapCategoryId, setRecapCategoryId] = useState("");
   const [recapEventId, setRecapEventId] = useState("");
   const [recapTitle, setRecapTitle] = useState("");
   const [recapRecordedAt, setRecapRecordedAt] = useState("");
   const [recapDesc, setRecapDesc] = useState("");
-  const [recapSource, setRecapSource] = useState<"url" | "file">("file");
+  const [recapSource, setRecapSource] = useState<RecapSource>("cloudflare");
   const [recapUrl, setRecapUrl] = useState("");
   const [recapBusy, setRecapBusy] = useState(false);
-  const [recapProgress, setRecapProgress] = useState(0);
   const [recapStatus, setRecapStatus] = useState<string | null>(null);
-  const [recapFileName, setRecapFileName] = useState<string | null>(null);
-  const [recapFileSize, setRecapFileSize] = useState<number | null>(null);
-  const recapFileRef = useRef<HTMLInputElement>(null);
+  /** Gewähltes Cloudflare-Video (Auswahl aus der Liste oder frisch hochgeladen). */
+  const [recapCloudflare, setRecapCloudflare] = useState<CloudflareVideoPick | null>(null);
   /** Bearbeitung im Tab „Schnell-Recap“ */
   const [recapEditingId, setRecapEditingId] = useState<string | null>(null);
   const [recapFirstVideoId, setRecapFirstVideoId] = useState<string | null>(null);
@@ -281,12 +243,9 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
     setRecapRecordedAt("");
     setRecapDesc("");
     setRecapUrl("");
-    setRecapSource("file");
+    setRecapSource("cloudflare");
+    setRecapCloudflare(null);
     setRecapStatus(null);
-    setRecapProgress(0);
-    setRecapFileName(null);
-    setRecapFileSize(null);
-    if (recapFileRef.current) recapFileRef.current.value = "";
   };
 
   const startEditRecap = async (s: SessionRow) => {
@@ -300,27 +259,27 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
     const supabase = createClient();
     const { data: v } = await supabase
       .from("live_session_videos")
-      .select("id, storage_key")
+      .select("id, storage_key, cloudflare_uid")
       .eq("session_id", s.id)
       .order("position", { ascending: true })
       .limit(1)
       .maybeSingle();
+    setRecapCloudflare(null);
     if (v) {
       setRecapFirstVideoId(v.id);
       const sk = String(v.storage_key ?? "").trim();
-      if (/^https?:\/\//i.test(sk)) {
+      if (!v.cloudflare_uid && /^https?:\/\//i.test(sk)) {
         setRecapSource("url");
         setRecapUrl(sk);
       } else {
-        setRecapSource("file");
+        setRecapSource("keep");
         setRecapUrl("");
       }
     } else {
       setRecapFirstVideoId(null);
-      setRecapSource("file");
+      setRecapSource("cloudflare");
       setRecapUrl("");
     }
-    if (recapFileRef.current) recapFileRef.current.value = "";
   };
 
   const pickSessionThumb = async () => {
@@ -470,60 +429,60 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
     if (!error && selectedSessionId) void loadSubsAndVideos(selectedSessionId);
   };
 
-  const onPickVideo = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file || !selectedSessionId) {
-      setVideoStatus("Session wählen und Videodatei wählen.");
+  /**
+   * Cloudflare-Videos in die gewählte Session einhängen (Auswahl aus der Liste
+   * oder frisch hochgeladen). Ein einzelnes Video übernimmt Titel und
+   * Beschreibung aus dem Formular; bei mehreren gilt der Name aus Cloudflare.
+   */
+  const addCloudflareVideos = async (picks: CloudflareVideoPick[]) => {
+    if (!selectedSessionId) {
+      setVideoStatus("Erst oben eine Session wählen.");
       return;
     }
-    if (!file.type.startsWith("video/")) {
-      setVideoStatus("Bitte eine Videodatei (z. B. MP4).");
-      return;
-    }
-    if (!videoTitle.trim()) {
-      setVideoStatus("Titel für das Video eingeben.");
-      return;
-    }
+    if (picks.length === 0) return;
 
     setVideoBusy(true);
-    setVideoProgress(0);
-    setVideoStatus("Upload…");
-    const videoId = crypto.randomUUID();
-    const durationSeconds = await readVideoDuration(file);
+    setVideoStatus(null);
+    const supabase = createClient();
+    // Nächste Position aus der Datenbank, nicht aus dem Zustand: Mehrere Uploads laufen nacheinander ein.
+    const { data: letzte } = await supabase
+      .from("live_session_videos")
+      .select("position")
+      .eq("session_id", selectedSessionId)
+      .order("position", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const start = letzte ? Number(letzte.position ?? 0) + 1 : 0;
+    const einzeln = picks.length === 1;
 
-    try {
-      const storageKey = await uploadLiveSessionVideoViaProxy(
-        file,
-        { sessionId: selectedSessionId, videoId },
-        setVideoProgress,
-      );
-      const supabase = createClient();
-      const nextPos = videos.length;
-      const { error } = await supabase.from("live_session_videos").insert({
-        id: videoId,
+    const { error } = await supabase.from("live_session_videos").insert(
+      picks.map((p, i) => ({
+        id: crypto.randomUUID(),
         session_id: selectedSessionId,
         subcategory_id: videoSubId.trim() ? videoSubId : null,
-        title: videoTitle.trim(),
-        description: videoDesc.trim() || null,
-        storage_key: storageKey,
-        duration_seconds: durationSeconds,
-        position: nextPos,
-      });
-      if (error) {
-        setVideoStatus(error.message);
-        setVideoBusy(false);
-        return;
-      }
-      setVideoTitle("");
-      setVideoDesc("");
-      setVideoSubId("");
-      void loadSubsAndVideos(selectedSessionId);
-      setVideoStatus("Video gespeichert.");
-    } catch (err) {
-      setVideoStatus(err instanceof Error ? err.message : "Upload fehlgeschlagen.");
-    }
+        title: einzeln && videoTitle.trim() ? videoTitle.trim() : p.name,
+        description: einzeln ? videoDesc.trim() || null : null,
+        storage_key: null,
+        cloudflare_uid: p.uid,
+        duration_seconds: p.durationSeconds,
+        position: start + i,
+      })),
+    );
     setVideoBusy(false);
+    if (error) {
+      setVideoStatus(error.message);
+      return;
+    }
+    setVideoTitle("");
+    setVideoDesc("");
+    void loadSubsAndVideos(selectedSessionId);
+    setVideoStatus(picks.length === 1 ? "Video hinzugefügt." : `${picks.length} Videos hinzugefügt.`);
+  };
+
+  const onVideoUploaded = async (payload: CloudflareVideoUploadedPayload) => {
+    await addCloudflareVideos([
+      { uid: payload.cloudflareUid, name: payload.fileName, durationSeconds: payload.durationSeconds },
+    ]);
   };
 
   const pickVideoThumb = (videoId: string) => {
@@ -584,16 +543,36 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
         setRecapStatus(uErr.message);
         return;
       }
-      if (recapSource === "url" && recapFirstVideoId) {
+      if (recapFirstVideoId && recapSource === "url") {
         const u = recapUrl.trim();
         if (!u || !/^https?:\/\//i.test(u)) {
           setRecapBusy(false);
-          setRecapStatus("Bitte eine gültige Video-URL (https://…) angeben oder auf Datei wechseln.");
+          setRecapStatus("Bitte eine gültige Video-URL (https://…) angeben oder das aktuelle Video beibehalten.");
           return;
         }
         const { error: vErr } = await supabase
           .from("live_session_videos")
-          .update({ storage_key: u })
+          .update({ storage_key: u, cloudflare_uid: null })
+          .eq("id", recapFirstVideoId);
+        if (vErr) {
+          setRecapBusy(false);
+          setRecapStatus(vErr.message);
+          return;
+        }
+      }
+      if (recapFirstVideoId && recapSource === "cloudflare") {
+        if (!recapCloudflare) {
+          setRecapBusy(false);
+          setRecapStatus("Bitte ein Cloudflare-Video wählen oder das aktuelle Video beibehalten.");
+          return;
+        }
+        const { error: vErr } = await supabase
+          .from("live_session_videos")
+          .update({
+            cloudflare_uid: recapCloudflare.uid,
+            storage_key: null,
+            duration_seconds: recapCloudflare.durationSeconds,
+          })
           .eq("id", recapFirstVideoId);
         if (vErr) {
           setRecapBusy(false);
@@ -616,16 +595,13 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
         return;
       }
     }
-    if (recapSource === "file" && !recapFileRef.current?.files?.[0]) {
-      setRecapStatus("Bitte eine Videodatei wählen oder auf „Externe URL“ wechseln.");
+    if (recapSource !== "url" && !recapCloudflare) {
+      setRecapStatus("Bitte ein Cloudflare-Video wählen oder auf „Externe URL“ wechseln.");
       return;
     }
 
     setRecapBusy(true);
-    setRecapProgress(0);
     setRecapStatus("Session wird angelegt…");
-    setRecapFileName(null);
-    setRecapFileSize(null);
     const supabase = createClient();
     const recordedAt = recapRecordedAt ? new Date(recapRecordedAt).toISOString() : null;
     const videoId = crypto.randomUUID();
@@ -651,54 +627,21 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
     const sessionId = sess.id as string;
 
     try {
-      if (recapSource === "url") {
-        const { error: vErr } = await supabase.from("live_session_videos").insert({
-          id: videoId,
-          session_id: sessionId,
-          subcategory_id: null,
-          title: recapTitle.trim(),
-          description: recapDesc.trim() || null,
-          storage_key: recapUrl.trim(),
-          position: 0,
-        });
-        if (vErr) {
-          setRecapStatus(vErr.message);
-          setRecapBusy(false);
-          return;
-        }
-      } else {
-        const file = recapFileRef.current?.files?.[0];
-        if (!file) {
-          setRecapStatus("Keine Datei gewählt.");
-          setRecapBusy(false);
-          return;
-        }
-        if (!file.type.startsWith("video/")) {
-          setRecapStatus("Bitte eine Videodatei (z. B. MP4) wählen.");
-          setRecapBusy(false);
-          return;
-        }
-        setRecapFileName(file.name);
-        setRecapFileSize(file.size);
-        setRecapStatus("Video wird hochgeladen…");
-        const storageKey = await uploadLiveSessionVideoViaProxy(file, { sessionId, videoId }, setRecapProgress);
-        setRecapStatus("Dauer wird ermittelt…");
-        const durationSeconds = await readVideoDuration(file);
-        const { error: vErr } = await supabase.from("live_session_videos").insert({
-          id: videoId,
-          session_id: sessionId,
-          subcategory_id: null,
-          title: recapTitle.trim(),
-          description: recapDesc.trim() || null,
-          storage_key: storageKey,
-          duration_seconds: durationSeconds,
-          position: 0,
-        });
-        if (vErr) {
-          setRecapStatus(vErr.message);
-          setRecapBusy(false);
-          return;
-        }
+      const { error: vErr } = await supabase.from("live_session_videos").insert({
+        id: videoId,
+        session_id: sessionId,
+        subcategory_id: null,
+        title: recapTitle.trim(),
+        description: recapDesc.trim() || null,
+        storage_key: recapSource === "url" ? recapUrl.trim() : null,
+        cloudflare_uid: recapSource === "url" ? null : (recapCloudflare?.uid ?? null),
+        duration_seconds: recapSource === "url" ? null : (recapCloudflare?.durationSeconds ?? null),
+        position: 0,
+      });
+      if (vErr) {
+        setRecapStatus(vErr.message);
+        setRecapBusy(false);
+        return;
       }
     } catch (e) {
       setRecapStatus(e instanceof Error ? e.message : "Fehler beim Speichern.");
@@ -707,11 +650,49 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
     }
 
     setRecapBusy(false);
-    setRecapProgress(0);
     void loadSessions();
     clearRecapForm();
     setRecapStatus("Recap gespeichert (Session + Video).");
   };
+
+  /** Cloudflare-Auswahl und Upload für den Schnell-Recap (genau ein Video). */
+  const recapCloudflareUi = (
+    <Stack spacing={3}>
+      {recapCloudflare ? (
+        <Box p={3} borderRadius="8px" border="1px solid rgba(212, 176, 128, 0.28)" bg="var(--cc-gold-wash)">
+          <Text fontSize="sm" fontWeight={600} color="var(--cc-text)" noOfLines={1}>
+            {recapCloudflare.name}
+          </Text>
+          <Text fontSize="xs" color="var(--cc-text-2)" className="cc-num" noOfLines={1}>
+            Cloudflare · {recapCloudflare.uid}
+          </Text>
+        </Box>
+      ) : (
+        <Text fontSize="sm" color="var(--cc-text-3)">
+          Noch kein Video gewählt.
+        </Text>
+      )}
+      <CloudflareVideoPicker
+        einzeln
+        buttonLabel="Dieses Video verwenden"
+        onAdd={(gewaehlt) => {
+          const v = gewaehlt[0];
+          if (!v) return;
+          setRecapCloudflare(v);
+          setRecapTitle((prev) => (prev.trim() ? prev : v.name));
+        }}
+      />
+      <Text fontSize="xs" color="var(--cc-text-3)">
+        Oder eine neue Datei per Drag &amp; Drop nach Cloudflare hochladen:
+      </Text>
+      <CloudflareVideoUploader
+        onUploaded={(u) => {
+          setRecapCloudflare({ uid: u.cloudflareUid, name: u.fileName, durationSeconds: u.durationSeconds });
+          setRecapTitle((prev) => (prev.trim() ? prev : u.fileName));
+        }}
+      />
+    </Stack>
+  );
 
   return (
     <Tabs variant="unstyled">
@@ -864,11 +845,11 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                   <FormLabel {...labelSx}>Video-Quelle (nur bei neuer Session)</FormLabel>
                   <Select
                     value={recapSource}
-                    onChange={(e) => setRecapSource(e.target.value as "url" | "file")}
+                    onChange={(e) => setRecapSource(e.target.value as RecapSource)}
                     {...selectSx}
                     maxW="320px"
                   >
-                    <option value="file">Datei-Upload (Hetzner Storage)</option>
+                    <option value="cloudflare">Cloudflare Stream</option>
                     <option value="url">Externe Video-URL (z. B. Zoom-Cloud)</option>
                   </Select>
                 </Box>
@@ -880,48 +861,24 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                     {...fieldSx}
                   />
                 ) : (
-                  <Box>
-                    <input
-                      ref={recapFileRef}
-                      type="file"
-                      accept="video/*"
-                      hidden
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) {
-                          setRecapFileName(f.name);
-                          setRecapFileSize(f.size);
-                        }
-                      }}
-                    />
-                    <HStack gap={3} flexWrap="wrap">
-                      <Button size="sm" variant="line" onClick={() => recapFileRef.current?.click()}>
-                        Videodatei wählen
-                      </Button>
-                      {recapFileName ? (
-                        <Text fontSize="xs" color="var(--cc-text-soft)" className="cc-num" noOfLines={1} maxW="280px">
-                          {recapFileName}
-                          {recapFileSize ? ` (${(recapFileSize / 1024 / 1024).toFixed(1)} MB)` : ""}
-                        </Text>
-                      ) : null}
-                    </HStack>
-                  </Box>
+                  recapCloudflareUi
                 )}
               </>
             ) : (
               <Box p={3} borderRadius="8px" border="1px solid var(--cc-line)" bg="rgba(255, 255, 255, 0.02)">
                 <Text fontSize="sm" color="var(--cc-text-soft)" mb={2}>
-                  Video ist bereits hinterlegt. Du kannst die Metadaten oben ändern.
+                  Video ist bereits hinterlegt. Du kannst die Metadaten oben ändern oder das Video austauschen.
                 </Text>
-                <FormLabel {...labelSx}>Externe Video-URL ändern (optional)</FormLabel>
+                <FormLabel {...labelSx}>Video</FormLabel>
                 <Select
                   value={recapSource}
-                  onChange={(e) => setRecapSource(e.target.value as "url" | "file")}
+                  onChange={(e) => setRecapSource(e.target.value as RecapSource)}
                   {...selectSx}
-                  maxW="320px"
+                  maxW="360px"
                   mb={2}
                 >
-                  <option value="file">Aktuelles Video beibehalten (Storage)</option>
+                  <option value="keep">Aktuelles Video beibehalten</option>
+                  <option value="cloudflare">Durch ein Cloudflare-Video ersetzen</option>
                   <option value="url">Auf externe URL umstellen / URL ändern</option>
                 </Select>
                 {recapSource === "url" ? (
@@ -932,42 +889,9 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                     {...fieldSx}
                   />
                 ) : null}
+                {recapSource === "cloudflare" ? recapCloudflareUi : null}
               </Box>
             )}
-
-            {recapBusy && recapSource === "file" ? (
-              <Box p={4} borderRadius="12px" border="1px solid rgba(212, 176, 128, 0.28)" bg="var(--cc-gold-wash)">
-                <HStack justify="space-between" mb={2} flexWrap="wrap" gap={1}>
-                  <Text fontSize="sm" fontWeight={600} color="var(--cc-text)" noOfLines={1} maxW="70%">
-                    {recapFileName ?? "Video wird hochgeladen…"}
-                  </Text>
-                  <Text fontSize="sm" fontWeight={600} className="cc-num" color="var(--cc-gold-light)" flexShrink={0}>
-                    {recapProgress}%
-                  </Text>
-                </HStack>
-                {recapFileSize ? (
-                  <Text fontSize="xs" color="var(--cc-text-2)" className="cc-num" mb={2}>
-                    {(recapFileSize / 1024 / 1024).toFixed(1)} MB
-                    {recapProgress > 0 && recapProgress < 100
-                      ? ` — ${((recapFileSize / 1024 / 1024) * (recapProgress / 100)).toFixed(1)} MB übertragen`
-                      : ""}
-                  </Text>
-                ) : null}
-                <Progress
-                  value={recapProgress}
-                  size="sm"
-                  borderRadius="full"
-                  sx={progressSx}
-                  hasStripe={recapProgress < 100}
-                  isAnimated={recapProgress < 100}
-                />
-                {recapStatus ? (
-                  <Text fontSize="xs" color="var(--cc-text-2)" mt={2}>
-                    {recapStatus}
-                  </Text>
-                ) : null}
-              </Box>
-            ) : null}
 
             <HStack flexWrap="wrap" gap={3}>
               <Button
@@ -1253,15 +1177,13 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                 </Stack>
 
                 <Stack gap={3}>
-                  <Text {...sectionTitleSx}>
-                    Video (Hetzner / S3)
-                  </Text>
+                  <Text {...sectionTitleSx}>Videos aus Cloudflare</Text>
                   <Text fontSize="xs" color="var(--cc-text-3)">
-                    Titel eingeben, optional Abschnitt wählen, dann MP4 hochladen. Pro Session typischerweise ein Video;
-                    die Struktur erlaubt mehrere Clips.
+                    Bei einem einzelnen Video gelten Titel, Beschreibung und Abschnitt aus diesem Formular, sonst der Name
+                    aus Cloudflare. Video in der Liste wählen oder neue Dateien in die Zone darunter ziehen.
                   </Text>
                   <Input
-                    placeholder="Video-Titel"
+                    placeholder="Video-Titel (optional, sonst Name aus Cloudflare)"
                     value={videoTitle}
                     onChange={(e) => setVideoTitle(e.target.value)}
                     {...fieldSx}
@@ -1288,27 +1210,19 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                       ))}
                     </Select>
                   </Box>
-                  <Box>
-                    <input
-                      ref={videoFileRef}
-                      type="file"
-                      accept="video/*"
-                      hidden
-                      onChange={(e) => void onPickVideo(e)}
-                    />
-                    <Button
-                      size="md"
-                      variant="gold"
-                      isLoading={videoBusy}
-                      isDisabled={videoBusy}
-                      onClick={() => videoFileRef.current?.click()}
-                    >
-                      Videodatei auswählen
-                    </Button>
-                  </Box>
-                  {videoBusy || videoProgress > 0 ? (
-                    <Progress value={videoProgress} size="sm" borderRadius="full" sx={progressSx} maxW="400px" />
-                  ) : null}
+
+                  <CloudflareVideoPicker
+                    onAdd={(gewaehlt) => addCloudflareVideos(gewaehlt)}
+                    buttonLabel="Ausgewählte zur Session hinzufügen"
+                    disabled={videoBusy}
+                  />
+
+                  <Text fontSize="xs" color="var(--cc-text-3)">
+                    Neue Datei hochladen (landet in Cloudflare und wird direkt in diese Session eingehängt; die
+                    Verarbeitung dauert einige Minuten, danach ist das Video abspielbar):
+                  </Text>
+                  <CloudflareVideoUploader onUploaded={onVideoUploaded} disabled={videoBusy} />
+
                   {videoStatus ? (
                     <Text fontSize="sm" color="var(--cc-text-2)" role="status">
                       {videoStatus}
@@ -1317,7 +1231,7 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
 
                   <Stack gap={2} mt={4}>
                     <Text fontSize="sm" fontWeight={600} color="var(--cc-text)">
-                      Hochgeladene Videos
+                      Videos dieser Session
                     </Text>
                     {videos.map((v) => (
                       <HStack key={v.id} justify="space-between" {...rowSx} align="flex-start">
@@ -1326,7 +1240,7 @@ export function LiveSessionManager({ initialEvents }: { initialEvents: EventOpt[
                             {v.title}
                           </Text>
                           <Text fontSize="xs" color="var(--cc-text-3)" className="cc-num" noOfLines={2}>
-                            {v.storage_key}
+                            {v.cloudflare_uid ? `Cloudflare · ${v.cloudflare_uid}` : v.storage_key}
                           </Text>
                         </Box>
                         <HStack>

@@ -1211,7 +1211,7 @@ export async function getLiveSessionDetail(sessionId: string): Promise<LiveSessi
 
   const { data: vidRows } = await supabase
     .from("live_session_videos")
-    .select("id, title, description, storage_key, thumbnail_key, duration_seconds, position, subcategory_id")
+    .select("id, title, description, storage_key, cloudflare_uid, thumbnail_key, duration_seconds, position, subcategory_id")
     .eq("session_id", sessionId)
     .order("position", { ascending: true });
 
@@ -1219,7 +1219,8 @@ export async function getLiveSessionDetail(sessionId: string): Promise<LiveSessi
     id: string;
     title: string;
     description: string | null;
-    storage_key: string;
+    storage_key: string | null;
+    cloudflare_uid: string | null;
     thumbnail_key: string | null;
     duration_seconds: number | null;
     position: number;
@@ -1232,12 +1233,22 @@ export async function getLiveSessionDetail(sessionId: string): Promise<LiveSessi
   const playlist: LiveSessionVideoRow[] = [];
 
   const pushVid = async (v: Vid, subId: string | null, subTitle: string | null) => {
-    const thumb = await signThumbnail(v.thumbnail_key);
+    const eigenesBild = await signThumbnail(v.thumbnail_key);
+    // Ohne eigenes Vorschaubild zeigt Cloudflare ein Standbild aus dem Video (signiert, siehe `buildThumbnailUrl`).
+    let thumb = eigenesBild;
+    if (!thumb && v.cloudflare_uid) {
+      try {
+        thumb = buildThumbnailUrl(v.cloudflare_uid, { signed: true, ttlSeconds: 60 * 60, width: 480 });
+      } catch {
+        // Ohne Signierschlüssel bleibt die Kachel leer, das Video spielt trotzdem.
+      }
+    }
     playlist.push({
       id: v.id,
       title: v.title,
       description: v.description,
-      storage_key: v.storage_key,
+      // Der Player bekommt die Stream-ID als Schlüssel; `/api/live-session-video-url` löst beides auf.
+      storage_key: v.cloudflare_uid ?? v.storage_key ?? "",
       thumbnail_key: v.thumbnail_key,
       thumbnailSignedUrl: thumb,
       duration_seconds: v.duration_seconds,
