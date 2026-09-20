@@ -4,6 +4,7 @@ import {
   ABSCHNITT_TITEL,
   BAUTEILE,
   BAUTEIL_TITEL,
+  herkunftAus,
   istZeitraum,
   quote,
   tagesSchluessel,
@@ -60,7 +61,10 @@ interface KassenZeile {
   id: string;
   plan: string;
   status: string;
-  src: string | null;
+  /* `checkout_sessions.src` steht bewusst nicht hier: Das ist die Stelle auf
+     der Seite, an der geklickt wurde, und die zaehlt „Klicks je Knopf“ aus dem
+     Protokoll. In dieser Auswertung waere sie eine zweite Spalte namens
+     „Herkunft“ mit einer anderen Bedeutung. */
   funnel_sitzung: string | null;
   created_at: string;
   bezahlt_am: string | null;
@@ -92,7 +96,7 @@ const HINWEISE: Record<string, string> = {
   zahlungen:
     "Tabelle payments mit status = failed, geschrieben vom Stripe-Webhook invoice.payment_failed. Enthält auch Fehlbuchungen bei laufenden Abos — die haben mit dem Kaufweg nichts zu tun.",
   herkunft:
-    "Ein Begriff aus drei Quellen, in dieser Rangfolge: eigener ?src=-Parameter, dann utm_source, dann der Host der verweisenden Seite, sonst „direkt“. Die Kassen-Spalte ordnet über checkout_sessions.src zu.",
+    "Woher der Besucher kam — ein Begriff aus drei Quellen, in dieser Rangfolge: eigener ?src=-Parameter beim Seitenaufruf, dann utm_source, dann der Host der verweisenden Seite, sonst „direkt“. Kassen und Käufe sind über die Sitzungskennung zugeordnet, nicht über den Knopf; was ohne Kennung ankam, steht unter „nicht zuordenbar“.",
   pakete: "Aus checkout_sessions, nach Laufzeit. Bezieht sich auf die Kasse, nicht auf die Verkaufsseite.",
   kette:
     "Anteil der Kassen, deren Sitzungskennung mitgekommen ist (?sid= an /go/<plan>). Nur diese lassen sich einem Besuch zuordnen; der Rest sind Käufe über andere Wege oder Browser ohne sessionStorage.",
@@ -136,7 +140,7 @@ export async function GET(request: NextRequest) {
   const [kassenRes, zahlungenRes] = await Promise.all([
     supabase
       .from("checkout_sessions")
-      .select("id,plan,status,src,funnel_sitzung,created_at,bezahlt_am,abgebrochen_am")
+      .select("id,plan,status,funnel_sitzung,created_at,bezahlt_am,abgebrochen_am")
       .gte("created_at", vonIso)
       .lt("created_at", bisIso)
       .order("created_at", { ascending: true }),
@@ -158,7 +162,7 @@ export async function GET(request: NextRequest) {
   if (kassenRes.error) {
     const ersatz = await supabase
       .from("checkout_sessions")
-      .select("id,plan,status,src,created_at,bezahlt_am,abgebrochen_am")
+      .select("id,plan,status,created_at,bezahlt_am,abgebrochen_am")
       .gte("created_at", vonIso)
       .lt("created_at", bisIso)
       .order("created_at", { ascending: true });
@@ -216,17 +220,51 @@ export async function GET(request: NextRequest) {
   for (const z of zahlungen) holeTag(tagesSchluessel(z.created_at)).fehlzahlungen += 1;
   const verlauf = [...verlaufKarte.values()].sort((a, b) => a.tag.localeCompare(b.tag));
 
-  /* Herkunft: eigene Messung links, Kasse rechts. Zugeordnet über `src`. */
-  const kassenNachSrc = new Map<string, { kassen: number; kaeufe: number }>();
+  /* ── Herkunft ──────────────────────────────────────────────────────────
+   *
+   * Zugeordnet wird über `funnel_sitzung`, **nicht** über
+   * `checkout_sessions.src`. Das ist der Unterschied, an dem die Tabelle sonst
+   * falsch würde: `src` ist die Stelle auf der Seite, an der geklickt wurde
+   * (`hero`, `angebot`, `modal`) — nicht der Kanal, über den jemand kam. In
+   * einer Spalte namens „Herkunft" nebeneinander stünden dort „instagram" und
+   * „hero", und niemand könnte die Zahlen mehr addieren. Wo welcher Knopf
+   * gedrückt wurde, steht in „Klicks je Knopf".
+   *
+   * Kassen ohne Sitzungskennung bekommen eine eigene Zeile. Sie zu verteilen
+   * wäre geraten, und sie wegzulassen ließe Käufe verschwinden, die es gab.
+   */
+  const NICHT_ZUORDENBAR = "nicht zuordenbar";
+  const herkunftJeSitzung = new Map<string, string>();
+  const sitzungsIds = [...new Set(kassen.map((k) => k.funnel_sitzung).filter((x): x is string => Boolean(x)))];
+  for (let i = 0; i < sitzungsIds.length; i += 200) {
+    // In Stapeln: Ein `in`-Filter landet in der Adresse, und die ist begrenzt.
+    const { data, error } = await supabase
+      .from("funnel_sitzungen")
+      .select("sitzung,src,utm_quelle,verweis_host")
+      .in("sitzung", sitzungsIds.slice(i, i + 200));
+    if (error) break; // Tabelle fehlt oder hakt — dann eben „nicht zuordenbar".
+    for (const z of (data ?? []) as Array<{
+      sitzung: string;
+      src: string | null;
+      utm_quelle: string | null;
+      verweis_host: string | null;
+    }>) {
+      herkunftJeSitzung.set(z.sitzung, herkunftAus(z));
+    }
+  }
+
+  const kassenNachHerkunft = new Map<string, { kassen: number; kaeufe: number }>();
   for (const k of kassen) {
-    const schluessel = k.src?.trim() || "direkt";
-    const eintrag = kassenNachSrc.get(schluessel) ?? { kassen: 0, kaeufe: 0 };
+    const schluessel =
+      (k.funnel_sitzung ? herkunftJeSitzung.get(k.funnel_sitzung) : undefined) ?? NICHT_ZUORDENBAR;
+    const eintrag = kassenNachHerkunft.get(schluessel) ?? { kassen: 0, kaeufe: 0 };
     eintrag.kassen += 1;
     if (k.status === "completed") eintrag.kaeufe += 1;
-    kassenNachSrc.set(schluessel, eintrag);
+    kassenNachHerkunft.set(schluessel, eintrag);
   }
+
   const herkunft = nachHerkunft(tagesZeilen).map((h) => {
-    const kasse = kassenNachSrc.get(h.herkunft) ?? { kassen: 0, kaeufe: 0 };
+    const kasse = kassenNachHerkunft.get(h.herkunft) ?? { kassen: 0, kaeufe: 0 };
     return {
       herkunft: h.herkunft,
       sitzungen: h.sitzungen,
@@ -240,9 +278,10 @@ export async function GET(request: NextRequest) {
         h.sitzungen > 0 ? Math.round(h.sichtbare_ms_summe / h.sitzungen / 1000) : 0,
     };
   });
-  /* Herkünfte, die nur in der Kasse auftauchen (z. B. `billing`), gehören
-     sichtbar dazu — sonst fehlen Käufe im Herkunfts-Bild, die es gab. */
-  for (const [schluessel, kasse] of kassenNachSrc) {
+  /* Herkünfte, die nur in der Kasse auftauchen — allen voran „nicht
+     zuordenbar" — gehören sichtbar dazu. Sonst fehlen Käufe im Bild, die es
+     gab, und die Spaltensumme stimmt nicht mit dem Trichter überein. */
+  for (const [schluessel, kasse] of kassenNachHerkunft) {
     if (herkunft.some((h) => h.herkunft === schluessel)) continue;
     herkunft.push({
       herkunft: schluessel,
