@@ -5,6 +5,14 @@ import {
   type WhopUmzugStufe,
 } from "@/config/whop-umzug";
 import { createServiceClient } from "@/lib/supabase/service";
+import { tageBis, ZAHLENDE_STATI } from "./stand";
+
+/*
+  `tageBis` stand bis zum 20.09.2026 hier und wird jetzt von `stand.ts`
+  mitbenutzt (Hinweisband und Dashboard-Karte rechnen dieselbe Restlaufzeit).
+  Der Name bleibt hier greifbar, damit bestehende Leser nichts umlernen.
+*/
+export { tageBis };
 
 /**
  * Wer aus dem Whop-Umzug stammt, und wie weit er ist.
@@ -57,20 +65,9 @@ export interface UmzugKreis {
   ohneAdresse: number;
 }
 
-/** Abos, die als „zahlt bei uns" gelten. Alles andere bringt kein Geld. */
-const ZAHLENDE_STATI: ReadonlySet<string> = new Set(["active", "trialing", "past_due"]);
-
 function vornameAus(name: string | null): string | null {
   const erstes = name?.trim().split(/\s+/)[0];
   return erstes ? erstes : null;
-}
-
-/** Ganze Tage von jetzt bis zum Zeitpunkt. Negativ heisst: schon vorbei. */
-export function tageBis(iso: string | null, jetzt = Date.now()): number | null {
-  if (!iso) return null;
-  const ziel = new Date(iso).getTime();
-  if (Number.isNaN(ziel)) return null;
-  return Math.ceil((ziel - jetzt) / 86_400_000);
 }
 
 /**
