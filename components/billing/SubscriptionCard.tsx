@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Box, Flex, HStack, Stack, Text } from "@chakra-ui/react";
+import { Box, Flex, Stack, Text } from "@chakra-ui/react";
 import { CardValue, DashCard } from "@/components/platform/dashboard/primitives";
 import { formatDate, istAbo, subscriptionStatus, TIER_LABEL, TIER_PREIS, type Tier } from "./format";
 
@@ -152,24 +152,5 @@ function Wert({ children }: { children: ReactNode }) {
     <Text as="span" className="cc-num" color="var(--cc-text)" fontWeight={600}>
       {children}
     </Text>
-  );
-}
-
-/** Kleine Kennzahl-Zeile für die Angebotskarten (Preis alt → neu). */
-export function PreisVergleich({ vorher, nachher, hinweis }: { vorher: string; nachher: string; hinweis?: string }) {
-  return (
-    <HStack spacing={3} align="baseline" flexWrap="wrap">
-      <Text className="cc-num" fontSize="15px" color="var(--cc-text-3)" textDecoration="line-through">
-        {vorher}
-      </Text>
-      <Text className="cc-num" fontSize={{ base: "24px", md: "28px" }} fontWeight={600} color="var(--cc-text)">
-        {nachher}
-      </Text>
-      {hinweis ? (
-        <Text fontSize="13px" color="var(--cc-gold-light)">
-          {hinweis}
-        </Text>
-      ) : null}
-    </HStack>
   );
 }
