@@ -39,22 +39,27 @@ export default function WelcomePaidEmail({
   setPasswordUrl,
 }: Pick<Props, "firstName" | "tier" | "setPasswordUrl">) {
   const appUrl = getAppUrl();
-  const tierLabel =
+  /*
+    Beschriftung **und** Artikel, weil „Dein Mitgliedschaft" falsch ist: Der
+    Vorschautext stand bis 20.09.2026 in jedem Postfach neben dem Betreff und
+    passte nur zu Lifetime und Coaching.
+  */
+  const { tierLabel, derDie, deinDeine } =
     tier === "lifetime"
-      ? "Lifetime-Zugang"
+      ? { tierLabel: "Lifetime-Zugang", derDie: "Dein", deinDeine: "dein" }
       : tier === "ht_1on1"
-        ? "1-on-1-Coaching"
+        ? { tierLabel: "1-on-1-Coaching", derDie: "Dein", deinDeine: "dein" }
         : tier === "quarterly"
-          ? "Mitgliedschaft (vierteljährlich)"
+          ? { tierLabel: "Mitgliedschaft (vierteljährlich)", derDie: "Deine", deinDeine: "deine" }
           : tier === "yearly"
-            ? "Mitgliedschaft (jährlich)"
-            : "Mitgliedschaft";
+            ? { tierLabel: "Mitgliedschaft (jährlich)", derDie: "Deine", deinDeine: "deine" }
+            : { tierLabel: "Mitgliedschaft", derDie: "Deine", deinDeine: "deine" };
 
   return (
-    <BaseEmail previewText={`Dein Capital-Circle-${tierLabel} ist aktiv`}>
+    <BaseEmail previewText={`${derDie} Capital-Circle-${tierLabel} ist aktiv`}>
       <EmailHeading>Willkommen im Inner Circle, {firstName}.</EmailHeading>
       <EmailText>
-        deine Zahlung ist eingegangen, dein {tierLabel} ist ab sofort aktiv.
+        deine Zahlung ist eingegangen, {deinDeine} {tierLabel} ist ab sofort aktiv.
       </EmailText>
 
       <EmailSubheading>Was du jetzt tun solltest</EmailSubheading>

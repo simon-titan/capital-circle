@@ -34,7 +34,7 @@ export default function ChurnInactive14dEmail({ firstName, abmeldeLink }: Pick<P
         stellen.
       </EmailText>
 
-      <EmailButton href={`${appUrl}/live-sessions`}>
+      <EmailButton href={`${appUrl}/live-session`}>
         Nächste Live-Session ansehen
       </EmailButton>
     </BaseEmail>
