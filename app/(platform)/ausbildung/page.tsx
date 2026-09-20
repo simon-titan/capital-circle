@@ -20,7 +20,7 @@ export default async function AusbildungPage() {
     <Box>
       <PageHeader
         title="Institut"
-        subtitle="Deine Module und Lernvideos — ein Modul anklicken zeigt die Untermodule darin. Starte dort, wo du stehengeblieben bist, oder arbeite die Reihenfolge ab."
+        subtitle="Deine Module und Lernvideos. Ein Modul anklicken zeigt die Untermodule darin. Starte dort, wo du stehengeblieben bist, oder arbeite die Reihenfolge ab."
       />
       {modules.length === 0 ? (
         <Box className="cc-card cc-card--still cc-rise" px={{ base: 5, md: 6 }} py={{ base: 5, md: 6 }}>

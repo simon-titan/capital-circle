@@ -21,7 +21,7 @@ export default async function AdminLiveSessionsPage() {
     <Box maxW="var(--adminMaxWidth, 1440px)" mx="auto">
       <AdminPageHeader
         title="Live Session Replays"
-        subtitle="Replays vergangener Live Calls — optional mit Event aus dem Kalender verknüpfen."
+        subtitle="Replays vergangener Live Calls, optional mit Event aus dem Kalender verknüpfen."
       />
       <LiveSessionManager initialEvents={initialEvents} />
     </Box>

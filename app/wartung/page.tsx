@@ -6,7 +6,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Wartungsmodus — Capital Circle Institut",
+  title: "Wartungsmodus · Capital Circle Institut",
   description: "Die Plattform ist kurzzeitig im Wartungsmodus.",
 };
 

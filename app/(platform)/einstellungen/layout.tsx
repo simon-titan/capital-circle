@@ -6,7 +6,7 @@ import { SettingsNav } from "@/components/billing/SettingsNav";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Einstellungen — Capital Circle",
+  title: "Einstellungen · Capital Circle",
 };
 
 export const dynamic = "force-dynamic";

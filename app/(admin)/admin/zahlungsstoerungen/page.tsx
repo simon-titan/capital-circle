@@ -30,7 +30,7 @@ export default async function AdminZahlungsstoerungenPage() {
         <Alert status="warning" {...adminAlertProps("warning")}>
           <AlertIcon color={adminAlertIconColor("warning")} />
           <Text fontSize="14px">
-            Die Tabelle <code>zahlungsfall</code> fehlt — Migration 080 ist noch nicht eingespielt. Solange steht dieser
+            Die Tabelle <code>zahlungsfall</code> fehlt. Migration 080 ist noch nicht eingespielt. Solange steht dieser
             Bereich still; das ist kein leerer Bestand, sondern eine fehlende Einrichtung.
           </Text>
         </Alert>

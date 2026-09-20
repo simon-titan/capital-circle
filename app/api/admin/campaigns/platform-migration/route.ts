@@ -78,7 +78,7 @@ async function resolveTargets() {
   const segmentId = process.env.RESEND_PLATFORM_MIGRATION_SEGMENT_ID?.trim();
   if (!segmentId) {
     throw new Error(
-      "RESEND_PLATFORM_MIGRATION_SEGMENT_ID fehlt — erst `npm run import:whop-members` laufen lassen.",
+      "RESEND_PLATFORM_MIGRATION_SEGMENT_ID fehlt. Erst `npm run import:whop-members` laufen lassen.",
     );
   }
 

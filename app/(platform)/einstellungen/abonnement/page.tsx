@@ -21,7 +21,7 @@ import {
 } from "@/lib/stripe/upgrade";
 
 export const metadata: Metadata = {
-  title: "Abonnement — Capital Circle",
+  title: "Abonnement · Capital Circle",
 };
 
 export const dynamic = "force-dynamic";

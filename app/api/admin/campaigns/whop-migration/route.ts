@@ -75,7 +75,7 @@ async function resolveTargets() {
   const segmentId = process.env.RESEND_WHOP_SEGMENT_ID?.trim();
   if (!segmentId) {
     throw new Error(
-      "RESEND_WHOP_SEGMENT_ID fehlt — erst `npm run sync:whop-segment` laufen lassen.",
+      "RESEND_WHOP_SEGMENT_ID fehlt. Erst `npm run sync:whop-segment` laufen lassen.",
     );
   }
 

@@ -33,7 +33,7 @@ export async function GET() {
       {
         ok: false,
         error: fehlt
-          ? "Die Tabelle „widerrufe“ fehlt — Migration 090_widerrufe.sql im Supabase-SQL-Editor einspielen."
+          ? "Die Tabelle „widerrufe“ fehlt. Migration 090_widerrufe.sql im Supabase-SQL-Editor einspielen."
           : dbFehler.message,
       },
       { status: 500 },

@@ -6,7 +6,7 @@ export default function JournalDayViewPage() {
     <>
       <PageHeader
         title="Tages Ansicht"
-        subtitle="Jeder Handelstag einzeln — mit Intraday-Verlauf und denselben Kennzahlen wie im Dashboard."
+        subtitle="Jeder Handelstag einzeln, mit Intraday-Verlauf und denselben Kennzahlen wie im Dashboard."
       />
       <DayView />
     </>

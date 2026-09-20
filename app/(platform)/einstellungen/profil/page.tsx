@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ProfilFormular } from "./ProfilFormular";
 
 export const metadata: Metadata = {
-  title: "Profil — Capital Circle",
+  title: "Profil · Capital Circle",
 };
 
 export const dynamic = "force-dynamic";

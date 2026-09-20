@@ -11,12 +11,12 @@ const SITE_URL = (
 const SHARE_TITLE =
   "Lerne, wie du innerhalb weniger Wochen deinen ersten Payout erzielst";
 const SHARE_DESCRIPTION =
-  "Während andere für dieses Wissen hunderte Euro zahlen, bekommst du es hier kostenlos. Sichere dir jetzt deinen Zugang zur Capital-Circle-Discord-Community — 100% kostenlos, kein Risiko, sofortiger Zugang.";
+  "Während andere für dieses Wissen hunderte Euro zahlen, bekommst du es hier kostenlos. Sichere dir jetzt deinen Zugang zur Capital-Circle-Discord-Community: 100% kostenlos, kein Risiko, sofortiger Zugang.";
 const SHARE_IMAGE = `${SITE_URL}/discord-og.png`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "Kostenloser Discord-Zugang — Capital Circle",
+  title: "Kostenloser Discord-Zugang · Capital Circle",
   description: SHARE_DESCRIPTION,
   alternates: { canonical: "/discord" },
   openGraph: {
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
         url: SHARE_IMAGE,
         width: 1381,
         height: 757,
-        alt: "Capital Circle — Kostenloser Discord-Zugang für deinen ersten Payout",
+        alt: "Capital Circle: Kostenloser Discord-Zugang für deinen ersten Payout",
       },
     ],
   },

@@ -5,7 +5,7 @@ import { FunnelFinePrint, rise } from "@/components/marketing/funnel-ui";
 import { Logo } from "@/components/brand/Logo";
 
 export const metadata: Metadata = {
-  title: "Kostenlos bewerben — Capital Circle",
+  title: "Kostenlos bewerben · Capital Circle",
   description:
     "Bewirb dich für den kostenlosen 5-Tage-Onboarding-Kurs von Capital Circle. Lerne professionelles Trading von Profi-Trader Emre. Bewerbung in 3 Schritten.",
 };

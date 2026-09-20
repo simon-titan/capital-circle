@@ -206,7 +206,7 @@ export async function POST(request: Request) {
       console.error("[progress] Profil nicht lesbar, Streak/Lernzeit übersprungen", { userId });
       return NextResponse.json({ ok: true, streakUpdated: false });
     }
-    console.warn("[progress] Sekunden-Spalten fehlen (Migration 040 nicht eingespielt) — Lernzeit wird nicht fortgeschrieben");
+    console.warn("[progress] Sekunden-Spalten fehlen (Migration 040 nicht eingespielt). Lernzeit wird nicht fortgeschrieben");
   }
 
   // Delta nur wenn per-video-Map nutzbar; video_progress_by_video = null ist Legacy-Zeile —

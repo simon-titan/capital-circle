@@ -5,7 +5,7 @@ import { anbieter, anbieterAnschriftEinzeilig, rechtsPfade, widerrufsfunktionPfa
 import { getAppUrl } from "@/lib/site-url";
 
 export const metadata: Metadata = {
-  title: "Widerrufsbelehrung — Capital Circle",
+  title: "Widerrufsbelehrung · Capital Circle",
   description: "Widerrufsbelehrung und Muster-Widerrufsformular für die Mitgliedschaft bei Capital Circle.",
 };
 
@@ -49,7 +49,7 @@ export default function WiderrufPage() {
   return (
     <RechtstextSeite
       titel="Widerrufsbelehrung"
-      einleitung="Die Belehrung und das Formular folgen wortgleich den gesetzlichen Mustern. Deshalb sprechen wir Sie hier — anders als sonst — mit „Sie“ an."
+      einleitung="Die Belehrung und das Formular folgen wortgleich den gesetzlichen Mustern. Deshalb sprechen wir Sie hier (anders als sonst) mit „Sie“ an."
     >
       <div className="rt-kasten">
         <h2>Widerrufsbelehrung</h2>
@@ -151,7 +151,7 @@ export default function WiderrufPage() {
       {widerrufsfunktionPfad ? (
         <p>
           Am einfachsten widerrufen Sie online über{" "}
-          <Link href={widerrufsfunktionPfad}>„Vertrag widerrufen“</Link> — ohne Anmeldung, mit sofortiger
+          <Link href={widerrufsfunktionPfad}>„Vertrag widerrufen“</Link>, ohne Anmeldung, mit sofortiger
           Eingangsbestätigung per E-Mail.
         </p>
       ) : null}

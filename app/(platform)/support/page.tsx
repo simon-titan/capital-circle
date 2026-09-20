@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/journal/PageHeader";
 import { SupportTicketsList, type SupportTicketRow } from "@/components/support/SupportTicketsList";
 
 export const metadata: Metadata = {
-  title: "Support — Capital Circle",
+  title: "Support · Capital Circle",
 };
 
 export const dynamic = "force-dynamic";
@@ -31,7 +31,7 @@ export default async function SupportPage() {
     <Box maxW="900px" mx="auto" w="full">
       <PageHeader
         title="Hilfe & Anfragen"
-        subtitle="Stelle eine Anfrage an unser Team — wir antworten direkt hier im Ticket."
+        subtitle="Stelle eine Anfrage an unser Team. Wir antworten direkt hier im Ticket."
       />
       <SupportTicketsList tickets={tickets} />
     </Box>

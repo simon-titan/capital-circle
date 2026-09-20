@@ -75,7 +75,7 @@ function hindernis(): string | null {
   }
   for (const v of ["STRIPE_PRICE_MONTHLY", "STRIPE_PRICE_QUARTERLY", "STRIPE_PRICE_YEARLY"]) {
     if (!process.env[v]?.trim()) {
-      return `${v} ist nicht gesetzt. Die Mail verlinkt auf /go/<plan> — ohne Preis landet jeder Kaufwillige auf „/?fehler=konfiguration".`;
+      return `${v} ist nicht gesetzt. Die Mail verlinkt auf /go/<plan>. Ohne Preis landet jeder Kaufwillige auf „/?fehler=konfiguration".`;
     }
   }
   return null;
@@ -138,7 +138,7 @@ async function sendeMail(
   replyTo?: string,
 ): Promise<{ resendId: string | null }> {
   if (!m.zugangBis) {
-    throw new Error("kein access_until am Profil — ohne Datum wird nichts verschickt (siehe Import-Bericht)");
+    throw new Error("kein access_until am Profil, ohne Datum wird nichts verschickt (siehe Import-Bericht)");
   }
   const gemeinsam = { an: m.email, vorname: m.vorname, zugangBis: m.zugangBis, abmeldeLink, replyTo };
   const res =

@@ -7,7 +7,7 @@ import { NachweisGalerie } from "@/components/landing/membership/NachweisGalerie
 import { RechtsLinks } from "@/components/legal/RechtsFusszeile";
 
 export const metadata: Metadata = {
-  title: "Belegte Auszahlungen — Capital Circle",
+  title: "Belegte Auszahlungen · Capital Circle",
   description:
     "Alle dokumentierten Auszahlungen von Mitgliedern und von Emre Kopal, dazu die bestandenen Prop-Firm-Challenges. Jeder Nachweis einsehbar.",
 };
@@ -83,7 +83,7 @@ export default function ErgebnissePage() {
                 nicht verwässern, seit die Challenges dazugekommen sind — also
                 steht gleich im Vorspann, dass sie ein eigener Abschnitt sind. */}
             <Text fontSize={{ base: "15px", md: "17px" }} color="var(--cc-text-2)" maxW="640px">
-              Oben die Auszahlungen: Jede Zeile dort ist Geld, das geflossen ist — Überweisung, Payout-Mail oder
+              Oben die Auszahlungen: Jede Zeile dort ist Geld, das geflossen ist: Überweisung, Payout-Mail oder
               Payout-Zertifikat. Darunter, getrennt davon, die bestandenen Prop-Firm-Challenges. Klick auf einen
               Nachweis, um ihn groß zu sehen.
             </Text>
@@ -95,7 +95,7 @@ export default function ErgebnissePage() {
             {
               titel: "Aus der Community",
               hinweis:
-                "Nachweise von Mitgliedern, geteilt im Discord — unverändert, so wie sie dort gepostet wurden.",
+                "Nachweise von Mitgliedern, geteilt im Discord. Unverändert, so wie sie dort gepostet wurden.",
               zeilen: auszahlungenCommunity,
             },
             {
@@ -111,7 +111,7 @@ export default function ErgebnissePage() {
               titel: "Bestandene Challenges",
               art: "challenge",
               hinweis:
-                "Zertifikate von Mitgliedern, die die Prüfung einer Prop-Firma bestanden haben. Die genannte Summe ist die Kontogröße, die sie ab da handeln — keine Auszahlung.",
+                "Zertifikate von Mitgliedern, die die Prüfung einer Prop-Firma bestanden haben. Die genannte Summe ist die Kontogröße, die sie ab da handeln. Keine Auszahlung.",
               zeilen: challenges,
             },
           ]}
@@ -125,7 +125,7 @@ export default function ErgebnissePage() {
           <Text fontSize="13px" color="var(--cc-text-3)" maxW="720px">
             Die beiden Abschnitte belegen Verschiedenes und bleiben deshalb getrennt: oben Geld, das ausgezahlt wurde,
             unten Prüfungen, die bestanden wurden. Eine Kontogröße ist kein Verdienst. Kontostände und Tagesgewinne sind
-            gar nicht aufgeführt — sie belegen keines von beidem.
+            gar nicht aufgeführt. Sie belegen keines von beidem.
           </Text>
           {/* Impressum · Datenschutz · AGB · Widerruf · Verträge hier kündigen */}
           <RechtsLinks justify="flex-start" />

@@ -14,7 +14,7 @@ import {
 } from "@/components/marketing/funnel-ui";
 
 export const metadata: Metadata = {
-  title: "Du hast bestanden — Mitgliedschaft · Capital Circle",
+  title: "Du hast bestanden: Mitgliedschaft · Capital Circle",
   description:
     "Du erfüllst alle Voraussetzungen für die Capital Circle Mitgliedschaft. Wähle deinen Plan und starte sofort.",
   robots: { index: false, follow: false },
@@ -77,7 +77,7 @@ export default function ThanksMembershipPage() {
             <FunnelLead maxW="560px" lineHeight={1.7}>
               Du bist bereit für Capital Circle. Auf der Plattform findest du das
               komplette Curriculum, tägliche Live-Analysen, das Trading-Journal mit
-              datengetriebenem Edge-Tracking — und eine Community, die dasselbe Ziel
+              datengetriebenem Edge-Tracking und eine Community, die dasselbe Ziel
               verfolgt wie du. Wähle deinen Einstieg.
             </FunnelLead>
 
@@ -90,11 +90,11 @@ export default function ThanksMembershipPage() {
               */}
               <Button as="a" href="/#angebot" variant="gold" size="lg" h="52px" w="full" fontSize="16px">
                 <Box as="span" className="cc-num">
-                  Ab 99 € / Monat — Laufzeit wählen →
+                  Ab 99 € / Monat · Laufzeit wählen →
                 </Box>
               </Button>
               <FunnelFinePrint color="var(--cc-text-2)">
-                Monatlich, vierteljährlich oder jährlich — der Monatsplan ist monatlich kündbar.
+                Monatlich, vierteljährlich oder jährlich. Der Monatsplan ist monatlich kündbar.
               </FunnelFinePrint>
             </Stack>
 

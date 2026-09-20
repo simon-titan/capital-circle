@@ -14,7 +14,7 @@ export default async function AdminGutscheinePage() {
     <Box maxW="1200px" mx="auto">
       <AdminPageHeader
         title="Gutscheine"
-        subtitle="Rabattcodes anlegen und verwalten — läuft über echte Stripe-Coupons/Promotion-Codes, einlösbar direkt im Checkout."
+        subtitle="Rabattcodes anlegen und verwalten. Läuft über echte Stripe-Coupons/Promotion-Codes, einlösbar direkt im Checkout."
       />
       <AdminGutscheineManager />
     </Box>

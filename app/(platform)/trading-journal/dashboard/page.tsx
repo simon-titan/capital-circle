@@ -6,7 +6,7 @@ export default function JournalDashboardPage() {
     <>
       <PageHeader
         title="Dashboard"
-        subtitle="Deine gesamte Performance auf einen Blick — Kennzahlen, Verlauf, Drawdown und Kalender."
+        subtitle="Deine gesamte Performance auf einen Blick: Kennzahlen, Verlauf, Drawdown und Kalender."
       />
       <DashboardView />
     </>

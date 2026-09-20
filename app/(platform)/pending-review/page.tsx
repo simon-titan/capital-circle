@@ -112,7 +112,7 @@ export default async function PendingReviewPage() {
             <>
               <Text fontSize="16px" lineHeight={1.6} color="var(--cc-text-soft)">
                 Aktuell können wir dir leider keinen Platz anbieten. Wir nehmen pro Periode
-                nur eine sehr begrenzte Zahl an Trader:innen auf — danke, dass du dir die Zeit
+                nur eine sehr begrenzte Zahl an Trader:innen auf. Danke, dass du dir die Zeit
                 genommen hast.
               </Text>
               <Text fontSize="13px" color="var(--cc-text-3)">

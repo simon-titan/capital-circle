@@ -7,7 +7,7 @@ import { getPresignedGetUrl } from "@/lib/storage";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Erfolge unserer Mitglieder — Capital Circle Institut",
+  title: "Erfolge unserer Mitglieder · Capital Circle Institut",
   description: "Ausgewählte, von unseren Mitgliedern eingereichte und freigegebene Trading-Nachweise.",
 };
 
@@ -111,7 +111,7 @@ export default async function ErfolgePage() {
             bg="linear-gradient(90deg, transparent, rgba(232, 192, 148, 0.7), transparent)"
           />
           <Text fontSize={{ base: "15px", md: "16px" }} lineHeight={1.6} color="var(--cc-text-2)" maxW="36rem">
-            Von unserer Community selbst eingereicht und vom Team geprüft — echte Trading-Nachweise aus dem
+            Von unserer Community selbst eingereicht und vom Team geprüft: echte Trading-Nachweise aus dem
             Capital Circle Institut.
           </Text>
         </Stack>

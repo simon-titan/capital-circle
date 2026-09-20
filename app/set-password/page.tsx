@@ -5,7 +5,7 @@ import { SetPasswordForm } from "@/components/checkout/SetPasswordForm";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Passwort setzen — Capital Circle",
+  title: "Passwort setzen · Capital Circle",
   robots: { index: false, follow: false },
 };
 
@@ -76,7 +76,7 @@ export default async function SetPasswordPage() {
             ) : (
               <Stack spacing={4}>
                 <Text fontSize="15px" lineHeight={1.6} color="var(--cc-text-2)">
-                  Hol dir einen neuen Link — das geht auch, wenn du nach dem Kauf noch nie ein Passwort gesetzt hast.
+                  Hol dir einen neuen Link. Das geht auch, wenn du nach dem Kauf noch nie ein Passwort gesetzt hast.
                 </Text>
                 {/*
                   `as="a"` statt `as={NextLink}`: Diese Datei ist eine

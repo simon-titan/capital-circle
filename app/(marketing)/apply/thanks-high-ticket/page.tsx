@@ -13,7 +13,7 @@ import {
 } from "@/components/marketing/funnel-ui";
 
 export const metadata: Metadata = {
-  title: "Bewerbung eingegangen — 1:1 Mentoring · Capital Circle",
+  title: "Bewerbung eingegangen: 1:1 Mentoring · Capital Circle",
   description:
     "Wir melden uns innerhalb von 2 Stunden persönlich per WhatsApp.",
   robots: { index: false, follow: false },
@@ -71,7 +71,7 @@ export default function ThanksHighTicketPage() {
 
           <FunnelLead maxW="520px" lineHeight={1.65}>
             Du hörst innerhalb von <GoldWord fontWeight={600}>2 Stunden</GoldWord> per WhatsApp von mir persönlich.
-            Schau parallel auch in deine E-Mails — dort findest du eine Bestätigung.
+            Schau parallel auch in deine E-Mails. Dort findest du eine Bestätigung.
           </FunnelLead>
 
           {whatsappLink ? (

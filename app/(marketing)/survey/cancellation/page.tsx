@@ -6,7 +6,7 @@ import { FunnelHeadline, FunnelLead, rise } from "@/components/marketing/funnel-
 import { verifySurveyToken } from "@/lib/email/unsubscribe-token";
 
 export const metadata: Metadata = {
-  title: "Feedback — Capital Circle",
+  title: "Feedback · Capital Circle",
   description: "Hilf uns, Capital Circle besser zu machen.",
 };
 
@@ -61,7 +61,7 @@ function InvalidTokenView({ reason }: { reason: "missing" | "invalid" }) {
         <FunnelHeadline scale="md">Link nicht mehr gültig</FunnelHeadline>
         <FunnelLead fontSize="16px">
           {reason === "missing"
-            ? "Es fehlt ein Token in der URL — bitte nutze den Link aus deiner E-Mail."
+            ? "Es fehlt ein Token in der URL. Bitte nutze den Link aus deiner E-Mail."
             : "Dieser Feedback-Link ist nicht mehr gültig. Falls du uns trotzdem etwas mitteilen möchtest, antworte gerne direkt auf die letzte E-Mail."}
         </FunnelLead>
       </Stack>

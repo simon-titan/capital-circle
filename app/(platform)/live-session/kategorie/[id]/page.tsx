@@ -104,7 +104,7 @@ export default async function LiveSessionCategoryPage({ params }: PageProps) {
         title={category.title}
         subtitle={
           sessions.length > 0
-            ? "Eine Aufzeichnung anklicken — dann siehst du die einzelnen Videos und kannst sie der Reihe nach ansehen."
+            ? "Eine Aufzeichnung anklicken, dann siehst du die einzelnen Videos und kannst sie der Reihe nach ansehen."
             : kategorieHinweis(category.title)
         }
       />

@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { DankePageClient } from "./DankePageClient";
 
 export const metadata: Metadata = {
-  title: "Vielen Dank — Capital Circle Institut",
+  title: "Vielen Dank · Capital Circle Institut",
   description: "Deine erweiterte Bewerbung ist eingegangen. Buche jetzt dein persönliches Gespräch.",
 };
 

@@ -11,7 +11,7 @@ import {
 } from "@/config/legal";
 
 export const metadata: Metadata = {
-  title: "AGB — Capital Circle",
+  title: "AGB · Capital Circle",
   description: "Allgemeine Geschäftsbedingungen für die Mitgliedschaft bei Capital Circle.",
 };
 
@@ -45,7 +45,7 @@ export default function AgbPage() {
   return (
     <RechtstextSeite
       titel="Allgemeine Geschäftsbedingungen"
-      einleitung="Die Bedingungen für deine Mitgliedschaft bei Capital Circle — so knapp wie möglich, so genau wie nötig."
+      einleitung="Die Bedingungen für deine Mitgliedschaft bei Capital Circle: so knapp wie möglich, so genau wie nötig."
     >
       <ul className="rt-inhalt">
         <li>
@@ -146,8 +146,8 @@ export default function AgbPage() {
       <p>
         (3) Der Handel mit Finanzinstrumenten, insbesondere mit Futures, CFDs, Devisen und anderen gehebelten
         Produkten, ist mit erheblichen Risiken verbunden und kann zum Verlust des gesamten eingesetzten Kapitals
-        führen; bei einzelnen Produkten, etwa Futures, können Verluste auch darüber hinausgehen. Frühere Ergebnisse —
-        auch die auf unserer Website gezeigten Auszahlungen — sind keine Garantie für zukünftige Ergebnisse. Handle
+        führen; bei einzelnen Produkten, etwa Futures, können Verluste auch darüber hinausgehen. Frühere Ergebnisse
+        (auch die auf unserer Website gezeigten Auszahlungen) sind keine Garantie für zukünftige Ergebnisse. Handle
         nur mit Geld, dessen Verlust du verkraften kannst.
       </p>
 
@@ -271,7 +271,7 @@ export default function AgbPage() {
       </p>
       {widerrufsfunktionPfad ? (
         <p>
-          Deinen Widerruf kannst du auch online erklären — über die Schaltfläche{" "}
+          Deinen Widerruf kannst du auch online erklären, über die Schaltfläche{" "}
           <Link href={widerrufsfunktionPfad}>„Vertrag widerrufen“</Link> im Fußbereich unserer Seiten und in der
           Navigation des Mitgliederbereichs, ohne Anmeldung. Den Eingang bestätigen wir dir sofort per E-Mail.
         </p>
@@ -283,7 +283,7 @@ export default function AgbPage() {
         Dritter schützen.
       </p>
       <p>
-        (2) Alle Inhalte — Videos, Texte, Analysen, Vorlagen, PDFs und Live-Sessions — sind urheberrechtlich geschützt.
+        (2) Alle Inhalte (Videos, Texte, Analysen, Vorlagen, PDFs und Live-Sessions) sind urheberrechtlich geschützt.
         Du erhältst für die Dauer des Vertrags das einfache, nicht übertragbare Recht, sie für deine persönliche Aus-
         und Weiterbildung zu nutzen.
       </p>
@@ -298,7 +298,7 @@ export default function AgbPage() {
       </p>
 
       <h2 id="p10">§ 10 Community-Regeln</h2>
-      <p>In der Community — auf Discord und in den Kommentaren der Plattform — gilt:</p>
+      <p>In der Community (auf Discord und in den Kommentaren der Plattform) gilt:</p>
       <ul>
         <li>Wir gehen respektvoll miteinander um. Beleidigungen, Diskriminierung und Belästigung haben hier keinen Platz.</li>
         <li>Keine Werbung, kein Spam und keine Angebote für eigene Signale, Kurse oder Dienstleistungen.</li>
@@ -313,8 +313,8 @@ export default function AgbPage() {
       <h2 id="p11">§ 11 Änderungen der Leistungen</h2>
       <p>
         (1) Wir entwickeln Capital Circle laufend weiter. Wir dürfen Inhalte und Funktionen aktualisieren, umgestalten
-        oder ersetzen, wenn dafür ein triftiger Grund besteht — etwa die Weiterentwicklung der Inhalte, veränderte
-        Marktbedingungen, technische oder rechtliche Anforderungen oder die Sicherheit der Plattform —, dir dadurch
+        oder ersetzen, wenn dafür ein triftiger Grund besteht (etwa die Weiterentwicklung der Inhalte, veränderte
+        Marktbedingungen, technische oder rechtliche Anforderungen oder die Sicherheit der Plattform), dir dadurch
         keine zusätzlichen Kosten entstehen und wir dich klar und verständlich über die Änderung informieren.
       </p>
       <p>
@@ -336,7 +336,7 @@ export default function AgbPage() {
         Gesundheit, nach dem Produkthaftungsgesetz und im Umfang einer von uns übernommenen Garantie.
       </p>
       <p>
-        (2) Bei leichter Fahrlässigkeit haften wir nur, wenn wir eine wesentliche Vertragspflicht verletzen — also eine
+        (2) Bei leichter Fahrlässigkeit haften wir nur, wenn wir eine wesentliche Vertragspflicht verletzen, also eine
         Pflicht, deren Erfüllung die ordnungsgemäße Durchführung des Vertrags überhaupt erst ermöglicht und auf deren
         Einhaltung du regelmäßig vertrauen darfst. Die Haftung ist dann auf den bei Vertragsschluss vorhersehbaren,
         vertragstypischen Schaden begrenzt.

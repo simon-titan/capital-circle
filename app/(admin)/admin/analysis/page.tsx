@@ -7,7 +7,7 @@ export default function AdminAnalysisPage() {
     <Box maxW="var(--adminMaxWidth, 1440px)" mx="auto">
       <AdminPageHeader
         title="Weekly / Daily Analysis"
-        subtitle="Beiträge mit Bild und Text — erscheinen im Mitglieder-Feed unter Analyse."
+        subtitle="Beiträge mit Bild und Text. Sie erscheinen im Mitglieder-Feed unter Analyse."
       />
       <AnalysisManager />
     </Box>

@@ -9,14 +9,14 @@ const SITE_URL = (
 ).replace(/\/$/, "");
 
 const SHARE_TITLE =
-  "Gehöre zu den 10% — sichere dir deinen Platz bei Capital Circle";
+  "Gehöre zu den 10%: Sichere dir deinen Platz bei Capital Circle";
 const SHARE_DESCRIPTION =
-  "90% der Trader scheitern — du nicht. Schau das Video und sichere dir dein persönliches Gespräch für deine vollwertige Capital Circle Mitgliedschaft. Exklusiv & limitiert: Nur ausgewählte Trader werden aufgenommen. Buche jetzt deinen Termin.";
+  "90% der Trader scheitern. Du nicht. Schau das Video und sichere dir dein persönliches Gespräch für deine vollwertige Capital Circle Mitgliedschaft. Exklusiv & limitiert: Nur ausgewählte Trader werden aufgenommen. Buche jetzt deinen Termin.";
 const SHARE_IMAGE = `${SITE_URL}/termin-og.jpg`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "Sichere dir deinen Platz — Capital Circle",
+  title: "Sichere dir deinen Platz · Capital Circle",
   description: SHARE_DESCRIPTION,
   robots: { index: false, follow: false },
   openGraph: {
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
         url: SHARE_IMAGE,
         width: 1192,
         height: 752,
-        alt: "Capital Circle Framework — schau das Video und beantrage deinen Zugang",
+        alt: "Capital Circle Framework: schau das Video und beantrage deinen Zugang",
       },
     ],
   },

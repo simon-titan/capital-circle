@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/journal/PageHeader";
 import { TicketThread, type TicketDetailRow, type TicketMessageRow } from "@/components/support/TicketThread";
 
 export const metadata: Metadata = {
-  title: "Ticket — Capital Circle Support",
+  title: "Ticket · Capital Circle Support",
 };
 
 export const dynamic = "force-dynamic";

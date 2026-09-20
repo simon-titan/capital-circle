@@ -13,9 +13,9 @@ import { Logo } from "@/components/brand/Logo";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "1:1 Mentoring — Bewerbung · Capital Circle",
+  title: "1:1 Mentoring: Bewerbung · Capital Circle",
   description:
-    "Bewirb dich für das Capital Circle High-Ticket Programm. 8 kurze Fragen — wir melden uns innerhalb von 2 Stunden persönlich.",
+    "Bewirb dich für das Capital Circle High-Ticket Programm. 8 kurze Fragen. Wir melden uns innerhalb von 2 Stunden persönlich.",
 };
 
 export const dynamic = "force-dynamic";
@@ -62,7 +62,7 @@ export default async function ApplyPage() {
           </FunnelHeadline>
           <FunnelLead maxW="600px">
             8 kurze Fragen. Wir melden uns innerhalb von 2 Stunden persönlich
-            per WhatsApp — keine automatisierten Emails, keine Funnels.
+            per WhatsApp. Keine automatisierten Emails, keine Funnels.
           </FunnelLead>
         </Stack>
 
@@ -86,7 +86,7 @@ export default async function ApplyPage() {
           >
             Datenschutzerklärung
           </Box>{" "}
-          zu. Trading birgt Verlustrisiken — Ergebnisse aus der Vergangenheit sind keine Garantie.
+          zu. Trading birgt Verlustrisiken. Ergebnisse aus der Vergangenheit sind keine Garantie.
         </FunnelFinePrint>
       </Stack>
     </Box>

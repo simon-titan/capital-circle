@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { LandingPageClient } from "@/components/landing/LandingPageClient";
 
 export const metadata: Metadata = {
-  title: "Erweiterte Bewerbung — Capital Circle Institut",
+  title: "Erweiterte Bewerbung · Capital Circle Institut",
   description:
     "Fülle die erweiterte Bewerbung aus und sichere dir Zugang zu Premium-Inhalten bei Capital Circle.",
 };

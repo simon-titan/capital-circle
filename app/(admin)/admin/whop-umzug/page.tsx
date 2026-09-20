@@ -14,7 +14,7 @@ export default async function AdminWhopUmzugPage() {
     <Box maxW="1200px" mx="auto">
       <AdminPageHeader
         title="Whop-Umzug"
-        subtitle="Die letzten zahlenden Mitglieder von Whop. Jeder behält den Zugang bis zum Ende seines bei Whop bezahlten Zeitraums; danach beendet ihn der Nachtlauf. Diese Seite zeigt nur den Stand — verschickt wird über npm run whop:umzug, importiert über npm run whop:import."
+        subtitle="Die letzten zahlenden Mitglieder von Whop. Jeder behält den Zugang bis zum Ende seines bei Whop bezahlten Zeitraums; danach beendet ihn der Nachtlauf. Diese Seite zeigt nur den Stand. Verschickt wird über npm run whop:umzug, importiert über npm run whop:import."
       />
       <AdminWhopUmzugManager />
     </Box>
