@@ -241,54 +241,62 @@ siehe "Was jetzt noch zu tun ist" am Ende.
 
 ## Was jetzt noch zu tun ist
 
-*Stand 19.09.2026, gegen Produktion, Datenbank, Stripe, R2 und Repo geprüft — nicht aus
-dem Gedächtnis.*
+*Stand 20.09.2026, gegen Produktion, Datenbank, Stripe, Vercel und Discord geprüft, nicht
+aus dem Gedächtnis.*
 
-**Wo wir stehen.** Die Seite ist bereits auf Vercel deployt (Projekt
-`capital-circle-s5bg`, Region fra1): `capitalcircletrading.com` leitet auf `www.`, und dort
-läuft der Stand von `fd20fc8` (17.09.) — die Prozess-Section ist auf `/vorschau` sichtbar,
-der Vercel-Build ist also grün. `master` = `origin/master`, jeder Push geht direkt raus.
-Alle 74 Migrationsdateien sind eingespielt (`npm run db:check`). Der **Wartungsmodus ist
-AN**: Außer `/vorschau`, `/wartung`, `/login` und `/admin*` landet alles auf `/wartung`
-(auch `/ergebnisse` und `robots.txt`). „Deployment" heißt damit nicht mehr „erstmals
-hochladen", sondern: Live-Zahlung scharf schalten, Rechtliches nachziehen, Wartung aus.
+**Wo wir stehen.** Seit dem 19.09. ist sehr viel dazugekommen: Rechtstexte samt Kündigungs-
+und Widerrufsbutton, Sicherheits- und Bezahlschranken-Härtung, „Passwort vergessen", der
+Discord-Retention-Umbau, der Whop-Umzug, neues Logo und Favicon, schlichte Mails ohne
+Gedankenstriche, Videoplayer mit Qualität und Tempo, Hausaufgaben ohne Frist. Stripe läuft
+**live** (deutsches Konto, Zahlungen aktiv, Stripe Tax mit Hauptsitz Vlotho, vier Preise
+inklusive Umsatzsteuer, Webhook auf `www` mit neun Ereignissen).
+
+**Zwei Projekte, ein Repo.** Die Domain `www.capitalcircletrading.com` hängt noch am alten
+Vercel-Projekt `capital-circle-s5bg` (Team „Emre Kopal's projects"). Das neue Projekt
+`capital-circle` (Team „emrecapital's projects", Region fra1) hat alle 86 Variablen samt
+Live-Stripe und baut sauber. Beide Projekte deployen aus demselben Repo, der Inhalt ist
+also identisch, aber **nur das neue Projekt hat die Live-Stripe-Schlüssel**.
 
 🔒 **Blockierend vor dem echten Go-Live:**
 
-- **In Vercel fehlt `STRIPE_SECRET_KEY`** (Abgleich per Vercel-CLI, 19.09.). Ohne ihn
-  scheitert jeder Kauf serverseitig. Details in [`DEPLOY-VERCEL.md`](DEPLOY-VERCEL.md).
-  ~~`CRON_SECRET` fehlte ebenfalls~~ — die sieben `/api/cron/*`-Routen waren dadurch
-  öffentlich auslösbar. **Am 19.09. behoben:** neues Zufalls-Secret in Production + Preview,
-  Produktion neu deployt, `/api/cron/process-dunning` antwortet ohne Secret mit 401.
-- **Rechtstexte.** `/impressum`, `/datenschutz`, `/agb`, `/widerruf` existieren im
-  App-Router **nicht** (19.09. erneut geprüft). `/datenschutz` ist aus vier Stellen
-  verlinkt (`apply`, `free`, `Step2ApplicationModal`, `DiscordQuestionsModal`) und läuft
-  dort auf 404. **Die Verkaufsseite `/` und `/ergebnisse` verlinken gar keine
-  Rechtstexte** — es fehlt ein Fuß mit Impressum/Datenschutz/AGB/Widerruf. Details und die
-  vier fehlenden Pflichtangaben siehe eigener Abschnitt unten.
-- **Stripe läuft vollständig im Testmodus** (Sandbox-Konto „Emre Kopal Sandbox",
-  `charges_enabled=false`). Für Live gebraucht werden: `sk_live`-/`pk_live`-Schlüssel,
-  drei im Live-Modus neu angelegte Preise (`npm run stripe:preise -- --apply`) und ein
-  Webhook-Endpoint auf `https://www.capitalcircletrading.com/api/stripe/webhook` samt
-  `STRIPE_WEBHOOK_SECRET`. **Im Stripe-Konto ist derzeit kein einziger Webhook-Endpoint
-  angelegt** (auch im Testmodus nicht). **Ohne den Webhook entsteht nach einer
-  Gast-Zahlung kein Konto** — der Käufer zahlt und bekommt nichts. Welche Events der
-  Endpoint braucht, steht in [`DEPLOY-VERCEL.md`](DEPLOY-VERCEL.md) (die Liste hat sich
-  mit der Abo-Verwaltung vom 17.09. geändert).
-- **`STRIPE_PRICE_LIFETIME` zeigt ins Leere.** Die eingetragene Preis-ID ist im
-  hinterlegten Stripe-Konto unbekannt (`resource_missing`) — dasselbe Muster wie am
-  16.09. bei `STRIPE_PRICE_MONTHLY` (ID aus einem anderen Konto). Weil die Variable
-  gesetzt und `lifetime_offer_enabled` an ist, **erscheint das Lifetime-Angebot in
-  `/einstellungen/abonnement`, der Kauf scheitert aber an Stripe.** Lösung: Lifetime-Preis
-  (997 € einmalig) im richtigen Konto anlegen — für Live im Live-Modus — oder die Variable
-  leer lassen, dann ist das Angebot sauber aus.
-- **Widerrufs-Checkbox im Checkout** (am 06.09. entschieden, nicht gebaut) — gehört
-  zum Rechtstexte-Paket. Weder `/go/[plan]` noch die Checkout-Session setzen
-  `consent_collection` oder eine eigene Zustimmung.
-- **Einverständnis der Mitglieder für `/ergebnisse`** und die Auszahlungs-Section auf
-  `/`: Die Nachweise zeigen Klarnamen, Discord-Nicks und Avatare (siehe
-  [`AGENTS.md`](AGENTS.md), 17.09.). Liegt beim Betreiber — vor dem Abschalten der
-  Wartung bestätigen, weil die Seite dann öffentlich ist.
+- **Domain umhängen.** Im neuen Projekt unter Settings → Domains `www.capitalcircletrading.com`
+  und `capitalcircletrading.com` hinzufügen, den `_vercel`-TXT-Nachweis bei Hostinger
+  setzen, danach im alten Projekt abhängen. Erst dann bedient das Projekt mit den
+  Live-Schlüsseln die echte Adresse. Zugriff darauf hat nur der Kontoinhaber: Ein
+  Mitglied des Teams darf dort keine Produktions-Variablen anlegen (geprüft, 20.09.).
+- **Alter Cron-Lauf.** Nach dem Umzug im alten Projekt die Cron-Jobs abschalten, sonst
+  laufen Nachtlauf und Kampagnen doppelt.
+- **Stripe-Dashboard, drei Handgriffe:** Nutzungsbedingungen-URL (`/agb`) unter den
+  öffentlichen Angaben, Wiederholungsversuche auf eine Woche mit „als unbezahlt
+  markieren" am Ende, und die deutsche Steuerregistrierung. Ohne die Registrierung weist
+  Stripe auf Rechnungen keine Umsatzsteuer aus.
+- **USt-IdNr** fehlt weiterhin: Impressum und Rechnungen brauchen sie.
+- **Klicktest des Kaufwegs** im Testmodus steht noch aus (lokal, `stripe listen` auf
+  `/api/stripe/webhook`, Karte 4242…).
+- **Verlängerung der Quartals- und Jahresabos** gegen § 309 Nr. 9 BGB: Die AGB sagen
+  „nach der Erstlaufzeit monatlich kündbar", Stripe verlängert um volle 3 bzw. 12 Monate.
+  Entweder Technik oder Klausel anpassen.
+- **Einverständnis der Mitglieder für `/ergebnisse`** (Klarnamen, Discord-Nicks, Avatare)
+  vor dem Abschalten der Wartung bestätigen.
+- **Kündigungs- und Widerrufsweg in der Fußzeile:** Auf Wunsch (20.09.) stehen dort nur
+  noch die vier Rechtstexte; „Verträge hier kündigen" und „Vertrag widerrufen" wohnen auf
+  `/widerruf` und im Konto. § 312k BGB verlangt „unmittelbar und leicht zugänglich" —
+  zwei Klicks sind vertretbar, aber nicht abschließend entschieden.
+
+✅ **Seit dem 19.09. erledigt** (Auswahl, alles live auf `master`):
+
+- Sicherheitslücke geschlossen: Jeder Angemeldete konnte sich Adminrechte und Lifetime
+  selbst setzen (Migration 073), fremde Profile inklusive Discord-Tokens lesen (074/075).
+  Bezahlschranke für Videos, Analysen, Quizze (076/077). `db:check-rls` belegt es.
+- Kaufweg Ende-zu-Ende getestet, acht Fehler gefunden, sieben behoben.
+- Rechtstexte, Kündigungsbutton (§ 312k), Widerrufsbutton (§ 356a), Zustimmung in der
+  Kasse, Schrift selbst gehostet, Calendly erst nach Klick, Abmeldelinks.
+- Mailversand repariert (DKIM), 32 Vorlagen auf ein schlichtes Gerüst, eigenes SMTP in
+  Supabase.
+- Discord-Retention nach MoonTrading-Vorbild, Warteraum eingerichtet, Interactions-Endpunkt
+  scharf.
+- Whop-Umzug gebaut: Import (Trockenlauf 29 Zeilen, 24 neu, 5 Aktualisierungen, 0 Fehler),
+  Mails, DMs, Erinnerungsband im Mitgliederbereich, Admin-Ansicht. **Noch nicht ausgelöst.**
 
 📦 **Inhalte — deutlich weiter als am 16.09.:**
 
@@ -347,35 +355,31 @@ hochladen", sondern: Live-Zahlung scharf schalten, Rechtliches nachziehen, Wartu
   auf 100 MB. Folgenlos, weil Videos direkt zu Cloudflare Stream und Bilder per
   Presigned PUT direkt zu R2 gehen — der Wert ist nur irreführend.
 
-## Rechtstexte (Impressum/Datenschutz/AGB/Widerruf) — Status: entschieden, nicht gebaut
+## Rechtstexte und Vertragswege — Status: gebaut (19./20.09.2026)
 
-`proxy.ts` referenziert öffentliche Pfade `/datenschutz`, `/impressum` — beide Seiten
-existieren im App-Router **nicht**, `/agb` und `/widerruf` fehlen komplett. Vor jedem
-echten Go-Live müssen sie gebaut und rechtlich geprüft werden — bei MoonTrading war
-genau das ein dokumentierter Blocker.
+**Live auf `master`:** `/impressum`, `/datenschutz`, `/agb`, `/widerruf`, dazu die
+Kündigungsfunktion `/kuendigen` (§ 312k BGB) und die Widerrufsfunktion `/widerrufen`
+(§ 356a BGB, Pflicht seit 19.06.2026). Anbieterangaben zentral in `config/legal.ts`:
+Emre Kopal, Einzelunternehmer, Wilhelmstraße 8, 32602 Vlotho, Telefon und
+`contact@capitalcircletrading.com`, regelbesteuert.
 
-**Bereits entschieden (06.09.2026):**
-- Rechtsform: **Einzelunternehmen/Freiberufler** → Impressum braucht den vollen Namen
-  der/des Inhabers, kein Handelsregister-Eintrag nötig.
-- Widerrufsrecht bei den digitalen Mitgliedschaften (monthly/lifetime): **Sofortzugriff
-  mit ausdrücklicher Verzichts-Checkbox im Checkout** (statt volles 14-Tage-Widerrufsrecht
-  mit Zugriffssperre/Rückerstattungsrisiko). Das bedingt einen kleinen Umbau am
-  Checkout-Flow (neue Pflicht-Checkbox + Speicherung von Zustimmungszeitpunkt/-text als
-  Nachweis), noch nicht umgesetzt.
+**In der Kasse** verlangt Stripe eine Pflicht-Zustimmung (`consent_collection`) mit
+Verzichtstext zum vorzeitigen Leistungsbeginn; Zeitpunkt und Textversion landen in
+`checkout_sessions` (Migration 091). Die Willkommensmail bestätigt den Vertragsschluss auf
+dauerhaftem Datenträger.
 
-🔒 **Blockierend, bevor die vier Seiten inhaltlich geschrieben werden können** — fehlende
-Pflichtangaben fürs Impressum:
-- Vollständiger Name der/des Inhabers
-- Ladungsfähige Anschrift (Straße/PLZ/Ort)
-- Telefonnummer + Kontakt-E-Mail (Vorschlag offen: `kontakt@capitalcircletrading.com`,
-  da die Domain schon für Transaktions-Mails genutzt wird)
-- Kleinunternehmer nach §19 UStG oder regelbesteuert mit USt-IdNr?
-
-Sobald diese vier Punkte vorliegen: `config/legal.ts` (zentrale Textbausteine, nach
-MoonTrading-Vorbild) + vier Seiten (`app/impressum`, `app/datenschutz`, `app/agb`,
-`app/widerruf`, Gold-only) + Checkout-Checkbox + `proxy.ts`-PUBLIC_PATHS-Ergänzung um
-`/agb`/`/widerruf`. Bis dahin bewusst nicht mit Platzhalter-Fantasiedaten gebaut, um
-kein scheinbar fertiges, aber rechtlich falsches Impressum online zu riskieren.
+**Offen:**
+- **USt-IdNr** fehlt; bis dahin entfällt die Zeile im Impressum und auf den Rechnungen.
+- **§ 309 Nr. 9 BGB**: Die AGB erlauben nach der Erstlaufzeit monatliche Kündigung mit
+  anteiliger Erstattung, Stripe verlängert aber um volle 3 bzw. 12 Monate. Technik oder
+  Klausel muss nachziehen.
+- **Anwaltliche Durchsicht** von Datenschutzerklärung und AGB steht aus. Die gesetzlichen
+  Muster (Widerrufsbelehrung, Muster-Widerrufsformular) sind unverändert übernommen.
+- **Nutzungsvereinbarung** im Onboarding ist auf Emre Kopal umgeschrieben (Fassung 2.0);
+  alte Zustimmungen gelten einer Fassung mit der Dubai-FZCO als Vertragspartei. Ob
+  Bestandsmitglieder erneut zustimmen sollen, ist offen.
+- **Fußzeile** trägt seit dem 20.09. nur die vier Rechtstexte; die beiden Vertragswege
+  stehen auf `/widerruf` und im Konto.
 
 ---
 
