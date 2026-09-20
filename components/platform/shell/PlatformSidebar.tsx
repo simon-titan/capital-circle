@@ -237,7 +237,7 @@ function Wordmark({ compact = false }: { compact?: boolean }) {
     <Box
       as={Link}
       href="/dashboard"
-      aria-label="Capital Circle — zum Dashboard"
+      aria-label="Capital Circle, zum Dashboard"
       display="inline-flex"
       alignItems="center"
       lineHeight={1}
@@ -407,7 +407,7 @@ function DiscordRow({ status, onNavigate }: { status: DiscordStatus; onNavigate?
         as={Link}
         href="/einstellungen/profil"
         onClick={onNavigate}
-        title={handle ? `Discord verbunden als ${handle} — im Profil verwalten` : "Discord verbunden — im Profil verwalten"}
+        title={handle ? `Discord verbunden als ${handle}, im Profil verwalten` : "Discord verbunden, im Profil verwalten"}
         {...rowProps(false, "48px")}
       >
         {glyph}

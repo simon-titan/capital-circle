@@ -18,7 +18,7 @@ export function EmptyState() {
             Noch keine Trades
           </Text>
           <Text fontSize="sm" color="var(--cc-text-2)" maxW="32rem" lineHeight="1.6">
-            Lade deinen Orders-Export hoch oder trag deinen ersten Trade von Hand ein — danach findest du hier deine
+            Lade deinen Orders-Export hoch oder trag deinen ersten Trade von Hand ein. Danach findest du hier deine
             komplette Performance.
           </Text>
         </Stack>

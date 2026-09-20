@@ -46,7 +46,7 @@ const COMMUNITY_AVATARS = [
 ];
 
 const BEWERBUNG_FEATURES: LandingFeature[] = [
-  { icon: "BookOpen", label: "Von 0 zum ersten Setup – strukturiert", detail: null },
+  { icon: "BookOpen", label: "Von 0 zum ersten Setup, strukturiert", detail: null },
   { icon: "Users", label: "Trader die dich pushen, nicht bremsen", detail: null },
   { icon: "ChartLineUp", label: "Bewährte Trading-Strategien", detail: null },
   { icon: "VideoCamera", label: "Wöchentliche Zoom Calls direkt mit Emre", detail: null },

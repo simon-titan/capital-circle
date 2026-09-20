@@ -108,7 +108,7 @@ export function RechtstextSeite({ titel, einleitung, children }: RechtstextSeite
       <Box as="main" position="relative" zIndex={1} px={{ base: 4, md: 8 }} pt={{ base: 8, md: 14 }} pb={{ base: 12, md: 16 }}>
         <Stack maxW="780px" mx="auto" gap={{ base: 7, md: 9 }}>
           <Stack gap={6} className="cc-rise">
-            <Link href="/" style={{ width: "fit-content" }} aria-label="Capital Circle — zur Startseite">
+            <Link href="/" style={{ width: "fit-content" }} aria-label="Capital Circle, zur Startseite">
               <Box
                 as="span"
                 display="inline-block"

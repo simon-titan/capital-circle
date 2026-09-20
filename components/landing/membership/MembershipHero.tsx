@@ -25,7 +25,7 @@ export function MembershipHero({ bewertungen }: { bewertungen: Bewertungsspiegel
     <Box
       as="section"
       id="plattform"
-      aria-label="Capital Circle — Trading-Community und Plattform"
+      aria-label="Capital Circle, Trading-Community und Plattform"
       position="relative"
       pt={{ base: 10, md: 16 }}
       px={{ base: 4, md: 8, lg: 12 }}

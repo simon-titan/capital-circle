@@ -48,9 +48,9 @@ export function formatSessionDate(iso: string) {
  * nächsten Neuaufsetzen andere IDs bekämen.
  */
 const KATEGORIE_HINWEISE: Array<[string, string]> = [
-  ["live", "Hier erscheinen die Mitschnitte der Live-Calls — Einstieg, Ausführung und Nachbesprechung am Chart."],
-  ["backtest", "Hier erscheinen die Backtesting-Sessions — Setups am historischen Chart durchgespielt und ausgewertet."],
-  ["recap", "Hier erscheint der Wochenrecap — was die Woche gebracht hat und worauf es nächste Woche ankommt."],
+  ["live", "Hier erscheinen die Mitschnitte der Live-Calls: Einstieg, Ausführung und Nachbesprechung am Chart."],
+  ["backtest", "Hier erscheinen die Backtesting-Sessions: Setups am historischen Chart durchgespielt und ausgewertet."],
+  ["recap", "Hier erscheint der Wochenrecap: was die Woche gebracht hat und worauf es nächste Woche ankommt."],
 ];
 
 export function kategorieHinweis(title: string) {

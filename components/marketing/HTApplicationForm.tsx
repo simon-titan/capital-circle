@@ -146,7 +146,7 @@ export function HTApplicationForm({
       }
       if (currentQuestion.minLength && value.length < currentQuestion.minLength) {
         setStepError(
-          `Bitte mindestens ${currentQuestion.minLength} Zeichen — aktuell ${value.length}.`,
+          `Bitte mindestens ${currentQuestion.minLength} Zeichen, aktuell ${value.length}.`,
         );
         return false;
       }
@@ -315,7 +315,7 @@ function ContactStep(props: {
         <Stack spacing={3}>
           <CardLabel hero>Bewerbung · 1:1 Mentoring</CardLabel>
           <FunnelHeadline as="h2" scale="md">
-            Bevor wir starten — wer bist du?
+            Bevor wir starten: Wer bist du?
           </FunnelHeadline>
           <Text fontSize="14px" lineHeight={1.6} color="var(--cc-text-2)">
             Wir melden uns ausschließlich über die hier angegebene E-Mail und WhatsApp-Nummer.
@@ -352,7 +352,7 @@ function ContactStep(props: {
         {siteKey ? (
           <Box ref={turnstileContainerRef} display="flex" justifyContent="center" />
         ) : (
-          <FunnelNotice>Captcha (NEXT_PUBLIC_TURNSTILE_SITE_KEY) ist nicht gesetzt — Schutz inaktiv.</FunnelNotice>
+          <FunnelNotice>Captcha (NEXT_PUBLIC_TURNSTILE_SITE_KEY) ist nicht gesetzt. Schutz inaktiv.</FunnelNotice>
         )}
 
         <Button variant="gold" size="lg" w="full" h="48px" fontSize="16px" onClick={onContinue}>

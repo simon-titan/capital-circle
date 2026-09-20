@@ -194,7 +194,7 @@ export function FunnelVideoHeadline() {
       textAlign="center"
       maxW="760px"
     >
-      Schau dieses Video — es zeigt warum <GoldWord>90% der Trader scheitern</GoldWord> und wie das Capital
+      Schau dieses Video. Es zeigt, warum <GoldWord>90% der Trader scheitern</GoldWord> und wie das Capital
       Circle Framework <GoldWord>das ändert</GoldWord>.
     </Text>
   );

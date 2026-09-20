@@ -185,7 +185,7 @@ export function SubcategoryManager({
 
       {items.length === 0 ? (
         <Text fontSize="14px" color="var(--cc-text-2)">
-          Keine Subkategorien — Videos liegen direkt im Modul, oder lege oben eine Subkategorie an.
+          Keine Subkategorien. Videos liegen direkt im Modul, oder lege oben eine Subkategorie an.
         </Text>
       ) : (
         <DraggableList

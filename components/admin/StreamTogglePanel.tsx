@@ -361,10 +361,10 @@ export function StreamTogglePanel({ initial }: Props) {
                     <Stack gap={2} mt={3} pl={1}>
                       <LabelCopyRow label="RTMPS-URL" value={RTMPS_URL} onCopy={copyToClipboard} />
                       <Text fontSize="xs" color="var(--cc-text-2)">
-                        <b>Stream-Key</b> — geheimer Token (wird in OBS eingetragen). Niemals an Nutzer weitergeben.
+                        <b>Stream-Key</b>: geheimer Token (wird in OBS eingetragen). Niemals an Nutzer weitergeben.
                       </Text>
                       <Text fontSize="xs" color="var(--cc-text-2)">
-                        <b>Video-UID</b> — oeffentliche ID des Live-Outputs (wird oben im Panel eingetragen).
+                        <b>Video-UID</b>: oeffentliche ID des Live-Outputs (wird oben im Panel eingetragen).
                       </Text>
                     </Stack>
                   </ListItem>

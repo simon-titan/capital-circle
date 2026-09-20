@@ -237,7 +237,7 @@ export function CourseModulesDraggable({
   if (items.length === 0) {
     return (
       <Text fontSize="14px" color="var(--cc-text-2)">
-        Noch keine Module — oben auf „+ Neues Modul“ klicken.
+        Noch keine Module. Oben auf „+ Neues Modul“ klicken.
       </Text>
     );
   }
@@ -355,7 +355,7 @@ export function CourseModulesDraggable({
               <Box id={panelId} px={4} pb={4} borderTop="1px solid var(--cc-line)" pt={3}>
                 {!inhalt || (inhalt.subs.length === 0 && inhalt.direkt.length === 0) ? (
                   <Text fontSize="13px" color="var(--cc-text-3)">
-                    Noch kein Inhalt — über „Bearbeiten“ Videos hochladen oder Untermodule anlegen.
+                    Noch kein Inhalt. Über „Bearbeiten“ Videos hochladen oder Untermodule anlegen.
                   </Text>
                 ) : (
                   <Stack spacing={3}>

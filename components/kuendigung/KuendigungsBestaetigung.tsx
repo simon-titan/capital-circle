@@ -185,7 +185,7 @@ export function KuendigungsBestaetigung({ beleg }: { beleg: KuendigungsBeleg }) 
             >
               <Text fontSize="14px" lineHeight={1.6} color="var(--cc-text)">
                 Die Bestätigungs-E-Mail an {beleg.bestaetigungEmail} konnte gerade nicht verschickt werden. Deine
-                Kündigung ist trotzdem eingegangen. Bitte speichere oder drucke diese Seite — sie ist deine
+                Kündigung ist trotzdem eingegangen. Bitte speichere oder drucke diese Seite. Sie ist deine
                 Bestätigung. Bei Fragen erreichst du uns unter {BETREIBER_EMAIL}.
               </Text>
             </Box>

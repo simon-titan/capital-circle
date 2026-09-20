@@ -314,7 +314,7 @@ export function DiscordQuestionsModal({
           >
             {submitted ? (
               <FunnelThanks
-                title="Perfekt — dein Termin ist freigeschaltet"
+                title="Perfekt, dein Termin ist freigeschaltet"
                 bullets={[
                   "Wähle gleich deinen passenden Gesprächstermin",
                   "Danach erhältst du deinen kostenlosen Discord-Zugang",
@@ -423,7 +423,7 @@ function ContactStep({
           Wohin dürfen wir deine Termin-Bestätigung schicken?
         </FunnelHeadline>
         <FunnelLead fontSize="14px">
-          Trag deine Daten ein — danach beantwortest du noch ein paar kurze Fragen.
+          Trag deine Daten ein. Danach beantwortest du noch ein paar kurze Fragen.
         </FunnelLead>
       </Stack>
 

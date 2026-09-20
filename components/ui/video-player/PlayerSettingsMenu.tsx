@@ -354,7 +354,7 @@ export function PlayerSettingsMenu({
               type="button"
               role="menuitem"
               className="cc-pm-item cc-pm-back"
-              aria-label={`Zurück zu den Einstellungen – ${title}`}
+              aria-label={`Zurück zu den Einstellungen, ${title}`}
               onClick={goBack}
             >
               <ChevronLeft size={18} aria-hidden />

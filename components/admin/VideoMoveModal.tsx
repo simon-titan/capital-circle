@@ -227,7 +227,7 @@ export function VideoMoveModal({
                 {...fieldSx}
                 isDisabled={saving}
               >
-                <option value={DIRECT} style={optionStyle}>— direkt im Modul —</option>
+                <option value={DIRECT} style={optionStyle}>(direkt im Modul)</option>
                 {subcategories.map((s) => (
                   <option key={s.id} value={s.id} style={optionStyle}>Subkategorie: {s.title}</option>
                 ))}

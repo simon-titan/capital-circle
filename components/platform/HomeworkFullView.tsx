@@ -328,7 +328,7 @@ function OffizielleAufgabe({ hw, index, todayKey, done, busy, allDoneNote, onTog
               Aufgabe erledigt
             </Box>
             <Box as="span" display="block" fontSize="13px" lineHeight={1.5} color="var(--cc-text-2)" mt={0.5}>
-              {done ? "Gut gemacht — du hast sie abgehakt." : "Hake ab, wenn du die Aufgabe abgeschlossen hast."}
+              {done ? "Gut gemacht, du hast sie abgehakt." : "Hake ab, wenn du die Aufgabe abgeschlossen hast."}
             </Box>
           </Box>
           {done ? (
@@ -515,7 +515,7 @@ export function HomeworkFullView({
 
             <DashCard label="Persönliche Checkliste" labelId="hw-custom" className="cc-card--still cc-rise" style={riseDelay(Math.max(aktuell.length, 1))}>
               <CardValue as="h3">Eigene Aufgaben</CardValue>
-              <Meta mt={1}>Ergänze Schritte, die dir helfen, dranzubleiben — inklusive optionaler Notizen.</Meta>
+              <Meta mt={1}>Ergänze Schritte, die dir helfen, dranzubleiben, inklusive optionaler Notizen.</Meta>
 
               <Flex align="center" gap={4} wrap="wrap" mt={5} mb={customTasks.length > 0 ? 3 : 5}>
                 {customTasks.length > 0 ? (
@@ -575,7 +575,7 @@ export function HomeworkFullView({
                   ))}
                 </Stack>
               ) : (
-                <Meta mb={5}>Noch keine eigenen Aufgaben — füge unten die erste hinzu.</Meta>
+                <Meta mb={5}>Noch keine eigenen Aufgaben. Füge unten die erste hinzu.</Meta>
               )}
 
               <Box pt={5} borderTop="1px solid var(--cc-line)">

@@ -205,7 +205,7 @@ export function WiderrufsFormular({ vorbelegung }: { vorbelegung: Vorbelegung | 
               onChange={(e) => setVertragAngabe(e.target.value)}
             />
             <FormHelperText {...funnelHelperProps}>
-              Zum Beispiel Tarif, Kaufdatum oder Rechnungsnummer — hilft, wenn du mehrere Verträge hast oder mit
+              Zum Beispiel Tarif, Kaufdatum oder Rechnungsnummer. Hilft, wenn du mehrere Verträge hast oder mit
               einer anderen E-Mail-Adresse bezahlt hast.
             </FormHelperText>
             <FormErrorMessage {...funnelErrorProps}>{fehler.vertragAngabe}</FormErrorMessage>

@@ -110,7 +110,7 @@ export function PaymentMethodCard() {
           <Meta>
             {zustand.hatKunden
               ? "Es ist keine Zahlungsmethode hinterlegt."
-              : "Du hast noch keine Zahlung getätigt — deshalb ist auch keine Zahlungsmethode hinterlegt."}
+              : "Du hast noch keine Zahlung getätigt, deshalb ist auch keine Zahlungsmethode hinterlegt."}
           </Meta>
         </Box>
         {zustand.hatKunden ? (

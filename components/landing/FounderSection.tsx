@@ -192,7 +192,7 @@ export function FounderSection() {
 
                 <Text color="var(--cc-text)" fontWeight={500}>
                   Kein Fluff. Kein Copy-Paste System.{" "}
-                  <Gold>Nur eine Methodik die funktioniert – und ein Umfeld das dich zwingt besser zu werden.</Gold>
+                  <Gold>Nur eine Methodik, die funktioniert, und ein Umfeld, das dich zwingt, besser zu werden.</Gold>
                 </Text>
               </Stack>
             </Reveal>

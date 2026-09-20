@@ -204,7 +204,7 @@ export function DiscordTerminFounder() {
 
               <Text fontSize={{ base: "15px", md: "16px" }} color="var(--cc-text-soft)" lineHeight="1.8">
                 Kein Fluff. Kein Copy-Paste System.{" "}
-                <Strong>Nur eine Methodik die funktioniert – und ein Umfeld das dich zwingt besser zu werden.</Strong>
+                <Strong>Nur eine Methodik, die funktioniert, und ein Umfeld, das dich zwingt, besser zu werden.</Strong>
               </Text>
             </Stack>
 

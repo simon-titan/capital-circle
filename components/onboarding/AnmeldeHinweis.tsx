@@ -26,7 +26,7 @@ const TEXTE: Record<string, { titel: string; text: string }> = {
   link_abgelaufen: {
     titel: "Dieser Link ist nicht mehr gültig.",
     text:
-      "Links zum Passwortsetzen funktionieren genau einmal und nur für begrenzte Zeit — und jede neue Anforderung " +
+      "Links zum Passwortsetzen funktionieren genau einmal und nur für begrenzte Zeit, und jede neue Anforderung " +
       "ersetzt die alte. Hol dir einfach einen neuen.",
   },
   link_ungueltig: {
@@ -37,7 +37,7 @@ const TEXTE: Record<string, { titel: string; text: string }> = {
 
 const RUECKFALL = {
   titel: "Der Link hat nicht funktioniert.",
-  text: "Hol dir einfach einen neuen — das dauert eine Minute.",
+  text: "Hol dir einfach einen neuen. Das dauert eine Minute.",
 };
 
 export function AnmeldeHinweis() {

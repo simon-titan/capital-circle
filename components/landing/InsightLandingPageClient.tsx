@@ -51,15 +51,15 @@ const INSIGHT_CARDS: InsightCard[] = [
   },
   {
     iconName: "BarChart3",
-    title: "Wie institutionelle Trader den Markt lesen – und du es auch kannst",
+    title: "Wie institutionelle Trader den Markt lesen, und du es auch kannst",
     description:
-      "Lerne die Methodik, die institutionelle Trader verwenden — nicht das, was auf Social Media kursiert.",
+      "Lerne die Methodik, die institutionelle Trader verwenden, nicht das, was auf Social Media kursiert.",
     bullet:
       "Mein Ansatz auf Basis von Auction Market Theory, Volumen und institutionellem Kontext",
   },
   {
     iconName: "CalendarDays",
-    title: "Jede Woche vorbereitet in den Markt – nie wieder blind traden",
+    title: "Jede Woche vorbereitet in den Markt, nie wieder blind traden",
     description:
       "Bereite dich jede Woche strukturiert auf die kommende Handelswoche vor.",
     bullet:
@@ -299,7 +299,7 @@ export function InsightLandingPageClient() {
                 <Stack spacing={4} align="center" textAlign="center" mb={{ base: 10, md: 14 }}>
                   <Eyebrow>Capital Circle</Eyebrow>
                   <DisplayHeading id="insight-cards-title" maxW="880px">
-                    Warum 93% aller Trader nie einen Payout sehen – und wie du zu den <Accent>7%</Accent> gehörst.
+                    Warum 93% aller Trader nie einen Payout sehen, und wie du zu den <Accent>7%</Accent> gehörst.
                   </DisplayHeading>
                   <Text fontSize={{ base: "16px", md: "17px" }} lineHeight={1.65} color="var(--cc-text-2)" maxW="580px">
                     Dieser Free Kurs ist nicht dafür gedacht, dir einfach nur

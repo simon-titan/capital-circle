@@ -31,7 +31,7 @@ const TEXTE: Record<string, { titel: string; text: string }> = {
   },
   konfiguration: {
     titel: "Die Kasse ist gerade nicht erreichbar.",
-    text: "Das liegt an uns, nicht an dir. Versuch es in ein paar Minuten noch einmal — oder schreib uns, dann schalten wir dich von Hand frei.",
+    text: "Das liegt an uns, nicht an dir. Versuch es in ein paar Minuten noch einmal, oder schreib uns, dann schalten wir dich von Hand frei.",
   },
   checkout: {
     titel: "Die Zahlung ließ sich nicht starten.",

@@ -101,7 +101,7 @@ export function YoutubeCarousel() {
                 target="_blank"
                 rel="noopener noreferrer"
                 position="relative"
-                aria-label={`${video.title} — auf YouTube ansehen, öffnet einen neuen Tab`}
+                aria-label={`${video.title}, auf YouTube ansehen, öffnet einen neuen Tab`}
                 cursor="pointer"
                 _hover={{
                   "& .play-overlay": {

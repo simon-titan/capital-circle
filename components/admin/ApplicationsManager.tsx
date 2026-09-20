@@ -288,7 +288,7 @@ export function ApplicationsManager() {
           <ModalBody>
             <Stack spacing={3}>
               <Text fontSize="sm" color="var(--cc-text-2)">
-                Der Grund ist nur intern sichtbar — er taucht NICHT in der E-Mail auf.
+                Der Grund ist nur intern sichtbar. Er taucht NICHT in der E-Mail auf.
               </Text>
               <Textarea
                 value={rejectReason}

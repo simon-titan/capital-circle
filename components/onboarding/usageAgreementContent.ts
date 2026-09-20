@@ -42,7 +42,7 @@ export const usageAgreementLeadParagraphs = [
 ];
 
 export const usageAgreementDocumentTitle =
-  "Vereinbarung zur Nutzung und Vertraulichkeit – Capital Circle";
+  "Vereinbarung zur Nutzung und Vertraulichkeit · Capital Circle";
 
 export const usageAgreementVersionLine = "Version 2.0 | Stand: 19. September 2026";
 
@@ -67,7 +67,7 @@ export const usageAgreementSections: UsageAgreementSection[] = [
         "nachfolgend „Capital Circle“",
       ].join("\n"),
       "und",
-      "der Person, die diese Vereinbarung durch aktive Zustimmung annimmt – nachfolgend „der Nutzer“.",
+      "der Person, die diese Vereinbarung durch aktive Zustimmung annimmt, nachfolgend „der Nutzer“.",
     ],
   },
   {
@@ -93,14 +93,14 @@ export const usageAgreementSections: UsageAgreementSection[] = [
       "a) an Dritte weiterzugeben oder ihnen zugänglich zu machen,",
       "b) in anderen Communities, Foren, Discord-Servern, Gruppen oder vergleichbaren Plattformen zu teilen,",
       "c) für eigene Kurse, Coachings, Mentorships, Schulungen oder vergleichbare Angebote zu verwenden,",
-      "d) aufzuzeichnen – etwa per Bildschirm- oder Tonaufnahme, auch bei Live-Sessions – oder herunterzuladen, soweit Capital Circle keinen Download anbietet,",
+      "d) aufzuzeichnen (etwa per Bildschirm- oder Tonaufnahme, auch bei Live-Sessions) oder herunterzuladen, soweit Capital Circle keinen Download anbietet,",
       "e) zu vervielfältigen, zu verbreiten, öffentlich zugänglich zu machen oder in sonstiger Weise zu verwerten.",
     ],
   },
   {
     heading: "§ 5 Verhalten in der Community",
     blocks: [
-      "In der Community – auf Discord und in den Kommentaren der Plattform – gilt:",
+      "In der Community (auf Discord und in den Kommentaren der Plattform) gilt:",
       "a) Die Mitglieder gehen respektvoll miteinander um. Beleidigungen, Diskriminierung und Belästigung sind nicht erlaubt.",
       "b) Keine Werbung, kein Spam und keine Angebote für eigene Signale, Kurse oder Dienstleistungen.",
       "c) Keine Inhalte, die Rechte Dritter verletzen, und keine personenbezogenen Daten anderer ohne deren Einverständnis.",
@@ -121,7 +121,7 @@ export const usageAgreementSections: UsageAgreementSection[] = [
       "a) Beiträge zu entfernen, die gegen § 5 verstoßen,",
       "b) den Zugang bei einem Verstoß gegen § 4 vorübergehend zu sperren,",
       "c) den Nutzer bei wiederholten Verstößen gegen § 5 nach einer Abmahnung, bei schweren Verstößen auch sofort, aus der Community auszuschließen,",
-      "d) den Vertrag aus wichtigem Grund zu kündigen – insbesondere, wenn der Nutzer Zugangsdaten oder Inhalte entgegen § 4 weitergibt oder trotz Abmahnung wiederholt gegen § 5 verstößt,",
+      "d) den Vertrag aus wichtigem Grund zu kündigen, insbesondere wenn der Nutzer Zugangsdaten oder Inhalte entgegen § 4 weitergibt oder trotz Abmahnung wiederholt gegen § 5 verstößt,",
       "e) Unterlassung und Ersatz des entstandenen Schadens nach den gesetzlichen Vorschriften zu verlangen.",
       "Endet der Vertrag dadurch vorzeitig, richtet sich die Erstattung bereits gezahlter Entgelte nach den AGB und den gesetzlichen Vorschriften.",
     ],

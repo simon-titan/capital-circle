@@ -120,7 +120,7 @@ export function UnassignedVideoPool({
 
       {videos.length === 0 ? (
         <Text fontSize="13px" color="var(--cc-text-3)" py={2}>
-          Der Stapel ist leer — alle Videos sind einem Modul zugeordnet.
+          Der Stapel ist leer. Alle Videos sind einem Modul zugeordnet.
         </Text>
       ) : (
         <>
@@ -167,7 +167,7 @@ export function UnassignedVideoPool({
       <AblageFlaeche
         id={STAPEL_ABLAGE_ID}
         aktiv={ziehtVideoAusModul}
-        label="Hier ablegen — zurück in den Stapel"
+        label="Hier ablegen: zurück in den Stapel"
         icon={<Box as={Inbox} boxSize="14px" display="inline-block" verticalAlign="-2px" aria-hidden />}
       />
     </Stack>

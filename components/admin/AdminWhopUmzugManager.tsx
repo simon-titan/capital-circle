@@ -145,7 +145,7 @@ export function AdminWhopUmzugManager() {
           <AlertIcon color={adminAlertIconColor("warning")} />
           <Text fontSize="sm">
             {(daten?.ohneDatum ?? 0) > 0
-              ? `${daten?.ohneDatum} Konten ohne access_until — sie bekommen keine Mail, weil in jeder Stufe ein Datum steht. `
+              ? `${daten?.ohneDatum} Konten ohne access_until. Sie bekommen keine Mail, weil in jeder Stufe ein Datum steht. `
               : ""}
             {(daten?.ohneAdresse ?? 0) > 0
               ? `${daten?.ohneAdresse} Konten ohne E-Mail-Adresse in auth.users.`
@@ -252,7 +252,7 @@ export function AdminWhopUmzugManager() {
       <Text mt={4} fontSize="xs" color="var(--cc-text-3)">
         Erinnerung geht {daten?.erinnerungVorlaufTage ?? 5} Tage vor dem persönlichen Ablauf raus. Versand:{" "}
         <code>npm run whop:umzug -- --url &lt;adresse&gt;</code> (Trockenlauf), mit <code>--write</code> scharf. Der
-        Nachtlauf verschickt nichts — er meldet nur, was fällig wäre, und beendet abgelaufene Zugänge.
+        Nachtlauf verschickt nichts. Er meldet nur, was fällig wäre, und beendet abgelaufene Zugänge.
       </Text>
     </>
   );

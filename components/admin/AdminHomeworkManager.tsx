@@ -135,7 +135,7 @@ export function AdminHomeworkManager({ initialHomework, todayKey }: { initialHom
         kind: "success",
         text: json.item.due_date
           ? "Hausaufgabe angelegt."
-          : "Hausaufgabe ohne Frist angelegt — sie bleibt aktuell, bis du sie archivierst oder löschst.",
+          : "Hausaufgabe ohne Frist angelegt. Sie bleibt aktuell, bis du sie archivierst oder löschst.",
       });
       setTitle("");
       setDescription("");
@@ -304,7 +304,7 @@ export function AdminHomeworkManager({ initialHomework, todayKey }: { initialHom
             <FormHelperText color="var(--cc-text-3)" fontSize="xs" lineHeight={1.5}>
               {dueDate
                 ? `Nach der Frist noch ${NACHFRIST_TAGE} Tage als überfällig sichtbar, danach unter „Vergangene Aufgaben“.`
-                : "Leer lassen für eine Aufgabe ohne Frist — sie bleibt aktuell, bis du sie archivierst oder löschst."}
+                : "Leer lassen für eine Aufgabe ohne Frist. Sie bleibt aktuell, bis du sie archivierst oder löschst."}
             </FormHelperText>
           </FormControl>
           <FormControl>
@@ -416,7 +416,7 @@ function DeleteHomeworkModal({
             </Text>
             <Text className="cc-num">
               {homework && homework.doneCount > 0
-                ? `${abgehaktLabel(homework.doneCount)} — diese Häkchen werden mitgelöscht.`
+                ? `${abgehaktLabel(homework.doneCount)}, diese Häkchen werden mitgelöscht.`
                 : "Noch hat niemand sie abgehakt."}{" "}
               Eigene Aufgaben, die Mitglieder dazu angelegt haben, bleiben in ihrer Checkliste.
             </Text>

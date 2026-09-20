@@ -160,7 +160,7 @@ export function WiderrufsBestaetigung({ beleg }: { beleg: WiderrufsBeleg }) {
             >
               <Text fontSize="14px" lineHeight={1.6} color="var(--cc-text)">
                 Die Eingangsbestätigung an {beleg.bestaetigungEmail} konnte gerade nicht verschickt werden. Dein
-                Widerruf ist trotzdem eingegangen. Bitte speichere oder drucke diese Seite — sie ist dein Beleg. Bei
+                Widerruf ist trotzdem eingegangen. Bitte speichere oder drucke diese Seite. Sie ist dein Beleg. Bei
                 Fragen erreichst du uns unter {BETREIBER_EMAIL}.
               </Text>
             </Box>

@@ -144,16 +144,16 @@ function questionAnswered(question: QuizQuestion, answer: QuestionAnswer): boole
 
 function formatUserAnswer(question: QuizQuestion, answer: QuestionAnswer): string {
   if (question.type === "multiple_choice") {
-    if (typeof answer !== "string" || answer === "") return "— (nicht beantwortet)";
+    if (typeof answer !== "string" || answer === "") return "(nicht beantwortet)";
     const idx = Number(answer);
-    if (Number.isNaN(idx)) return "— (nicht beantwortet)";
+    if (Number.isNaN(idx)) return "(nicht beantwortet)";
     return question.options[idx] ?? `Option ${idx + 1}`;
   }
   if (question.type === "true_false") {
-    if (typeof answer !== "boolean") return "— (nicht beantwortet)";
+    if (typeof answer !== "boolean") return "(nicht beantwortet)";
     return answer ? "Wahr" : "Falsch";
   }
-  if (!Array.isArray(answer) || answer.length !== question.items.length) return "— (nicht beantwortet)";
+  if (!Array.isArray(answer) || answer.length !== question.items.length) return "(nicht beantwortet)";
   return answer.map((i) => question.items[i] ?? "").join(" → ");
 }
 
@@ -489,7 +489,7 @@ export function QuizModal({
               </Box>
               <Text {...META_TEXT} lineHeight={1.6}>
                 {result.passed
-                  ? "Du wirst in Kürze automatisch zum nächsten Modul weitergeleitet — oder tippe unten auf die Schaltfläche."
+                  ? "Du wirst in Kürze automatisch zum nächsten Modul weitergeleitet, oder tippe unten auf die Schaltfläche."
                   : "Du bist nah dran - prüfe die Antworten und versuche es erneut."}
               </Text>
               {!result.passed ? (

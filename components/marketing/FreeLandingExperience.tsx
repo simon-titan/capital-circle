@@ -27,7 +27,7 @@ export function FreeLandingExperience() {
 
           <FunnelLead maxW="560px">
             Lerne in unserem kostenlosen 5-Tage-Onboarding, wie professionelles Trading wirklich funktioniert.
-            Nur für ausgewählte Trader — Bewerbung in 3 kurzen Schritten.
+            Nur für ausgewählte Trader: Bewerbung in 3 kurzen Schritten.
           </FunnelLead>
 
           <Button
@@ -39,7 +39,7 @@ export function FreeLandingExperience() {
             fontSize="16px"
             onClick={() => setIsModalOpen(true)}
           >
-            Jetzt bewerben — kostenlos
+            Jetzt kostenlos bewerben
           </Button>
 
           <FunnelFinePrint>Keine Kreditkarte erforderlich · Kostenloser Kurs</FunnelFinePrint>

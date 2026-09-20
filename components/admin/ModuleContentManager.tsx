@@ -1043,14 +1043,14 @@ export function ModuleContentManager({
               Inhalt des Moduls
             </Text>
             <Text mt={1} fontSize="sm" color="var(--cc-text-2)">
-              Videos und Subkategorien frei per Griff sortieren — die Reihenfolge wird gespeichert. Ein Video auf die
+              Videos und Subkategorien frei per Griff sortieren. Die Reihenfolge wird gespeichert. Ein Video auf die
               Mitte einer Subkategorie ziehen verschiebt es hinein, aus dem Stapel daneben holst du neue Videos dazu.
             </Text>
           </Box>
 
           {draggableItems.length === 0 ? (
             <Text fontSize="sm" color="var(--cc-text-2)">
-              Noch keine direkten Videos und keine Subkategorien — unten hochladen, aus dem Stapel ziehen oder
+              Noch keine direkten Videos und keine Subkategorien. Unten hochladen, aus dem Stapel ziehen oder
               Subkategorie anlegen.
             </Text>
           ) : (
@@ -1093,7 +1093,7 @@ export function ModuleContentManager({
           <AblageFlaeche
             id={MODUL_ABLAGE_ID}
             aktiv={ziehtGerade === "stapelvideo"}
-            label="Hier ablegen — direkt ins Modul, ohne Subkategorie"
+            label="Hier ablegen: direkt ins Modul, ohne Subkategorie"
             icon={<Box as={FolderDown} boxSize="14px" display="inline-block" verticalAlign="-2px" aria-hidden />}
           />
 

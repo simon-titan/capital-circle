@@ -429,7 +429,7 @@ export function VideoManager({
 
       {items.length === 0 ? (
         <Text fontSize="sm" color="var(--cc-text-2)">
-          Noch keine Videos — unten eine Videodatei hochladen.
+          Noch keine Videos. Unten eine Videodatei hochladen.
         </Text>
       ) : (
         <DraggableList
@@ -570,7 +570,7 @@ export function VideoManager({
                               Vorschaubild (Dashboard &amp; Institut-Karte)
                             </FormLabel>
                             <Text fontSize="sm" color="var(--cc-text-2)" mb={3}>
-                              Entspricht der großen Bildfläche auf der Modulkarte — nicht nur der kleinen Liste in der
+                              Entspricht der großen Bildfläche auf der Modulkarte, nicht nur der kleinen Liste in der
                               Videowiedergabe.
                             </Text>
                             <Box

@@ -105,7 +105,7 @@ function kopfzeile(tier: Tier): string {
 function laufzeit(tier: Tier, abo: PaketAbo | null, lifetimeGekauftAm: string | null, accessUntil: string | null) {
   if (tier === "lifetime") return `Erworben am ${formatDate(lifetimeGekauftAm)} · keine weitere Abbuchung`;
   if (tier === "ht_1on1") return "Termine vereinbaren wir direkt mit dir per E-Mail.";
-  if (tier === "free") return "Noch kein Paket gebucht — die Plattform ist nur teilweise offen.";
+  if (tier === "free") return "Noch kein Paket gebucht. Die Plattform ist nur teilweise offen.";
   if (abo?.cancelAtPeriodEnd) return `Gekündigt · Zugang bis ${formatDate(abo.currentPeriodEnd)}`;
   if (abo) return `Laufzeit bis ${formatDate(abo.currentPeriodEnd)}`;
   return `Zugang bis ${formatDate(accessUntil)} · von Hand eingetragen`;

@@ -72,10 +72,10 @@ export function CloudflareVideoUploader({ onUploaded, disabled }: CloudflareVide
       const verworfen = dateien.length - videos.length;
 
       if (videos.length === 0) {
-        setHinweis("Keine Videodatei dabei — bitte MP4, MOV, WEBM o. Ä. ablegen.");
+        setHinweis("Keine Videodatei dabei. Bitte MP4, MOV, WEBM o. Ä. ablegen.");
         return;
       }
-      setHinweis(verworfen > 0 ? `${verworfen} Datei(en) übersprungen — keine Videos.` : null);
+      setHinweis(verworfen > 0 ? `${verworfen} Datei(en) übersprungen: keine Videos.` : null);
 
       const neue: WarteschlangenEintrag[] = videos.map((f) => ({
         id: crypto.randomUUID(),

@@ -67,7 +67,7 @@ export function ImageDropZone({
       if (liste.length === 0) return;
       const bild = liste.find(istBild);
       if (!bild) {
-        setHinweis("Das ist keine Bilddatei — JPG, PNG, WEBP, GIF oder AVIF.");
+        setHinweis("Das ist keine Bilddatei: JPG, PNG, WEBP, GIF oder AVIF.");
         return;
       }
       setHinweis(null);
