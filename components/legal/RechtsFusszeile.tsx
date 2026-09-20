@@ -35,17 +35,27 @@ type Eintrag = { href: string; label: string; betont?: boolean };
  * auf jeder anderen Seite und im Konto erreichbar, die Pflicht nach
  * § 312k BGB ist damit gewahrt.
  */
-function eintraege(ohneVertragswege = false): Eintrag[] {
-  const liste: Eintrag[] = [
+/**
+ * Vier Links, mehr nicht (Entscheidung Simon, 20.09.2026).
+ *
+ * „Vertrag widerrufen" und „Verträge hier kündigen" standen hier in Fettdruck
+ * und wanderten damit auf jede Seite, auf der die Fußzeile steht. Beide
+ * wohnen jetzt auf `/widerruf`: Dort stehen Belehrung und Formular ohnehin,
+ * und wer kündigen oder widerrufen will, sucht genau dort.
+ *
+ * Rechtlicher Rahmen dazu: § 312k BGB verlangt, dass der Kündigungsweg
+ * „ständig verfügbar sowie unmittelbar und leicht zugänglich" ist. Über die
+ * Fußzeile ist er das in zwei Klicks (Widerruf → Kündigen), im Konto steht er
+ * zusätzlich unter Einstellungen. Ob zwei Klicks genügen, ist nicht
+ * entschieden; wer das Risiko nicht will, setzt `betont` hier wieder ein.
+ */
+function eintraege(_ohneVertragswege = false): Eintrag[] {
+  return [
     { href: rechtsPfade.impressum, label: "Impressum" },
     { href: rechtsPfade.datenschutz, label: "Datenschutz" },
     { href: rechtsPfade.agb, label: "AGB" },
     { href: rechtsPfade.widerruf, label: "Widerruf" },
   ];
-  if (ohneVertragswege) return liste;
-  if (widerrufsfunktionPfad) liste.push({ href: widerrufsfunktionPfad, label: "Vertrag widerrufen", betont: true });
-  liste.push({ href: rechtsPfade.kuendigen, label: "Verträge hier kündigen", betont: true });
-  return liste;
 }
 
 export interface RechtsLinksProps extends FlexProps {
