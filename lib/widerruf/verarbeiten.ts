@@ -155,7 +155,7 @@ export async function ordneZu(
       console.error("[widerruf] Kontosuche fehlgeschlagen:", err);
       return {
         ...leer,
-        pruefHinweis: `Kontosuche fehlgeschlagen (${err instanceof Error ? err.message : "unbekannt"}) — Konto von Hand suchen.`,
+        pruefHinweis: `Kontosuche fehlgeschlagen (${err instanceof Error ? err.message : "unbekannt"}): Konto von Hand suchen.`,
       };
     }
   }
@@ -174,7 +174,7 @@ export async function ordneZu(
 
   const kontext = await ladeAboKontext(userId);
   if (!kontext) {
-    return { ...leer, ...basis, pruefHinweis: "Konto gefunden, Profil aber nicht lesbar — von Hand prüfen." };
+    return { ...leer, ...basis, pruefHinweis: "Konto gefunden, Profil aber nicht lesbar: von Hand prüfen." };
   }
 
   const vertraege = vertraegeAus(kontext);
@@ -203,8 +203,8 @@ export async function ordneZu(
       (vertrag.status ? ` (Abo-Status ${vertrag.status})` : "") +
       ".",
     fristgerecht
-      ? `Eingang ${tageSeitSchluss} Tag(e) nach Vertragsschluss — innerhalb der regulären Frist bis ${fristEnde}.`
-      : `Eingang ${tageSeitSchluss} Tage nach Vertragsschluss — reguläre Frist endete ${fristEnde}. ` +
+      ? `Eingang ${tageSeitSchluss} Tag(e) nach Vertragsschluss, innerhalb der regulären Frist bis ${fristEnde}.`
+      : `Eingang ${tageSeitSchluss} Tage nach Vertragsschluss. Die reguläre Frist endete ${fristEnde}. ` +
         "Nur wirksam, wenn die Frist wegen fehlerhafter Belehrung länger lief.",
     ...(aeltere.length > 0 ? [`Außerdem: ${aeltere.map(vertragsBezeichnung).join("; ")}.`] : []),
     ...(zahlung ? [`Letzte Zahlung: ${zahlung}.`] : []),

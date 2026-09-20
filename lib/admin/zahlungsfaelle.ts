@@ -340,7 +340,7 @@ export async function antworteKunde(params: {
     fallId: fall.id,
     userId: fall.user_id,
     // Der Knopf hängt dran; der Satz sagt, dass man ihn benutzen muss.
-    text: `${text}\n\n— Das Capital-Circle-Team. Antworten kannst du über den Knopf „Antworten“ unten.`,
+    text: `${text}\n\nDas Capital-Circle-Team. Antworten kannst du über den Knopf „Antworten“ unten.`,
     autorId: params.adminId,
     vonAdmin: true,
     mail: params.perMail
@@ -572,7 +572,7 @@ export async function schliesseFall(params: { fallId: string; adminId: string; g
     hinweise: [
       "Es wird nicht mehr erinnert oder gesperrt. Am Zugang ändert das nichts" +
         (bis ? `: Er läuft bis ${datumVon(bis)}` : "") +
-        " — wer länger Zugang braucht, bekommt einen Aufschub statt eines geschlossenen Falls.",
+        ". Wer länger Zugang braucht, bekommt einen Aufschub statt eines geschlossenen Falls.",
     ],
   };
 }

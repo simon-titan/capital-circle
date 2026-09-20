@@ -356,7 +356,7 @@ export async function entferneFaelligeAutomatisch(service: SupabaseClient): Prom
       const grund =
         `Discord hat den Rauswurf von ${person.username} mit 403 abgelehnt. Der Lauf wurde abgebrochen, damit nicht ` +
         "jede Nacht dieselbe Abschiedsnachricht rausgeht. Fast immer fehlt dem Bot „Kick Members“ oder die " +
-        "Person steht über dem Bot — prüfen mit npm run discord:check.";
+        "Person steht über dem Bot. Prüfen mit npm run discord:check.";
       await protokolliere(service, person.userId, "discord_rauswurf_angehalten", { grund });
       return {
         gelaufen: false,

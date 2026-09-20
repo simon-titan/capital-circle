@@ -125,7 +125,7 @@ export function belegZeilen(beleg: WiderrufsBeleg): [string, string][] {
  */
 export function weiterText(): string {
   return (
-    "Wir bearbeiten deinen Widerruf und melden uns per E-Mail bei dir — zum Ende deines Zugangs und zu " +
+    "Wir bearbeiten deinen Widerruf und melden uns per E-Mail bei dir, zum Ende deines Zugangs und zu " +
     "bereits geleisteten Zahlungen. Was mit ihnen geschieht, richtet sich nach der Widerrufsbelehrung; eine " +
     "Rückzahlung erhältst du über das Zahlungsmittel, mit dem du bezahlt hast. Für die Frist zählt der oben " +
     "genannte Zeitpunkt, zu dem du den Widerruf abgeschickt hast."

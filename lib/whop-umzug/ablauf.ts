@@ -136,7 +136,7 @@ export async function beendeAbgelaufeneWhopZugaenge(
     ergebnis.ausgesetzt =
       `${dran.length} Whop-Zugänge würden heute Nacht enden, erlaubt sind ${ABLAUF_MAX_PRO_NACHT}. ` +
       "Es wurde keiner beendet. Das ist fast immer ein Datenfehler (etwa ein falsch gesetztes access_until " +
-      "beim Import) — bitte ansehen, bevor der nächste Lauf startet.";
+      "beim Import). Bitte ansehen, bevor der nächste Lauf startet.";
     return ergebnis;
   }
 
