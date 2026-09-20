@@ -1,3 +1,5 @@
+"use client";
+
 import { Box, Button, Stack, Text } from "@chakra-ui/react";
 import { ArrowRight } from "lucide-react";
 import NextLink from "next/link";
