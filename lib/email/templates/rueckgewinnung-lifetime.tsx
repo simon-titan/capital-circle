@@ -28,7 +28,7 @@ export default function RueckgewinnungLifetimeEmail({ vorname, abmeldeLink }: Pr
         du genau dort weiter, wo du aufgehört hast.
       </EmailText>
       <EmailText>
-        Neu für ehemalige Mitglieder: Lifetime. Du zahlst einmalig {LIFETIME_PREIS} und bist dauerhaft dabei — ohne
+        Neu für ehemalige Mitglieder: Lifetime. Du zahlst einmalig {LIFETIME_PREIS} und bist dauerhaft dabei: ohne
         Abo, ohne Verlängerung, ohne Abbuchung jeden Monat.
       </EmailText>
       <EmailButton href={lifetimeUrl(appUrl)}>Lifetime ansehen</EmailButton>

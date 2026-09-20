@@ -21,7 +21,7 @@ export default function ChurnInactive7dEmail({ firstName, abmeldeLink }: Pick<Pr
     <BaseEmail previewText="Du verpasst gerade etwas..." unsubscribeUrl={abmeldeLink}>
       <EmailHeading>Du warst lang nicht da, {firstName}</EmailHeading>
       <EmailText>
-        wir haben dich seit über einer Woche nicht in der Plattform gesehen —
+        wir haben dich seit über einer Woche nicht in der Plattform gesehen,
         und das gerade jetzt, wo wir frische Marktanalysen und neue Lektionen
         veröffentlicht haben.
       </EmailText>
@@ -33,10 +33,10 @@ export default function ChurnInactive7dEmail({ firstName, abmeldeLink }: Pick<Pr
       </EmailText>
 
       <EmailText muted>
-        — Aktuelle Marktanalyse von dieser Woche
+        · Aktuelle Marktanalyse von dieser Woche
         <br />
-        — 2 neue Strategie-Lektionen
-        <br />— Live-Session-Replays der letzten 7 Tage
+        · 2 neue Strategie-Lektionen
+        <br />· Live-Session-Replays der letzten 7 Tage
       </EmailText>
 
       <EmailButton href={`${appUrl}/dashboard`}>Schau wieder rein</EmailButton>

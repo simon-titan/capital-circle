@@ -43,7 +43,7 @@ export default function ReactivationOfferEmail({
       <EmailHeading>Dein Platz ist noch da, {firstName}</EmailHeading>
       <EmailText>
         vor zwei Wochen ist deine Mitgliedschaft ausgelaufen. Dein Konto, dein Journal und dein Fortschritt im Institut
-        sind noch gespeichert — wenn du wieder einsteigst, machst du genau dort weiter, wo du aufgehört hast.
+        sind noch gespeichert. Wenn du wieder einsteigst, machst du genau dort weiter, wo du aufgehört hast.
       </EmailText>
 
       <EmailText>
@@ -62,7 +62,7 @@ export default function ReactivationOfferEmail({
         Wieder einsteigen
       </EmailButton>
 
-      <EmailText muted>Kein Druck — wenn du nicht möchtest, hörst du zu diesem Thema nichts mehr von uns.</EmailText>
+      <EmailText muted>Kein Druck. Wenn du nicht möchtest, hörst du zu diesem Thema nichts mehr von uns.</EmailText>
     </BaseEmail>
   );
 }

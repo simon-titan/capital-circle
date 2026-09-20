@@ -24,13 +24,13 @@ export default function ApplicationRejectedEmail({
       </EmailText>
       <EmailText>
         Aktuell können wir dir leider keinen Platz anbieten. Das liegt nicht
-        zwingend an dir — wir nehmen pro Periode nur eine sehr begrenzte Zahl
+        zwingend an dir. Wir nehmen pro Periode nur eine sehr begrenzte Zahl
         an Trader:innen auf, um die Qualität der Begleitung sicherzustellen.
       </EmailText>
       <EmailText muted>
         Wir wünschen dir alles Gute für deinen weiteren Weg an den Märkten.
       </EmailText>
-      <EmailText muted>— Das Capital-Circle-Team</EmailText>
+      <EmailText muted>Das Capital-Circle-Team</EmailText>
     </BaseEmail>
   );
 }

@@ -88,7 +88,7 @@ export async function sendWiderrufEingang({
   const eingang = formatEingang(beleg.eingegangenAm);
   return sendEmail({
     to: an,
-    subject: `Eingangsbestätigung deines Widerrufs — eingegangen am ${eingang.datum}`,
+    subject: `Eingangsbestätigung deines Widerrufs, eingegangen am ${eingang.datum}`,
     replyTo: BETREIBER_EMAIL,
     jsx: <WiderrufEingangEmail beleg={beleg} appUrl={getAppUrl()} kopieAnKonto={kopieAnKonto} />,
   });

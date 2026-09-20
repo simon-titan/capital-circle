@@ -24,12 +24,12 @@ export default function DiscordInviteEmail({
       <EmailHeading>Willkommen, {firstName}!</EmailHeading>
       <EmailText>
         schön, dass du dabei bist. Dein Platz in der
-        Capital-Circle-Discord-Community ist reserviert — der Ort, an dem du
+        Capital-Circle-Discord-Community ist reserviert: der Ort, an dem du
         lernst, wie du innerhalb weniger Wochen deinen ersten Payout erzielst.
       </EmailText>
 
       <EmailText>
-        Klick auf den Button, um direkt beizutreten. Der Link gehört nur dir —
+        Klick auf den Button, um direkt beizutreten. Der Link gehört nur dir,
         bitte nicht weitergeben.
       </EmailText>
 
@@ -39,14 +39,14 @@ export default function DiscordInviteEmail({
 
       <EmailText>
         Im nächsten Schritt: Schau dir das kurze Video an und buche dein
-        kostenloses Gespräch mit uns — dort klären wir, wie wir dich am besten
+        kostenloses Gespräch mit uns. Dort klären wir, wie wir dich am besten
         zu deinem ersten Payout bringen.
       </EmailText>
 
       <EmailText muted>
-        Bei Fragen antworte einfach auf diese Mail — wir lesen mit.
+        Bei Fragen antworte einfach auf diese Mail, wir lesen mit.
       </EmailText>
-      <EmailText muted>— Das Capital-Circle-Team</EmailText>
+      <EmailText muted>Das Capital-Circle-Team</EmailText>
     </BaseEmail>
   );
 }

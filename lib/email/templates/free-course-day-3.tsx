@@ -14,7 +14,7 @@ interface Props {
 export default function FreeCourseDay3Email({ firstName, abmeldeLink }: Pick<Props, "firstName"> & { abmeldeLink?: string }) {
   const appUrl = getAppUrl();
   return (
-    <BaseEmail previewText="Du bekommst Einblick in den Sonntags-Call — kostenlos." unsubscribeUrl={abmeldeLink}>
+    <BaseEmail previewText="Du bekommst Einblick in den Sonntags-Call, kostenlos." unsubscribeUrl={abmeldeLink}>
       <EmailText>Hey {firstName},</EmailText>
       <EmailText>
         als Teil dieses Zugangs bekommst du nicht nur die Inhalte des Free Kurses.

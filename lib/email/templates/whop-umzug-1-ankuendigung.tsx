@@ -57,7 +57,7 @@ export default function WhopUmzug1Ankuendigung({ vorname, zugangBis, abmeldeLink
 
   return (
     <BaseEmail
-      previewText={`Dein Zugang bleibt bis zum ${bis} — was jetzt zu tun ist`}
+      previewText={`Dein Zugang bleibt bis zum ${bis}: was jetzt zu tun ist`}
       unsubscribeUrl={abmeldeLink}
     >
       <EmailHeading>
@@ -65,8 +65,8 @@ export default function WhopUmzug1Ankuendigung({ vorname, zugangBis, abmeldeLink
       </EmailHeading>
 
       <EmailText>
-        Capital Circle läuft ab sofort wieder auf der eigenen Plattform. Alles, was du kennst — das Institut, die
-        Aufzeichnungen, dein Fortschritt und der Discord — liegt dort. Neu ist nur, wo deine Mitgliedschaft
+        Capital Circle läuft ab sofort wieder auf der eigenen Plattform. Alles, was du kennst (das Institut, die
+        Aufzeichnungen, dein Fortschritt und der Discord), liegt dort. Neu ist nur, wo deine Mitgliedschaft
         abgerechnet wird: bei uns direkt statt über Whop.
       </EmailText>
 
@@ -74,14 +74,14 @@ export default function WhopUmzug1Ankuendigung({ vorname, zugangBis, abmeldeLink
         <strong style={{ color: T.gold }}>Dein Zugang bleibt bis zum {bis}.</strong>
         <br />
         Das ist das Ende des Zeitraums, den du bei Whop bereits bezahlt hast. Bis dahin ändert sich für dich
-        nichts — du zahlst nichts doppelt und verlierst keinen Tag.
+        nichts: Du zahlst nichts doppelt und verlierst keinen Tag.
       </EmailQuote>
 
       <EmailDivider />
 
       <EmailSubheading>Dein Konto liegt schon bereit</EmailSubheading>
       <EmailText>
-        Wir haben es für dich angelegt, mit genau dieser E-Mail-Adresse. Ein Passwort hast du noch nicht — setz dir
+        Wir haben es für dich angelegt, mit genau dieser E-Mail-Adresse. Ein Passwort hast du noch nicht. Setz dir
         eines über <EmailLink href={`${appUrl}/passwort-vergessen`}>{`${appUrl}/passwort-vergessen`}</EmailLink>,
         dann bist du drin. Dein Discord-Zugang läuft weiter wie bisher.
       </EmailText>
@@ -91,7 +91,7 @@ export default function WhopUmzug1Ankuendigung({ vorname, zugangBis, abmeldeLink
       <EmailSubheading>Schritt 1: Dein Whop-Abo kündigen</EmailSubheading>
       <EmailText>
         Das können wir dir nicht abnehmen: An deinen Whop-Vertrag kommst nur du selbst heran. Kündigst du nicht,
-        bucht Whop am {bis} erneut ab — für einen Zugang, der dort nicht mehr läuft.
+        bucht Whop am {bis} erneut ab, für einen Zugang, der dort nicht mehr läuft.
       </EmailText>
       <SchritteListe schritte={WHOP_KUENDIGUNG_SCHRITTE} />
       <EmailText muted>{whopKuendigungHilfe()}</EmailText>
@@ -100,7 +100,7 @@ export default function WhopUmzug1Ankuendigung({ vorname, zugangBis, abmeldeLink
 
       <EmailSubheading>Schritt 2: Bei uns weitermachen</EmailSubheading>
       <EmailText>
-        Such dir aus, was passt. Es sind dieselben Preise wie für alle — einen Umzugsrabatt gibt es nicht, und
+        Such dir aus, was passt. Es sind dieselben Preise wie für alle. Einen Umzugsrabatt gibt es nicht, und
         einen Haken auch nicht.
       </EmailText>
 
@@ -138,7 +138,7 @@ export default function WhopUmzug1Ankuendigung({ vorname, zugangBis, abmeldeLink
       <EmailSubheading>Was bleibt, wie es ist</EmailSubheading>
       <EmailText>
         Dein Konto, dein Lernfortschritt, deine Notizen und dein Platz auf dem Discord-Server. Nichts davon hängt an
-        Whop, und nichts davon geht verloren — auch dann nicht, wenn du dir mit dem Abschliessen Zeit lässt.
+        Whop, und nichts davon geht verloren, auch dann nicht, wenn du dir mit dem Abschliessen Zeit lässt.
       </EmailText>
 
       <EmailSmall>
@@ -196,7 +196,7 @@ function SchritteListe({ schritte }: { schritte: readonly string[] }) {
 export async function sendWhopUmzug1(props: Props & { an: string; replyTo?: string }): Promise<SendResult> {
   return sendEmail({
     to: props.an,
-    subject: `Capital Circle zieht um — dein Zugang bleibt bis zum ${datumLang(props.zugangBis)}`,
+    subject: `Capital Circle zieht um: dein Zugang bleibt bis zum ${datumLang(props.zugangBis)}`,
     replyTo: props.replyTo,
     jsx: (
       <WhopUmzug1Ankuendigung

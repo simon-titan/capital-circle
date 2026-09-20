@@ -23,20 +23,20 @@ export default function HtUpsell60dEmail({ firstName, abmeldeLink }: Pick<Props,
       </EmailHeading>
       <EmailText>
         du bist seit 60 Tagen Teil von Capital Circle. Damit gehörst du zu den
-        Mitgliedern, die wirklich an sich arbeiten — nicht nur konsumieren.
+        Mitgliedern, die wirklich an sich arbeiten, nicht nur konsumieren.
       </EmailText>
 
       <EmailSubheading>1-on-1-Coaching</EmailSubheading>
       <EmailText>
         Wir öffnen aktuell wieder Plätze für unser High-Ticket-1-on-1-Programm.
-        Das ist nichts für jeden — und wir nehmen nicht jeden auf. Aber wenn
+        Das ist nichts für jeden, und wir nehmen nicht jeden auf. Aber wenn
         du den Sprung von „verstanden“ zu „konstant umgesetzt“ machen willst,
         ist genau das der Weg.
       </EmailText>
 
       <EmailText>
         Wir nehmen pro Quartal nur eine sehr begrenzte Zahl an Trader:innen
-        auf — die Auswahl läuft über ein Erstgespräch.
+        auf. Die Auswahl läuft über ein Erstgespräch.
       </EmailText>
 
       <EmailButton href={calendlyUrl}>Erstgespräch buchen</EmailButton>

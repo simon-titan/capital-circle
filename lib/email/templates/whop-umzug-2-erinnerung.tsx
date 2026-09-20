@@ -58,7 +58,7 @@ export default function WhopUmzug2Erinnerung({ vorname, zugangBis, tageRest, abm
         <strong style={{ color: T.gold }}>Danach ruht dein Zugang.</strong>
         <br />
         Institut und Mitgliederkanäle sind dann zu. Dein Konto, dein Fortschritt und deine Notizen bleiben
-        gespeichert — du machst später genau dort weiter, wo du aufgehört hast.
+        gespeichert. Du machst später genau dort weiter, wo du aufgehört hast.
       </EmailQuote>
 
       <EmailText>Wenn du dabeibleiben möchtest, reicht ein Klick:</EmailText>
@@ -72,7 +72,7 @@ export default function WhopUmzug2Erinnerung({ vorname, zugangBis, tageRest, abm
             {i < arr.length - 1 ? " · " : ""}
           </React.Fragment>
         ))}
-        . Oder Lifetime für {LIFETIME_PREIS} einmalig — die Karte dazu steht nach dem Anmelden unter Einstellungen →
+        . Oder Lifetime für {LIFETIME_PREIS} einmalig. Die Karte dazu steht nach dem Anmelden unter Einstellungen →
         Abonnement.
       </EmailText>
 
@@ -92,7 +92,7 @@ export async function sendWhopUmzug2(props: Props & { an: string; replyTo?: stri
   const rest = props.tageRest <= 0 ? "heute" : props.tageRest === 1 ? "morgen" : `in ${props.tageRest} Tagen`;
   return sendEmail({
     to: props.an,
-    subject: `Dein Zugang endet ${rest} — am ${datumLang(props.zugangBis)}`,
+    subject: `Dein Zugang endet ${rest}, am ${datumLang(props.zugangBis)}`,
     replyTo: props.replyTo,
     jsx: (
       <WhopUmzug2Erinnerung

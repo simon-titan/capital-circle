@@ -17,7 +17,7 @@ export default function ChurnInactive14dEmail({ firstName, abmeldeLink }: Pick<P
     <BaseEmail previewText={`Hey ${firstName}, alles okay bei dir?`} unsubscribeUrl={abmeldeLink}>
       <EmailHeading>Hey {firstName}, alles okay bei dir?</EmailHeading>
       <EmailText>
-        zwei Wochen ohne Login — wir wollten kurz nachfragen. Trading ist
+        zwei Wochen ohne Login. Wir wollten kurz nachfragen. Trading ist
         anstrengend, das Leben drumherum auch. Wenn dir gerade etwas im Weg
         steht, ist das vollkommen normal.
       </EmailText>
@@ -29,7 +29,7 @@ export default function ChurnInactive14dEmail({ firstName, abmeldeLink }: Pick<P
       </EmailText>
 
       <EmailText>
-        Falls du einfach den Wiedereinstieg suchst — der einfachste Weg ist
+        Falls du einfach den Wiedereinstieg suchst: Der einfachste Weg ist
         eine der Live-Sessions. Da bist du nicht allein und kannst Fragen
         stellen.
       </EmailText>

@@ -23,13 +23,13 @@ export async function sendWelcomeMail(
 
   if (!apiKey) {
     console.warn(
-      "[welcome-mail] RESEND_API_KEY fehlt — Welcome-Mail wird nicht versendet.",
+      "[welcome-mail] RESEND_API_KEY fehlt. Welcome-Mail wird nicht versendet.",
     );
     return;
   }
   if (!fromEnv) {
     console.warn(
-      "[welcome-mail] RESEND_FROM_EMAIL fehlt — Welcome-Mail wird nicht versendet.",
+      "[welcome-mail] RESEND_FROM_EMAIL fehlt. Welcome-Mail wird nicht versendet.",
     );
     return;
   }

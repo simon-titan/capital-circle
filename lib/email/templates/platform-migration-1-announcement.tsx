@@ -20,7 +20,7 @@ export default function PlatformMigrationMail1({
 
   return (
     <BaseEmail
-      previewText="Capital Circle läuft wieder auf der eigenen Plattform — dein Zugang wartet."
+      previewText="Capital Circle läuft wieder auf der eigenen Plattform. Dein Zugang wartet."
       unsubscribeUrl={unsubscribeUrl}
     >
       <EmailSmall>Capital Circle ist zurück auf der eigenen Plattform</EmailSmall>
@@ -29,7 +29,7 @@ export default function PlatformMigrationMail1({
       <EmailText>Hey {firstName},</EmailText>
       <EmailText>
         kurze Info: Capital Circle läuft ab sofort wieder auf unserer eigenen
-        Plattform statt über Whop. Für dich ändert sich inhaltlich nichts —
+        Plattform statt über Whop. Für dich ändert sich inhaltlich nichts,
         nur der Ort, an dem du eingeloggt bist.
       </EmailText>
 
@@ -53,12 +53,12 @@ export default function PlatformMigrationMail1({
 
       <EmailText>
         Dein Whop-Zugang bleibt so lange aktiv, wie du ihn nicht selbst
-        kündigst — mehr dazu in einer der nächsten Mails, falls du noch
+        kündigst. Mehr dazu in einer der nächsten Mails, falls du noch
         Fragen zum Ablauf hast.
       </EmailText>
 
       <EmailButton href={PLATFORM_MIGRATION.joinUrl}>
-        Jetzt wechseln — 99&nbsp;€/Monat
+        Jetzt wechseln für 99&nbsp;€/Monat
       </EmailButton>
 
       <EmailText muted>Emre</EmailText>

@@ -24,11 +24,11 @@ export default function CancellationSurveyEmail({
   const appUrl = getAppUrl();
   const surveyToken = generateSurveyToken(userId);
   return (
-    <BaseEmail previewText="Danke für deine Zeit — kurzes Feedback?" unsubscribeUrl={abmeldeLink}>
+    <BaseEmail previewText="Danke für deine Zeit. Kurzes Feedback?" unsubscribeUrl={abmeldeLink}>
       <EmailHeading>Schade, dass du gehst, {firstName}</EmailHeading>
       <EmailText>
         deine Kündigung ist bei uns angekommen und ist verarbeitet. Bevor du
-        verschwindest — ein letzter, kleiner Gefallen?
+        verschwindest, ein letzter, kleiner Gefallen?
       </EmailText>
 
       <EmailText>
@@ -43,7 +43,7 @@ export default function CancellationSurveyEmail({
       </EmailButton>
 
       <EmailText muted>
-        Falls du irgendwann zurückkommen willst — die Tür bleibt offen, dein
+        Falls du irgendwann zurückkommen willst: Die Tür bleibt offen, dein
         Account bleibt für 30 Tage erhalten.
       </EmailText>
     </BaseEmail>
@@ -63,7 +63,7 @@ export async function sendCancellationSurvey(
   }
   return sendEmail({
     to: props.email,
-    subject: "Danke für deine Zeit — kurzes Feedback?",
+    subject: "Danke für deine Zeit. Kurzes Feedback?",
     jsx: (
       <CancellationSurveyEmail
         firstName={props.firstName}

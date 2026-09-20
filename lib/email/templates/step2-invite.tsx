@@ -44,7 +44,7 @@ export default function Step2InviteEmail({
       </EmailText>
       <EmailText>
         Der nächste Schritt: Buche jetzt dein persönliches Gespräch mit uns.
-        Das ist deine erste Chance — bitte halte den Termin unbedingt ein.
+        Das ist deine erste Chance, bitte halte den Termin unbedingt ein.
       </EmailText>
       <EmailButton href={bookingUrl}>Termin jetzt buchen</EmailButton>
       <EmailText>
@@ -52,9 +52,9 @@ export default function Step2InviteEmail({
         ob und wie wir zusammenarbeiten.
       </EmailText>
       <EmailText muted>
-        Bei Fragen antworte einfach auf diese Mail — wir lesen mit.
+        Bei Fragen antworte einfach auf diese Mail, wir lesen mit.
       </EmailText>
-      <EmailText muted>— Das Capital-Circle-Team</EmailText>
+      <EmailText muted>Das Capital-Circle-Team</EmailText>
     </BaseEmail>
   );
 }
@@ -65,7 +65,7 @@ export async function sendStep2Invite(props: SendStep2InviteProps): Promise<Send
 
   return sendEmail({
     to: props.email,
-    subject: "Dein nächster Schritt — Termin buchen bei Capital Circle",
+    subject: "Dein nächster Schritt: Termin buchen bei Capital Circle",
     jsx: <Step2InviteEmail firstName={props.firstName} calendlyUrl={calendlyUrl} />,
     log: {
       userId: props.userId,
