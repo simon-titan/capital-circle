@@ -138,6 +138,19 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/#angebot", request.url), 308);
   }
 
+  /*
+   * Kurzlink auf den Telegram-Kanal (Wunsch Simon, 20.09.2026). Er steht hier
+   * oben und nicht in `next.config.ts`, weil diese Funktion vor den
+   * Konfigurations-Weiterleitungen läuft — sonst schöbe das Auth-Gate den
+   * Besucher vorher auf die Anmeldung, und im Wartungsmodus auf `/wartung`.
+   *
+   * 307 statt 308: Der Kanal kann umziehen, und eine dauerhafte Weiterleitung
+   * bleibt in Browsern und Suchmaschinen hängen.
+   */
+  if (pathname === "/tg" || pathname === "/tg/") {
+    return NextResponse.redirect("https://t.me/capitalcircletrading", 307);
+  }
+
   // Statische Assets aus `public/tg-slides/`, `public/founder/`, `public/cases/`, … —
   // nicht durch Auth-/Pending-/Onboarding-Gates schicken, sonst liefert der Browser
   // für <img src="/…"> eine Redirect-HTML (Login-Seite) statt des Bildes.

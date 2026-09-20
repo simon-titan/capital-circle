@@ -16,6 +16,7 @@ import { Bookmark, BookmarkCheck, Heart, MessageSquare, Trash2 } from "lucide-re
 import { useState, type ReactNode } from "react";
 import type { NewsCommentRow } from "@/lib/server-data";
 import { Meta } from "@/components/platform/dashboard/primitives";
+import { avatarSrc } from "@/lib/avatar";
 
 type Props = {
   postId: string;
@@ -242,7 +243,7 @@ export function NewsPostDetailClient({
           >
             <Flex justify="space-between" align="flex-start" mb={2} gap={3}>
               <Flex gap={2.5} align="center" minW={0}>
-                <Avatar {...avatarProps} name={myComment.author_name ?? "Ich"} src={myComment.author_avatar_url ?? undefined} />
+                <Avatar {...avatarProps} name={myComment.author_name ?? "Ich"} src={avatarSrc(myComment.author_avatar_url)} />
                 <Stack gap={0} minW={0}>
                   <Text fontSize="14px" fontWeight={600} color="var(--cc-text)" noOfLines={1}>
                     {myComment.author_name ?? "Du"}
@@ -306,7 +307,7 @@ export function NewsPostDetailClient({
             {otherComments.map((c) => (
               <Box key={c.id} py={4}>
                 <Flex gap={2.5} align="center" mb={2} minW={0}>
-                  <Avatar {...avatarProps} name={c.author_name ?? "Mitglied"} src={c.author_avatar_url ?? undefined} />
+                  <Avatar {...avatarProps} name={c.author_name ?? "Mitglied"} src={avatarSrc(c.author_avatar_url)} />
                   <Stack gap={0} minW={0}>
                     <Text fontSize="14px" fontWeight={600} color="var(--cc-text)" noOfLines={1}>
                       {c.author_name ?? "Mitglied"}

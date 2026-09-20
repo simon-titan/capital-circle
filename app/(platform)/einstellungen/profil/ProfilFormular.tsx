@@ -25,6 +25,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getDiscordAuthUrl } from "@/lib/discord";
 import { resolveTotalLearningSeconds } from "@/lib/learning-daily";
 import { DiscordNachrichten } from "./DiscordNachrichten";
+import { avatarSrc } from "@/lib/avatar";
 
 type ProfileData = {
   id: string;
@@ -396,7 +397,7 @@ export function ProfilFormular() {
               size="xl"
               flexShrink={0}
               name={name || username || email || "User"}
-              src={avatarUrl || undefined}
+              src={avatarSrc(avatarUrl)}
               bg="var(--cc-surface-2)"
               color="var(--cc-text)"
               border="1px solid var(--cc-gold-line)"
@@ -466,7 +467,7 @@ export function ProfilFormular() {
                 wie Opera). Der Knopf unter der Fläche bleibt als zweiter Weg.
               */}
               <ImageDropZone
-                previewUrl={avatarUrl.startsWith("http") ? avatarUrl : null}
+                previewUrl={avatarSrc(avatarUrl) ?? null}
                 onFile={uploadAvatar}
                 busy={uploadingAvatar}
                 platzhalter="Profilbild hierher ziehen"
