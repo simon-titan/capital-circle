@@ -44,6 +44,7 @@ interface AdminTicketDetailRow {
   updated_at: string;
   userEmail: string;
   userName: string | null;
+  ohneKonto?: boolean;
 }
 
 export function AdminTicketDetail({ ticketId }: { ticketId: string }) {
@@ -160,6 +161,7 @@ export function AdminTicketDetail({ ticketId }: { ticketId: string }) {
             <Text fontSize="sm" color="var(--cc-text-2)">
               {ticket.userName ? `${ticket.userName} · ` : ""}
               {ticket.userEmail}
+              {ticket.ohneKonto ? " · ohne Konto (Kontaktformular)" : ""}
             </Text>
             <HStack spacing={2} fontSize="xs" color="var(--cc-text-3)" flexWrap="wrap">
               {ticket.category ? (

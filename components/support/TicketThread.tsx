@@ -49,9 +49,14 @@ const FIELD_SX = {
 export function TicketThread({
   ticket,
   messages,
+  sendeUrl,
+  geschlossenHinweis = "Dieses Ticket ist geschlossen. Erstelle bei Bedarf ein neues Ticket.",
 }: {
   ticket: TicketDetailRow;
   messages: TicketMessageRow[];
+  /** Ziel für neue Nachrichten. Standard: die Route für angemeldete Mitglieder. */
+  sendeUrl?: string;
+  geschlossenHinweis?: string;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -66,7 +71,7 @@ export function TicketThread({
     if (!body) return;
     setSending(true);
     try {
-      const res = await fetch(`/api/support/tickets/${ticket.id}/messages`, {
+      const res = await fetch(sendeUrl ?? `/api/support/tickets/${ticket.id}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: body }),
@@ -154,7 +159,7 @@ export function TicketThread({
         </DashCard>
       ) : (
         <Meta textAlign="center" color="var(--cc-text-3)">
-          Dieses Ticket ist geschlossen. Erstelle bei Bedarf ein neues Ticket.
+          {geschlossenHinweis}
         </Meta>
       )}
     </Stack>

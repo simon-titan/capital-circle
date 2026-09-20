@@ -221,6 +221,16 @@ export default function DatenschutzPage() {
         informieren wir dich per E-Mail (Art. 6 Abs. 1 lit. b DSGVO). Schreibst du uns eine E-Mail, verarbeiten wir sie
         zum selben Zweck.
       </p>
+      {/* Kontaktformular ohne Anmeldung: `app/kontakt`, `app/api/kontakt/*` (Migration 102). */}
+      <p>
+        <strong>Kontaktformular ohne Anmeldung:</strong> Über <Link href="/kontakt">Kontakt</Link> kannst du uns
+        schreiben, ohne ein Konto zu haben. Wir speichern dafür deinen Namen, deine E-Mail-Adresse, das gewählte
+        Thema, Betreff und Nachricht sowie einen Hashwert deiner IP-Adresse, aus dem sich die Adresse selbst nicht
+        zurückrechnen lässt. Der Hashwert dient allein dazu, das Formular gegen Missbrauch zu drosseln. Wir schicken
+        dir eine Bestätigung mit einem persönlichen Link zu deinem Verlauf und benachrichtigen unser Team. Grundlage
+        ist die Bearbeitung deiner Anfrage (Art. 6 Abs. 1 lit. b DSGVO), für die Missbrauchsabwehr unser berechtigtes
+        Interesse (Art. 6 Abs. 1 lit. f DSGVO). Die Speicherdauer steht in Abschnitt 17.
+      </p>
       <p>
         <strong>Nachweise:</strong> Im Mitgliederbereich kannst du Trading-Nachweise mit Bildunterschrift einreichen.
         Unser Team prüft sie. Wenn du es möchtest, erscheint ein freigegebener Nachweis mit deinem Vornamen, dem Bild

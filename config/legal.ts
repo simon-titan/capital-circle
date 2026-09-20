@@ -20,14 +20,16 @@
  * Versionskennung der Rechtstexte (ISO-Datum des Stands, bei mehreren Ständen
  * am selben Tag mit laufender Nummer).
  *
+ * `2026-09-20.1`: Datenschutz um das Kontaktformular ohne Anmeldung ergänzt.
+ *
  * `2026-09-19.2`: Widerrufsfunktion (Satz nach Gestaltungshinweis 3 in der
  * Belehrung, AGB § 8), Datenschutz ohne Google Fonts, mit Calendly erst nach
  * Klick, mit Kündigungs- und Widerrufsfunktion und dem Zustimmungsnachweis.
  */
-export const rechtstexteVersion = "2026-09-19.2";
+export const rechtstexteVersion = "2026-09-20.1";
 
 /** Derselbe Stand als Lesedatum für die Seiten. */
-export const rechtstexteStand = "19. September 2026";
+export const rechtstexteStand = "20. September 2026";
 
 export interface Anbieter {
   /** Vollständiger Name der natürlichen Person (Einzelunternehmen). */

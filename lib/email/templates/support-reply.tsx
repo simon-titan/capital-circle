@@ -17,12 +17,14 @@ interface SendSupportReplyProps {
   subject: string;
   ticketId: string;
   excerpt: string;
+  /** Überschreibt den Link zum Verlauf (Kontaktformular ohne Konto: Adresse mit Token). */
+  ticketUrl?: string;
 }
 
 export default function SupportReplyEmail({ firstName, subject, excerpt, ticketUrl }: SupportReplyEmailProps) {
   return (
     <BaseEmail previewText={`Antwort auf dein Support-Ticket „${subject}“`}>
-      <EmailHeading>Hallo {firstName},</EmailHeading>
+      <EmailHeading>{firstName ? `Hallo ${firstName},` : "Hallo,"}</EmailHeading>
       <EmailText>
         unser Team hat auf dein Support-Ticket geantwortet:
       </EmailText>
@@ -40,7 +42,7 @@ export default function SupportReplyEmail({ firstName, subject, excerpt, ticketU
 }
 
 export async function sendSupportReply(props: SendSupportReplyProps): Promise<SendResult> {
-  const ticketUrl = `${getAppUrl()}/support/${props.ticketId}`;
+  const ticketUrl = props.ticketUrl ?? `${getAppUrl()}/support/${props.ticketId}`;
   return sendEmail({
     to: props.email,
     subject: `Antwort auf dein Support-Ticket: ${props.subject}`,

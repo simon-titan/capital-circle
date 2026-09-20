@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/supabase/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import { sendSupportReply } from "@/lib/email/templates";
+import { getAppUrl } from "@/lib/email/resend";
+import { kontaktVerlaufUrl } from "@/lib/support/kontakt-shared";
 
 export const runtime = "nodejs";
 
@@ -27,7 +29,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
 
   const { data: ticket, error: ticketErr } = await service
     .from("support_tickets")
-    .select("id,user_id,subject,status")
+    .select("id,user_id,subject,status,contact_email,contact_name,zugangs_token")
     .eq("id", id)
     .maybeSingle();
 
@@ -59,6 +61,22 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
   // Benachrichtigungs-Mail ist best-effort — ein Mail-Fehler darf die Antwort nicht blockieren.
   void (async () => {
     try {
+      // Ohne Konto (Kontaktformular): Antwort an die angegebene Adresse, mit dem
+      // Token-Link zum Verlauf statt der Adresse im Mitgliederbereich.
+      if (!ticket.user_id) {
+        const kontaktEmail = ticket.contact_email as string | null;
+        if (!kontaktEmail) return;
+        await sendSupportReply({
+          email: kontaktEmail,
+          firstName: (ticket.contact_name as string | null)?.trim().split(/s+/)[0] || "",
+          subject: ticket.subject as string,
+          ticketId: id,
+          excerpt: message.slice(0, 220),
+          ticketUrl: kontaktVerlaufUrl(getAppUrl(), id, ticket.zugangs_token as string),
+        });
+        return;
+      }
+
       const { data: authUser } = await service.auth.admin.getUserById(ticket.user_id as string);
       const { data: profile } = await service
         .from("profiles")

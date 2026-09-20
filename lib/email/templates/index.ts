@@ -20,6 +20,8 @@ export { sendReactivationOffer } from "./reactivation-offer";
 export { sendHtUpsell60d } from "./ht-upsell-60d";
 export { sendDiscordInvite } from "./discord-invite";
 export { sendSupportReply } from "./support-reply";
+export { sendKontaktEingang } from "./kontakt-eingang";
+export { sendKontaktBetreiber } from "./kontakt-betreiber";
 export { sendWhopMigrationMail1 } from "./whop-migration-1-announcement";
 export { sendWhopMigrationMail2 } from "./whop-migration-2-reminder";
 export { sendWhopMigrationMail3 } from "./whop-migration-3-faq";

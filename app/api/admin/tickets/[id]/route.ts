@@ -14,7 +14,9 @@ export async function GET(_request: Request, ctx: { params: Promise<{ id: string
 
   const { data: ticket, error: ticketErr } = await service
     .from("support_tickets")
-    .select("id,user_id,subject,category,status,priority,created_at,first_response_at,resolved_at,updated_at")
+    .select(
+      "id,user_id,subject,category,status,priority,created_at,first_response_at,resolved_at,updated_at,contact_email,contact_name,quelle",
+    )
     .eq("id", id)
     .maybeSingle();
 
@@ -25,14 +27,19 @@ export async function GET(_request: Request, ctx: { params: Promise<{ id: string
     return NextResponse.json({ ok: false, error: "Ticket nicht gefunden." }, { status: 404 });
   }
 
+  // Tickets aus dem Kontaktformular haben kein Konto (Migration 102).
+  const userId = ticket.user_id as string | null;
+
   const [{ data: messages, error: msgErr }, { data: profile }, { data: authUser }] = await Promise.all([
     service
       .from("support_ticket_messages")
       .select("id,sender_type,sender_id,body,created_at")
       .eq("ticket_id", id)
       .order("created_at", { ascending: true }),
-    service.from("profiles").select("full_name,username").eq("id", ticket.user_id).maybeSingle(),
-    service.auth.admin.getUserById(ticket.user_id as string),
+    userId
+      ? service.from("profiles").select("full_name,username").eq("id", userId).maybeSingle()
+      : Promise.resolve({ data: null }),
+    userId ? service.auth.admin.getUserById(userId) : Promise.resolve({ data: null }),
   ]);
 
   if (msgErr) {
@@ -43,8 +50,13 @@ export async function GET(_request: Request, ctx: { params: Promise<{ id: string
     ok: true,
     ticket: {
       ...ticket,
-      userEmail: authUser?.user?.email ?? "",
-      userName: (profile?.full_name as string | null) || (profile?.username as string | null) || null,
+      userEmail: authUser?.user?.email ?? (ticket.contact_email as string | null) ?? "",
+      userName:
+        (profile?.full_name as string | null) ||
+        (profile?.username as string | null) ||
+        (ticket.contact_name as string | null) ||
+        null,
+      ohneKonto: !userId,
     },
     messages: messages ?? [],
   });

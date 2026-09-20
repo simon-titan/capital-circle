@@ -36,7 +36,7 @@ type Eintrag = { href: string; label: string; betont?: boolean };
  * § 312k BGB ist damit gewahrt.
  */
 /**
- * Vier Links, mehr nicht (Entscheidung Simon, 20.09.2026).
+ * Vier Rechtstexte plus „Kontakt“ (Entscheidung Simon, 20.09.2026; Kontakt auf Wunsch am selben Tag ergänzt).
  *
  * „Vertrag widerrufen" und „Verträge hier kündigen" standen hier in Fettdruck
  * und wanderten damit auf jede Seite, auf der die Fußzeile steht. Beide
@@ -55,6 +55,8 @@ function eintraege(_ohneVertragswege = false): Eintrag[] {
     { href: rechtsPfade.datenschutz, label: "Datenschutz" },
     { href: rechtsPfade.agb, label: "AGB" },
     { href: rechtsPfade.widerruf, label: "Widerruf" },
+    // Kontakt ohne Anmeldung (20.09.2026): fuer alle, die sich nicht einloggen koennen.
+    { href: "/kontakt", label: "Kontakt" },
   ];
 }
 

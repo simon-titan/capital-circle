@@ -62,6 +62,9 @@ const PUBLIC_PREFIXES = [
   // Widerrufsfunktion (§ 356a BGB). Eigener Eintrag: `/widerruf` deckt
   // `/widerrufen` nicht ab (Präfix gilt nur mit Schrägstrich).
   "/widerrufen",
+  // Kontakt ohne Anmeldung (Formular und Verlauf per Token). Wer sich nicht
+  // anmelden kann, muss uns auch bei geschlossener Plattform erreichen.
+  "/kontakt",
   "/survey",
   "/discord",
   "/termin",
@@ -75,7 +78,7 @@ const PUBLIC_PREFIXES = [
 // Widerrufsbelehrung, „Verträge hier kündigen" und „Vertrag widerrufen"
 // müssen ständig erreichbar sein — eine Wartungsseite an ihrer Stelle wäre ein
 // Rechtsverstoß. Dieselben Pfade stehen in `config/legal.ts` (`rechtsPfade`).
-const RECHTS_PFADE = ["/impressum", "/datenschutz", "/agb", "/widerruf", "/kuendigen", "/widerrufen"];
+const RECHTS_PFADE = ["/impressum", "/datenschutz", "/agb", "/widerruf", "/kuendigen", "/widerrufen", "/kontakt"];
 
 function isRechtsPfad(pathname: string): boolean {
   return RECHTS_PFADE.some((p) => pathname === p || pathname.startsWith(`${p}/`));

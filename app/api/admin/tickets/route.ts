@@ -18,7 +18,9 @@ export async function GET() {
 
   const { data: tickets, error: ticketsErr } = await service
     .from("support_tickets")
-    .select("id,user_id,subject,category,status,priority,created_at,first_response_at,resolved_at,updated_at")
+    .select(
+      "id,user_id,subject,category,status,priority,created_at,first_response_at,resolved_at,updated_at,contact_email,contact_name,quelle",
+    )
     .order("created_at", { ascending: false })
     .limit(500);
 
@@ -47,7 +49,7 @@ export async function GET() {
   }
 
   const items = rows.map((t) => {
-    const u = userMap.get(t.user_id as string);
+    const u = t.user_id ? userMap.get(t.user_id as string) : undefined;
     return {
       id: t.id as string,
       subject: t.subject as string,
@@ -58,9 +60,11 @@ export async function GET() {
       firstResponseAt: (t.first_response_at as string | null) ?? null,
       resolvedAt: (t.resolved_at as string | null) ?? null,
       updatedAt: t.updated_at as string,
-      userId: t.user_id as string,
-      userEmail: u?.email ?? "",
-      userName: u?.name ?? null,
+      userId: (t.user_id as string | null) ?? null,
+      // Tickets aus dem Kontaktformular tragen den Absender selbst (Migration 102).
+      userEmail: u?.email ?? (t.contact_email as string | null) ?? "",
+      userName: u?.name ?? (t.contact_name as string | null) ?? null,
+      ohneKonto: !t.user_id,
     };
   });
 

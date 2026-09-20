@@ -66,7 +66,9 @@ interface AdminTicketRow {
   firstResponseAt: string | null;
   resolvedAt: string | null;
   updatedAt: string;
-  userId: string;
+  userId: string | null;
+  /** Ticket aus dem Kontaktformular (ohne Konto). */
+  ohneKonto?: boolean;
   userEmail: string;
   userName: string | null;
 }
@@ -231,6 +233,11 @@ export function AdminTicketsManager() {
                         {t.userName ? (
                           <Text fontSize="xs" color="var(--cc-text-3)">
                             {t.userEmail}
+                          </Text>
+                        ) : null}
+                        {t.ohneKonto ? (
+                          <Text fontSize="xs" color="var(--cc-gold-light)">
+                            Ohne Konto (Kontaktformular)
                           </Text>
                         ) : null}
                       </Td>
