@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ABLAUF_MAX_PRO_NACHT } from "@/config/whop-umzug";
+import { EIGENE_STUFEN, ZAHLENDE_STATI } from "./stand";
 
 /**
  * Der Zugang aus dem Whop-Umzug endet, wenn der bezahlte Zeitraum vorbei ist.
@@ -35,11 +36,12 @@ import { ABLAUF_MAX_PRO_NACHT } from "@/config/whop-umzug";
  * Tage Inhalt; ein zu viel beendeter kostet einen zahlenden Kunden.
  */
 
-/** Abos, die Geld bringen — dieselbe Liste wie in `lib/whop-umzug/kreis.ts`. */
-const ZAHLENDE_STATI: ReadonlySet<string> = new Set(["active", "trialing", "past_due"]);
-
-/** Stufen, die für sich schon Zugang bedeuten. */
-const EIGENE_STUFEN: ReadonlySet<string> = new Set(["monthly", "quarterly", "yearly", "lifetime", "ht_1on1"]);
+/*
+  `ZAHLENDE_STATI` und `EIGENE_STUFEN` stehen seit dem 20.09.2026 in
+  `lib/whop-umzug/stand.ts`. Dort liest sie auch das Hinweisband im
+  Mitgliederbereich: Wer hier verschont wird, darf dort kein Band sehen, und
+  umgekehrt. Als Kopie je Datei wäre genau das irgendwann auseinandergelaufen.
+*/
 
 export interface AblaufErgebnis {
   gelaufen: boolean;

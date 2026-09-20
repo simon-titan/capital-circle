@@ -10,6 +10,7 @@ import { DiscordCard } from "./DiscordCard";
 import { JournalCard } from "./JournalCard";
 import { LiveCard } from "./LiveCard";
 import { ProgressCard } from "./ProgressCard";
+import { UmzugCard } from "./UmzugCard";
 import { WeekTaskCard } from "./WeekTaskCard";
 import type { DashboardViewData } from "./types";
 
@@ -79,6 +80,13 @@ export function DashboardView({ data }: { data: DashboardViewData }) {
           Was ist jetzt dran?
         </Text>
       </Box>
+
+      {/*
+        Nur für die Mitglieder aus dem Whop-Umzug, sonst rendert die Karte
+        nichts. Ganz oben, weil ein endender Zugang jede andere Karte auf
+        dieser Seite überholt: Ohne ihn gibt es weder Lektion noch Aufgabe.
+      */}
+      <UmzugCard mb={5} {...rise(0)} />
 
       {/* Nur mobil sichtbar; auf dem Desktop trägt die Sidebar den Discord-Punkt. */}
       <DiscordCard discord={data.discord} mb={5} {...rise(0)} />

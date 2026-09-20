@@ -24,56 +24,15 @@ import { DiscordGlyph } from "@/components/platform/DiscordBanner";
 import { getDiscordAuthUrl } from "@/lib/discord";
 import { createClient } from "@/lib/supabase/client";
 import { NAV_GROUPS, type NavChild, type NavGroup } from "./nav";
+import { useViewer, type Viewer } from "./viewer";
 
-type Viewer = {
-  isPaid: boolean;
-  isPending: boolean;
-  /** Free-Mitglied mit freigeschalteter Bewerbung, Step 2 noch offen. */
-  showApplyCta: boolean;
-};
-
-// Standard „bezahlt“: gesperrte Punkte erscheinen erst, wenn das Profil sicher
-// Free meldet — zahlende Mitglieder sehen so nie kurz Schlösser aufblitzen.
-const DEFAULT_VIEWER: Viewer = { isPaid: true, isPending: false, showApplyCta: false };
-
-function useViewer(): Viewer {
-  const [viewer, setViewer] = useState<Viewer>(DEFAULT_VIEWER);
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const supabase = createClient();
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) return;
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("is_paid, application_status, step2_application_status")
-          .eq("id", user.id)
-          .maybeSingle();
-        if (!profile || cancelled) return;
-        const p = profile as Record<string, unknown>;
-        const isPaid = Boolean(p.is_paid);
-        setViewer({
-          isPaid,
-          // Zahlende sperrt eine offene Bewerbung nicht (Regel wie in `proxy.ts`) —
-          // sonst stünde ein Käufer mit Altbewerbung vor einer komplett gesperrten Navigation.
-          isPending: !isPaid && p.application_status === "pending",
-          showApplyCta: !isPaid && p.application_status === "approved" && p.step2_application_status == null,
-        });
-      } catch {
-        // Navigation bleibt im Standardzustand.
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return viewer;
-}
+/*
+  Die Profilabfrage, die bis zum 20.09.2026 hier stand, liegt jetzt in
+  `viewer.tsx`. Grund: Das Hinweisband über dem Inhalt und die Dashboard-Karte
+  brauchen dieselben Werte. Drei Abfragen desselben Profils je Seitenaufruf
+  wären nicht nur dreimal so teuer, sondern auch drei Gelegenheiten, einander
+  zu widersprechen.
+*/
 
 function useUnreadNews(pathname: string): number {
   const [count, setCount] = useState(0);
