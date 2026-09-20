@@ -63,7 +63,7 @@ export const hero = {
    * Blick zweimal angehalten, bevor er beim eigentlichen Beweis ankam.
    */
   sublines: [
-    "Lerne die Strategie, die ich selbst täglich trade — mit klaren Regeln für Analyse, Entry, Risiko und Review.",
+    "Lerne die Strategie, die ich selbst täglich trade, mit klaren Regeln für Analyse, Entry, Risiko und Review.",
   ],
 } as const;
 
@@ -279,19 +279,19 @@ export const prozess = {
   eyebrow: "Der Capital Circle Prozess",
   headline: "Aus Wissen wird ein Prozess.",
   sublines: [
-    "Capital Circle verbindet Lernen, Anwendung und Review zu einem klaren Ablauf –",
+    "Capital Circle verbindet Lernen, Anwendung und Review zu einem klaren Ablauf,",
     "für konstante Weiterentwicklung und eigenständiges Trading.",
   ],
   schritte: [
     {
       marke: "Lernen",
       titel: "Strukturiert verstehen.",
-      text: "Du lernst die komplette Strategie und Marktlogik – von der Analyse über Setups und Entries bis hin zu Risikomanagement und Auswertung.",
+      text: "Du lernst die komplette Strategie und Marktlogik, von der Analyse über Setups und Entries bis hin zu Risikomanagement und Auswertung.",
     },
     {
       marke: "Anwenden",
       titel: "Live anwenden.",
-      text: "Wir analysieren täglich gemeinsam den Markt, bereiten Setups vor und besprechen mögliche Szenarien – damit du die Strategie in der Praxis verstehst und umsetzen kannst.",
+      text: "Wir analysieren täglich gemeinsam den Markt, bereiten Setups vor und besprechen mögliche Szenarien, damit du die Strategie in der Praxis verstehst und umsetzen kannst.",
     },
     {
       marke: "Reviewen",
@@ -389,7 +389,7 @@ export const vergleich = {
       werte: [
         {
           kurz: "Strukturierter Lernpfad + Strategie",
-          erklaerung: "Von den Grundlagen bis zur konkreten Umsetzung – alles in einem klaren System.",
+          erklaerung: "Von den Grundlagen bis zur konkreten Umsetzung: alles in einem klaren System.",
         },
         { kurz: "Inhalte & Lektionen", erklaerung: "Oft viele lose Inhalte, aber ohne roten Faden." },
         { kurz: "Kaum Lernprozess", erklaerung: "Es wird selten erklärt, warum ein Trade funktioniert." },
@@ -404,7 +404,7 @@ export const vergleich = {
           erklaerung: "Regelmäßige Live-Calls, gemeinsame Analysen und konkrete Setups.",
         },
         { kurz: "Meist eigenständig", erklaerung: "Du musst das Gelernte allein umsetzen." },
-        { kurz: "Vorgegebene Trades", erklaerung: "Du klickst die Signale nach – ohne eigenen Analyseprozess." },
+        { kurz: "Vorgegebene Trades", erklaerung: "Du klickst die Signale nach, ohne eigenen Analyseprozess." },
       ],
     },
     {
@@ -416,7 +416,7 @@ export const vergleich = {
           erklaerung: "Du reflektierst deine Trades, erhältst Feedback und verbesserst dich kontinuierlich.",
         },
         { kurz: "Eigene Auswertung", erklaerung: "Kaum strukturiertes Feedback, oft auf sich allein gestellt." },
-        { kurz: "Fokus auf Ergebnis", erklaerung: "Meist keine Auswertung – der nächste Trade steht im Fokus." },
+        { kurz: "Fokus auf Ergebnis", erklaerung: "Meist keine Auswertung. Der nächste Trade steht im Fokus." },
       ],
     },
     {
@@ -430,7 +430,7 @@ export const vergleich = {
         { kurz: "Wissen ohne laufende Struktur", erklaerung: "Du hast Wissen, aber keine konstante Umsetzung." },
         {
           kurz: "Abhängigkeit von Signalen",
-          erklaerung: "Du bist von anderen abhängig – ohne wirklich zu verstehen, was im Markt passiert.",
+          erklaerung: "Du bist von anderen abhängig, ohne wirklich zu verstehen, was im Markt passiert.",
         },
       ],
     },
@@ -472,7 +472,7 @@ export const fuerWen = {
     {
       icon: "shield" as const,
       titel: "Du willst unabhängig\ntraden.",
-      text: "Du suchst keine Signale, sondern ein System, mit dem du eigenständige Entscheidungen triffst – mit klaren Regeln und einem starken Mindset.",
+      text: "Du suchst keine Signale, sondern ein System, mit dem du eigenständige Entscheidungen triffst, mit klaren Regeln und einem starken Mindset.",
     },
   ],
   ausschluss: {
@@ -506,7 +506,7 @@ export const brief = {
     "Lieber Trader,",
     "ich dachte lange, ich bräuchte nur die nächste Strategie, das nächste Setup oder noch mehr Wissen.",
     "Aber mein eigentliches Problem war nicht, zu wenig zu wissen.\nMein Problem war, dass mir ein klarer Prozess gefehlt hat.",
-    "Analyse, Entry, Risiko, Ausführung und Review waren nicht konsequent miteinander verbunden. Gute Phasen kamen — und gingen wieder.",
+    "Analyse, Entry, Risiko, Ausführung und Review waren nicht konsequent miteinander verbunden. Gute Phasen kamen und gingen wieder.",
     "Erst als ich aufgehört habe, ständig nach außen zu schauen, und begonnen habe, meinen eigenen Tradingprozess klar zu definieren, hat sich mein Trading grundlegend verändert.",
     "Capital Circle ist genau daraus entstanden.",
     "Nicht als Signalgruppe. Nicht als Ort, an dem du Trades kopierst. Sondern als Umfeld, in dem du eine klare Strategie lernst, sie live anwenden kannst und deinen eigenen Prozess Schritt für Schritt entwickelst.",
@@ -522,7 +522,7 @@ export const angebot = {
   eyebrow: "Angebot",
   headline: "Ab hier gehst du nicht mehr allein.",
   /**
-   * `stark` ist der Teil vor dem Gedankenstrich (Weiß), `rest` der Nachsatz
+   * `stark` ist der Teil vor dem Trennpunkt (Weiß), `rest` der Nachsatz
    * (gedimmt). Getrennt, damit die Betonung nicht aus einem Markup-Parser
    * mitten im Text entstehen muss.
    */
@@ -530,9 +530,9 @@ export const angebot = {
     {
       titel: "Institut",
       punkte: [
-        { stark: "10 Module, 114 Videos", rest: "— vom ersten Chart bis zur eigenen Routine" },
-        { stark: "Das komplette CAP Model", rest: "— Setups, Entries, Invalidierung" },
-        { stark: "Fundamentale Analyse, Psyche und Risiko", rest: "— eigene Module, keine Randnotiz" },
+        { stark: "10 Module, 114 Videos", rest: "· vom ersten Chart bis zur eigenen Routine" },
+        { stark: "Das komplette CAP Model", rest: "· Setups, Entries, Invalidierung" },
+        { stark: "Fundamentale Analyse, Psyche und Risiko", rest: "· eigene Module, keine Randnotiz" },
       ],
     },
     {
@@ -547,9 +547,9 @@ export const angebot = {
     {
       titel: "Dranbleiben",
       punkte: [
-        { stark: "Journal", rest: "— mit Auswertung deiner eigenen Zahlen" },
-        { stark: "Wochenaufgaben und Fortschritt", rest: "— du siehst schwarz auf weiß, ob du dranbleibst" },
-        { stark: "Eine Community", rest: "— die merkt, wenn du zwei Wochen weg bist" },
+        { stark: "Journal", rest: "· mit Auswertung deiner eigenen Zahlen" },
+        { stark: "Wochenaufgaben und Fortschritt", rest: "· du siehst schwarz auf weiß, ob du dranbleibst" },
+        { stark: "Eine Community", rest: "· die merkt, wenn du zwei Wochen weg bist" },
       ],
     },
   ],
@@ -629,12 +629,12 @@ export const faq = {
     {
       frage: "Ist das nicht wieder so eine Signalgruppe?",
       antwort:
-        "Nein. Du bekommst hier keinen einzigen Trade zum Nachklicken. Du bekommst ein System, feste Regeln und Leute, die dich daran erinnern, wenn du sie brichst. Signale machen dich abhängig — das ist das Gegenteil von dem, was wir hier tun.",
+        "Nein. Du bekommst hier keinen einzigen Trade zum Nachklicken. Du bekommst ein System, feste Regeln und Leute, die dich daran erinnern, wenn du sie brichst. Signale machen dich abhängig. Das ist das Gegenteil von dem, was wir hier tun.",
     },
     {
       frage: "Funktioniert das auch, wenn ich komplett neu bin?",
       antwort:
-        "Ja. Das Institut fängt beim ersten Chart an — Marktstruktur, Risiko, Ausführung. Du überspringst nichts, und niemand setzt voraus, dass du schon weißt, was ein Fair Value Gap ist. Rechne aber nicht mit vier Wochen: Ein Fundament dauert Monate, nicht Tage.",
+        "Ja. Das Institut fängt beim ersten Chart an: Marktstruktur, Risiko, Ausführung. Du überspringst nichts, und niemand setzt voraus, dass du schon weißt, was ein Fair Value Gap ist. Rechne aber nicht mit vier Wochen: Ein Fundament dauert Monate, nicht Tage.",
     },
     {
       frage: "Muss ich den ganzen Tag vorm Chart sitzen?",
@@ -644,7 +644,7 @@ export const faq = {
     {
       frage: "Woher weiß ich, dass du echt tradest?",
       antwort:
-        "Weil du mir beim Traden zusiehst. Vier Live-Sessions pro Woche, Entscheidung vor dem Einstieg, nicht die Erklärung danach. Dazu die Auszahlungszertifikate oben auf dieser Seite — meine und die von Membern, jedes nachprüfbar.",
+        "Weil du mir beim Traden zusiehst. Vier Live-Sessions pro Woche, Entscheidung vor dem Einstieg, nicht die Erklärung danach. Dazu die Auszahlungszertifikate oben auf dieser Seite: meine und die von Membern, jedes nachprüfbar.",
     },
     {
       frage: "Und wenn's nichts für mich ist?",
@@ -654,12 +654,12 @@ export const faq = {
     {
       frage: "Kann ich monatlich kündigen?",
       antwort:
-        "Ja. Der Monatsplan läuft Monat für Monat. Bei Vierteljährlich und Jährlich bindest du dich für die gewählte Laufzeit — dafür ist der Monatspreis niedriger. Gekündigt wird immer zum Ende des bezahlten Zeitraums.",
+        "Ja. Der Monatsplan läuft Monat für Monat. Bei Vierteljährlich und Jährlich bindest du dich für die gewählte Laufzeit. Dafür ist der Monatspreis niedriger. Gekündigt wird immer zum Ende des bezahlten Zeitraums.",
     },
     {
       frage: "Was passiert direkt nach dem Beitritt?",
       antwort:
-        "Du zahlst bei Stripe, wir legen dein Konto an und du setzt auf der nächsten Seite dein Passwort — danach bist du sofort drin. Institut, Journal und der Kalender der Live-Sessions stehen ab der ersten Minute offen. Den Discord verbindest du im Dashboard mit einem Klick.",
+        "Du zahlst bei Stripe, wir legen dein Konto an und du setzt auf der nächsten Seite dein Passwort. Danach bist du sofort drin. Institut, Journal und der Kalender der Live-Sessions stehen ab der ersten Minute offen. Den Discord verbindest du im Dashboard mit einem Klick.",
     },
   ],
 } as const;

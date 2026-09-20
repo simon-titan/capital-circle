@@ -30,9 +30,9 @@ export const TELEGRAM_BOT = {
 Ich mache aus dir einen profitablen Trader.
 Die Erfolge meiner Community sprechen für sich. Ich weiß, was ich kann.
 
-✅ Werde profitabel — mit der Strategie, mit der ich selbst täglich am Markt handle (CAP Model)
-✅ Live Trading mehrmals die Woche — in Echtzeit dabei sein
-✅ Sonntag Macro Call — wöchentlicher Marktausblick
+✅ Werde profitabel mit der Strategie, mit der ich selbst täglich am Markt handle (CAP Model)
+✅ Live Trading mehrmals die Woche: in Echtzeit dabei sein
+✅ Sonntag Macro Call: wöchentlicher Marktausblick
 ✅ Freitag Recap + täglicher Bias
 ✅ Aktive Community aus Leuten mit demselben Ziel
 

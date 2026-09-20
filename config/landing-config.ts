@@ -84,7 +84,7 @@ export const landingConfig: LandingConfig = {
     headline: "Deine Chance auf einen Platz bei Capital Circle!",
     subheadlineHighlight: "kostenlosen",
     subheadline:
-      "Bewirb dich für einen der {exklusiven} Plätze in unserem {kostenlosen} Guide — nur ausgewählte {Trader} werden aufgenommen.",
+      "Bewirb dich für einen der {exklusiven} Plätze in unserem {kostenlosen} Guide. Nur ausgewählte {Trader} werden aufgenommen.",
     videoEnvKey: "NEXT_PUBLIC_HT_INTRO_VIDEO_URL",
   },
 
@@ -106,7 +106,7 @@ export const landingConfig: LandingConfig = {
     bio: [
       "Ich trade seit über 5 Jahren. Nicht als Hobby. Nicht nebenbei. Vollzeit, an echten Märkten, mit echtem Geld. Ich habe den siebenstelligen Funded Status erreicht und über 300.000 € in verifizierten Payouts ausgezahlt bekommen.",
       "Irgendwann war mir klar: Was ich aufgebaut habe, ist zu wertvoll um es für mich zu behalten. Aber ich wollte keinen Massenkurs bauen, der jeden reinlässt. Deshalb habe ich Capital Circle gegründet. Eine Community, in der nur Trader landen, die es wirklich ernst meinen.",
-      "Kein Fluff. Kein Copy-Paste System. Nur eine Methodik die funktioniert – und ein Umfeld das dich zwingt besser zu werden.",
+      "Kein Fluff. Kein Copy-Paste System. Nur eine Methodik, die funktioniert, und ein Umfeld, das dich zwingt, besser zu werden.",
     ],
     achievements: [
       "Siebenstelliger Funded Status",
@@ -165,7 +165,7 @@ export const landingConfig: LandingConfig = {
       label: "PHASE 3",
       title: "Execution & Skalierung",
       description:
-        "Du bringst alles zusammen — vom ersten Demo-Trade bis zur konsistenten Live-Performance. Du weißt, wann du skalieren kannst und wann nicht.",
+        "Du bringst alles zusammen, vom ersten Demo-Trade bis zur konsistenten Live-Performance. Du weißt, wann du skalieren kannst und wann nicht.",
       bullets: [
         "Live-Trading Schritt für Schritt",
         "Journaling & Performance-Analyse",
@@ -218,7 +218,7 @@ export const landingConfig: LandingConfig = {
       name: "Maximilian R.",
       rating: 5,
       title: "Endlich ein strukturierter Ansatz",
-      text: "Ich habe vorher unzählige YouTube-Videos und Kurse konsumiert — immer das gleiche oberflächliche Zeug. Der Free-Kurs von Capital Circle hat mir zum ersten Mal gezeigt, wie professionelles Trading wirklich funktioniert. Das Fundament stimmt.",
+      text: "Ich habe vorher unzählige YouTube-Videos und Kurse konsumiert, immer das gleiche oberflächliche Zeug. Der Free-Kurs von Capital Circle hat mir zum ersten Mal gezeigt, wie professionelles Trading wirklich funktioniert. Das Fundament stimmt.",
       date: "März 2026",
       avatar: "/client-pb/1765279404415.jpg",
     },
@@ -226,7 +226,7 @@ export const landingConfig: LandingConfig = {
       name: "Laura K.",
       rating: 5,
       title: "Mehr als erwartet",
-      text: "Ich war skeptisch, ob ein kostenloser Kurs wirklich Mehrwert liefern kann. Aber Emre gibt alles — kein Fluff, kein Upsell-Druck. Einfach ehrliches Wissen, das mir direkt geholfen hat meine Drawdowns zu reduzieren.",
+      text: "Ich war skeptisch, ob ein kostenloser Kurs wirklich Mehrwert liefern kann. Aber Emre gibt alles: kein Fluff, kein Upsell-Druck. Einfach ehrliches Wissen, das mir direkt geholfen hat meine Drawdowns zu reduzieren.",
       date: "April 2026",
       avatar: "/client-pb/393d1b15978eed96285cf196b2f51eda.avif",
     },
@@ -234,7 +234,7 @@ export const landingConfig: LandingConfig = {
       name: "Jonas T.",
       rating: 5,
       title: "Community macht den Unterschied",
-      text: "Das Onboarding war top, aber was mich wirklich überzeugt hat ist die Community. Trader, die tatsächlich wissen wovon sie reden. Kein Spam, keine Signale — nur echter Austausch auf hohem Niveau.",
+      text: "Das Onboarding war top, aber was mich wirklich überzeugt hat ist die Community. Trader, die tatsächlich wissen wovon sie reden. Kein Spam, keine Signale, nur echter Austausch auf hohem Niveau.",
       date: "Februar 2026",
       avatar: "/client-pb/4208db19763848b131989eadba9899aa.avif",
     },
@@ -258,27 +258,27 @@ export const landingConfig: LandingConfig = {
     questions: [
       {
         id: "trading_experience",
-        heading: "Wie lange beschäftigst du dich bereits mit Trading — und wie läuft es aktuell für dich?",
+        heading: "Wie lange beschäftigst du dich bereits mit Trading, und wie läuft es aktuell für dich?",
         description:
-          "Erzähl uns von deinem bisherigen Weg — egal ob Anfänger oder erfahrener Trader. Wir wollen verstehen, wo du heute stehst.",
+          "Erzähl uns von deinem bisherigen Weg, egal ob Anfänger oder erfahrener Trader. Wir wollen verstehen, wo du heute stehst.",
         placeholder:
           "Ich beschäftige mich seit ... mit Trading. Aktuell trade ich ... und meine bisherigen Ergebnisse waren ...",
         minChars: 30,
       },
       {
         id: "trading_goals",
-        heading: "Was möchtest du im Trading in den nächsten 12 Monaten erreichen — und warum ist dir das wichtig?",
+        heading: "Was möchtest du im Trading in den nächsten 12 Monaten erreichen, und warum ist dir das wichtig?",
         description:
-          "Sei konkret. Finanzielle Ziele, Trading-Ziele, Entwicklungsziele — alles ist willkommen. Wir suchen Trader mit echtem Antrieb.",
+          "Sei konkret. Finanzielle Ziele, Trading-Ziele, Entwicklungsziele: alles ist willkommen. Wir suchen Trader mit echtem Antrieb.",
         placeholder: "In den nächsten 12 Monaten möchte ich ... erreichen, weil ...",
         minChars: 50,
       },
       {
         id: "why_now",
         heading:
-          "Warum möchtest du in diesen Free Kurs aufgenommen werden — und weshalb glaubst du, dass genau jetzt der richtige Zeitpunkt dafür ist?",
+          "Warum möchtest du in diesen Free Kurs aufgenommen werden, und weshalb glaubst du, dass genau jetzt der richtige Zeitpunkt dafür ist?",
         description:
-          "Was macht dich zur richtigen Person für diesen Kurs? Überzeuge uns — wir nehmen nur Bewerber auf, die wirklich bereit sind.",
+          "Was macht dich zur richtigen Person für diesen Kurs? Überzeuge uns. Wir nehmen nur Bewerber auf, die wirklich bereit sind.",
         placeholder: "Ich möchte aufgenommen werden, weil ... Jetzt ist der richtige Zeitpunkt, weil ...",
         minChars: 50,
       },
