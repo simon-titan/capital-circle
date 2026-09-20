@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
+import { SITZUNGS_PARAMETER, istSitzungsKennung } from "@/lib/analytics/kaufweg";
 import { CHECKOUT_COOKIE, CHECKOUT_COOKIE_MAX_AGE } from "@/lib/checkout/cookie";
 import { istBot, vorabrufGrund } from "@/lib/checkout/vorabruf";
 import { getAppUrl } from "@/lib/site-url";
@@ -84,6 +85,23 @@ export async function GET(request: Request, { params }: { params: Promise<{ plan
   const src = anfrage.searchParams.get("src")?.trim().slice(0, 60) || undefined;
 
   /**
+   * Die Sitzungskennung der Kaufweg-Messung (`?sid=`).
+   *
+   * Sie ist das Bindeglied zwischen „jemand war auf der Seite" und „jemand hat
+   * gekauft". Ohne sie endet die Auswertung beim Klick: Man weiß, wie oft
+   * geklickt wurde, aber nicht, welche Besuche zu einer Zahlung führten — und
+   * damit auch nicht, welche Herkunft sich lohnt.
+   *
+   * `istSitzungsKennung` prüft streng auf UUID-Form. Der Wert kommt aus einem
+   * Query-Parameter und landet in unserer Datenbank **und** in den
+   * Stripe-Metadaten; was dort steht, soll keine fremde Zeichenkette sein.
+   * Fehlt oder taugt sie nicht, wird trotzdem gekauft — die Kette reißt, der
+   * Kauf nicht.
+   */
+  const sidRoh = anfrage.searchParams.get(SITZUNGS_PARAMETER)?.trim();
+  const funnelSitzung = istSitzungsKennung(sidRoh) ? sidRoh : undefined;
+
+  /**
    * Eingeloggte Käufer erkennen. Der Weg über `/go/` ist für Gäste gebaut, aber
    * derselbe Knopf steht im Mitgliederbereich (`/billing`, Upgrade). Ohne diese
    * Abfrage müsste ein bestehendes Mitglied seine Adresse erneut eintippen —
@@ -116,7 +134,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ plan
    * Grund, warum das trägt: Die Angaben hängen danach am Abo und kommen bei
    * JEDEM Subscription-Ereignis wieder mit, nicht nur beim Kauf.
    */
-  const metadata: Record<string, string> = { plan, ...(src ? { src } : {}), ...(userId ? { user_id: userId } : {}) };
+  const metadata: Record<string, string> = {
+    plan,
+    ...(src ? { src } : {}),
+    ...(userId ? { user_id: userId } : {}),
+    /*
+      Die Sitzungskennung geht bis zu Stripe mit. Doppelter Zweck: Sie hängt
+      danach am Abo und kommt bei jedem Subscription-Ereignis zurück, und sie
+      ist der Rettungsanker, falls unsere eigene Trichterzeile einmal nicht
+      geschrieben werden konnte.
+    */
+    ...(funnelSitzung ? { funnel_sitzung: funnelSitzung } : {}),
+  };
 
   /**
    * Woher der Kauf startete. Doppelter Zweck: Auswertung („welche Seite
@@ -200,14 +229,32 @@ export async function GET(request: Request, { params }: { params: Promise<{ plan
    * Ein gescheitertes Protokoll hält den Kauf trotzdem nicht auf — eine
    * Statistik ist keinen verlorenen Kauf wert.
    */
-  const { error: trichterFehler } = await createServiceClient().from("checkout_sessions").insert({
+  const trichterBasis = {
     id: session.id,
     plan,
     src: src ?? null,
     status: "started",
     user_id: userId ?? null,
     von_pfad: vonPfad,
-  });
+  };
+
+  const dienst = createServiceClient();
+  let { error: trichterFehler } = await dienst
+    .from("checkout_sessions")
+    .insert({ ...trichterBasis, funnel_sitzung: funnelSitzung ?? null });
+
+  /*
+    `funnel_sitzung` kommt aus Migration 101, und die wird von Hand eingespielt
+    (es gibt keine Migrationstabelle, siehe AGENTS.md). Zwischen Deployment und
+    Einspielen liegt ein Fenster, in dem die Spalte fehlt. Dann wird die Zeile
+    ohne sie wiederholt — dieselbe Behandlung wie beim Zustimmungsnachweis aus
+    Migration 091 (`lib/stripe/webhooks/checkout-completed.ts`). Der Trichter
+    darf an einer nicht eingespielten Migration nicht hängen bleiben.
+  */
+  if (trichterFehler && /funnel_sitzung|PGRST204/i.test(`${trichterFehler.code} ${trichterFehler.message}`)) {
+    console.warn(`[go/${plan}] Sitzungskennung nicht gespeichert (Migration 101 fehlt?): ${trichterFehler.message}`);
+    ({ error: trichterFehler } = await dienst.from("checkout_sessions").insert(trichterBasis));
+  }
 
   if (trichterFehler) {
     console.warn(

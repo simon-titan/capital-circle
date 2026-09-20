@@ -93,6 +93,7 @@ export function MembershipNav() {
 
         <HStack spacing={2}>
           <BeitrittCta
+            herkunft="nav"
             h="40px"
             px={5}
             fontSize="15px"
@@ -146,7 +147,7 @@ export function MembershipNav() {
               verschwände dieser Knopf aus dem DOM, und der Dialog hätte beim
               Schließen kein Ziel mehr für den Fokus — er fiele auf den
               Seitenanfang zurück. */}
-          <BeitrittCta mt={4} w="full" h="48px" fontSize="16px" />
+          <BeitrittCta herkunft="nav_menue" mt={4} w="full" h="48px" fontSize="16px" />
         </Box>
       ) : null}
     </Box>

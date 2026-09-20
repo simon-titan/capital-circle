@@ -46,7 +46,7 @@ export function FinalCtaSection({ bewertungen }: { bewertungen: Bewertungsspiege
           </Heading>
 
           <Stack spacing={5} align="center">
-            <BeitrittCta />
+            <BeitrittCta herkunft="abschluss" />
             <Text fontSize="14px" color="var(--cc-text-3)">
               {finalerCta.feinabdruck}
             </Text>

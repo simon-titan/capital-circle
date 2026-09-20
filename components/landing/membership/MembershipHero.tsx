@@ -100,7 +100,7 @@ export function MembershipHero({ bewertungen }: { bewertungen: Bewertungsspiegel
               hier klickt, hat den Preis noch nicht gesehen — ihn erst quer über
               die Seite zu schicken, kostet den Klick. */}
           <Stack {...heroRise(3)} spacing={5} align="center" pt={2}>
-            <BeitrittCta />
+            <BeitrittCta herkunft="hero" />
             <SterneZeile bewertungen={bewertungen} />
           </Stack>
         </Stack>

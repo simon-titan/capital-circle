@@ -297,7 +297,11 @@ export default function DatenschutzPage() {
       </p>
 
       {/* Eigene Messung: `app/api/discord-funnel/visit|video`, `app/api/tracking/event`,
-          sessionStorage `cc_discord_sid`, `cc_tracking_sid`, `cc_tracking_ref`. */}
+          `app/api/tracking/funnel` (Kaufweg, `components/landing/FunnelTracker.tsx`),
+          sessionStorage `cc_discord_sid`, `cc_tracking_sid`, `cc_tracking_ref`,
+          `cc_funnel_sid`. Aufbewahrung der Rohdaten: 90 Tage
+          (`AUFBEWAHRUNG_TAGE` in `lib/analytics/kaufweg.ts`, Löschlauf im
+          Nachtlauf `app/api/cron/taeglich`). */}
       <h2 id="messung">13. Auswertung unserer Werbeseiten</h2>
       <p>
         Wir setzen keine Analyse- oder Werbedienste Dritter ein: kein Google Analytics, keine Werbe-Pixel. Auf einigen
@@ -310,11 +314,31 @@ export default function DatenschutzPage() {
           lange und wie weit du es angesehen hast.
         </li>
         <li>Über eigene Tracking-Links zählen wir Aufrufe und Bewerbungen je Link.</li>
+        <li>
+          Auf unserer Startseite, ihrer Vorschau (<code>/vorschau</code>) und der Nachweis-Seite (
+          <code>/ergebnisse</code>) messen wir, wie die Seite genutzt wird: den Aufruf, wie lange die Seite sichtbar
+          im Vordergrund war, wie weit du gescrollt hast und welchen Abschnitt du zuletzt erreicht hast, außerdem
+          Klicks auf die Schaltflächen zum Beitritt, das Öffnen des Auswahl-Dialogs und die dort gewählte Laufzeit.
+          Klickst du auf „Capital Circle beitreten“, geben wir die Sitzungskennung an unsere Kasse weiter (Parameter{" "}
+          <code>sid</code>) und speichern sie beim Kaufvorgang und in den Metadaten bei Stripe. Nur so können wir
+          erkennen, dass ein Besuch zu einem Kauf geführt hat.
+        </li>
       </ul>
       <p>
-        Die Sitzungskennung liegt nur für die Dauer des Browser-Tabs im Sitzungsspeicher deines Browsers. IP-Adressen
-        speichern wir dabei nicht. Schickst du anschließend ein Formular ab, verknüpfen wir diese Angaben mit deiner
-        Anfrage. Zweck ist, die Wirksamkeit unserer Werbung zu messen (Art. 6 Abs. 1 lit. f DSGVO).
+        Die Sitzungskennung ist eine Zufallszahl. Sie liegt nur für die Dauer des Browser-Tabs im Sitzungsspeicher
+        deines Browsers und ist danach verloren — wir erkennen dich beim nächsten Besuch also nicht wieder. Wir setzen
+        dafür keine Cookies, erstellen keine Geräte-Erkennungsmerkmale („Fingerprinting“) und speichern keine
+        IP-Adressen. Von der verweisenden Seite speichern wir nur den Namen der Website (zum Beispiel{" "}
+        <code>google.com</code>), nicht die vollständige Adresse. Weil wir damit weder Cookies setzen noch auf
+        Informationen in deinem Endgerät zugreifen, die darüber hinausgehen, brauchen wir hierfür keine Einwilligung
+        (§ 25 Abs. 2 Nr. 2 TDDDG); die Verarbeitung stützen wir auf unser berechtigtes Interesse, unsere Seiten zu
+        verbessern und die Wirksamkeit unserer Werbung zu messen (Art. 6 Abs. 1 lit. f DSGVO).
+      </p>
+      <p>
+        Schickst du anschließend ein Formular ab, verknüpfen wir diese Angaben mit deiner Anfrage. Die einzelnen
+        Messwerte löschen wir spätestens nach 90 Tagen; danach bleiben nur noch Tagessummen ohne jeden Bezug zu einer
+        einzelnen Sitzung. Du kannst der Messung jederzeit widersprechen (Art. 21 DSGVO) — eine E-Mail an{" "}
+        <a href={`mailto:${anbieter.email}`}>{anbieter.email}</a> genügt.
       </p>
 
       {/* Resend (EU-Region eu-west-1), Crons in `vercel.json`. */}
@@ -374,6 +398,11 @@ export default function DatenschutzPage() {
             <td>bis zum Schließen des Tabs</td>
           </tr>
           <tr>
+            <td><code>cc_funnel_sid</code> (Sitzungsspeicher)</td>
+            <td>zufällige Sitzungskennung für die Auswertung von Startseite, Vorschau und Nachweis-Seite (Abschnitt 13)</td>
+            <td>bis zum Schließen des Tabs</td>
+          </tr>
+          <tr>
             <td><code>cc:journal:activeAccount</code> (lokaler Speicher)</td>
             <td>merkt sich das zuletzt gewählte Journal-Konto</td>
             <td>bis du ihn löschst</td>
@@ -417,6 +446,14 @@ export default function DatenschutzPage() {
           Angaben aus Bewerbungen, Anfragen und der Auswertung unserer Werbeseiten löschen wir, sobald wir sie für den
           jeweiligen Zweck nicht mehr brauchen oder du der Verarbeitung widersprichst, soweit keine Pflicht zur
           Aufbewahrung besteht.
+        </li>
+        {/* `AUFBEWAHRUNG_TAGE` in `lib/analytics/kaufweg.ts`; der Löschlauf
+            steht im Nachtlauf `app/api/cron/taeglich`. Wer die Zahl dort
+            ändert, ändert sie hier mit. */}
+        <li>
+          Die einzelnen Messwerte zur Nutzung von Startseite, Vorschau und Nachweis-Seite (Abschnitt 13) löschen wir
+          spätestens nach 90 Tagen automatisch. Danach bleiben nur Tagessummen, die sich keiner Sitzung mehr zuordnen
+          lassen.
         </li>
         <li>
           Kündigungs- und Widerrufserklärungen bewahren wir als Nachweis auf, solange aus dem Vertrag noch Ansprüche

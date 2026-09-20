@@ -4,6 +4,7 @@ import { Box, Flex, Grid, Heading, HStack, Stack, Text } from "@chakra-ui/react"
 import { useEffect, useState } from "react";
 import { angebot, ctaLabel, preiskarten, type Preiskarte } from "@/config/landing-membership";
 import type { MembershipPlan } from "@/lib/stripe/plan-map";
+import { useFunnelTracker } from "@/components/landing/FunnelTracker";
 import { Reveal } from "../landing-ui";
 import { GoldCta, Sektion, SektionsKopf } from "./membership-ui";
 
@@ -30,6 +31,7 @@ export function AngebotSection() {
   const [gewaehlt, setGewaehlt] = useState<MembershipPlan>(
     preiskarten.find((k) => k.beliebt)?.plan ?? preiskarten[0].plan,
   );
+  const messung = useFunnelTracker();
 
   /**
    * `/go/<plan>` legt serverseitig eine Stripe-Session an, bevor es
@@ -124,7 +126,10 @@ export function AngebotSection() {
               key={karte.plan}
               karte={karte}
               aktiv={gewaehlt === karte.plan}
-              onWaehlen={() => setGewaehlt(karte.plan)}
+              onWaehlen={() => {
+                setGewaehlt(karte.plan);
+                messung.laufzeit(karte.plan, "angebot");
+              }}
             />
           ))}
         </Grid>
@@ -133,8 +138,14 @@ export function AngebotSection() {
       {/* ── Aktion ─────────────────────────────────────────────────────── */}
       <Reveal delay={320}>
         <Stack align="center" spacing={4} mt={{ base: 10, md: 12 }}>
+          {/*
+            `?sid=` hängt die Sitzungskennung der Messung an — sie entsteht erst
+            im Browser, deshalb baut `kaufLink` die Adresse im Client. Vor der
+            Hydration steht dort nur `?src=angebot`; der Kauf geht auch dann,
+            er lässt sich nur nicht dem Besuch zuordnen.
+          */}
           <GoldCta
-            href={`/go/${gewaehlt}?src=angebot`}
+            href={messung.kaufLink(gewaehlt, "angebot")}
             minW={{ base: "100%", sm: "320px" }}
             aria-busy={oeffnet}
             aria-disabled={oeffnet}
@@ -148,6 +159,8 @@ export function AngebotSection() {
                 return;
               }
               setOeffnet(true);
+              // Per `sendBeacon` — der Browser verlässt die Seite sofort.
+              messung.kasse("angebot", gewaehlt);
             }}
           >
             {oeffnet ? "Kasse wird geöffnet …" : ctaLabel}
