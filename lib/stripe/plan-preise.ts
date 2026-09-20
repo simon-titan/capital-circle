@@ -26,8 +26,14 @@ export const PLAN_MONATE: Record<MembershipPlan, number> = {
   yearly: 12,
 };
 
-/** „1.990,50 €" → 1990.5; ohne erkennbare Zahl → `null`. */
-function euroAusText(text: string): number | null {
+/**
+ * „1.990,50 €" → 1990.5; ohne erkennbare Zahl → `null`.
+ *
+ * Exportiert, weil die Abo-Seite dieselben Anzeigepreise nachrechnet
+ * (`components/billing/ersparnis.ts`). Ein zweiter Parser dort hätte bei einem
+ * anders geschriebenen Preis eine andere Zahl gelesen als die Auswertung hier.
+ */
+export function euroAusText(text: string): number | null {
   const ziffern = text.replace(/[^\d,]/g, "").replace(",", ".");
   if (!ziffern) return null;
   const wert = Number(ziffern);

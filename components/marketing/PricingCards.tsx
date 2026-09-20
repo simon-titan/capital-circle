@@ -1,13 +1,16 @@
 "use client";
 
-import { Box, Button, Flex, Heading, HStack, Stack, Text, useToast } from "@chakra-ui/react";
+import { Box, Button, Flex, Heading, HStack, List, ListIcon, ListItem, Stack, Text, useToast } from "@chakra-ui/react";
 import { Check, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ManageSubscriptionButton } from "@/components/billing/ManageSubscriptionButton";
+import { euro, planErsparnis, type PlanErsparnis } from "@/components/billing/ersparnis";
+import { JahresWechselButton } from "@/components/billing/JahresWechsel";
 import { istAbo, TIER_LABEL, type Tier } from "@/components/billing/format";
 import { preiskarten } from "@/config/landing-membership";
 import type { MembershipPlan } from "@/lib/stripe/plan-map";
+import type { UpgradeGrund } from "@/lib/stripe/upgrade";
 
 type PricingCardsProps = {
   isLoggedIn: boolean;
@@ -21,7 +24,19 @@ type PricingCardsProps = {
   kontoAnsicht?: boolean;
   /** Ob zu dem Konto ein Abo bei Stripe liegt — nur dann gibt es einen Weg zum Wechsel. */
   hatAbo?: boolean;
+  /**
+   * Lage des Jahreswechsels, vom Server geprüft (`pruefeUpgrade()`).
+   *
+   * Steht sie hier, trägt die Jahreskarte den Wechselknopf selbst. Seit
+   * 20.09.2026 gibt es dafür keine eigene Karte mehr: Das Jahrespaket soll
+   * dort verfügbar sein, wo der Nutzer es ansieht. `null` heißt „für diesen
+   * Tarif gibt es diesen Weg nicht" (Jahr, Lifetime, 1:1).
+   */
+  jahreswechsel?: Jahreswechsel | null;
 };
+
+/** Was der Server über den Wechsel auf das Jahr weiß (`pruefeUpgrade()`). */
+export type Jahreswechsel = { grund: UpgradeGrund; freiAb: string | null };
 
 /**
  * Laufzeit-Auswahl für **eingeloggte** Nutzer (Upgrade aus `/billing`).
@@ -47,8 +62,8 @@ type PricingCardsProps = {
  *
  * - `kaufen` — Kasse öffnen (nur ohne laufendes Abo).
  * - `eigenes` — das ist sein Paket, nichts zu tun.
- * - `jahreswechsel` — der Wechsel läuft über die Upgrade-Karte weiter unten,
- *   nicht über eine zweite Kasse (`subscriptions.update` mit Proration).
+ * - `jahreswechsel` — der Wechsel läuft in der Karte selbst über
+ *   `subscriptions.update` mit Proration, nicht über eine zweite Kasse.
  * - `portal` — jede andere Umstellung macht Stripe selbst; dort sieht der
  *   Nutzer die anteilige Verrechnung, bevor er zustimmt.
  * - `keine` — Lifetime, 1:1 oder ein von Hand eingetragener Zugang.
@@ -56,7 +71,7 @@ type PricingCardsProps = {
 type KartenAktion =
   | { art: "kaufen" }
   | { art: "eigenes" }
-  | { art: "jahreswechsel" }
+  | { art: "jahreswechsel"; wechsel: Jahreswechsel }
   | { art: "portal" }
   | { art: "keine"; label: string };
 
@@ -65,13 +80,73 @@ function kartenAktion(
   tier: Tier,
   kontoAnsicht: boolean,
   hatAbo: boolean,
+  jahreswechsel: Jahreswechsel | null,
 ): KartenAktion {
   if (tier === "lifetime") return { art: "keine", label: "Du hast Lifetime" };
   if (tier === "ht_1on1") return { art: "keine", label: "Du bist im 1:1-Mentoring" };
   if (tier === plan) return { art: "eigenes" };
   if (!kontoAnsicht || !istAbo(tier)) return { art: "kaufen" };
   if (!hatAbo) return { art: "keine", label: "Auf Anfrage" };
-  return plan === "yearly" ? { art: "jahreswechsel" } : { art: "portal" };
+  /*
+    Ohne geprüfte Wechsel-Lage bleibt auch das Jahr beim Portal. Der Knopf
+    stellt ein laufendes Abo verbindlich um; ohne die Antwort des Servers
+    wüsste er nicht, ob er das darf, und liefe in den 403er der Route.
+  */
+  return plan === "yearly" && jahreswechsel ? { art: "jahreswechsel", wechsel: jahreswechsel } : { art: "portal" };
+}
+
+/**
+ * Die zwei Sätze, die in der Jahreskarte über dem Knopf stehen.
+ *
+ * Mehr nicht: Die Karte steht in einer Reihe mit zweien, die keine Liste
+ * tragen, und eine dritte Zeile drückt die Knöpfe auseinander. Was der Wechsel
+ * kostet und was angerechnet wird, steht unter dem Knopf selbst
+ * (`JahresWechselButton`), wo es gebraucht wird.
+ */
+function jahresVorteile(aktion: KartenAktion): string[] {
+  const zeilen = ["Eine Abbuchung im Jahr statt zwölf."];
+  if (aktion.art === "jahreswechsel") {
+    zeilen.push("Dein Zugang läuft ohne Unterbrechung weiter, du wechselst nur den Rhythmus.");
+  } else if (aktion.art === "kaufen") {
+    zeilen.push("Zwölf Monate voller Zugang, sofort freigeschaltet.");
+  } else {
+    zeilen.push("Kein Preis der drei Pakete ist pro Monat niedriger.");
+  }
+  return zeilen;
+}
+
+/**
+ * Was das Paket gegenüber dem Monatspaket spart, in einer Zeile.
+ *
+ * Gerechnet statt geschrieben (`components/billing/ersparnis.ts`): Ändert sich
+ * ein Preis, zieht der Satz mit. Nur für die Jahreskarte, weil „im Jahr" sonst
+ * nicht stimmt.
+ */
+function ErsparnisZeile({ ersparnis }: { ersparnis: PlanErsparnis }) {
+  return (
+    <Box
+      border="1px solid rgba(232, 192, 148, 0.28)"
+      bg="var(--cc-gold-wash)"
+      borderRadius="10px"
+      px="12px"
+      py="10px"
+    >
+      <Text fontSize="13px" lineHeight={1.5} color="var(--cc-text-2)">
+        <Text as="span" className="cc-num" color="var(--cc-gold-light)" fontWeight={600}>
+          {euro(ersparnis.gespart)}
+        </Text>{" "}
+        weniger im Jahr als im Monatspaket:{" "}
+        <Text as="span" className="cc-num">
+          {euro(ersparnis.preis)}
+        </Text>{" "}
+        statt{" "}
+        <Text as="span" className="cc-num">
+          {euro(ersparnis.vergleichspreis)}
+        </Text>
+        .
+      </Text>
+    </Box>
+  );
 }
 
 /** Kennzeichen oben auf einer Karte: „Dein Paket" bzw. „Beliebteste Wahl". */
@@ -116,7 +191,10 @@ function uebersichtHinweis(tier: Tier, hatAbo: boolean): string {
   if (!hatAbo) {
     return `Du bist in „${TIER_LABEL[tier]}". Dieser Zugang wurde von Hand eingetragen, ein Wechsel läuft deshalb über uns.`;
   }
-  return `Du bist in „${TIER_LABEL[tier]}". Auf den Jahresplan wechselst du auf dieser Seite, jede andere Laufzeit stellst du im Stripe-Portal um.`;
+  if (tier === "yearly") {
+    return `Du bist in „${TIER_LABEL[tier]}". Günstiger wird es im Abo nicht. Eine andere Laufzeit stellst du im Stripe-Portal um.`;
+  }
+  return `Du bist in „${TIER_LABEL[tier]}". Auf den Jahresplan wechselst du direkt in der Karte, jede andere Laufzeit stellst du im Stripe-Portal um.`;
 }
 
 export function PricingCards({
@@ -124,6 +202,7 @@ export function PricingCards({
   membershipTier,
   kontoAnsicht = false,
   hatAbo = false,
+  jahreswechsel = null,
 }: PricingCardsProps) {
   const router = useRouter();
   const toast = useToast();
@@ -192,23 +271,30 @@ export function PricingCards({
 
       <Flex direction={{ base: "column", md: "row" }} gap={{ base: 8, md: 5 }} align="stretch" justify="center" pt={4}>
         {preiskarten.map((karte) => {
-          const aktion = kartenAktion(karte.plan, membershipTier, kontoAnsicht, hatAbo);
+          const aktion = kartenAktion(karte.plan, membershipTier, kontoAnsicht, hatAbo, jahreswechsel);
           const eigenes = aktion.art === "eigenes";
+          const ersparnis = planErsparnis(karte.plan);
           /*
-            Hervorgehoben ist im Konto das **eigene** Paket, nicht das meist
-            gekaufte: Wer schon zahlt, sucht sich selbst auf der Seite, und ein
-            Gold-Rahmen um eine fremde Laufzeit führte ihn in die Irre.
+            Hervorgehoben ist im Konto seit 20.09.2026 das **Jahrespaket**, und
+            zwar auch dann, wenn der Nutzer gerade monatlich zahlt. Vorher trug
+            die eigene Laufzeit den Gold-Rahmen; das war ehrlich, hat aber
+            niemanden bewegt, und die Empfehlung stand in einer eigenen Karte
+            weiter unten. Die ist entfallen (Nutzerwunsch): Das Jahrespaket
+            wirbt jetzt in der Reihe für sich, mit der gerechneten Ersparnis.
+            Wer bereits im Jahr ist, sieht denselben Rahmen um sein eigenes
+            Paket, dazu das Kennzeichen „Dein Paket".
 
             Lifetime und 1:1 haben kein eigenes Paket in dieser Reihe — dort
-            bleibt die Liste ganz ohne Hero. „Beliebteste Wahl" im Gold-Rahmen
-            wäre für sie eine Empfehlung für etwas, das sie nicht kaufen
-            können und schon bezahlt haben.
+            bleibt die Liste ganz ohne Hero. Ein Gold-Rahmen wäre für sie eine
+            Empfehlung für etwas, das sie nicht kaufen können und schon
+            bezahlt haben.
+
+            Außerhalb der Konto-Ansicht bleibt alles beim Alten: Dort
+            entscheidet `preiskarten[].beliebt`.
           */
-          const hervorheben = kontoAnsicht
-            ? istAbo(membershipTier)
-              ? eigenes
-              : membershipTier === "free" && Boolean(karte.beliebt)
-            : Boolean(karte.beliebt);
+          const empfohlen =
+            kontoAnsicht && membershipTier !== "lifetime" && membershipTier !== "ht_1on1" && karte.plan === "yearly";
+          const hervorheben = kontoAnsicht ? empfohlen : Boolean(karte.beliebt);
           return (
             <Box
               key={karte.plan}
@@ -221,6 +307,11 @@ export function PricingCards({
                 <KartenBadge>
                   <Check size={12} strokeWidth={2.5} aria-hidden />
                   <Text as="span">Dein Paket</Text>
+                </KartenBadge>
+              ) : empfohlen && ersparnis ? (
+                <KartenBadge>
+                  <Sparkles size={12} strokeWidth={2} aria-hidden />
+                  <Text as="span">Am meisten gespart</Text>
                 </KartenBadge>
               ) : hervorheben && karte.beliebt ? (
                 <KartenBadge>
@@ -264,27 +355,42 @@ export function PricingCards({
                     color={hervorheben ? "var(--cc-gold-light)" : "var(--cc-text-3)"}
                     fontWeight={hervorheben ? 600 : 400}
                   >
-                    {karte.hinweis}
+                    {/*
+                      Gerechnet statt aus der Konfiguration gelesen: „50 %
+                      gespart" muss dieselbe Rechnung sein wie die Zeile
+                      darunter, sonst stehen zwei Zahlen zum selben Preis auf
+                      derselben Karte. Ohne Ersparnis (Monatspaket) bleibt der
+                      Text der Preiskarte stehen, dort steht die Kündbarkeit.
+                    */}
+                    {ersparnis
+                      ? `= ${euro(ersparnis.proMonat)}/Monat · rund ${ersparnis.prozent} % gespart`
+                      : karte.hinweis}
                   </Text>
+
+                  {empfohlen && ersparnis ? <ErsparnisZeile ersparnis={ersparnis} /> : null}
                 </Stack>
+
+                {empfohlen ? (
+                  <List spacing={2} fontSize="13px" lineHeight={1.5} color="var(--cc-text-2)">
+                    {jahresVorteile(aktion).map((zeile) => (
+                      <ListItem key={zeile} display="flex" alignItems="flex-start" gap={2}>
+                        <ListIcon as={Check} color="var(--cc-gold-light)" mt="2px" boxSize={4} />
+                        <Text as="span">{zeile}</Text>
+                      </ListItem>
+                    ))}
+                  </List>
+                ) : null}
 
                 <Box flex="1" />
 
                 {aktion.art === "portal" ? (
                   <ManageSubscriptionButton label="Im Portal umstellen" variant="outline" block />
                 ) : aktion.art === "jahreswechsel" ? (
-                  <Button
-                    as="a"
-                    href="#abo-upgrade"
-                    variant="line"
-                    w="full"
-                    h="48px"
-                    fontSize="15px"
-                    color="var(--cc-gold-light)"
-                    borderColor="rgba(232, 192, 148, 0.35)"
-                  >
-                    Zum Jahreswechsel
-                  </Button>
+                  <JahresWechselButton
+                    grund={aktion.wechsel.grund}
+                    freiAb={aktion.wechsel.freiAb}
+                    hervorgehoben={hervorheben}
+                  />
                 ) : (
                   <Button
                     variant={hervorheben ? "gold" : "line"}

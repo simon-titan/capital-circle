@@ -6,19 +6,13 @@ import { CancelFlow } from "@/components/billing/CancelFlow";
 import { LifetimeOffer } from "@/components/billing/LifetimeOffer";
 import { ManageSubscriptionButton } from "@/components/billing/ManageSubscriptionButton";
 import { SubscriptionCard } from "@/components/billing/SubscriptionCard";
-import { UpgradeOffer } from "@/components/billing/UpgradeOffer";
 import { istAbo, type Tier } from "@/components/billing/format";
 import { PricingCards } from "@/components/marketing/PricingCards";
 import { pruefeLifetimeAngebot } from "@/lib/access-control/lifetime-offer";
 import { createClient } from "@/lib/supabase/server";
 import { aboLaeuftSeit, ladeAboKontext } from "@/lib/stripe/abo-kontext";
 import { getStripe } from "@/lib/stripe/server";
-import {
-  istUpgradeQuelle,
-  pruefeUpgrade,
-  upgradeCouponId,
-  upgradeFreiAb,
-} from "@/lib/stripe/upgrade";
+import { istUpgradeQuelle, pruefeUpgrade, upgradeFreiAb } from "@/lib/stripe/upgrade";
 
 export const metadata: Metadata = {
   title: "Abonnement — Capital Circle",
@@ -65,9 +59,10 @@ export default async function AbonnementPage() {
 
   /*
     Einmal berechnet und zweifach gebraucht: `pruefeUpgrade()` sperrt den
-    Knopf, `upgradeFreiAb()` schreibt das Datum in den Sperrtext. Beide lesen
-    denselben Beginn — zwei Quellen liefen auseinander, und der Nutzer läse
-    ein Datum, an dem der Knopf immer noch nicht geht.
+    Knopf in der Jahreskarte, `upgradeFreiAb()` schreibt das Datum in den
+    Sperrtext darunter. Beide lesen denselben Beginn — zwei Quellen liefen
+    auseinander, und der Nutzer läse ein Datum, an dem der Knopf immer noch
+    nicht geht.
   */
   const laufendSeit = aboLaeuftSeit(kontext?.abo ?? null);
   const upgrade = pruefeUpgrade({
@@ -108,6 +103,21 @@ export default async function AbonnementPage() {
       />
 
       {/*
+        Lifetime steht seit 20.09.2026 **über** der Paketreihe (Nutzerwunsch):
+        Es ist das Angebot, bei dem nichts mehr abgebucht wird, und stand unter
+        drei Laufzeiten, die alle weiterlaufen.
+
+        Es bleibt das einzige Angebot, das wirklich verschwindet, statt
+        gesperrt dazustehen: Es hat keinen öffentlichen Preis und gilt nur für
+        Mitglieder, die zahlen oder je gezahlt haben (seit 19.09.2026 auch
+        Gekündigte und Gesperrte — auf sie verweisen Mahnung, Warteraum und
+        Abschied). Eine gesperrte Karte wäre genau die Werbung, die dieses
+        Angebot nicht haben soll — und ohne `STRIPE_PRICE_LIFETIME` führte ihr
+        Knopf ohnehin ins Leere (`pruefeLifetimeAngebot` → `kein_preis`).
+      */}
+      {lifetime.erlaubt ? <LifetimeOffer ehemalig={Boolean(lifetime.ehemalig)} /> : null}
+
+      {/*
         Die Laufzeiten stehen hier direkt statt hinter einem Link: `/pricing`
         ist entfallen, und die Verkaufsseite auf `/` leitet eingeloggte Nutzer
         ins Dashboard um — ein Knopf dorthin wäre eine Sackgasse gewesen.
@@ -117,37 +127,26 @@ export default async function AbonnementPage() {
         welchem er selbst steckt. Gekauft wird aus einem laufenden Abo heraus
         trotzdem nichts — `kontoAnsicht` macht aus der Preisliste eine
         Übersicht und aus den Kaufknöpfen Wege zum Wechsel.
-      */}
-      <Box id="mitgliedschaft" className="cc-rise" style={{ animationDelay: "150ms" }}>
-        <PricingCards isLoggedIn membershipTier={tier} kontoAnsicht hatAbo={Boolean(kontext?.abo)} />
-      </Box>
 
-      {/*
-        Die Upgrade-Karte steht auch dann auf der Seite, wenn der Wechsel noch
-        nicht greift. Vorher war sie schlicht unsichtbar: Ein Monatsmitglied
-        erfuhr am 29. Tag nichts von einem Angebot, das am 30. für es gilt.
-        Gesperrt zeigt sie den Grund und das Datum; der Riegel selbst sitzt
-        unverändert in `/api/stripe/subscription/upgrade`.
+        Der Wechsel auf das Jahr sitzt seit 20.09.2026 in der Jahreskarte
+        selbst, statt in einer eigenen Angebotskarte darunter. Die Lage prüft
+        weiterhin der Server: `istUpgradeQuelle()` beantwortet, ob es diesen
+        Weg für den Tarif überhaupt gibt, `pruefeUpgrade()`, ob der Knopf
+        klickbar ist. Ist er es nicht, nennt die Karte Grund und Datum, statt
+        zu verschwinden — ein verstecktes Angebot verkauft nichts. Der Riegel
+        selbst sitzt unverändert in `/api/stripe/subscription/upgrade`.
       */}
-      {istUpgradeQuelle(tier) ? (
-        <UpgradeOffer
-          aktuellerTarif={tier}
-          mitRabatt={Boolean(upgradeCouponId())}
-          grund={upgrade.grund}
-          freiAb={upgradeFreiAb(laufendSeit)}
+      <Box id="mitgliedschaft" className="cc-rise" style={{ animationDelay: "220ms" }}>
+        <PricingCards
+          isLoggedIn
+          membershipTier={tier}
+          kontoAnsicht
+          hatAbo={Boolean(kontext?.abo)}
+          jahreswechsel={
+            istUpgradeQuelle(tier) ? { grund: upgrade.grund, freiAb: upgradeFreiAb(laufendSeit) } : null
+          }
         />
-      ) : null}
-
-      {/*
-        Lifetime bleibt das einzige Angebot, das wirklich verschwindet, statt
-        gesperrt dazustehen: Es hat keinen öffentlichen Preis und gilt nur für
-        Mitglieder, die zahlen oder je gezahlt haben (seit 19.09.2026 auch
-        Gekündigte und Gesperrte — auf sie verweisen Mahnung, Warteraum und
-        Abschied). Eine gesperrte Karte wäre genau die Werbung, die dieses
-        Angebot nicht haben soll — und ohne `STRIPE_PRICE_LIFETIME` führte ihr
-        Knopf ohnehin ins Leere (`pruefeLifetimeAngebot` → `kein_preis`).
-      */}
-      {lifetime.erlaubt ? <LifetimeOffer ehemalig={Boolean(lifetime.ehemalig)} /> : null}
+      </Box>
 
       {istAbo(tier) && kontext?.abo && periodenEnde ? (
         <CancelFlow
