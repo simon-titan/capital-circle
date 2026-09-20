@@ -1,10 +1,22 @@
 "use client";
 
-import { Button, Stack, Text, useToast } from "@chakra-ui/react";
+import {
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
+  Box,
+  Button,
+  Stack,
+  Text,
+  useToast,
+} from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { UpgradeGrund } from "@/lib/stripe/upgrade";
-import { formatDate } from "./format";
+import { preiskarten } from "@/config/landing-membership";
 
 /**
  * Der Wechsel auf den Jahresplan, direkt in der Jahreskarte.
@@ -17,11 +29,12 @@ import { formatDate } from "./format";
  * nicht geht.
  *
  * **Kein zweiter Checkout.** Der Wechsel läuft über
- * `POST /api/stripe/subscription/upgrade`, also `subscriptions.update` mit
- * `proration_behavior: "always_invoice"`: Der bezahlte Rest der laufenden
- * Periode wird angerechnet, die Differenz sofort in Rechnung gestellt. Eine
+ * `POST /api/stripe/subscription/upgrade`, also `subscriptions.update`. Eine
  * zweite Kasse legte ein zweites Abo an, und das Mitglied zahlte doppelt.
- * Der Knopf ist damit verbindlich, und genau so ist er beschriftet.
+ *
+ * Seit 20.09.2026 beginnt die Laufzeit beim Wechsel **neu**: voller
+ * Jahrespreis, zwölf Monate ab heute, keine Anrechnung des laufenden Monats.
+ * Weil der Knopf damit sofort Geld bewegt, fragt ein Dialog vorher nach.
  */
 
 const FEHLER: Record<string, string> = {
@@ -66,7 +79,16 @@ export function JahresWechselButton({
   const router = useRouter();
   const toast = useToast();
   const [laeuft, setLaeuft] = useState(false);
+  /*
+    Zwischenschritt vor der Abbuchung (Entscheidung Simon, 20.09.2026): Der
+    Knopf loeste die Zahlung sofort aus, ein einziger Klick auf einer Seite,
+    auf der man sich auch nur umsieht. Der Dialog nennt Betrag und Laufzeit
+    und verlangt eine zweite, bewusste Bestaetigung.
+  */
+  const [dialogOffen, setDialogOffen] = useState(false);
+  const abbrechenRef = useRef<HTMLButtonElement>(null);
   const gesperrt = grund !== "moeglich";
+  const jahrespreis = preiskarten.find((k) => k.plan === "yearly")?.preis ?? null;
 
   async function wechseln() {
     setLaeuft(true);
@@ -78,7 +100,7 @@ export function JahresWechselButton({
       }
       toast({
         title: "Du bist im Jahresplan",
-        description: "Die Differenz wurde anteilig abgerechnet. Die Rechnung findest du unter Abrechnung.",
+        description: "Die Laufzeit beginnt heute und gilt zwoelf Monate. Die Rechnung findest du unter Abrechnung.",
         status: "success",
         duration: 6000,
         isClosable: true,
@@ -94,6 +116,7 @@ export function JahresWechselButton({
       });
     } finally {
       setLaeuft(false);
+      setDialogOffen(false);
     }
   }
 
@@ -106,7 +129,7 @@ export function JahresWechselButton({
         fontSize="15px"
         color={gesperrt || hervorgehoben ? undefined : "var(--cc-gold-light)"}
         borderColor={gesperrt || hervorgehoben ? undefined : "rgba(232, 192, 148, 0.35)"}
-        onClick={() => void wechseln()}
+        onClick={() => setDialogOffen(true)}
         isLoading={laeuft}
         loadingText="Wird umgestellt…"
         isDisabled={gesperrt}
@@ -125,8 +148,49 @@ export function JahresWechselButton({
       <Text fontSize="12px" lineHeight={1.5} color="var(--cc-text-3)">
         {gesperrt
           ? sperrText(grund)
-          : "Der bezahlte Rest deiner Laufzeit wird angerechnet, die Differenz sofort abgerechnet. Kein zweites Abo, keine neue Zahlungsmethode."}
+          : "Die Laufzeit beginnt beim Wechsel neu und gilt zwoelf Monate. Kein zweites Abo, keine neue Zahlungsmethode."}
       </Text>
+
+      <AlertDialog
+        isOpen={dialogOffen}
+        leastDestructiveRef={abbrechenRef}
+        onClose={() => setDialogOffen(false)}
+        isCentered
+      >
+        <AlertDialogOverlay bg="rgba(8, 10, 12, 0.72)">
+          <AlertDialogContent bg="var(--cc-panel-solid)" border="1px solid var(--cc-line)" borderRadius="var(--cc-radius)" mx={4}>
+            <AlertDialogHeader fontSize="18px" fontWeight={600} color="var(--cc-text)">
+              Auf das Jahrespaket wechseln?
+            </AlertDialogHeader>
+            <AlertDialogBody>
+              <Stack spacing={3} fontSize="15px" lineHeight={1.6} color="var(--cc-text-2)">
+                <Text>
+                  {jahrespreis ? (
+                    <>
+                      Es werden jetzt <Box as="span" className="cc-num" color="var(--cc-text)">{jahrespreis}</Box> abgebucht.
+                    </>
+                  ) : (
+                    "Der Jahrespreis wird jetzt abgebucht."
+                  )}{" "}
+                  Deine Laufzeit beginnt heute und gilt zwoelf Monate.
+                </Text>
+                <Text fontSize="13px" color="var(--cc-text-3)">
+                  Der Rest deiner laufenden Periode wird nicht angerechnet. Du bleibst im selben Abo, es kommt kein
+                  zweites dazu, und deine Zahlungsmethode bleibt dieselbe.
+                </Text>
+              </Stack>
+            </AlertDialogBody>
+            <AlertDialogFooter gap={3}>
+              <Button ref={abbrechenRef} variant="line" onClick={() => setDialogOffen(false)} isDisabled={laeuft}>
+                Abbrechen
+              </Button>
+              <Button variant="gold" onClick={() => void wechseln()} isLoading={laeuft} loadingText="Wird umgestellt…">
+                Jetzt kostenpflichtig wechseln
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Stack>
   );
 }

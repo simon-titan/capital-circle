@@ -55,6 +55,12 @@ export interface LifetimeAngebot {
   /** Die Gruppe, über die der Nutzer freigeschaltet ist (null = über den globalen Schalter). */
   gruppe: string | null;
   /**
+   * Nur bei `zu_jung`: ab wann das Angebot gilt (ISO). Die Karte zeigt damit
+   * einen Countdown, statt einfach zu fehlen; ein Angebot, von dem niemand
+   * weiss, verkauft nichts.
+   */
+  freiAb?: string | null;
+  /**
    * `true`, wenn der Kauf über die Stripe-Vergangenheit erlaubt ist und nicht
    * über ein laufendes Abo — die Karte sagt dann nichts über „dein laufendes
    * Abo endet automatisch".
@@ -202,8 +208,9 @@ export async function pruefeLifetimeAngebot(userId: string): Promise<LifetimeAng
     const tage = seit && !Number.isNaN(seit.getTime())
       ? Math.floor((Date.now() - seit.getTime()) / 86_400_000)
       : null;
-    if (tage !== null && tage < LIFETIME_MINDESTTAGE) {
-      return { erlaubt: false, grund: "zu_jung", gruppe, ehemalig };
+    if (seit && tage !== null && tage < LIFETIME_MINDESTTAGE) {
+      const frei = new Date(seit.getTime() + LIFETIME_MINDESTTAGE * 86_400_000);
+      return { erlaubt: false, grund: "zu_jung", gruppe, ehemalig, freiAb: frei.toISOString() };
     }
   }
 

@@ -16,9 +16,9 @@ export const dynamic = "force-dynamic";
  * **Kein zweiter Checkout.** Eine neue Kasse legte ein zweites Abo an, der
  * Kunde zahlte doppelt, und der Webhook bekäme zwei aktive Subscriptions für
  * dasselbe Profil zu sehen. Stattdessen wird das bestehende Abo auf den
- * Jahrespreis umgestellt; `proration_behavior: "always_invoice"` rechnet den
- * bereits bezahlten Rest der laufenden Periode sofort gegen und stellt die
- * Differenz in Rechnung.
+ * Jahrespreis umgestellt; die Laufzeit beginnt neu (`billing_cycle_anchor`),
+ * der Jahrespreis wird voll berechnet, und der Rest der laufenden Monats-
+ * oder Quartalsperiode wird nicht angerechnet.
  *
  * Die Freischaltung passiert **nicht** hier, sondern über
  * `customer.subscription.updated`. Ein Profil-Update an dieser Stelle wäre ein
@@ -72,9 +72,21 @@ export async function POST() {
 
     const coupon = upgradeCouponId();
 
+    /*
+      Der Wechsel beginnt **jetzt**, nicht rueckwirkend (Entscheidung Simon,
+      20.09.2026): `billing_cycle_anchor: "now"` setzt die Laufzeit neu, die
+      zwoelf Monate zaehlen ab diesem Moment.
+
+      `proration_behavior: "none"` statt `always_invoice`: Vorher wurde der
+      unverbrauchte Rest der laufenden Monatsrechnung gutgeschrieben und nur
+      die Differenz gestellt. Auf der Rechnung standen dann drei Posten, und
+      der Betrag war jedes Mal ein anderer. Jetzt wird der Jahrespreis voll
+      berechnet, einmal, und die Karte sagt das vorher.
+    */
     const aktualisiert = await stripe.subscriptions.update(kontext.abo.stripeSubscriptionId, {
       items: [{ id: abo.items.data[0].id, price: jahresPreis }],
-      proration_behavior: "always_invoice",
+      billing_cycle_anchor: "now",
+      proration_behavior: "none",
       // Ohne Coupon bleibt das Feld weg — `discounts: []` würde einen bereits
       // laufenden Rabatt löschen, den jemand von Hand vergeben hat.
       ...(coupon ? { discounts: [{ coupon }] } : {}),

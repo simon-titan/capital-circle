@@ -115,7 +115,9 @@ export default async function AbonnementPage() {
         Angebot nicht haben soll — und ohne `STRIPE_PRICE_LIFETIME` führte ihr
         Knopf ohnehin ins Leere (`pruefeLifetimeAngebot` → `kein_preis`).
       */}
-      {lifetime.erlaubt ? <LifetimeOffer ehemalig={Boolean(lifetime.ehemalig)} /> : null}
+      {lifetime.erlaubt || lifetime.grund === "zu_jung" ? (
+        <LifetimeOffer ehemalig={Boolean(lifetime.ehemalig)} freiAb={lifetime.freiAb ?? null} />
+      ) : null}
 
       {/*
         Die Laufzeiten stehen hier direkt statt hinter einem Link: `/pricing`

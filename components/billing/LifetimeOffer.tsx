@@ -7,6 +7,7 @@ import { useState } from "react";
 import { DashCard, IconTile, Meta } from "@/components/platform/dashboard/primitives";
 import { LIFETIME_PREIS } from "@/config/lifetime";
 import { euro, lifetimeRechnung, ordinalWort } from "./ersparnis";
+import { formatDate } from "./format";
 
 /**
  * Lifetime-Angebot für zahlende Mitglieder.
@@ -27,10 +28,20 @@ import { euro, lifetimeRechnung, ordinalWort } from "./ersparnis";
  * denselben Preisen wie die Karten darunter: Ein Satz wie „ab dem zweiten Jahr
  * zahlst du nichts mehr" ist nach der nächsten Preisänderung sonst falsch.
  */
-export function LifetimeOffer({ ehemalig = false }: { ehemalig?: boolean }) {
+/**
+ * `freiAb` gesetzt heisst: Das Angebot gilt erst ab diesem Tag
+ * (`LIFETIME_MINDESTTAGE`, 30 Tage Mitgliedschaft). Die Karte steht dann
+ * trotzdem da, mit Countdown statt Knopf. Sie einfach wegzulassen hiesse,
+ * dass niemand von Lifetime erfaehrt, bevor es buchbar ist.
+ */
+export function LifetimeOffer({ ehemalig = false, freiAb = null }: { ehemalig?: boolean; freiAb?: string | null }) {
   const router = useRouter();
   const toast = useToast();
   const [laeuft, setLaeuft] = useState(false);
+
+  const frei = freiAb ? new Date(freiAb) : null;
+  const gesperrt = Boolean(frei && !Number.isNaN(frei.getTime()) && frei > new Date());
+  const tageRest = gesperrt && frei ? Math.max(1, Math.ceil((frei.getTime() - Date.now()) / 86_400_000)) : 0;
 
   async function kaufen() {
     setLaeuft(true);
@@ -72,12 +83,30 @@ export function LifetimeOffer({ ehemalig = false }: { ehemalig?: boolean }) {
         labelId="abo-lifetime"
         hero
         action={
-          <Button variant="gold" onClick={() => void kaufen()} isLoading={laeuft} w={{ base: "100%", sm: "auto" }}>
-            Lifetime sichern
-          </Button>
+          gesperrt ? (
+            <Stack spacing={0} align={{ base: "flex-start", sm: "flex-end" }}>
+              <Text className="cc-num" fontSize="15px" fontWeight={600} color="var(--cc-gold-light)">
+                {tageRest === 1 ? "Noch 1 Tag" : `Noch ${tageRest} Tage`}
+              </Text>
+              <Text fontSize="12px" color="var(--cc-text-3)">
+                frei ab {frei ? formatDate(frei.toISOString()) : ""}
+              </Text>
+            </Stack>
+          ) : (
+            <Button variant="gold" onClick={() => void kaufen()} isLoading={laeuft} w={{ base: "100%", sm: "auto" }}>
+              Lifetime sichern
+            </Button>
+          )
         }
       >
         <Stack spacing={4}>
+          {gesperrt ? (
+            <Text fontSize="13px" lineHeight={1.6} color="var(--cc-text-3)">
+              Lifetime steht dir ab dem 30. Tag deiner Mitgliedschaft offen. Bis dahin siehst du hier, was dich
+              erwartet.
+            </Text>
+          ) : null}
+
           <Stack direction="row" spacing={4} align="flex-start">
             <IconTile>
               <InfinityIcon size={24} strokeWidth={1.5} aria-hidden />
