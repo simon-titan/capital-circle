@@ -98,6 +98,7 @@ export function UmzugBand() {
     <Box
       role="status"
       aria-label="Hinweis zu deiner Mitgliedschaft"
+      position="relative"
       w="100%"
       minW={0}
       mb={{ base: 5, md: 6 }}
@@ -108,7 +109,8 @@ export function UmzugBand() {
       bg={ton.flaeche}
     >
       <Flex direction={{ base: "column", md: "row" }} align={{ base: "stretch", md: "center" }} gap={{ base: 4, md: 5 }}>
-        <Box minW={0} flex="1">
+        {/* Platz für das Kreuz, das auf schmalen Geräten in der Ecke klebt. */}
+        <Box minW={0} flex="1" pr={{ base: wegklickbar ? "32px" : 0, sm: 0 }}>
           <Flex align="center" gap={2.5}>
             <Box w="7px" h="7px" flexShrink={0} borderRadius="full" bg={ton.punkt} aria-hidden />
             <Text
@@ -173,11 +175,20 @@ export function UmzugBand() {
             {offen ? "Erklärung schließen" : "Warum sehe ich das?"}
           </Box>
           {wegklickbar ? (
+            /*
+              Unterhalb von `sm` stapeln Knopf und Link untereinander, dort
+              stünde das Kreuz ganz unten und damit weit weg von dem, was es
+              schliesst. Also klebt es auf schmalen Geräten in der oberen
+              rechten Ecke des Bands und läuft erst ab `sm` in der Zeile mit.
+            */
             <IconButton
               aria-label="Hinweis für diese Sitzung ausblenden"
               icon={<X size={16} strokeWidth={1.75} />}
               variant="ghost"
               size="sm"
+              position={{ base: "absolute", sm: "static" }}
+              top="8px"
+              right="8px"
               alignSelf={{ base: "flex-end", sm: "center" }}
               color="var(--cc-text-3)"
               _hover={{ bg: "rgba(255, 255, 255, 0.05)", color: "var(--cc-text)" }}
