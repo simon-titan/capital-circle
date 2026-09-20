@@ -72,7 +72,7 @@ export default function KuendigungBetreiberEmail({ beleg, info, adminUrl }: Prop
     ["Konto (user_id)", info.userId ?? "—"],
     ["Eingeloggt abgeschickt", info.eingeloggt ? "ja" : "nein"],
     ["Stripe-Abo", info.stripeSubscriptionId ?? "—"],
-    ["In der Datenbank", info.gespeichert ? "ja" : `NEIN — ${info.speicherFehler ?? "unbekannter Fehler"}`],
+    ["In der Datenbank", info.gespeichert ? "ja" : `NEIN: ${info.speicherFehler ?? "unbekannter Fehler"}`],
     ["Bestätigungsmail an Kunden", info.bestaetigungVersendet ? "versendet" : "FEHLGESCHLAGEN"],
   ];
 
@@ -88,7 +88,7 @@ export default function KuendigungBetreiberEmail({ beleg, info, adminUrl }: Prop
 
       {!info.gespeichert ? (
         <EmailError>
-          Die Kündigung konnte nicht in der Datenbank gespeichert werden. Diese Mail ist der einzige Beleg —
+          Die Kündigung konnte nicht in der Datenbank gespeichert werden. Diese Mail ist der einzige Beleg,
           bitte aufbewahren.
         </EmailError>
       ) : null}
@@ -115,8 +115,8 @@ export async function sendKuendigungBetreiber({
     info.status === "ausgefuehrt" && info.gespeichert
       ? "Kündigung ausgeführt"
       : info.status === "kein_vertrag"
-        ? "Kündigung ohne Vertrag — bitte prüfen"
-        : "Kündigung — bitte prüfen";
+        ? "Kündigung ohne Vertrag, bitte prüfen"
+        : "Kündigung, bitte prüfen";
   return sendEmail({
     to: BETREIBER_EMAIL,
     subject: `${praefix}: ${beleg.name} (${beleg.referenz})`,

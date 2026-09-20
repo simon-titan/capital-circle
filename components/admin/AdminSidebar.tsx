@@ -234,7 +234,7 @@ export function AdminSidebar() {
         <Box
           as={Link}
           href="/admin"
-          aria-label="Capital Circle Admin — zur Übersicht"
+          aria-label="Capital Circle Admin, zur Übersicht"
           display="inline-flex"
           alignItems="center"
           lineHeight={1}

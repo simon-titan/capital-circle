@@ -58,7 +58,7 @@ const ERSTLAUFZEIT: Record<MembershipPlan, string> = {
  */
 export function kassenLaufzeittext(plan: KassenPlan): string {
   if (plan === "lifetime") {
-    return "Einmalzahlung für einen Zugang ohne Enddatum — keine Verlängerung, keine weitere Abbuchung.";
+    return "Einmalzahlung für einen Zugang ohne Enddatum: keine Verlängerung, keine weitere Abbuchung.";
   }
   return (
     `Kostenpflichtige Mitgliedschaft, Erstlaufzeit ${ERSTLAUFZEIT[plan]}. Danach läuft sie auf unbestimmte Zeit ` +

@@ -32,9 +32,9 @@ export default function SupportReplyEmail({ firstName, subject, excerpt, ticketU
       <EmailQuote>{excerpt}</EmailQuote>
       <EmailButton href={ticketUrl}>Ticket öffnen</EmailButton>
       <EmailText muted>
-        Antworte direkt im Ticket, wenn du noch Rückfragen hast — wir melden uns so schnell wie möglich.
+        Antworte direkt im Ticket, wenn du noch Rückfragen hast. Wir melden uns so schnell wie möglich.
       </EmailText>
-      <EmailText muted>— Das Capital-Circle-Team</EmailText>
+      <EmailText muted>Das Capital-Circle-Team</EmailText>
     </BaseEmail>
   );
 }

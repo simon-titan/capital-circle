@@ -120,7 +120,7 @@ export function SubscriptionCard({
             {istAbo(tier) && !abo ? (
               <Text>
                 Dein Zugang läuft bis <Wert>{formatDate(accessUntil)}</Wert>. Zu dieser Mitgliedschaft liegt uns kein
-                Abo bei Stripe vor — sie wurde von Hand eingetragen.
+                Abo bei Stripe vor. Sie wurde von Hand eingetragen.
               </Text>
             ) : null}
 

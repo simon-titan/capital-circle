@@ -13,7 +13,7 @@ import { getDiscordAuthUrl } from "@/lib/discord";
 import { DiscordGlyph } from "@/components/platform/DiscordBanner";
 
 export const metadata: Metadata = {
-  title: "Zahlung bestätigt — Capital Circle",
+  title: "Zahlung bestätigt · Capital Circle",
   robots: { index: false, follow: false },
 };
 
@@ -241,7 +241,7 @@ export default async function CheckoutSuccessPage({
               ) : zugang.art === "passwort_waehlen" ? (
                 <Stack spacing={4}>
                   <Text fontSize="15px" lineHeight={1.6} color="var(--cc-text-2)">
-                    Wähle ein Passwort für <Box as="span" color="var(--cc-text)">{zugang.email}</Box> — danach bist du
+                    Wähle ein Passwort für <Box as="span" color="var(--cc-text)">{zugang.email}</Box>. Danach bist du
                     direkt eingeloggt. Du kannst das auch überspringen: Der Link in der E-Mail funktioniert genauso.
                   </Text>
                   <ZugangForm sessionId={sessionId!} />
@@ -271,7 +271,7 @@ export default async function CheckoutSuccessPage({
                     ) : (
                       "mit einem anderen Konto"
                     )}{" "}
-                    angemeldet. Melde dich ab und mit der Adresse des Kaufs wieder an — dort ist die Mitgliedschaft
+                    angemeldet. Melde dich ab und mit der Adresse des Kaufs wieder an. Dort ist die Mitgliedschaft
                     freigeschaltet.
                   </Text>
                   <KontoWechseln />
@@ -318,7 +318,7 @@ export default async function CheckoutSuccessPage({
               </Heading>
               <Stack as="ol" spacing={3} listStyleType="none" m={0} p={0}>
                 {[
-                  "Im Institut mit Modul 1 anfangen — das Fundament trägt alles andere.",
+                  "Im Institut mit Modul 1 anfangen. Das Fundament trägt alles andere.",
                   "Discord im Dashboard verbinden, damit du die Live-Sessions mitbekommst.",
                   "Deinen ersten Trade im Journal erfassen, auch wenn er klein ist.",
                 ].map((schritt, i) => (
@@ -345,7 +345,7 @@ export default async function CheckoutSuccessPage({
           </Box>
 
           <Text fontSize="12px" color="var(--cc-text-3)" textAlign="center" lineHeight={1.6}>
-            Keine Mail erhalten? Schau kurz im Spam-Ordner nach — sie kommt von Capital Circle. Die Rechnung schickt
+            Keine Mail erhalten? Schau kurz im Spam-Ordner nach. Sie kommt von Capital Circle. Die Rechnung schickt
             dir unser Zahlungsdienstleister separat.
           </Text>
 

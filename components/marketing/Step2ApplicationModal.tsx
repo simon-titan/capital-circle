@@ -144,7 +144,7 @@ export function Step2ApplicationModal({ isOpen, onClose }: Props) {
         return false;
       }
       if (currentQuestion.minLength && value.length < currentQuestion.minLength) {
-        setStepError(`Bitte mindestens ${currentQuestion.minLength} Zeichen — aktuell ${value.length}.`);
+        setStepError(`Bitte mindestens ${currentQuestion.minLength} Zeichen, aktuell ${value.length}.`);
         return false;
       }
     }

@@ -19,7 +19,7 @@ export default async function AdminHTApplicationsPage() {
         subtitle={
           <>
             Bewerbungen aus dem 1:1-Funnel. „Über 2.000 €“-Leads stehen oben mit Priority-Badge.
-            Setze nach dem Call den Outcome — bei „Closed Won“ wird der Plattform-Zugang automatisch
+            Setze nach dem Call den Outcome. Bei „Closed Won“ wird der Plattform-Zugang automatisch
             auf <Box as="span" color="var(--cc-gold-light)">ht_1on1</Box> aufgestuft.
           </>
         }

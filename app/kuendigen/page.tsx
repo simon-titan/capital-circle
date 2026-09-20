@@ -11,9 +11,9 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Verträge kündigen — Capital Circle",
+  title: "Verträge kündigen · Capital Circle",
   description:
-    "Hier kündigst du deine Capital-Circle-Mitgliedschaft — ohne Anmeldung. Du erhältst sofort eine Bestätigung mit Datum und Uhrzeit des Eingangs.",
+    "Hier kündigst du deine Capital-Circle-Mitgliedschaft, ohne Anmeldung. Du erhältst sofort eine Bestätigung mit Datum und Uhrzeit des Eingangs.",
 };
 
 /**
@@ -93,7 +93,7 @@ export default async function KuendigenPage() {
               Mitgliedschaft kündigen
             </Box>
             <Text fontSize={{ base: "15px", md: "17px" }} lineHeight={1.6} color="var(--cc-text-2)" maxW="620px">
-              Hier kündigst du deinen Vertrag mit Capital Circle — ohne Anmeldung. Nach dem Klick auf „Jetzt
+              Hier kündigst du deinen Vertrag mit Capital Circle, ohne Anmeldung. Nach dem Klick auf „Jetzt
               kündigen“ bekommst du sofort eine Bestätigung mit Datum und Uhrzeit des Eingangs, auf dieser Seite
               und per E-Mail.
             </Text>
@@ -146,7 +146,7 @@ async function ladeVorbelegung(): Promise<Vorbelegung | null> {
             ? abo.cancelAtPeriodEnd
               ? `Bereits gekündigt zum ${ende}.`
               : `Laufende Abrechnungsperiode bis ${ende}.`
-            : "Ohne wiederkehrende Abbuchung über Stripe — wir bearbeiten die Kündigung von Hand.",
+            : "Ohne wiederkehrende Abbuchung über Stripe. Wir bearbeiten die Kündigung von Hand.",
       };
     }
 

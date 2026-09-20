@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { MembershipLanding } from "@/components/landing/membership/MembershipLanding";
 
 export const metadata: Metadata = {
-  title: "Capital Circle — Trading-Community & Plattform",
+  title: "Capital Circle · Trading-Community & Plattform",
   description:
-    "Werde endlich konstant profitabel — nicht nur an guten Tagen. System, Live-Sessions und eine Community, die dich auf Kurs hält. 99 € im Monat, monatlich kündbar.",
+    "Werde endlich konstant profitabel, nicht nur an guten Tagen. System, Live-Sessions und eine Community, die dich auf Kurs hält. 99 € im Monat, monatlich kündbar.",
 };
 
 /**

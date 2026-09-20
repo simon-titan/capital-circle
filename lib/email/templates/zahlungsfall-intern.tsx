@@ -55,7 +55,7 @@ export default function ZahlungsfallInternEmail(props: Props) {
         </EmailText>
         <EmailQuote>{props.auszug}</EmailQuote>
         <EmailText muted>
-          Geschrieben über den Knopf in Discord. Beantwortet wird in der Fallakte — die Antwort geht als
+          Geschrieben über den Knopf in Discord. Beantwortet wird in der Fallakte. Die Antwort geht als
           Direktnachricht und per Mail an den Kunden.
         </EmailText>
         <EmailButton href={props.fallUrl}>Fall öffnen</EmailButton>

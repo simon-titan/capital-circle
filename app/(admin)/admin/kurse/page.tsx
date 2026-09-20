@@ -84,7 +84,7 @@ export default async function AdminKursePage() {
               </Text>
               <Text mt={0.5} fontSize="13px" color="var(--cc-text-2)">
                 Sie sind in Cloudflare fertig verarbeitet, aber noch keinem Modul zugeordnet. Öffne ein Modul über
-                „Bearbeiten“ — der Stapel steht dort rechts und wird per Drag &amp; Drop geleert.
+                „Bearbeiten“. Der Stapel steht dort rechts und wird per Drag &amp; Drop geleert.
               </Text>
             </Box>
           </HStack>

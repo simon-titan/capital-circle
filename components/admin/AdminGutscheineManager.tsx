@@ -418,7 +418,7 @@ export function AdminGutscheineManager() {
               Noch keine Gutscheine erstellt.
             </Text>
             <Text color="var(--cc-text-3)" fontSize="xs">
-              Erstelle einen Rabattcode — er ist danach direkt im Stripe-Checkout einlösbar.
+              Erstelle einen Rabattcode. Er ist danach direkt im Stripe-Checkout einlösbar.
             </Text>
           </Box>
         ) : (

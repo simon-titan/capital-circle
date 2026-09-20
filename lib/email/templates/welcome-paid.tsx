@@ -54,7 +54,7 @@ export default function WelcomePaidEmail({
     <BaseEmail previewText={`Dein Capital-Circle-${tierLabel} ist aktiv`}>
       <EmailHeading>Willkommen im Inner Circle, {firstName}.</EmailHeading>
       <EmailText>
-        deine Zahlung ist eingegangen — dein {tierLabel} ist ab sofort aktiv.
+        deine Zahlung ist eingegangen, dein {tierLabel} ist ab sofort aktiv.
       </EmailText>
 
       <EmailSubheading>Was du jetzt tun solltest</EmailSubheading>

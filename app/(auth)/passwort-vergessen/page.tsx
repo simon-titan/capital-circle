@@ -5,7 +5,7 @@ import { RechtsLinks } from "@/components/legal/RechtsFusszeile";
 import { PasswortVergessenForm } from "@/components/onboarding/PasswortVergessenForm";
 
 export const metadata: Metadata = {
-  title: "Passwort vergessen — Capital Circle",
+  title: "Passwort vergessen · Capital Circle",
   robots: { index: false, follow: false },
 };
 

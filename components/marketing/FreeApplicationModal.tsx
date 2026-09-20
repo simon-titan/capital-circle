@@ -47,25 +47,25 @@ const WARNING_SECONDS = 5;
 const QUESTIONS = {
   experience: {
     heading:
-      "Wie lange beschäftigst du dich bereits mit Trading — und wie läuft es aktuell für dich?",
+      "Wie lange beschäftigst du dich bereits mit Trading, und wie läuft es aktuell für dich?",
     description:
-      "Erzähl uns von deinem bisherigen Weg — egal ob Anfänger oder erfahrener Trader. Wir wollen verstehen, wo du heute stehst.",
+      "Erzähl uns von deinem bisherigen Weg, egal ob Anfänger oder erfahrener Trader. Wir wollen verstehen, wo du heute stehst.",
     placeholder:
       "Ich beschäftige mich seit ... mit Trading. Aktuell trade ich ... und meine bisherigen Ergebnisse waren ...",
   },
   biggestProblem: {
     heading:
-      "Was möchtest du im Trading in den nächsten 12 Monaten erreichen — und warum ist dir das wichtig?",
+      "Was möchtest du im Trading in den nächsten 12 Monaten erreichen, und warum ist dir das wichtig?",
     description:
-      "Sei konkret. Finanzielle Ziele, Trading-Ziele, Entwicklungsziele — alles ist willkommen. Wir suchen Trader mit echtem Antrieb.",
+      "Sei konkret. Finanzielle Ziele, Trading-Ziele, Entwicklungsziele: alles ist willkommen. Wir suchen Trader mit echtem Antrieb.",
     placeholder:
       "In den nächsten 12 Monaten möchte ich ... erreichen, weil ...",
   },
   goal6Months: {
     heading:
-      "Warum möchtest du bei Capital Circle aufgenommen werden — und weshalb glaubst du, dass genau jetzt der richtige Zeitpunkt dafür ist?",
+      "Warum möchtest du bei Capital Circle aufgenommen werden, und weshalb glaubst du, dass genau jetzt der richtige Zeitpunkt dafür ist?",
     description:
-      "Was macht dich zur richtigen Person für Capital Circle? Überzeuge uns — wir nehmen nur Bewerber auf, die wirklich bereit sind.",
+      "Was macht dich zur richtigen Person für Capital Circle? Überzeuge uns. Wir nehmen nur Bewerber auf, die wirklich bereit sind.",
     placeholder:
       "Ich möchte aufgenommen werden, weil ... Jetzt ist der richtige Zeitpunkt, weil ...",
   },
@@ -529,7 +529,7 @@ function AccountStep({
     <Stack spacing={5}>
       <Stack spacing={2}>
         <FunnelHeadline as="h2" scale="sm">
-          Fast geschafft — deine Daten
+          Fast geschafft, deine Daten
         </FunnelHeadline>
         <Text fontSize="14px" color="var(--cc-text-2)" lineHeight="1.6">
           Wir legen deinen Account an und schicken dir eine Bestätigung sobald

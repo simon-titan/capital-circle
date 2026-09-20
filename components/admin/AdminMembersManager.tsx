@@ -290,7 +290,7 @@ export function AdminMembersManager() {
             <AdminCardTitle>Neuen Nutzer anlegen</AdminCardTitle>
           </HStack>
           <Text fontSize="sm" color="var(--cc-text-2)">
-            Nutzer wird direkt mit bestätigter E-Mail angelegt — kein Bestätigungs-Link nötig.
+            Nutzer wird direkt mit bestätigter E-Mail angelegt. Kein Bestätigungs-Link nötig.
           </Text>
         </Box>
 

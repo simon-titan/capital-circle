@@ -4,7 +4,7 @@ import { PaymentMethodCard } from "@/components/billing/PaymentMethodCard";
 import { DashCard, Meta } from "@/components/platform/dashboard/primitives";
 
 export const metadata: Metadata = {
-  title: "Zahlungsmethode — Capital Circle",
+  title: "Zahlungsmethode · Capital Circle",
 };
 
 export const dynamic = "force-dynamic";

@@ -195,24 +195,24 @@ export async function ordneZuUndFuehreAus(eingabe: KuendigungsEingabe, sitzung: 
     }
     // Lifetime, 1:1 oder eine von Hand eingetragene Mitgliedschaft: Es gibt
     // etwas zu beenden, aber nichts, was sich bei Stripe kündigen ließe.
-    return manuell(`Stufe „${kontext.tier}" ohne laufendes Stripe-Abo — von Hand prüfen.`);
+    return manuell(`Stufe „${kontext.tier}" ohne laufendes Stripe-Abo: von Hand prüfen.`);
   }
 
   if (laufende.length > 1) {
-    return manuell(`${laufende.length} laufende Stripe-Abos zu diesem Konto — nicht eindeutig.`);
+    return manuell(`${laufende.length} laufende Stripe-Abos zu diesem Konto: nicht eindeutig.`);
   }
 
   if (!abo || laufende[0].id !== abo.id) {
-    return manuell("Das laufende Abo ist nicht das neueste des Kontos — Einstellungsseite zeigt ein anderes.");
+    return manuell("Das laufende Abo ist nicht das neueste des Kontos. Die Einstellungsseite zeigt ein anderes.");
   }
 
   if (eingabe.art === "ausserordentlich") {
-    return manuell("Außerordentliche Kündigung — Grund prüfen und Beendigung von Hand bestätigen.");
+    return manuell("Außerordentliche Kündigung: Grund prüfen und Beendigung von Hand bestätigen.");
   }
 
   if (eingabe.zeitpunktWunsch && eingabe.zeitpunktWunsch > tagBerlin(abo.currentPeriodEnd)) {
     return manuell(
-      `Wunschtermin ${eingabe.zeitpunktWunsch} liegt nach dem Periodenende ${tagBerlin(abo.currentPeriodEnd)} — ` +
+      `Wunschtermin ${eingabe.zeitpunktWunsch} liegt nach dem Periodenende ${tagBerlin(abo.currentPeriodEnd)}. ` +
         "Kündigung zum späteren Termin von Hand einplanen.",
     );
   }
@@ -224,7 +224,7 @@ export async function ordneZuUndFuehreAus(eingabe: KuendigungsEingabe, sitzung: 
       plan,
       stripeSubscriptionId,
       status: "ausgefuehrt",
-      pruefHinweis: "War bereits zum Periodenende gekündigt — nichts geändert.",
+      pruefHinweis: "War bereits zum Periodenende gekündigt, nichts geändert.",
       wirksamZum: abo.currentPeriodEnd,
       ausgefuehrtAm: new Date().toISOString(),
       ergebnis: { art: "ausgefuehrt", plan, wirksamZum: abo.currentPeriodEnd, warBereitsGekuendigt: true },
@@ -232,12 +232,12 @@ export async function ordneZuUndFuehreAus(eingabe: KuendigungsEingabe, sitzung: 
   }
 
   if (!AUSFUEHRBAR.has(abo.status)) {
-    return manuell(`Abo-Status „${abo.status}" — nicht automatisch kündbar.`);
+    return manuell(`Abo-Status „${abo.status}": nicht automatisch kündbar.`);
   }
 
   if (!ABO_STUFEN.has(kontext.tier)) {
     return manuell(
-      `Profilstufe „${kontext.tier}" passt nicht zum laufenden Abo — ohne Abo-Stufe fehlt die Rücknahme in den Einstellungen.`,
+      `Profilstufe „${kontext.tier}" passt nicht zum laufenden Abo. Ohne Abo-Stufe fehlt die Rücknahme in den Einstellungen.`,
     );
   }
 

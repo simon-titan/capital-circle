@@ -84,7 +84,7 @@ export function AdminLifetimeOfferPanel({ onChanged }: { onChanged?: () => void 
           <AdminCardTitle>Lifetime-Angebot</AdminCardTitle>
         </HStack>
         <Text fontSize="sm" color="var(--cc-text-2)">
-          Sichtbar nur für Mitglieder mit aktivem, zahlendem Abo — nie öffentlich, kein Link von der Landingpage.
+          Sichtbar nur für Mitglieder mit aktivem, zahlendem Abo. Nie öffentlich, kein Link von der Landingpage.
         </Text>
       </Box>
 
@@ -99,8 +99,8 @@ export function AdminLifetimeOfferPanel({ onChanged }: { onChanged?: () => void 
             {enabled === null
               ? "Wird geladen…"
               : enabled
-                ? "An — jedes zahlende Mitglied sieht das Angebot."
-                : "Aus — nur Mitglieder mit gesetzter Freischalt-Gruppe sehen es."}
+                ? "An: jedes zahlende Mitglied sieht das Angebot."
+                : "Aus: nur Mitglieder mit gesetzter Freischalt-Gruppe sehen es."}
           </Text>
         </Stack>
         <HStack spacing={3} flexShrink={0}>
@@ -139,7 +139,7 @@ export function AdminLifetimeOfferPanel({ onChanged }: { onChanged?: () => void 
 
       {enabled === false && gruppen.length === 0 ? (
         <Text fontSize="sm" color="var(--cc-text-2)">
-          Der Schalter ist aus und es gibt keine Gruppe — aktuell sieht niemand das Angebot. Wähle unten Mitglieder aus
+          Der Schalter ist aus und es gibt keine Gruppe. Aktuell sieht niemand das Angebot. Wähle unten Mitglieder aus
           und vergib eine Gruppe.
         </Text>
       ) : null}

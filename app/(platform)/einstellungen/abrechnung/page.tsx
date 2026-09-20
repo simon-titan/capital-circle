@@ -7,7 +7,7 @@ import { Meta } from "@/components/platform/dashboard/primitives";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Abrechnung — Capital Circle",
+  title: "Abrechnung · Capital Circle",
 };
 
 export const dynamic = "force-dynamic";
@@ -57,7 +57,7 @@ export default async function AbrechnungPage() {
       >
         <Stack spacing={1} mb={4}>
           <SectionTitle id="abrechnung-rechnungen">Rechnungen</SectionTitle>
-          <Meta>Jede Rechnung als PDF, direkt aus Stripe — inklusive Steuerausweis.</Meta>
+          <Meta>Jede Rechnung als PDF, direkt aus Stripe, inklusive Steuerausweis.</Meta>
         </Stack>
         <InvoiceList />
       </Box>

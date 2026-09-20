@@ -134,7 +134,7 @@ export async function GET(request: Request) {
     }
   } else {
     console.warn(
-      "[discord-funnel/callback] DISCORD_GUILD_ID / DISCORD_BOT_TOKEN / DISCORD_FUNNEL_ROLE_ID nicht gesetzt — Join/Rolle übersprungen.",
+      "[discord-funnel/callback] DISCORD_GUILD_ID / DISCORD_BOT_TOKEN / DISCORD_FUNNEL_ROLE_ID nicht gesetzt. Join/Rolle übersprungen.",
     );
   }
 

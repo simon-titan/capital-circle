@@ -51,7 +51,7 @@ export function SupportTicketsList({ tickets }: { tickets: SupportTicketRow[] })
               <MessageCircle size={24} strokeWidth={1.75} />
             </IconTile>
             <Text fontSize="16px" lineHeight={1.6} color="var(--cc-text-soft)" maxW="30rem">
-              Hast du eine Frage oder ein Problem? Erstelle ein Ticket — unser Team antwortet direkt hier.
+              Hast du eine Frage oder ein Problem? Erstelle ein Ticket. Unser Team antwortet direkt hier.
             </Text>
           </Stack>
         </Box>

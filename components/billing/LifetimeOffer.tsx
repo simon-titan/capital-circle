@@ -81,7 +81,7 @@ export function LifetimeOffer({ ehemalig = false }: { ehemalig?: boolean }) {
 
           <List spacing={2} fontSize="14px" color="var(--cc-text-2)">
             {[
-              "Voller Zugang zu Institut, Live-Sessions und Journal — ohne Enddatum.",
+              "Voller Zugang zu Institut, Live-Sessions und Journal, ohne Enddatum.",
               ehemalig
                 ? "Kein Abo mehr: Nach der Zahlung bist du sofort wieder drin, auch auf Discord."
                 : "Dein laufendes Abo endet automatisch zum bezahlten Periodenende.",

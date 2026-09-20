@@ -51,11 +51,11 @@ export const IMPORT_METHODS: ImportMethod[] = [
 export const TRADOVATE_EXPORT_STEPS = [
   "Öffne TradingView und wechsle unten in das Panel „Handel“ (Trading Panel).",
   "Verbinde dich mit deinem Tradovate- bzw. Prop-Firm-Konto.",
-  "Wechsle auf den Reiter „Orders“ (Aufträge) — nicht „Positions“ oder „History“.",
+  "Wechsle auf den Reiter „Orders“ (Aufträge), nicht „Positions“ oder „History“.",
   "Stelle den Zeitraum ein, den du auswerten möchtest.",
   "Klicke rechts auf das Zahnrad und wähle „Export data“ bzw. „Daten exportieren“.",
   "Wähle als Format CSV und speichere die Datei.",
-  "Zieh die Datei hier hinein — wir bauen daraus automatisch deine Trades.",
+  "Zieh die Datei hier hinein. Wir bauen daraus automatisch deine Trades.",
 ];
 
 /** Instrumente, die im manuellen Formular vorgeschlagen werden. */

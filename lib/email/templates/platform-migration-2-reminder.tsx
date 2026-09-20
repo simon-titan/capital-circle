@@ -48,12 +48,12 @@ export default function PlatformMigrationMail2({
       </EmailText>
 
       <EmailText>
-        Kein zusätzlicher Aufwand, keine neuen Kosten — nur ein anderer Ort,
+        Kein zusätzlicher Aufwand, keine neuen Kosten, nur ein anderer Ort,
         an dem du eingeloggt bist.
       </EmailText>
 
       <EmailButton href={PLATFORM_MIGRATION.joinUrl}>
-        Jetzt wechseln — 99&nbsp;€/Monat
+        Jetzt wechseln für 99&nbsp;€/Monat
       </EmailButton>
 
       <EmailText muted>Emre</EmailText>

@@ -232,7 +232,7 @@ function OfflineCard({ reason }: { reason: "offline" | "no-uid" | "env-missing" 
       ? "Die Cloudflare-Customer-Subdomain fehlt in der Konfiguration. Bitte Admin kontaktieren."
       : reason === "no-uid"
       ? "Der Stream ist eingeschaltet, aber die Video-UID wurde noch nicht gesetzt. Einen Moment bitte."
-      : "Sobald Emre live geht, siehst du es hier automatisch — diese Seite aktualisiert sich im Hintergrund alle 15 Sekunden.";
+      : "Sobald Emre live geht, siehst du es hier automatisch. Diese Seite aktualisiert sich im Hintergrund alle 15 Sekunden.";
 
   return (
     <Flex

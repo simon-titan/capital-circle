@@ -14,7 +14,7 @@ export default async function ArsenalToolsPage() {
     <Box>
       <PageHeader
         title="Tools & Software"
-        subtitle="Empfohlene Werkzeuge und Software rund um dein Trading — kuratiert vom Capital Circle Team."
+        subtitle="Empfohlene Werkzeuge und Software rund um dein Trading, kuratiert vom Capital Circle Team."
       />
       <PageArsenalCardsSection cards={cards} />
     </Box>

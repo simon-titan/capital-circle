@@ -308,7 +308,7 @@ export function AnalysisManager() {
                     variant="line"
                     onClick={() => {
                       setCoverKey(null);
-                      setStatus("Titelbild entfernt — beim Speichern übernommen.");
+                      setStatus("Titelbild entfernt, beim Speichern übernommen.");
                     }}
                     isDisabled={coverBusy}
                     color="var(--cc-danger)"

@@ -57,7 +57,7 @@ export function MembershipNav() {
         <Box
           as="a"
           href="#seitenanfang"
-          aria-label="Capital Circle — zum Seitenanfang"
+          aria-label="Capital Circle, zum Seitenanfang"
           display="inline-flex"
           alignItems="center"
           lineHeight={1}

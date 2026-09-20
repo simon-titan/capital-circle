@@ -29,8 +29,8 @@ export const DISCORD_FUNNEL_QUESTIONS: DiscordFunnelQuestion[] = [
     options: [
       "Ich breche ständig meine eigenen Regeln",
       "Ich springe von Strategie zu Strategie",
-      "Ich weiß was ich tun soll — kann es aber nicht umsetzen",
-      "Mein Backtest funktioniert — im Live Trading verliere ich",
+      "Ich weiß, was ich tun soll, kann es aber nicht umsetzen",
+      "Mein Backtest funktioniert, im Live Trading verliere ich",
       "Emotionen zerstören meine Trades",
       "Ich habe kein klares Framework",
     ],
@@ -45,7 +45,7 @@ export const DISCORD_FUNNEL_QUESTIONS: DiscordFunnelQuestion[] = [
       "Technische Analyse / Indikatoren",
       "Andere kostenpflichtige Kurse oder Discords",
       "YouTube / kostenlosen Content",
-      "Alles davon — nichts hat funktioniert",
+      "Alles davon, nichts hat funktioniert",
       "Bin komplett neu im Trading",
     ],
     closerNote: "Welche Einwände kommen könnten",
@@ -71,7 +71,7 @@ export const DISCORD_FUNNEL_QUESTIONS: DiscordFunnelQuestion[] = [
     id: "channel",
     question: "Wie bist du auf Capital Circle aufmerksam geworden?",
     options: ["Instagram", "TikTok", "YouTube", "Empfehlung", "Anderes"],
-    closerNote: "Gesprächskontext — welcher Kanal die besten Leads bringt",
+    closerNote: "Gesprächskontext: welcher Kanal die besten Leads bringt",
   },
 ];
 

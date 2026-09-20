@@ -306,7 +306,7 @@ export async function POST(request: NextRequest) {
 
   // Zusätzlich Slack, falls eingerichtet (ohne `SLACK_WEBHOOK_URL` still übersprungen).
   await sendSlackNotification(
-    `Kündigung über /kuendigen: ${STATUS_LABEL[zuordnung.status]} — ${referenz}` +
+    `Kündigung über /kuendigen: ${STATUS_LABEL[zuordnung.status]} · ${referenz}` +
       (zuordnung.pruefHinweis ? ` · ${zuordnung.pruefHinweis}` : "") +
       (gespeichert ? "" : " · NICHT in der Datenbank gespeichert"),
   );

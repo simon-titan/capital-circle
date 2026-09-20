@@ -38,7 +38,7 @@ export default function PasswortZuruecksetzenEmail({ link, email }: Props) {
       <EmailHeading>Neues Passwort wählen</EmailHeading>
       <EmailText>
         Für dein Konto <strong>{email}</strong> wurde gerade ein neues Passwort angefordert. Über den Knopf
-        wählst du eins — danach bist du direkt eingeloggt.
+        wählst du eins, danach bist du direkt eingeloggt.
       </EmailText>
 
       <EmailButton href={link}>Neues Passwort wählen</EmailButton>

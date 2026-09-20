@@ -148,14 +148,14 @@ export const PREISZEILEN: ReadonlyArray<{ plan: string; text: string }> = preisk
  * irgendwann nicht mehr stimmt.
  */
 export const WHOP_KUENDIGUNG_SCHRITTE: readonly string[] = [
-  "Auf whop.com anmelden — mit demselben Konto, mit dem du Capital Circle gekauft hast.",
+  "Auf whop.com mit demselben Konto anmelden, mit dem du Capital Circle gekauft hast.",
   "Oben rechts auf dein Profilbild, dann auf „Memberships“ (Mitgliedschaften).",
   "Capital Circle auswählen und dort „Cancel membership“ (Mitgliedschaft kündigen) bestätigen.",
 ];
 
 /** Der Satz danach, in Mail und Direktnachricht gleich. */
 export function whopKuendigungHilfe(): string {
-  return `Findest du den Punkt nicht, schreib uns kurz an ${TEAM_POSTFACH} — wir schauen mit dir drauf.`;
+  return `Findest du den Punkt nicht, schreib uns kurz an ${TEAM_POSTFACH}. Wir schauen mit dir drauf.`;
 }
 
 /**
@@ -184,18 +184,18 @@ export function umzugDirektnachricht1(p: {
   return [
     `Hey ${p.vorname ?? "du"}, hier ist Capital Circle.`,
     "",
-    "Kurz und wichtig: Wir sind von Whop auf unsere eigene Plattform umgezogen. Für dich ändert sich dadurch nichts an den Inhalten — aber dein Abo läuft noch bei Whop, und dort läuft es nicht weiter.",
+    "Kurz und wichtig: Wir sind von Whop auf unsere eigene Plattform umgezogen. Für dich ändert sich dadurch nichts an den Inhalten, aber dein Abo läuft noch bei Whop, und dort läuft es nicht weiter.",
     "",
     `**Dein Zugang bei uns bleibt bis zum ${datumLang(p.zugangBis)}.** Bis dahin hast du alles wie bisher: Institut, Discord, dein Fortschritt.`,
     "",
     "Zwei Dinge sind zu tun:",
-    "1. Dein Whop-Abo selbst kündigen — sonst bucht Whop weiter ab. Wie das geht, steht in der Mail, die du gerade bekommen hast.",
+    "1. Dein Whop-Abo selbst kündigen, sonst bucht Whop weiter ab. Wie das geht, steht in der Mail, die du gerade bekommen hast.",
     "2. Bei uns neu abschliessen, wann du möchtest:",
     kaufUrl(p.appUrl, "monthly"),
     "",
     `Dein Konto liegt schon bereit, mit derselben E-Mail. ${passwortVergessen(p.appUrl)}`,
     "",
-    `Fragen? Antworte hier nicht — der Bot liest das nicht. Schreib uns an ${TEAM_POSTFACH}.`,
+    `Fragen? Antworte hier nicht, der Bot liest das nicht. Schreib uns an ${TEAM_POSTFACH}.`,
     "",
     DM_ABBESTELLEN,
   ].join("\n");
@@ -220,14 +220,14 @@ export function umzugDirektnachricht2(p: {
   return [
     `Hey ${p.vorname ?? "du"}, kurze Erinnerung von Capital Circle.`,
     "",
-    `Dein bezahlter Zeitraum endet ${rest}, am ${datumLang(p.zugangBis)}. Danach ruht dein Zugang — Institut und Mitgliederkanäle sind dann zu, dein Konto und dein Fortschritt bleiben gespeichert.`,
+    `Dein bezahlter Zeitraum endet ${rest}, am ${datumLang(p.zugangBis)}. Danach ruht dein Zugang: Institut und Mitgliederkanäle sind dann zu, dein Konto und dein Fortschritt bleiben gespeichert.`,
     "",
     "Wenn du dabeibleiben möchtest, schliesst du hier neu ab:",
     kaufUrl(p.appUrl, "monthly"),
     "",
-    `Und denk bitte ans Kündigen bei Whop, falls noch nicht geschehen — sonst bucht Whop am ${datumKurz(p.zugangBis)} erneut ab. ${whopKuendigungHilfe()}`,
+    `Und denk bitte ans Kündigen bei Whop, falls noch nicht geschehen. Sonst bucht Whop am ${datumKurz(p.zugangBis)} erneut ab. ${whopKuendigungHilfe()}`,
     "",
-    `Lieber einmalig statt monatlich? Lifetime kostet ${LIFETIME_PREIS}, einmalig — die Karte dazu findest du nach dem Anmelden unter Einstellungen → Abonnement.`,
+    `Lieber einmalig statt monatlich? Lifetime kostet ${LIFETIME_PREIS}, einmalig. Die Karte dazu findest du nach dem Anmelden unter Einstellungen → Abonnement.`,
     "",
     DM_ABBESTELLEN,
   ].join("\n");

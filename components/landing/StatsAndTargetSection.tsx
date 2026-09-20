@@ -129,7 +129,7 @@ export function StatsAndTargetSection({ onApply }: { onApply: () => void }) {
                 Du hast die Seite gelesen. Du weißt was <Gold>Capital Circle</Gold> ist und <Strong>was es nicht ist</Strong>.
               </Text>
               <Text>
-                Wenn du erkennst dass du <Strong>einer der drei Trader</Strong> bist – <Gold>dann bewirb dich jetzt</Gold>.
+                Wenn du erkennst dass du <Strong>einer der drei Trader</Strong> bist, <Gold>dann bewirb dich jetzt</Gold>.
               </Text>
               <Text>
                 <Gold>Emre</Gold> liest jede Bewerbung <Strong>persönlich</Strong>. <Gold>Nicht jeder wird angenommen</Gold>.

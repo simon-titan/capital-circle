@@ -18,7 +18,7 @@ export function EmreStats() {
       <Stack spacing={4} mb={6} textAlign="center" align="center" {...rise(3)}>
         <FunnelEyebrow>Dein Mentor</FunnelEyebrow>
         <FunnelHeadline as="h2" scale="md">
-          <GoldWord>Emre</GoldWord> — Profi-Trader und Gründer von Capital Circle
+          <GoldWord>Emre</GoldWord>, Profi-Trader und Gründer von Capital Circle
         </FunnelHeadline>
       </Stack>
 

@@ -10,7 +10,7 @@ const MIN_LAENGE = 8;
 const FEHLERTEXTE: Record<string, string> = {
   account_pending: "Dein Zugang wird gerade angelegt. Probier es in ein paar Sekunden noch einmal.",
   bereits_aktiv:
-    "Für dieses Konto gibt es schon ein Passwort. Melde dich damit an — oder hol dir über „Passwort vergessen?“ auf der Anmeldeseite ein neues.",
+    "Für dieses Konto gibt es schon ein Passwort. Melde dich damit an, oder hol dir über „Passwort vergessen?“ auf der Anmeldeseite ein neues.",
   session_expired:
     "Der Kauf ist zu lange her. Setz dein Passwort über den Link in der E-Mail oder über „Passwort vergessen?“ auf der Anmeldeseite.",
   not_paid: "Zu diesem Kauf liegt noch keine bestätigte Zahlung vor.",

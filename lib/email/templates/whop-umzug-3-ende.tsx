@@ -47,7 +47,7 @@ export default function WhopUmzug3Ende({ vorname, zugangBis, abmeldeLink }: Prop
 
   return (
     <BaseEmail
-      previewText="Dein Zugang ruht — dein Konto und dein Fortschritt bleiben"
+      previewText="Dein Zugang ruht, dein Konto und dein Fortschritt bleiben"
       unsubscribeUrl={abmeldeLink}
     >
       <EmailHeading>{vorname ? `${vorname}, dein Zugang ruht jetzt` : "Dein Zugang ruht jetzt"}</EmailHeading>
@@ -61,7 +61,7 @@ export default function WhopUmzug3Ende({ vorname, zugangBis, abmeldeLink }: Prop
         <strong style={{ color: T.gold }}>Verloren ist nichts.</strong>
         <br />
         Dein Konto, dein Lernfortschritt und deine Notizen bleiben gespeichert. Schliesst du wieder ab, machst du in
-        derselben Lektion weiter, in der du aufgehört hast — und dein Platz auf dem Discord-Server ist auch wieder
+        derselben Lektion weiter, in der du aufgehört hast, und dein Platz auf dem Discord-Server ist auch wieder
         da.
       </EmailQuote>
 
@@ -76,7 +76,7 @@ export default function WhopUmzug3Ende({ vorname, zugangBis, abmeldeLink }: Prop
             {i < arr.length - 1 ? " · " : ""}
           </React.Fragment>
         ))}
-        . Oder Lifetime für {LIFETIME_PREIS} einmalig, ohne weitere Abbuchung — die Karte dazu findest du nach dem
+        . Oder Lifetime für {LIFETIME_PREIS} einmalig, ohne weitere Abbuchung. Die Karte dazu findest du nach dem
         Anmelden unter Einstellungen → Abonnement.
       </EmailText>
 
@@ -88,7 +88,7 @@ export default function WhopUmzug3Ende({ vorname, zugangBis, abmeldeLink }: Prop
       </EmailText>
 
       <EmailSmall>
-        {passwortVergessen(appUrl)} — oder schreib uns an {TEAM_POSTFACH}, wenn etwas hakt.
+        Schreib uns an {TEAM_POSTFACH}, wenn etwas hakt. {passwortVergessen(appUrl)}
       </EmailSmall>
     </BaseEmail>
   );
@@ -97,7 +97,7 @@ export default function WhopUmzug3Ende({ vorname, zugangBis, abmeldeLink }: Prop
 export async function sendWhopUmzug3(props: Props & { an: string; replyTo?: string }): Promise<SendResult> {
   return sendEmail({
     to: props.an,
-    subject: "Dein Zugang ruht — dein Fortschritt bleibt gespeichert",
+    subject: "Dein Zugang ruht, dein Fortschritt bleibt gespeichert",
     replyTo: props.replyTo,
     jsx: <WhopUmzug3Ende vorname={props.vorname} zugangBis={props.zugangBis} abmeldeLink={props.abmeldeLink} />,
   });

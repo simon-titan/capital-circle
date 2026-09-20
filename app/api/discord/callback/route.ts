@@ -133,7 +133,7 @@ export async function GET(request: Request) {
     }
   } else {
     console.warn(
-      "[discord/callback] DISCORD_GUILD_ID / DISCORD_BOT_TOKEN / DISCORD_ROLE_ID nicht gesetzt — Server-Join übersprungen.",
+      "[discord/callback] DISCORD_GUILD_ID / DISCORD_BOT_TOKEN / DISCORD_ROLE_ID nicht gesetzt. Server-Join übersprungen.",
     );
   }
 

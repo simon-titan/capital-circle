@@ -57,12 +57,12 @@ export default function ApplicationReceivedEmail({
       <EmailText>
         Solange deine Bewerbung in Prüfung ist, steht die Plattform noch nicht
         offen. Sobald wir eine Entscheidung getroffen haben, bekommst du sofort
-        Bescheid — du musst nichts weiter tun.
+        Bescheid, du musst nichts weiter tun.
       </EmailText>
       <EmailText muted>
-        Bei Fragen antworte einfach auf diese Mail — wir lesen mit.
+        Bei Fragen antworte einfach auf diese Mail, wir lesen mit.
       </EmailText>
-      <EmailText muted>— Das Capital-Circle-Team</EmailText>
+      <EmailText muted>Das Capital-Circle-Team</EmailText>
     </BaseEmail>
   );
 }
@@ -72,7 +72,7 @@ export async function sendApplicationReceived(
 ): Promise<SendResult> {
   return sendEmail({
     to: props.email,
-    subject: "Deine Bewerbung ist eingegangen — Capital Circle",
+    subject: "Deine Bewerbung bei Capital Circle ist eingegangen",
     jsx: (
       <ApplicationReceivedEmail
         firstName={props.firstName}

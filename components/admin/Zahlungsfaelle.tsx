@@ -320,7 +320,7 @@ export function ZahlungsfallAkte({
 
       <Karte
         titel="Verlauf"
-        erklaerung="Was der Kunde geschrieben hat, was wir geschickt haben, und was das System getan hat. Der Kunde antwortet über den Knopf „Antworten“ unter jeder Direktnachricht — frei getippte Antworten kann der Bot nicht lesen."
+        erklaerung="Was der Kunde geschrieben hat, was wir geschickt haben, und was das System getan hat. Der Kunde antwortet über den Knopf „Antworten“ unter jeder Direktnachricht. Frei getippte Antworten kann der Bot nicht lesen."
       >
         {nachrichten.length === 0 ? (
           <Box {...adminEmptyProps}>Noch keine Nachricht.</Box>
@@ -443,7 +443,7 @@ function ZahlungAktionen({
     <Stack spacing={6}>
       <Stack spacing={3}>
         <FormLabel htmlFor="zf-text" {...adminFormLabelProps} m={0}>
-          {alsNotiz ? "Interne Notiz — geht nicht an den Kunden" : "Antwort an den Kunden"}
+          {alsNotiz ? "Interne Notiz, geht nicht an den Kunden" : "Antwort an den Kunden"}
         </FormLabel>
         <Textarea
           id="zf-text"

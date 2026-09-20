@@ -12,7 +12,7 @@ interface Props {
 
 export default function FreeCourseDay2Email({ firstName, abmeldeLink }: Pick<Props, "firstName"> & { abmeldeLink?: string }) {
   return (
-    <BaseEmail previewText="Es fehlt nicht an Strategie — es fehlt am Fundament." unsubscribeUrl={abmeldeLink}>
+    <BaseEmail previewText="Es fehlt nicht an Strategie, es fehlt am Fundament." unsubscribeUrl={abmeldeLink}>
       <EmailText>Hey {firstName},</EmailText>
       <EmailText>
         viele glauben, sie bräuchten einfach nur eine bessere Strategie.

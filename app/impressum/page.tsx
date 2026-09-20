@@ -3,7 +3,7 @@ import { RechtstextSeite } from "@/components/legal/RechtstextSeite";
 import { anbieter, anbieterAnschriftZeilen } from "@/config/legal";
 
 export const metadata: Metadata = {
-  title: "Impressum — Capital Circle",
+  title: "Impressum · Capital Circle",
   description: "Anbieterkennzeichnung von Capital Circle nach § 5 DDG.",
 };
 
@@ -78,7 +78,7 @@ export default function ImpressumPage() {
       <p>
         Der Handel mit Finanzinstrumenten, insbesondere mit Futures, CFDs, Devisen und anderen gehebelten Produkten,
         ist mit erheblichen Risiken verbunden und kann zum Verlust des gesamten eingesetzten Kapitals führen.
-        Frühere Ergebnisse — auch die auf dieser Website gezeigten Auszahlungen — sind keine Garantie für zukünftige
+        Frühere Ergebnisse (auch die auf dieser Website gezeigten Auszahlungen) sind keine Garantie für zukünftige
         Ergebnisse.
       </p>
     </RechtstextSeite>

@@ -195,7 +195,7 @@ function hindernis(): string | null {
     return "Der Abmeldeweg ist nicht verfügbar (UNSUBSCRIBE_TOKEN_SECRET/SUPABASE_SERVICE_ROLE_KEY fehlt). Ohne ihn wird nichts verschickt.";
   }
   if (!lifetimePriceId()) {
-    return "STRIPE_PRICE_LIFETIME ist nicht gesetzt. Ohne Preis kann niemand Lifetime kaufen — die Kampagne liefe ins Leere.";
+    return "STRIPE_PRICE_LIFETIME ist nicht gesetzt. Ohne Preis kann niemand Lifetime kaufen. Die Kampagne liefe ins Leere.";
   }
   return null;
 }

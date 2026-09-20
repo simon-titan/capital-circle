@@ -93,7 +93,7 @@ export function InvoiceList() {
         <Meta>
           {zustand.hatKunden
             ? "Noch keine Rechnung vorhanden."
-            : "Für dein Konto liegt keine Zahlung vor — deshalb gibt es auch keine Rechnung."}
+            : "Für dein Konto liegt keine Zahlung vor, deshalb gibt es auch keine Rechnung."}
         </Meta>
       </Box>
     );

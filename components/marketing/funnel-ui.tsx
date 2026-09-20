@@ -531,7 +531,7 @@ export function FunnelWarningOverlay({
   fadingOut,
   onDismiss,
   lead,
-  readyLabel = "Ich habe verstanden — Bewerbung starten →",
+  readyLabel = "Ich habe verstanden, Bewerbung starten →",
   zIndex = 10,
 }: {
   countdown: number;

@@ -29,7 +29,7 @@ interface Feature {
   label: string;
 }
 const FEATURES: Feature[] = [
-  { icon: BookOpen, label: "Von 0 zum ersten Setup – strukturiert" },
+  { icon: BookOpen, label: "Von 0 zum ersten Setup, strukturiert" },
   { icon: Users, label: "Trader die dich pushen, nicht bremsen" },
   { icon: TrendingUp, label: "Bewährte Trading-Strategien" },
   { icon: Video, label: "Wöchentliche Zoom Calls direkt mit Emre" },

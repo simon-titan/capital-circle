@@ -14,7 +14,7 @@ export default function WelcomeFreeCourseEmail({ firstName }: Pick<Props, "first
   const appUrl = getAppUrl();
   return (
     <BaseEmail
-      previewText="Deine Bewerbung wurde angenommen — lies das hier durch."
+      previewText="Deine Bewerbung wurde angenommen. Lies das hier durch."
     >
       <EmailText>Hey {firstName},</EmailText>
       <EmailText>

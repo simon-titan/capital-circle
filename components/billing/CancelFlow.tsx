@@ -270,7 +270,7 @@ export function CancelFlow({
           <ModalBody py={5}>
             {schritt === "grund" ? (
               <Stack spacing={5}>
-                <Meta>Eine Frage nur — sie hilft uns mehr als jede Umfrage danach.</Meta>
+                <Meta>Eine Frage nur. Sie hilft uns mehr als jede Umfrage danach.</Meta>
                 <RadioGroup value={grund} onChange={(v) => setGrund(v as Grund)}>
                   <Stack spacing={3}>
                     {GRUENDE.map((g) => (
@@ -296,7 +296,7 @@ export function CancelFlow({
                   <Angebot
                     icon={<LifeBuoy size={20} strokeWidth={1.75} aria-hidden />}
                     titel="Lass es uns reparieren"
-                    text="Technische Probleme sind der einzige Grund auf der Liste, den wir wirklich abstellen können. Schreib uns — meistens ist es in einem Tag erledigt."
+                    text="Technische Probleme sind der einzige Grund auf der Liste, den wir wirklich abstellen können. Schreib uns. Meistens ist es in einem Tag erledigt."
                     aktion={
                       <Button as={Link} href="/support" variant="gold" size="sm" onClick={schliessen}>
                         Support schreiben
@@ -348,7 +348,7 @@ export function CancelFlow({
                   . Bis dahin bleibt alles freigeschaltet, danach wird nichts mehr abgebucht.
                 </Text>
                 <Meta>
-                  Dein Journal und dein Fortschritt bleiben gespeichert — wenn du zurückkommst, ist alles noch da.
+                  Dein Journal und dein Fortschritt bleiben gespeichert. Wenn du zurückkommst, ist alles noch da.
                 </Meta>
               </Stack>
             ) : null}

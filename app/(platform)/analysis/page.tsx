@@ -14,7 +14,7 @@ export default async function AnalysisPage() {
     <Box>
       <PageHeader
         title="Analysen"
-        subtitle="Einblicke und Marktkommentare vom Team — chronologisch, nur Lesezugriff für Mitglieder."
+        subtitle="Einblicke und Marktkommentare vom Team: chronologisch, nur Lesezugriff für Mitglieder."
       />
       <PageAnalysisFeed posts={posts} />
     </Box>

@@ -58,7 +58,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
     export_meta: {
       generated_at: new Date().toISOString(),
       generated_by_admin_id: admin.id,
-      legal_basis: "DSGVO Art. 15 – Auskunftsrecht der betroffenen Person",
+      legal_basis: "DSGVO Art. 15: Auskunftsrecht der betroffenen Person",
       subject_user_id: targetUserId,
     },
     account: {

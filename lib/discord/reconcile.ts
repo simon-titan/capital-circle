@@ -216,7 +216,7 @@ export async function reconcileDiscordRoles({
 
     if (desired === "regular" && actual !== "regular") {
       if (!zurueckNurAusWarteraum || actual === "waiting_room") zurueck.push(zeile);
-      else zeile.note = "Zugang ohne Mitgliederrolle — der Nachtlauf gibt sie nur aus dem Warteraum zurück.";
+      else zeile.note = "Zugang ohne Mitgliederrolle: Der Nachtlauf gibt sie nur aus dem Warteraum zurück.";
     } else if (desired === "none" && actual === "regular") {
       /*
         ── Ohne Enddatum kein Entzug ──────────────────────────────────────────
@@ -229,7 +229,7 @@ export async function reconcileDiscordRoles({
         beendet, setzt ein Datum.
       */
       if (p?.access_until) entzug.push(zeile);
-      else zeile.note = "Kein Enddatum im Profil — Rolle stammt nicht aus einem Stripe-Zugang, bleibt unangetastet.";
+      else zeile.note = "Kein Enddatum im Profil: Die Rolle stammt nicht aus einem Stripe-Zugang und bleibt unangetastet.";
     }
   }
 
@@ -238,7 +238,7 @@ export async function reconcileDiscordRoles({
     entzugAusgesetzt =
       `${entzug.length} Mitgliedern würde die Rolle genommen, erlaubt sind ${maxEntzug} je Lauf. ` +
       "Es wurde niemandem etwas genommen. Das ist fast immer ein Datenfehler (etwa leeres access_until), " +
-      "keine echte Abwanderung — bitte die Liste im Admin unter Discord prüfen.";
+      "keine echte Abwanderung. Bitte die Liste im Admin unter Discord prüfen.";
     for (const z of entzug) z.note = "Entzug ausgesetzt (Obergrenze überschritten).";
   }
 

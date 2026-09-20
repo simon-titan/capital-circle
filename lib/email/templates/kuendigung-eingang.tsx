@@ -114,7 +114,7 @@ export async function sendKuendigungEingang({
   const eingang = formatEingang(beleg.eingegangenAm);
   return sendEmail({
     to: an,
-    subject: `Bestätigung deiner Kündigung — eingegangen am ${eingang.datum}`,
+    subject: `Bestätigung deiner Kündigung, eingegangen am ${eingang.datum}`,
     replyTo: BETREIBER_EMAIL,
     jsx: <KuendigungEingangEmail beleg={beleg} appUrl={getAppUrl()} kopieAnKonto={kopieAnKonto} />,
   });

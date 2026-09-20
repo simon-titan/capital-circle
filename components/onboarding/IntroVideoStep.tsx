@@ -86,7 +86,7 @@ export function IntroVideoStep({ onCompleted }: IntroVideoStepProps) {
             lineHeight="1.45"
             maxW="520px"
           >
-            Anschließend folgt die Vereinbarung zur Nutzung und Vertraulichkeit – erst danach erhältst du Zugang zur
+            Anschließend folgt die Vereinbarung zur Nutzung und Vertraulichkeit. Erst danach erhältst du Zugang zur
             Plattform
           </Text>
         </HStack>

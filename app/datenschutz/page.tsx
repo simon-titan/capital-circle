@@ -4,8 +4,8 @@ import { RechtstextSeite } from "@/components/legal/RechtstextSeite";
 import { anbieter, anbieterAnschriftZeilen, aufsichtsbehoerde, rechtsPfade } from "@/config/legal";
 
 export const metadata: Metadata = {
-  title: "Datenschutzerklärung — Capital Circle",
-  description: "Welche Daten Capital Circle verarbeitet, wofür, auf welcher Grundlage — und welche Rechte du hast.",
+  title: "Datenschutzerklärung · Capital Circle",
+  description: "Welche Daten Capital Circle verarbeitet, wofür, auf welcher Grundlage, und welche Rechte du hast.",
 };
 
 /**
@@ -30,7 +30,7 @@ export default function DatenschutzPage() {
   return (
     <RechtstextSeite
       titel="Datenschutzerklärung"
-      einleitung="Welche personenbezogenen Daten wir verarbeiten, wenn du unsere Website und die Plattform nutzt, wofür, auf welcher Grundlage — und welche Rechte du hast."
+      einleitung="Welche personenbezogenen Daten wir verarbeiten, wenn du unsere Website und die Plattform nutzt, wofür, auf welcher Grundlage, und welche Rechte du hast."
     >
       <ul className="rt-inhalt">
         <li><a href="#verantwortlicher">1. Verantwortlicher</a></li>
@@ -76,10 +76,10 @@ export default function DatenschutzPage() {
 
       <h2 id="grundlagen">2. Rechtsgrundlagen im Überblick</h2>
       <ul>
-        <li><strong>Art. 6 Abs. 1 lit. a DSGVO</strong> — deine Einwilligung;</li>
-        <li><strong>Art. 6 Abs. 1 lit. b DSGVO</strong> — Erfüllung eines Vertrags mit dir oder vorvertragliche Maßnahmen auf deine Anfrage;</li>
-        <li><strong>Art. 6 Abs. 1 lit. c DSGVO</strong> — rechtliche Pflichten, etwa steuer- und handelsrechtliche Aufbewahrung;</li>
-        <li><strong>Art. 6 Abs. 1 lit. f DSGVO</strong> — unsere berechtigten Interessen, die wir jeweils nennen.</li>
+        <li><strong>Art. 6 Abs. 1 lit. a DSGVO</strong>: deine Einwilligung;</li>
+        <li><strong>Art. 6 Abs. 1 lit. b DSGVO</strong>: Erfüllung eines Vertrags mit dir oder vorvertragliche Maßnahmen auf deine Anfrage;</li>
+        <li><strong>Art. 6 Abs. 1 lit. c DSGVO</strong>: rechtliche Pflichten, etwa steuer- und handelsrechtliche Aufbewahrung;</li>
+        <li><strong>Art. 6 Abs. 1 lit. f DSGVO</strong>: unsere berechtigten Interessen, die wir jeweils nennen.</li>
       </ul>
       <p>
         Für das Speichern von Informationen in deinem Browser und das Auslesen daraus gilt zusätzlich § 25 des
@@ -161,7 +161,7 @@ export default function DatenschutzPage() {
         Erklärung mit Name, E-Mail-Adresse, deinen Angaben zum Vertrag, der Adresse für die Bestätigung und dem
         Zeitpunkt des Eingangs, ordnen sie deinem Konto und Vertrag zu und schicken dir die gesetzlich vorgeschriebene
         Bestätigung per E-Mail (Art. 6 Abs. 1 lit. c DSGVO in Verbindung mit § 312k und § 356a BGB). Zum Schutz vor
-        Missbrauch halten wir außerdem einen Hashwert deiner IP-Adresse — nicht die Adresse selbst — und die Kennung
+        Missbrauch halten wir außerdem einen Hashwert deiner IP-Adresse (nicht die Adresse selbst) und die Kennung
         deines Browsers fest (Art. 6 Abs. 1 lit. f DSGVO).
       </p>
 
@@ -178,7 +178,7 @@ export default function DatenschutzPage() {
       {/* Cloudflare R2, EU-Jurisdiktion (`lib/storage.ts`, R2_ENDPOINT *.eu.*). */}
       <h2 id="dateien">7. Hochgeladene Dateien</h2>
       <p>
-        Dateien, die du hochlädst — Profilbild, eingereichte Nachweise, Screenshots im Trading Journal —, speichern
+        Dateien, die du hochlädst (Profilbild, eingereichte Nachweise, Screenshots im Trading Journal), speichern
         wir bei Cloudflare R2 in einem Speicher mit Datenstandort in der EU. Dein Browser lädt sie über zeitlich
         begrenzte Links direkt von dort. Cloudflare, Inc. ist dabei unser Auftragsverarbeiter; Rechtsgrundlage ist
         Art. 6 Abs. 1 lit. b DSGVO.
@@ -230,7 +230,7 @@ export default function DatenschutzPage() {
       </p>
       <p>
         <strong>Ergebnisse und Bewertungen:</strong> Auf der Seite <Link href="/ergebnisse">Ergebnisse</Link> und auf
-        der Verkaufsseite zeigen wir Auszahlungs- und Prüfungsnachweise sowie Bewertungen von Mitgliedern — so, wie sie
+        der Verkaufsseite zeigen wir Auszahlungs- und Prüfungsnachweise sowie Bewertungen von Mitgliedern, so wie sie
         uns überlassen wurden, teils mit Namen und Bild. Grundlage ist die Einwilligung der jeweiligen Mitglieder (Art.
         6 Abs. 1 lit. a DSGVO), die sie jederzeit widerrufen können.
       </p>
@@ -300,7 +300,7 @@ export default function DatenschutzPage() {
           sessionStorage `cc_discord_sid`, `cc_tracking_sid`, `cc_tracking_ref`. */}
       <h2 id="messung">13. Auswertung unserer Werbeseiten</h2>
       <p>
-        Wir setzen keine Analyse- oder Werbedienste Dritter ein — kein Google Analytics, keine Werbe-Pixel. Auf einigen
+        Wir setzen keine Analyse- oder Werbedienste Dritter ein: kein Google Analytics, keine Werbe-Pixel. Auf einigen
         Werbeseiten messen wir selbst:
       </p>
       <ul>
@@ -325,7 +325,7 @@ export default function DatenschutzPage() {
       </p>
       <ul>
         <li>
-          E-Mails zu deinem Vertrag und Konto — Bestätigungen, Passwort, Zahlungsprobleme, Antworten des Supports (Art.
+          E-Mails zu deinem Vertrag und Konto: Bestätigungen, Passwort, Zahlungsprobleme, Antworten des Supports (Art.
           6 Abs. 1 lit. b DSGVO);
         </li>
         <li>
@@ -400,7 +400,7 @@ export default function DatenschutzPage() {
       </p>
       <p>
         Mehrere dieser Anbieter haben ihren Sitz in den USA oder können Daten dort verarbeiten: Vercel, Supabase,
-        Cloudflare, Resend, Discord, Calendly und — für einzelne Zwecke — Stripe. Für die USA besteht ein
+        Cloudflare, Resend, Discord, Calendly und (für einzelne Zwecke) Stripe. Für die USA besteht ein
         Angemessenheitsbeschluss der EU-Kommission (EU-U.S. Data Privacy Framework); auf ihn stützen wir die
         Übermittlung, soweit der jeweilige Anbieter danach zertifiziert ist. Im Übrigen erfolgt die Übermittlung auf
         Grundlage der Standardvertragsklauseln der EU-Kommission (Art. 46 Abs. 2 lit. c DSGVO).

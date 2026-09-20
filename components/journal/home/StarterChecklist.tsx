@@ -44,7 +44,7 @@ export function StarterChecklist({ done, onAddTrade }: { done: boolean; onAddTra
             </Text>
             <Text fontSize="xs" color="var(--cc-text-3)">
               {done
-                ? "Erledigt — deine Auswertung findest du im Dashboard."
+                ? "Erledigt. Deine Auswertung findest du im Dashboard."
                 : "Lade deinen Orders-Export hoch oder trag einen Trade von Hand ein."}
             </Text>
           </Stack>

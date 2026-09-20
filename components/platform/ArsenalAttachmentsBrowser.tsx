@@ -371,7 +371,7 @@ export function ArsenalAttachmentsBrowser({
         <Box className="cc-card cc-card--still cc-rise" style={riseDelay(1)} p={{ base: 6, md: 8 }}>
           <Stack spacing={4} align="center" textAlign="center">
             <Meta fontSize="16px" maxW="36rem">
-              Keine Treffer. Filter oder Suche anpassen — oder es sind noch keine Dateien vom Team hinterlegt.
+              Keine Treffer. Filter oder Suche anpassen, oder es sind noch keine Dateien vom Team hinterlegt.
             </Meta>
             {hasActiveSearchOrFilters ? (
               <Button size="sm" variant="line" onClick={resetSearchAndFilters}>
@@ -408,7 +408,7 @@ export function ArsenalAttachmentsBrowser({
                   {gruppe.items.length}
                 </Meta>
               </Flex>
-              <Stack as="ul" listStyleType="none" gap={3} aria-label={`${title} — ${gruppe.title}`}>
+              <Stack as="ul" listStyleType="none" gap={3} aria-label={`${title}, ${gruppe.title}`}>
                 {gruppe.items.map((it, i) => (
                   <AttachmentRow
                     key={it.id}

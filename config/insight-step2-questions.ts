@@ -48,7 +48,7 @@ export const STEP2_QUESTIONS: Step2Question[] = [
   },
   {
     id: "markets_approach",
-    question: "Welche Märkte tradest du aktuell — und mit welchem Ansatz arbeitest du momentan?",
+    question: "Welche Märkte tradest du aktuell, und mit welchem Ansatz arbeitest du momentan?",
     placeholder: "z. B. Forex, Futures, Price Action…",
     type: "textarea",
     required: true,
@@ -80,7 +80,7 @@ export const STEP2_QUESTIONS: Step2Question[] = [
   },
   {
     id: "why_now",
-    question: "Wie lange verfolgst du mich bereits — und warum möchtest du gerade jetzt den nächsten Schritt mit mir gehen?",
+    question: "Wie lange verfolgst du mich bereits, und warum möchtest du gerade jetzt den nächsten Schritt mit mir gehen?",
     placeholder: "z. B. Ich verfolge dich seit 6 Monaten auf Instagram…",
     type: "textarea",
     required: true,
@@ -88,7 +88,7 @@ export const STEP2_QUESTIONS: Step2Question[] = [
   },
   {
     id: "commitment",
-    question: "Wie wichtig ist es dir, in den nächsten 12 Monaten im Trading wirklich voranzukommen — und was bist du bereit, dafür zu verändern?",
+    question: "Wie wichtig ist es dir, in den nächsten 12 Monaten im Trading wirklich voranzukommen, und was bist du bereit, dafür zu verändern?",
     placeholder: "z. B. Ich bin bereit, meine Routine komplett umzustellen…",
     type: "textarea",
     required: true,

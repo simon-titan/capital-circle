@@ -242,7 +242,7 @@ export function ergebnisText(beleg: Pick<KuendigungsBeleg, "ergebnis" | "zeitpun
   }
   return (
     "Zu dieser E-Mail-Adresse haben wir kein laufendes Abonnement gefunden. Deine Kündigung ist trotzdem " +
-    "eingegangen: Wir sehen sie uns an und melden uns, falls wir einen Vertrag zuordnen können — zum Beispiel, " +
+    "eingegangen: Wir sehen sie uns an und melden uns, falls wir einen Vertrag zuordnen können, zum Beispiel, " +
     "wenn du mit einer anderen E-Mail-Adresse bezahlt hast."
   );
 }

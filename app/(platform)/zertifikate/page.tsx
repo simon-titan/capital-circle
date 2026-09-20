@@ -47,7 +47,7 @@ export default async function ZertifikatePage() {
     <Box>
       <PageHeader
         title="Zertifikate & Erfolge einreichen"
-        subtitle="Reiche einen Trading-Nachweis ein (z. B. Broker-Statement, Erfolgs-Screenshot). Nach Freigabe durch unser Team erscheint er – sofern du magst – auf der öffentlichen Erfolge-Seite."
+        subtitle="Reiche einen Trading-Nachweis ein (z. B. Broker-Statement, Erfolgs-Screenshot). Nach Freigabe durch unser Team erscheint er (sofern du magst) auf der öffentlichen Erfolge-Seite."
       />
       <ZertifikateManager initial={initial} />
     </Box>

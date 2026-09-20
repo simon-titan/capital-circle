@@ -77,7 +77,7 @@ export async function handleInvoicePaid(
     */
     if (subId) {
       throw new Error(
-        `invoice.paid: Profil für customer=${customerId} (sub=${subId}) noch nicht angelegt — Stripe soll wiederholen`,
+        `invoice.paid: Profil für customer=${customerId} (sub=${subId}) noch nicht angelegt. Stripe soll wiederholen`,
       );
     }
     console.warn(

@@ -58,7 +58,7 @@ export default function WiderrufBetreiberEmail({ beleg, info, adminUrl }: Props)
     ["Konto (user_id)", info.userId ?? "—"],
     ["Eingeloggt abgeschickt", info.eingeloggt ? "ja" : "nein"],
     ["Stripe-Abo", info.stripeSubscriptionId ?? "—"],
-    ["In der Datenbank", info.gespeichert ? "ja" : `NEIN — ${info.speicherFehler ?? "unbekannter Fehler"}`],
+    ["In der Datenbank", info.gespeichert ? "ja" : `NEIN: ${info.speicherFehler ?? "unbekannter Fehler"}`],
     ["Eingangsbestätigung an Kunden", info.bestaetigungVersendet ? "versendet" : "FEHLGESCHLAGEN"],
   ];
 
@@ -74,7 +74,7 @@ export default function WiderrufBetreiberEmail({ beleg, info, adminUrl }: Props)
 
       {!info.gespeichert ? (
         <EmailError>
-          Der Widerruf konnte nicht in der Datenbank gespeichert werden. Diese Mail ist der einzige Beleg — bitte
+          Der Widerruf konnte nicht in der Datenbank gespeichert werden. Diese Mail ist der einzige Beleg, bitte
           aufbewahren.
         </EmailError>
       ) : null}
@@ -101,7 +101,7 @@ export async function sendWiderrufBetreiber({
 }): Promise<SendResult> {
   return sendEmail({
     to: BETREIBER_EMAIL,
-    subject: `Widerruf — bitte prüfen: ${beleg.name} (${beleg.referenz})`,
+    subject: `Widerruf, bitte prüfen: ${beleg.name} (${beleg.referenz})`,
     replyTo: beleg.bestaetigungEmail,
     jsx: <WiderrufBetreiberEmail beleg={beleg} info={info} adminUrl={`${getAppUrl()}/admin/widerrufe`} />,
   });

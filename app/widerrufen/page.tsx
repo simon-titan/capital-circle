@@ -12,9 +12,9 @@ import { vertraegeAus, vertragsBezeichnung } from "@/lib/widerruf/verarbeiten";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Vertrag widerrufen — Capital Circle",
+  title: "Vertrag widerrufen · Capital Circle",
   description:
-    "Hier widerrufst du deinen Vertrag mit Capital Circle — ohne Anmeldung und ohne Angabe von Gründen. Du erhältst sofort eine Eingangsbestätigung mit Datum und Uhrzeit.",
+    "Hier widerrufst du deinen Vertrag mit Capital Circle, ohne Anmeldung und ohne Angabe von Gründen. Du erhältst sofort eine Eingangsbestätigung mit Datum und Uhrzeit.",
 };
 
 /**
@@ -95,7 +95,7 @@ export default async function WiderrufenPage() {
               {BESCHRIFTUNG.funktion}
             </Box>
             <Text fontSize={{ base: "15px", md: "17px" }} lineHeight={1.6} color="var(--cc-text-2)" maxW="620px">
-              Hier widerrufst du deinen Vertrag mit Capital Circle — ohne Anmeldung und ohne Angabe von Gründen. Nach
+              Hier widerrufst du deinen Vertrag mit Capital Circle, ohne Anmeldung und ohne Angabe von Gründen. Nach
               dem Klick auf „{BESCHRIFTUNG.bestaetigen}“ bekommst du sofort eine Eingangsbestätigung mit Datum und
               Uhrzeit, auf dieser Seite und per E-Mail.
             </Text>

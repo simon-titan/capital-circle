@@ -121,7 +121,7 @@ export function EventsCalendar({ events, isPaid = true }: EventsCalendarProps) {
         Kalender
       </Heading>
       <Text fontSize={{ base: "15px", md: "16px" }} lineHeight={1.5} color="var(--cc-text-soft)" mt={3}>
-        Termine im Blick — Woche, Monat oder Liste, mit einem Klick in deinen Kalender.
+        Termine im Blick: Woche, Monat oder Liste, mit einem Klick in deinen Kalender.
       </Text>
       <Text fontSize="14px" lineHeight={1.5} color="var(--cc-text-2)" mt={1}>
         Klick auf ein Event für Details, Links und Export.

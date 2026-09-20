@@ -82,7 +82,7 @@ const legacyBucket = env("HETZNER_BUCKET_NAME");
 export function getStorageMisconfiguration(): string | null {
   if (!bucket) return "R2_BUCKET_NAME fehlt in der Umgebung (.env.local).";
   if (!r2Endpoint) {
-    return "R2_ENDPOINT fehlt. Format: https://<ACCOUNT_ID>.r2.cloudflarestorage.com — bei einem Bucket in der EU-Jurisdiktion mit `.eu.` im Host.";
+    return "R2_ENDPOINT fehlt. Format: https://<ACCOUNT_ID>.r2.cloudflarestorage.com, bei einem Bucket in der EU-Jurisdiktion mit `.eu.` im Host.";
   }
   try {
     new URL(r2Endpoint);

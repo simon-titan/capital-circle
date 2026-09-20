@@ -32,7 +32,7 @@ export async function GET() {
       {
         ok: false,
         error: fehlt
-          ? "Die Tabelle „kuendigungen“ fehlt — Migration 072_kuendigungen.sql im Supabase-SQL-Editor einspielen."
+          ? "Die Tabelle „kuendigungen“ fehlt. Migration 072_kuendigungen.sql im Supabase-SQL-Editor einspielen."
           : dbFehler.message,
       },
       { status: 500 },

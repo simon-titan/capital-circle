@@ -101,7 +101,7 @@ export function DiscordNachrichten({ style }: { style?: CSSProperties }) {
           />
         </Flex>
         <Meta lineHeight={1.6}>
-          Ausgeschaltet bekommst du das alles nur noch per E-Mail — die E-Mail kommt in jedem Fall. Deine Rollen auf dem
+          Ausgeschaltet bekommst du das alles nur noch per E-Mail. Die E-Mail kommt in jedem Fall. Deine Rollen auf dem
           Server und der Kanal „zugang-pausiert“ hängen nicht an dieser Einstellung.
         </Meta>
       </Stack>

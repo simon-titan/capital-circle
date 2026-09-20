@@ -23,5 +23,5 @@ export const APEX_PROMO = {
   ctaUrl: "https://apextraderfunding.com",
   footnote: "Bei dem Erwerb über Emres Code unterstützt ihr Emre & seine Arbeit.",
   logoSrc: "/apex/apex-trader-funding.png",
-  logoAlt: "Apex Trader Funding — Infinite Possibilities",
+  logoAlt: "Apex Trader Funding: Infinite Possibilities",
 } as const;

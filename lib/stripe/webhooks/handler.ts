@@ -45,8 +45,8 @@ export async function handleStripeEvent(
   */
   if (event.livemode === false && process.env.STRIPE_SECRET_KEY?.trim().startsWith("sk_live_")) {
     console.warn(
-      `[stripe-webhook] Testmodus-Ereignis ${event.type} (${event.id}) verworfen — ` +
-        "es wuerde sonst in denselben Zahlen landen wie echte Kaeufe.",
+      `[stripe-webhook] Testmodus-Ereignis ${event.type} (${event.id}) verworfen. ` +
+        "Es wuerde sonst in denselben Zahlen landen wie echte Kaeufe.",
     );
     return;
   }

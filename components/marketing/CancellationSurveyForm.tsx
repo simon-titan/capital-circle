@@ -89,7 +89,7 @@ export function CancellationSurveyForm({ token }: Props) {
       }
       setSubmitted(true);
     } catch {
-      setServerError("Netzwerkfehler — bitte erneut versuchen.");
+      setServerError("Netzwerkfehler. Bitte erneut versuchen.");
     } finally {
       setSubmitting(false);
     }
@@ -136,7 +136,7 @@ export function CancellationSurveyForm({ token }: Props) {
             minH="120px"
             value={missing}
             onChange={(e) => setMissing(e.target.value)}
-            placeholder="Sei so direkt wie du willst — wir vertragen das."
+            placeholder="Sei so direkt wie du willst, wir vertragen das."
           />
           <FormErrorMessage {...funnelErrorProps}>{errors.missing}</FormErrorMessage>
         </FormControl>

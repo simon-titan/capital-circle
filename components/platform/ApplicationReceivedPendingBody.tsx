@@ -131,11 +131,11 @@ export function ApplicationReceivedPendingBody() {
   return (
     <Stack spacing={4} w="full" textAlign="left">
       <Text {...BODY_TEXT}>
-        Die meisten die sich bewerben kommen nicht weiter. Die die es tun – verändern wie sie
+        Die meisten die sich bewerben kommen nicht weiter. Die, die es tun, verändern, wie sie
         den Markt für immer sehen.
       </Text>
       <Text {...BODY_TEXT}>Du hörst innerhalb von 48 Stunden von mir.</Text>
-      <Text {...BODY_TEXT}>Bis dahin – falls du noch nicht in meiner Telegram-Gruppe bist:</Text>
+      <Text {...BODY_TEXT}>Bis dahin, falls du noch nicht in meiner Telegram-Gruppe bist:</Text>
       <Text {...BODY_TEXT}>
         Jeden Tag kostenlose Marktanalysen, Weekly Outlooks und Trade Recaps. Direkt von
         mir.

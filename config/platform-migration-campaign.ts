@@ -27,7 +27,7 @@ export const PLATFORM_MIGRATION = {
   /** Tage nach Mail 1, ab denen Mail 3 fällig ist (Öffner ohne Klick). */
   mail3DueDays: 6,
   subjects: {
-    mail1: "Capital Circle ist zurück — dein Zugang wartet",
+    mail1: "Capital Circle ist zurück: dein Zugang wartet",
     mail2: "Falls das hier bei dir untergegangen ist",
     mail3: "Die 3 Fragen, die uns zum Wechsel am häufigsten gestellt werden",
   },

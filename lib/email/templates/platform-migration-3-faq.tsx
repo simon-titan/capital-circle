@@ -32,15 +32,15 @@ export default function PlatformMigrationMail3({
       <EmailText muted>
         Nein. Warst du früher schon bei uns registriert, sind dein Profil und
         dein Verlauf noch da. Bist du über Whop dazugekommen, legst du beim
-        Wechsel einmalig ein Konto auf der eigenen Plattform an — der Zugang
+        Wechsel einmalig ein Konto auf der eigenen Plattform an. Der Zugang
         zu allen Inhalten ist ab dann sofort da.
       </EmailText>
 
       <EmailSubheading>2. Was mache ich mit meinem Whop-Abo?</EmailSubheading>
       <EmailText muted>
         Kündige es einmal selbst in deinem Whop-Account (Mitgliedschaften →
-        Kündigen), sobald dein Zugang auf der eigenen Plattform aktiv ist —
-        sonst läuft dein Abo dort parallel weiter und du zahlst doppelt.
+        Kündigen), sobald dein Zugang auf der eigenen Plattform aktiv ist.
+        Sonst läuft dein Abo dort parallel weiter und du zahlst doppelt.
         Dein Zugang bei uns ist davon unabhängig und bleibt bestehen.
       </EmailText>
 
@@ -51,7 +51,7 @@ export default function PlatformMigrationMail3({
       </EmailText>
 
       <EmailButton href={PLATFORM_MIGRATION.joinUrl}>
-        Jetzt wechseln — 99&nbsp;€/Monat
+        Jetzt wechseln für 99&nbsp;€/Monat
       </EmailButton>
 
       <EmailText muted>Emre</EmailText>

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { CheckoutClient } from "./CheckoutClient";
 
 export const metadata: Metadata = {
-  title: "Checkout — Capital Circle",
+  title: "Checkout · Capital Circle",
   description: "Schließe deine Mitgliedschaft ab.",
 };
 

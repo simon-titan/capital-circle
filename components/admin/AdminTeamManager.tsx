@@ -171,8 +171,8 @@ export function AdminTeamManager() {
         <AlertIcon color={adminAlertIconColor("warning")} />
         <Text fontSize="sm" color="var(--cc-text-soft)">
           Nur Owner haben Zugriff auf die Team-Verwaltung. Falls noch niemand die Rolle
-          &bdquo;Owner&ldquo; hat, sollte jeder bestehende Admin automatisch Zugriff bekommen — bitte
-          Datenbank-Status von <b>profiles.admin_role</b> prüfen.
+          &bdquo;Owner&ldquo; hat, sollte jeder bestehende Admin automatisch Zugriff bekommen. Bitte
+          den Datenbank-Status von <b>profiles.admin_role</b> prüfen.
         </Text>
       </Alert>
     );

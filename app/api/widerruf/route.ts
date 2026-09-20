@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
 
   // Zusätzlich Slack, falls eingerichtet (ohne `SLACK_WEBHOOK_URL` still übersprungen).
   await sendSlackNotification(
-    `Widerruf über /widerrufen: bitte prüfen — ${referenz}` +
+    `Widerruf über /widerrufen: bitte prüfen · ${referenz}` +
       (zuordnung.fristgerecht === false ? " · nach der regulären Frist" : "") +
       (gespeichert ? "" : " · NICHT in der Datenbank gespeichert"),
   );

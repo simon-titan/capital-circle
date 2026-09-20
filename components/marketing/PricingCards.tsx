@@ -105,13 +105,13 @@ function KartenBadge({ children }: { children: React.ReactNode }) {
 /** Ein Satz über der Liste, der sagt, was sie für diesen Tarif bedeutet. */
 function uebersichtHinweis(tier: Tier, hatAbo: boolean): string {
   if (tier === "lifetime") {
-    return "Du hast lebenslangen Zugang — hier gibt es nichts mehr zu wechseln und nichts mehr abzubuchen. Die Laufzeiten stehen nur zur Übersicht.";
+    return "Du hast lebenslangen Zugang. Hier gibt es nichts mehr zu wechseln und nichts mehr abzubuchen. Die Laufzeiten stehen nur zur Übersicht.";
   }
   if (tier === "ht_1on1") {
     return "Dein 1:1-Programm läuft außerhalb dieser Laufzeiten. Die Liste steht nur zur Übersicht.";
   }
   if (!istAbo(tier)) {
-    return "Wähle deine Laufzeit. Die Leistungen sind in allen dreien dieselben — es geht nur um Bindung und Preis.";
+    return "Wähle deine Laufzeit. Die Leistungen sind in allen dreien dieselben, es geht nur um Bindung und Preis.";
   }
   if (!hatAbo) {
     return `Du bist in „${TIER_LABEL[tier]}". Dieser Zugang wurde von Hand eingetragen, ein Wechsel läuft deshalb über uns.`;

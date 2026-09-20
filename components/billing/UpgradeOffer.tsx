@@ -28,7 +28,7 @@ function sperrText(grund: UpgradeGrund, freiAb: string | null): string {
   switch (grund) {
     case "zu_jung":
       return freiAb
-        ? `Ab dem 30. Tag deiner Mitgliedschaft — bei dir ab dem ${formatDate(freiAb)}.`
+        ? `Ab dem 30. Tag deiner Mitgliedschaft, bei dir ab dem ${formatDate(freiAb)}.`
         : "Ab dem 30. Tag deiner Mitgliedschaft.";
     case "gekuendigt":
       return "Du hast gekündigt. Nimm die Kündigung zurück, dann steht dir der Wechsel wieder offen.";
@@ -146,7 +146,7 @@ export function UpgradeOffer({
           ) : null}
 
           <Meta>
-            Statt {TIER_LABEL[aktuellerTarif].toLowerCase()} abzurechnen, zahlst du einmal im Jahr —
+            Statt {TIER_LABEL[aktuellerTarif].toLowerCase()} abzurechnen, zahlst du einmal im Jahr,
             {mitRabatt ? " zusätzlich rabattiert, weil du schon dabei bist." : " zwei Monate günstiger als monatlich."}
           </Meta>
 
