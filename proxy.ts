@@ -227,12 +227,11 @@ export async function proxy(request: NextRequest) {
   const { data: rawProfile } = await supabase
     .from("profiles")
     .select(
-      "codex_accepted,usage_agreement_accepted,is_admin,is_paid,application_status,membership_tier,step2_application_status,access_until,last_login_at,churn_email_1_sent_at,churn_email_2_sent_at",
+      "usage_agreement_accepted,is_admin,is_paid,application_status,membership_tier,step2_application_status,access_until,last_login_at,churn_email_1_sent_at,churn_email_2_sent_at",
     )
     .eq("id", user.id)
     .single();
   const profile = rawProfile as {
-    codex_accepted?: boolean;
     usage_agreement_accepted?: boolean;
     is_admin?: boolean;
     is_paid?: boolean;
@@ -279,9 +278,13 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  const onboardingDone = isFreeMember(profile) || Boolean(
-    profile?.codex_accepted && profile?.usage_agreement_accepted,
-  );
+  /*
+   * Seit 20.09.2026 ohne Codex-Schritt (Entscheidung Simon): Das Onboarding
+   * besteht nur noch aus der Nutzungsvereinbarung. `codex_accepted` bleibt in
+   * der Datenbank stehen — bestehende Zustimmungen sind ein Nachweis und
+   * werden nicht geloescht —, ist aber keine Bedingung mehr fuer den Zugang.
+   */
+  const onboardingDone = isFreeMember(profile) || Boolean(profile?.usage_agreement_accepted);
 
   if (onboardingDone && pathname === "/einsteig") {
     return NextResponse.redirect(new URL("/dashboard", request.url));

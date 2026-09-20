@@ -7,7 +7,6 @@ import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { isFreeMember } from "@/lib/membership";
 import { SkyArchBackground } from "@/components/layout/SkyArchBackground";
-import { CodexStep } from "@/components/onboarding/CodexStep";
 import { LoginStep } from "@/components/onboarding/LoginStep";
 import { UsageAgreementStep } from "@/components/onboarding/UsageAgreementStep";
 
@@ -28,7 +27,7 @@ const reducedStepVariants: Variants = {
   exit: { opacity: 0 },
 };
 
-type Phase = "loading" | "login" | "codex" | "agreement";
+type Phase = "loading" | "login" | "agreement";
 
 type OnboardingFlowProps = {
   loginFooter?: ReactNode;
@@ -45,11 +44,10 @@ async function resolveOnboarding(): Promise<Resolution> {
   if (!user) return "login";
   const { data: profile } = await supabase
     .from("profiles")
-    .select("codex_accepted, usage_agreement_accepted, is_paid, membership_tier")
+    .select("usage_agreement_accepted, is_paid, membership_tier")
     .eq("id", user.id)
     .single();
   if (isFreeMember(profile)) return "dashboard";
-  if (!profile?.codex_accepted) return "codex";
   if (!profile?.usage_agreement_accepted) return "agreement";
   return "dashboard";
 }
@@ -112,7 +110,6 @@ export function OnboardingFlow({ loginFooter }: OnboardingFlowProps = {}) {
             style={{ minHeight: "100vh" }}
           >
             {phase === "login" && <LoginStep onAuthenticated={resolvePhase} footer={loginFooter} />}
-            {phase === "codex" && <CodexStep onCompleted={() => setPhase("agreement")} />}
             {phase === "agreement" && <UsageAgreementStep />}
           </motion.div>
         </AnimatePresence>
