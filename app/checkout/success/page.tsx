@@ -10,6 +10,7 @@ import { ladeKaufStatus, type KaufStatus } from "@/lib/checkout/kauf-status";
 import { createClient } from "@/lib/supabase/server";
 import { preiskarten } from "@/config/landing-membership";
 import { getDiscordAuthUrl } from "@/lib/discord";
+import { DiscordGlyph } from "@/components/platform/DiscordBanner";
 
 export const metadata: Metadata = {
   title: "Zahlung bestätigt — Capital Circle",
@@ -229,7 +230,8 @@ export default async function CheckoutSuccessPage({
                     Du bist eingeloggt. Verbinde noch Discord, dann bist du direkt in der Community und bekommst die
                     Live-Sessions mit.
                   </Text>
-                  <Box as="a" {...goldKnopf} href={getDiscordAuthUrl()}>
+                  <Box as="a" {...goldKnopf} href={getDiscordAuthUrl()} gap={2.5}>
+                    <DiscordGlyph size={20} />
                     Discord verbinden
                   </Box>
                   <Box as="a" {...leiserLink} href="/dashboard">
