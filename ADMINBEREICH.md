@@ -9,6 +9,14 @@ Capital-Circle-Funktionsumfang.
 - **Übersicht** (`/admin`) — Landing-Seite des Adminbereichs.
 - **Analytics** (`/admin/dashboard`) — MRR, Lifetime-Revenue 30 Tage, aktive Abos,
   Funnel-Kennzahlen.
+- **Kaufweg** (`/admin/kaufweg`, seit 20.09.2026) — der Weg vom Besuch bis zur
+  Zahlung: Besuche, sichtbare Verweildauer, Scrolltiefe, weitester Abschnitt,
+  Klicks je Knopf, Kassen, Abbrueche, fehlgeschlagene Zahlungen. Zeitraum 7/30/90
+  Tage, Aufschluesselung nach Herkunft und Paket. Eigene Messung ohne Cookies und
+  ohne IP (`components/landing/FunnelTracker.tsx`, `app/api/tracking/funnel`,
+  Migration 101). Jede Kennzahl traegt einen Satz mit, woher sie kommt — die
+  Ansicht mischt drei Quellen (eigene Messung, `checkout_sessions`, `payments`),
+  die sich absichtlich nicht decken.
 - **Bewerbungen** / **High-Ticket** / **Step-2 Bewerbungen** — die drei Bewerbungs-
   Funnel-Stufen (Standard-Mitgliedschaft, High-Ticket-1:1, Step-2-Vertiefung), inkl.
   Calendly-Integration bei High-Ticket.
@@ -64,8 +72,8 @@ zuklappbar; der Zustand liegt pro Browser in `localStorage` (`cc-admin-nav-zu`).
 eine zugeklappte Gruppe die gerade offene Seite, markiert ein Goldpunkt sie.
 
 **Aus der Navigation entfernt** (die Seiten selbst bleiben über ihre Adresse erreichbar):
-Bewerbungen, Free-Kurs, Live Stream, Codex. **Analytics** hat eine eigene Gruppe
-„Auswertung", **Analyse** bleibt unter „Inhalte".
+Bewerbungen, Free-Kurs, Live Stream, Codex. **Analytics** und **Kaufweg** stehen in
+der Gruppe „Auswertung", **Analyse** bleibt unter „Inhalte".
 
 ## Betrieb
 - **Wartungsmodus** (`/admin/wartung`, seit 06.09.2026) — globaler Schalter, sperrt die
