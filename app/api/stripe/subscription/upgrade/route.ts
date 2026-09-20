@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { aboLaeuftSeit, ladeAboKontext } from "@/lib/stripe/abo-kontext";
-import { priceIdForPlan } from "@/lib/stripe/plan-map";
+import { isMembershipPlan, priceIdForPlan, type MembershipPlan } from "@/lib/stripe/plan-map";
 import { getStripe } from "@/lib/stripe/server";
 import { pruefeUpgrade, upgradeCouponId } from "@/lib/stripe/upgrade";
 
@@ -25,7 +25,7 @@ export const dynamic = "force-dynamic";
  * zweiter Schreibpfad auf dieselbe Zeile und würde mit dem Webhook um die
  * Reihenfolge rennen.
  */
-export async function POST() {
+export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: authData } = await supabase.auth.getUser();
   const user = authData.user;
@@ -38,6 +38,29 @@ export async function POST() {
     return NextResponse.json({ ok: false, error: "kein_abo" }, { status: 400 });
   }
 
+  /*
+    Zielpaket aus dem Koerper (seit 20.09.2026). Vorher konnte die Route nur
+    aufs Jahr; jeder andere Wechsel lief ueber Stripes Kundenportal, und der
+    Nutzer verliess dafuer die Plattform. Jetzt stellt dieselbe Route jedes
+    der drei Abopakete um.
+  */
+  let ziel: MembershipPlan = "yearly";
+  try {
+    const koerper = (await request.json().catch(() => ({}))) as { plan?: unknown };
+    if (typeof koerper.plan === "string") {
+      if (!isMembershipPlan(koerper.plan)) {
+        return NextResponse.json({ ok: false, error: "plan_unbekannt" }, { status: 400 });
+      }
+      ziel = koerper.plan;
+    }
+  } catch {
+    // Ohne Koerper bleibt es beim Jahr (alte Aufrufer).
+  }
+
+  if (kontext.tier === ziel) {
+    return NextResponse.json({ ok: false, error: "bereits_dieses_paket" }, { status: 400 });
+  }
+
   const pruefung = pruefeUpgrade({
     tier: kontext.tier,
     status: kontext.abo.status,
@@ -48,15 +71,15 @@ export async function POST() {
     return NextResponse.json({ ok: false, error: pruefung.grund }, { status: 403 });
   }
 
-  let jahresPreis: string;
+  let zielPreis: string;
   try {
-    jahresPreis = priceIdForPlan("yearly");
+    zielPreis = priceIdForPlan(ziel);
   } catch (err) {
     return NextResponse.json(
       {
         ok: false,
         error: "config_missing",
-        detail: err instanceof Error ? err.message : "STRIPE_PRICE_YEARLY fehlt",
+        detail: err instanceof Error ? err.message : "Preis-ID fehlt",
       },
       { status: 500 },
     );
@@ -66,8 +89,8 @@ export async function POST() {
     const stripe = getStripe();
     const abo = await stripe.subscriptions.retrieve(kontext.abo.stripeSubscriptionId);
 
-    if (abo.items.data[0]?.price?.id === jahresPreis) {
-      return NextResponse.json({ ok: false, error: "bereits_jahresplan" }, { status: 400 });
+    if (abo.items.data[0]?.price?.id === zielPreis) {
+      return NextResponse.json({ ok: false, error: "bereits_dieses_paket" }, { status: 400 });
     }
 
     const coupon = upgradeCouponId();
@@ -84,13 +107,13 @@ export async function POST() {
       berechnet, einmal, und die Karte sagt das vorher.
     */
     const aktualisiert = await stripe.subscriptions.update(kontext.abo.stripeSubscriptionId, {
-      items: [{ id: abo.items.data[0].id, price: jahresPreis }],
+      items: [{ id: abo.items.data[0].id, price: zielPreis }],
       billing_cycle_anchor: "now",
       proration_behavior: "none",
       // Ohne Coupon bleibt das Feld weg — `discounts: []` würde einen bereits
       // laufenden Rabatt löschen, den jemand von Hand vergeben hat.
       ...(coupon ? { discounts: [{ coupon }] } : {}),
-      metadata: { user_id: user.id, plan: "yearly", upgrade_von: kontext.tier },
+      metadata: { user_id: user.id, plan: ziel, wechsel_von: kontext.tier },
     });
 
     return NextResponse.json({

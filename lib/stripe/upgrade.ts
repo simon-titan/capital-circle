@@ -16,8 +16,14 @@
  * (`LIFETIME_MINDESTTAGE` in `lib/access-control/lifetime-offer.ts`).
  */
 
-/** Aus diesen Laufzeiten heraus lohnt der Wechsel auf das Jahr. */
-const UPGRADE_QUELLEN: ReadonlySet<string> = new Set(["monthly", "quarterly"]);
+/**
+ * Aus diesen Laufzeiten heraus laesst sich das Paket wechseln.
+ *
+ * Seit 20.09.2026 alle drei: Der Wechsel laeuft in der Plattform, nicht mehr
+ * ueber Stripes Kundenportal. Wer im Jahr ist, kann damit auch zurueck auf
+ * Monat oder Quartal; der Tausch beginnt eine neue Laufzeit.
+ */
+const UPGRADE_QUELLEN: ReadonlySet<string> = new Set(["monthly", "quarterly", "yearly"]);
 
 export interface UpgradeLage {
   tier: string;

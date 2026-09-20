@@ -92,7 +92,14 @@ function kartenAktion(
     stellt ein laufendes Abo verbindlich um; ohne die Antwort des Servers
     wüsste er nicht, ob er das darf, und liefe in den 403er der Route.
   */
-  return plan === "yearly" && jahreswechsel ? { art: "jahreswechsel", wechsel: jahreswechsel } : { art: "portal" };
+  /*
+    Jeder Paketwechsel laeuft in der Plattform (seit 20.09.2026). Vorher ging
+    alles ausser dem Jahr ueber Stripes Kundenportal, und der Nutzer verliess
+    dafuer die Seite. Ohne geprueft Wechsel-Lage bleibt nur das Portal: Der
+    Knopf stellt verbindlich um, ohne die Antwort des Servers wuesste er
+    nicht, ob er das darf.
+  */
+  return jahreswechsel ? { art: "jahreswechsel", wechsel: jahreswechsel } : { art: "portal" };
 }
 
 /**
@@ -388,6 +395,7 @@ export function PricingCards({
                 ) : aktion.art === "jahreswechsel" ? (
                   <JahresWechselButton
                     grund={aktion.wechsel.grund}
+                    plan={karte.plan}
                     hervorgehoben={hervorheben}
                   />
                 ) : (

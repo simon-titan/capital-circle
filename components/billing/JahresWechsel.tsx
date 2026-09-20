@@ -41,7 +41,7 @@ const FEHLER: Record<string, string> = {
   gekuendigt: "Nimm zuerst die Kündigung zurück.",
   pausiert: "Dein Abo pausiert gerade.",
   nicht_aktiv: "Dein Abo ist gerade nicht aktiv.",
-  bereits_jahresplan: "Du bist bereits im Jahresplan.",
+  bereits_dieses_paket: "Du bist bereits in diesem Paket.",
   kein_abo: "Zu deinem Konto liegt kein Abo bei Stripe vor.",
 };
 
@@ -69,10 +69,13 @@ function sperrText(grund: UpgradeGrund): string {
 
 export function JahresWechselButton({
   grund,
+  plan = "yearly",
   hervorgehoben = true,
 }: {
   /** Ergebnis von `pruefeUpgrade()`; alles außer „moeglich" sperrt den Knopf. */
   grund: UpgradeGrund;
+  /** Zielpaket des Wechsels. */
+  plan?: "monthly" | "quarterly" | "yearly";
   /** Gold statt Kontur, wenn die Karte die empfohlene ist. */
   hervorgehoben?: boolean;
 }) {
@@ -88,19 +91,26 @@ export function JahresWechselButton({
   const [dialogOffen, setDialogOffen] = useState(false);
   const abbrechenRef = useRef<HTMLButtonElement>(null);
   const gesperrt = grund !== "moeglich";
-  const jahrespreis = preiskarten.find((k) => k.plan === "yearly")?.preis ?? null;
+  const karte = preiskarten.find((k) => k.plan === plan) ?? null;
+  const preis = karte?.preis ?? null;
+  const laufzeitText =
+    plan === "yearly" ? "zwölf Monate" : plan === "quarterly" ? "drei Monate" : "einen Monat";
 
   async function wechseln() {
     setLaeuft(true);
     try {
-      const res = await fetch("/api/stripe/subscription/upgrade", { method: "POST" });
+      const res = await fetch("/api/stripe/subscription/upgrade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      });
       const json = (await res.json()) as { ok?: boolean; error?: string; detail?: string };
       if (!res.ok || !json.ok) {
         throw new Error(FEHLER[json.error ?? ""] ?? json.detail ?? "Der Wechsel hat nicht geklappt.");
       }
       toast({
-        title: "Du bist im Jahresplan",
-        description: "Die Laufzeit beginnt heute und gilt zwoelf Monate. Die Rechnung findest du unter Abrechnung.",
+        title: `Dein Paket: ${karte?.laufzeit ?? "umgestellt"}`,
+        description: `Die Laufzeit beginnt heute und gilt ${laufzeitText}. Die Rechnung findest du unter Abrechnung.`,
         status: "success",
         duration: 6000,
         isClosable: true,
@@ -139,7 +149,7 @@ export function JahresWechselButton({
           selbst klickbar, da hilft nur eine Nachricht an uns.
         */}
         {!gesperrt
-          ? "Auf Jahresplan wechseln"
+          ? `Auf ${karte?.laufzeit ?? "dieses Paket"} wechseln`
           : grund === "kein_abo"
             ? "Nicht verfügbar"
             : "Noch nicht verfügbar"}
@@ -148,7 +158,7 @@ export function JahresWechselButton({
       <Text fontSize="12px" lineHeight={1.5} color="var(--cc-text-3)">
         {gesperrt
           ? sperrText(grund)
-          : "Die Laufzeit beginnt beim Wechsel neu und gilt zwoelf Monate. Kein zweites Abo, keine neue Zahlungsmethode."}
+          : `Die Laufzeit beginnt beim Wechsel neu und gilt ${laufzeitText}. Kein zweites Abo, keine neue Zahlungsmethode.`}
       </Text>
 
       <AlertDialog
@@ -160,19 +170,19 @@ export function JahresWechselButton({
         <AlertDialogOverlay bg="rgba(8, 10, 12, 0.72)">
           <AlertDialogContent bg="var(--cc-panel-solid)" border="1px solid var(--cc-line)" borderRadius="var(--cc-radius)" mx={4}>
             <AlertDialogHeader fontSize="18px" fontWeight={600} color="var(--cc-text)">
-              Auf das Jahrespaket wechseln?
+              Auf {karte?.laufzeit ?? "dieses Paket"} wechseln?
             </AlertDialogHeader>
             <AlertDialogBody>
               <Stack spacing={3} fontSize="15px" lineHeight={1.6} color="var(--cc-text-2)">
                 <Text>
-                  {jahrespreis ? (
+                  {preis ? (
                     <>
-                      Es werden jetzt <Box as="span" className="cc-num" color="var(--cc-text)">{jahrespreis}</Box> abgebucht.
+                      Es werden jetzt <Box as="span" className="cc-num" color="var(--cc-text)">{preis}</Box> abgebucht.
                     </>
                   ) : (
-                    "Der Jahrespreis wird jetzt abgebucht."
+                    "Der Preis des Pakets wird jetzt abgebucht."
                   )}{" "}
-                  Deine Laufzeit beginnt heute und gilt zwoelf Monate.
+                  Deine Laufzeit beginnt heute und gilt {laufzeitText}.
                 </Text>
                 <Text fontSize="13px" color="var(--cc-text-3)">
                   Der Rest deiner laufenden Periode wird nicht angerechnet. Du bleibst im selben Abo, es kommt kein
