@@ -34,6 +34,7 @@
     "cf:verify": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/verify-video-playback.mjs",
     "videos:tote-abschalten": "node scripts/unpublish-dead-videos.mjs",
     "r2:check-upload": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/check-r2-upload.mjs",
+    "kaufweg:reset": "node scripts/kaufweg-zuruecksetzen.mjs",
     "pruefe:kaufweg": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/pruefe-kaufweg-analytics.mjs",
     "db:check": "node scripts/check-migrations-applied.mjs",
     "db:check-rls": "node scripts/check-rls.mjs",
