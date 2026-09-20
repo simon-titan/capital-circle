@@ -23,6 +23,12 @@ const nextConfig: NextConfig = {
         destination: "https://whop.com/capital-circle/cc-kostenloser-discord/",
         permanent: false,
       },
+      /** Den Bewerbungsweg gibt es nicht mehr (20.09.2026): alte Links landen auf der Verkaufsseite. */
+      {
+        source: "/insight",
+        destination: "/",
+        permanent: true,
+      },
       /** Trading Journal v2: Positionsrechner ist aus dem Journal-Teilbaum gewandert. */
       {
         source: "/trading-journal/position-calculator",

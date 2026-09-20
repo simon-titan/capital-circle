@@ -20,7 +20,6 @@ const PUBLIC_PATHS = [
   "/register",
   "/free",
   "/apply",
-  "/insight",
   "/erfolge",
   // Belegte Auszahlungen als eigene Seite (`app/ergebnisse/page.tsx`). Sie
   // haengt am Fusslink der Ergebnis-Section der Verkaufsseite und muss
@@ -221,8 +220,8 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  // Eingeloggte User landen direkt im Dashboard (/ und /insight sind Marketing-Seiten)
-  if (pathname === "/" || pathname === "/insight") {
+  // Eingeloggte User landen direkt im Dashboard (/ ist die Verkaufsseite)
+  if (pathname === "/") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
