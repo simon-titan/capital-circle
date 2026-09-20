@@ -19,6 +19,7 @@ import {
   Newspaper,
   NotebookPen,
   Package,
+  Route,
   ShieldCheck,
   Star,
   Ticket,
@@ -50,7 +51,13 @@ const groups: AdminGroup[] = [
   //   /admin/stream
   {
     label: "Auswertung",
-    links: [{ href: "/admin/dashboard", label: "Analytics", icon: ChartColumn }],
+    links: [
+      { href: "/admin/dashboard", label: "Analytics", icon: ChartColumn },
+      // Der Weg zum Kauf: Besuche, Verweildauer, Scrolltiefe, Klicks, Kasse,
+      // Zahlungen. Getrennt von „Analytics", weil dort das Geschaeft steht
+      // (MRR, Umsatz, Churn) und hier der Weg dorthin.
+      { href: "/admin/kaufweg", label: "Kaufweg", icon: Route },
+    ],
   },
   {
     label: "Inhalte",

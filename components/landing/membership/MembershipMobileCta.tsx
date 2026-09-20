@@ -83,7 +83,7 @@ export function MembershipMobileCta() {
             hier zählt das am meisten: Der Balken erscheint mitten im Lesen, und
             ein Sprung ans Seitenende verliert die Stelle, an der jemand gerade
             war. */}
-        <BeitrittCta w="full" h="52px" fontSize="16px" tabIndex={sichtbar ? 0 : -1} />
+        <BeitrittCta herkunft="mobil" w="full" h="52px" fontSize="16px" tabIndex={sichtbar ? 0 : -1} />
         <HStack justify="center" spacing={3}>
           <Text fontSize="12px" color="var(--cc-text-3)" className="cc-num">
             {einstieg.preis} im Monat

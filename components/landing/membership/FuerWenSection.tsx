@@ -168,7 +168,7 @@ export function FuerWenSection() {
 
       <Reveal delay={280}>
         <Flex justify="center" mt={{ base: 10, md: 12 }}>
-          <BeitrittCta />
+          <BeitrittCta herkunft="fuer_wen" />
         </Flex>
       </Reveal>
     </Sektion>

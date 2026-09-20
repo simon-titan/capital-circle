@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Box, Flex, Stack, Text } from "@chakra-ui/react";
 import { ArrowLeft } from "lucide-react";
 import { auszahlungenCommunity, auszahlungenEmre, challenges } from "@/config/landing-membership";
+import { FunnelTrackerProvider } from "@/components/landing/FunnelTracker";
 import { NachweisGalerie } from "@/components/landing/membership/NachweisGalerie";
 import { RechtsLinks } from "@/components/legal/RechtsFusszeile";
 
@@ -27,6 +28,13 @@ export const metadata: Metadata = {
  */
 export default function ErgebnissePage() {
   return (
+    /*
+      Die Seite wird mitgemessen (Aufruf, Verweildauer, Scrolltiefe) — sie ist
+      der Beleg-Teil des Kaufwegs, und ob er gelesen wird, ist genau die Frage.
+      Ohne Cookie und ohne IP, siehe `components/landing/FunnelTracker.tsx`.
+      Kauf-Knoepfe gibt es hier nicht, also auch keine Klick-Herkunft.
+    */
+    <FunnelTrackerProvider>
     <Box
       position="relative"
       minH="100vh"
@@ -132,5 +140,6 @@ export default function ErgebnissePage() {
         </Stack>
       </Stack>
     </Box>
+    </FunnelTrackerProvider>
   );
 }

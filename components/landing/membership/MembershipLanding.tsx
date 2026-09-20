@@ -1,6 +1,8 @@
 import { Box } from "@chakra-ui/react";
-import { Suspense } from "react";
+import { Suspense, type ReactNode } from "react";
 import { ladeBewertungsspiegel } from "@/lib/landing-reviews";
+import type { Abschnitt } from "@/lib/analytics/kaufweg";
+import { FunnelTrackerProvider } from "../FunnelTracker";
 import { GoldGlowDivider } from "../GoldGlowDivider";
 import { LandingFooter } from "../landing-ui";
 import { ReviewSection } from "../ReviewSection";
@@ -53,6 +55,27 @@ import { VergleichSection } from "./VergleichSection";
  */
 const BEWERTUNGS_KATEGORIEN = ["global"];
 
+/**
+ * Die Markierung, an der die Messung erkennt, wie weit jemand gekommen ist.
+ *
+ * Sie steht **hier** und nicht in den Abschnitten selbst, weil „wie weit" eine
+ * Aussage über die Reihenfolge der Seite ist — und die Reihenfolge steht in
+ * dieser Datei. Die Namen und ihr Rang liegen in `ABSCHNITTE`
+ * (`lib/analytics/kaufweg.ts`); wer hier umsortiert, sortiert dort mit, sonst
+ * zeigt die Auswertung einen Abschnitt als „weiter gekommen", der weiter oben
+ * steht.
+ *
+ * Ein gewöhnlicher Block-Kasten, ausdrücklich **nicht** `display: contents`:
+ * Ein Element ohne eigenen Kasten hat keine Fläche, und der
+ * `IntersectionObserver` der Messung hätte nichts zu beobachten. Im Fluss von
+ * `<main>` ändert ein zusätzlicher Block nichts — die Abschnitte sind
+ * vollbreite Blöcke mit eigenem Innenabstand, und dazwischen liegen nur die
+ * Trennlinien.
+ */
+function Abschnittsmarke({ name, children }: { name: Abschnitt; children: ReactNode }) {
+  return <Box data-abschnitt={name}>{children}</Box>;
+}
+
 export async function MembershipLanding() {
   // Eine Abfrage fuer beide Sternezeilen — dieselbe Quelle wie die Liste
   // weiter unten, damit Zahl und Liste nicht auseinanderlaufen.
@@ -75,62 +98,91 @@ export async function MembershipLanding() {
         Kopfleiste, Hero, den festen Balken und die Abschnitte gemeinsam
         umschließen — jeder dieser Knöpfe öffnet denselben Dialog.
       */}
-      <BeitrittModalProvider>
-        <Box position="relative" zIndex={1}>
-            {/* Sprungziel der Wortmarke in der Kopfleiste. */}
-          <Box id="seitenanfang" aria-hidden />
+      {/*
+        Die Messung des Kaufwegs umschließt alles, weil sie beides braucht: die
+        Abschnitte (wie weit jemand gekommen ist) und die sieben Kauf-Knöpfe (wo
+        geklickt wurde). Ohne Einwilligungsbanner — sie speichert weder Cookie
+        noch IP, siehe `components/landing/FunnelTracker.tsx` und Abschnitt 13
+        der Datenschutzerklärung.
+      */}
+      <FunnelTrackerProvider>
+        <BeitrittModalProvider>
+          <Box position="relative" zIndex={1}>
+              {/* Sprungziel der Wortmarke in der Kopfleiste. */}
+            <Box id="seitenanfang" aria-hidden />
 
-          <MembershipNav />
+            <MembershipNav />
 
-          <Box as="main">
-            {/* Liest `?fehler=<code>`, wohin `app/go/[plan]/route.ts` bei einem
-                Kassenfehler zurueckleitet. Bewusst im Client und in `Suspense`:
-                Laese die Seite den Parameter serverseitig, waere die ganze
-                Verkaufsseite dynamisch — teuer fuer einen Fall, den fast niemand
-                sieht. So bleibt die Seite statisch und nur dieser Streifen
-                haengt an der Adresse. */}
-            <Suspense fallback={null}>
-              <KaufFehlerHinweis />
-            </Suspense>
+            <Box as="main">
+              {/* Liest `?fehler=<code>`, wohin `app/go/[plan]/route.ts` bei einem
+                  Kassenfehler zurueckleitet. Bewusst im Client und in `Suspense`:
+                  Laese die Seite den Parameter serverseitig, waere die ganze
+                  Verkaufsseite dynamisch — teuer fuer einen Fall, den fast niemand
+                  sieht. So bleibt die Seite statisch und nur dieser Streifen
+                  haengt an der Adresse. */}
+              <Suspense fallback={null}>
+                <KaufFehlerHinweis />
+              </Suspense>
 
-            <MembershipHero bewertungen={bewertungen} />
+              <Abschnittsmarke name="hero">
+                <MembershipHero bewertungen={bewertungen} />
+              </Abschnittsmarke>
 
-            <ErgebnisseSection />
-            <GoldGlowDivider />
+              <Abschnittsmarke name="ergebnisse">
+                <ErgebnisseSection />
+              </Abschnittsmarke>
+              <GoldGlowDivider />
 
-            <ReviewSection landingSlug={BEWERTUNGS_KATEGORIEN.join(",")} />
-            <GoldGlowDivider />
+              <Abschnittsmarke name="bewertungen">
+                <ReviewSection landingSlug={BEWERTUNGS_KATEGORIEN.join(",")} />
+              </Abschnittsmarke>
+              <GoldGlowDivider />
 
-            <ProzessSection />
-            <GoldGlowDivider />
+              <Abschnittsmarke name="ablauf">
+                <ProzessSection />
+              </Abschnittsmarke>
+              <GoldGlowDivider />
 
-            <VergleichSection />
-            <GoldGlowDivider />
+              <Abschnittsmarke name="vergleich">
+                <VergleichSection />
+              </Abschnittsmarke>
+              <GoldGlowDivider />
 
-            <FuerWenSection />
-            <GoldGlowDivider />
+              <Abschnittsmarke name="fuer_wen">
+                <FuerWenSection />
+              </Abschnittsmarke>
+              <GoldGlowDivider />
 
-            <FounderBriefSection />
-            <GoldGlowDivider />
+              <Abschnittsmarke name="brief">
+                <FounderBriefSection />
+              </Abschnittsmarke>
+              <GoldGlowDivider />
 
-            <AngebotSection />
-            <GoldGlowDivider />
+              <Abschnittsmarke name="angebot">
+                <AngebotSection />
+              </Abschnittsmarke>
+              <GoldGlowDivider />
 
-            <FaqSection />
-            <GoldGlowDivider />
+              <Abschnittsmarke name="faq">
+                <FaqSection />
+              </Abschnittsmarke>
+              <GoldGlowDivider />
 
-            <FinalCtaSection bewertungen={bewertungen} />
+              <Abschnittsmarke name="abschluss">
+                <FinalCtaSection bewertungen={bewertungen} />
+              </Abschnittsmarke>
+            </Box>
+
+            <LandingFooter />
+            {/* Platz für den festen CTA-Balken auf schmalen Bildschirmen: Am
+                Seitenende ist er eingeblendet und läge sonst genau über der
+                Fußzeile — und damit über Impressum und „Verträge hier kündigen". */}
+            <Box aria-hidden display={{ base: "block", md: "none" }} h="120px" />
           </Box>
 
-          <LandingFooter />
-          {/* Platz für den festen CTA-Balken auf schmalen Bildschirmen: Am
-              Seitenende ist er eingeblendet und läge sonst genau über der
-              Fußzeile — und damit über Impressum und „Verträge hier kündigen". */}
-          <Box aria-hidden display={{ base: "block", md: "none" }} h="120px" />
-        </Box>
-
-        <MembershipMobileCta />
-      </BeitrittModalProvider>
+          <MembershipMobileCta />
+        </BeitrittModalProvider>
+      </FunnelTrackerProvider>
     </Box>
   );
 }

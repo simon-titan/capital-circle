@@ -316,7 +316,7 @@ export function ProzessSection() {
 
       <Reveal delay={200}>
         <Flex justify="center" mt={{ base: 10, md: 12 }}>
-          <BeitrittCta />
+          <BeitrittCta herkunft="prozess" />
         </Flex>
       </Reveal>
     </Sektion>

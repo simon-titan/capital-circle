@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { ENTFERNEN_MAX_PRO_NACHT, KARENZ_TAGE, ROLLENENTZUG_MAX_PRO_NACHT } from "@/config/discord";
 import { ERINNERUNG_TAGE } from "@/config/zahlung";
+import { AUFBEWAHRUNG_TAGE } from "@/lib/analytics/kaufweg";
+import { aggregiereZeitraum, raeumeRohdatenAuf, tagVor } from "@/lib/analytics/speicher";
 import { cronBefugt } from "@/lib/cron/auth";
 import { discordBotConfigured } from "@/lib/discord/api";
 import {
@@ -53,6 +55,11 @@ export const maxDuration = 300;
  *    zurücknehmen lässt; die Schranken stehen in der Datei. Er läuft zuletzt,
  *    damit er auf dem Zustand arbeitet, den die Schritte davor hergestellt
  *    haben. **Vor dem ersten scharfen Lauf `?probe=1` ansehen.**
+ * 5. **Die Kaufweg-Messung abschließen** (`lib/analytics/speicher.ts`): Die
+ *    Tagesrechnung der letzten Tage neu aufstellen und Rohdaten älter als
+ *    `AUFBEWAHRUNG_TAGE` löschen. Steht zuletzt, weil er als einziger Schritt
+ *    niemanden betrifft — er darf ausfallen, ohne dass jemand etwas merkt, und
+ *    soll deshalb keinem Schritt davor im Weg stehen.
  *
  * Die Reihenfolge ist Absicht: Ein Fall, dessen Aufschub gerade abgelaufen
  * ist, steht danach auf `beendet` und wird von der Frist nicht noch einmal
@@ -119,6 +126,14 @@ async function lauf() {
     `ok: true` neben einer Fehlerliste ist genau der stille Nuller, den man
     wochenlang übersieht.
   */
+  /*
+    Zuletzt die Messung. Ihr Ergebnis geht ausdrücklich **nicht** in `ok` ein:
+    Eine fehlende Tagesrechnung ist keine Störung des Betriebs, und ein rot
+    gefärbter Nachtlauf, hinter dem nur eine Statistik steckt, wäre genau der
+    Alarm, den man nach dreimal nicht mehr liest.
+  */
+  const kaufweg = await kaufwegAbschluss();
+
   return NextResponse.json({
     ok:
       aufschuebe.fehler.length === 0 &&
@@ -135,7 +150,36 @@ async function lauf() {
     whopKampagne: await whopKampagneStand(),
     rollen,
     entfernt,
+    kaufweg,
   });
+}
+
+/**
+ * Die Kaufweg-Messung abschließen: Tagesrechnung aufstellen, Rohdaten aufräumen.
+ *
+ * ── Warum drei Tage und nicht einer ────────────────────────────────────────
+ *
+ * Gerechnet wird über `gestern` **und** die zwei Tage davor. Der Grund ist der
+ * verspätete Beleg: Eine Sitzung, die um 23:58 beginnt, meldet ihren
+ * Endstand nach Mitternacht; ein Kauf aus ihr trifft als Webhook noch später
+ * ein. Wer nur den Vortag rechnet, friert diese Tage in einem halbfertigen
+ * Stand ein. Der Neuaufbau ist idempotent (er löscht den Zeitraum und schreibt
+ * ihn neu), deshalb kostet die Überlappung nichts außer ein paar Zeilen.
+ *
+ * Der heutige Tag wird hier **nicht** gerechnet — er ist noch nicht vorbei.
+ * Die Admin-Ansicht rechnet ihn bei jedem Aufruf selbst.
+ *
+ * Wirft nie: Ohne Migration 101 gibt es die Tabellen nicht, und das ist kein
+ * Grund, den Nachtlauf rot zu färben.
+ */
+async function kaufwegAbschluss() {
+  try {
+    const aggregat = await aggregiereZeitraum(createServiceClient(), tagVor(3), tagVor(1));
+    const aufgeraeumt = await raeumeRohdatenAuf(createServiceClient());
+    return { gelaufen: aggregat.gelaufen, aufbewahrungTage: AUFBEWAHRUNG_TAGE, aggregat, aufgeraeumt };
+  } catch (err) {
+    return { gelaufen: false, fehler: err instanceof Error ? err.message : String(err) };
+  }
 }
 
 /**

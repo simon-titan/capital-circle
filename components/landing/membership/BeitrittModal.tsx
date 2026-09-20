@@ -29,7 +29,9 @@ import {
   funnelModalContentProps,
   funnelOverlayProps,
 } from "@/components/marketing/funnel-ui";
+import { useFunnelTracker } from "@/components/landing/FunnelTracker";
 import { ctaLabel, preiskarten, type Preiskarte } from "@/config/landing-membership";
+import type { Bauteil } from "@/lib/analytics/kaufweg";
 import type { MembershipPlan } from "@/lib/stripe/plan-map";
 import { goldCtaSchnitt } from "./membership-ui";
 
@@ -60,11 +62,13 @@ import { goldCtaSchnitt } from "./membership-ui";
 /* ─── Kontext ────────────────────────────────────────────────────────────── */
 
 /**
- * Bewusst nur `oeffnen()` ohne Herkunftsangabe: Dieses Projekt hat keine
- * Ereignis-Messung im Client. Ein Parameter, den niemand liest, sähe aus wie
- * eine Auswertung, die es nicht gibt.
+ * `oeffnen(herkunft)` trägt seit der Kaufweg-Messung (20.09.2026) mit, welcher
+ * der sieben Knöpfe den Dialog geöffnet hat. Ohne die Angabe wären alle
+ * Öffnungen eine einzige Zahl — und genau die Frage, die zählt („welcher Knopf
+ * verkauft?"), bliebe unbeantwortet. Ein Standardwert steht bewusst nicht da:
+ * Ein vergessener Aufruf soll beim Tippen auffallen, nicht in der Auswertung.
  */
-const BeitrittModalContext = createContext<{ oeffnen: () => void } | null>(null);
+const BeitrittModalContext = createContext<{ oeffnen: (herkunft: Bauteil) => void } | null>(null);
 
 /** Öffnet das Beitritts-Modal. Nur innerhalb von `BeitrittModalProvider`. */
 export function useBeitrittModal() {
@@ -252,6 +256,7 @@ function LaufzeitOption({
 export function BeitrittModalProvider({ children }: { children: ReactNode }) {
   const [offen, setOffen] = useState(false);
   const [gewaehlt, setGewaehlt] = useState<MembershipPlan>(VORAUSWAHL);
+  const messung = useFunnelTracker();
 
   /**
    * `/go/<plan>` legt serverseitig eine Stripe-Session an, bevor es
@@ -289,12 +294,13 @@ export function BeitrittModalProvider({ children }: { children: ReactNode }) {
 
   const wert = useMemo(
     () => ({
-      oeffnen: () => {
+      oeffnen: (herkunft: Bauteil) => {
         setOeffnetKasse(false);
         setOffen(true);
+        messung.modalAuf(herkunft);
       },
     }),
-    [],
+    [messung],
   );
 
   /**
@@ -306,21 +312,38 @@ export function BeitrittModalProvider({ children }: { children: ReactNode }) {
    * Leertaste und Enter stehen bewusst nicht hier: Ein `<button>` löst darauf
    * von selbst `click` aus, und der wählt bereits.
    */
-  const beiTaste = useCallback((e: KeyboardEvent<HTMLButtonElement>, index: number) => {
-    const letzter = preiskarten.length - 1;
-    let ziel: number;
+  /**
+   * Eine Wahl, egal ob mit Maus oder Pfeiltaste. Beide Wege melden sie der
+   * Messung — sonst zählte die Tastatur-Bedienung als „nie eine Laufzeit
+   * gewählt", und die Zahl wäre genau um die Leute zu klein, die sorgfältig
+   * ausgewählt haben.
+   */
+  const waehle = useCallback(
+    (plan: MembershipPlan) => {
+      setGewaehlt(plan);
+      messung.laufzeit(plan, "modal");
+    },
+    [messung],
+  );
 
-    if (e.key === "ArrowRight" || e.key === "ArrowDown") ziel = index === letzter ? 0 : index + 1;
-    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") ziel = index === 0 ? letzter : index - 1;
-    else if (e.key === "Home") ziel = 0;
-    else if (e.key === "End") ziel = letzter;
-    else return;
+  const beiTaste = useCallback(
+    (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
+      const letzter = preiskarten.length - 1;
+      let ziel: number;
 
-    /* Sonst scrollt der Dialog unter der Auswahl weg. */
-    e.preventDefault();
-    setGewaehlt(preiskarten[ziel].plan);
-    optionen.current[ziel]?.focus();
-  }, []);
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") ziel = index === letzter ? 0 : index + 1;
+      else if (e.key === "ArrowLeft" || e.key === "ArrowUp") ziel = index === 0 ? letzter : index - 1;
+      else if (e.key === "Home") ziel = 0;
+      else if (e.key === "End") ziel = letzter;
+      else return;
+
+      /* Sonst scrollt der Dialog unter der Auswahl weg. */
+      e.preventDefault();
+      waehle(preiskarten[ziel].plan);
+      optionen.current[ziel]?.focus();
+    },
+    [waehle],
+  );
 
 
   return (
@@ -394,7 +417,7 @@ export function BeitrittModalProvider({ children }: { children: ReactNode }) {
                     key={karte.plan}
                     karte={karte}
                     aktiv={aktiv}
-                    onWaehlen={() => setGewaehlt(karte.plan)}
+                    onWaehlen={() => waehle(karte.plan)}
                     onTaste={(e) => beiTaste(e, i)}
                     knopfRef={(el) => {
                       optionen.current[i] = el;
@@ -425,9 +448,16 @@ export function BeitrittModalProvider({ children }: { children: ReactNode }) {
               Klick, bei jedem Besucher, der den Dialog nur öffnet. Siehe
               `lib/checkout/vorabruf.ts`.
             */}
+            {/*
+              `?sid=` hängt die Sitzungskennung der Messung an. Sie entsteht
+              erst im Browser, deshalb baut `kaufLink` die Adresse hier im
+              Client — vor der Hydration steht dort nur `?src=modal`, und der
+              Kauf funktioniert auch dann, er lässt sich nur nicht dem Besuch
+              zuordnen. Siehe `app/go/[plan]/route.ts`.
+            */}
             <Button
               as="a"
-              href={`/go/${gewaehlt}?src=modal`}
+              href={messung.kaufLink(gewaehlt, "modal")}
               {...goldCtaSchnitt}
               w="full"
               aria-busy={oeffnetKasse}
@@ -442,6 +472,9 @@ export function BeitrittModalProvider({ children }: { children: ReactNode }) {
                   return;
                 }
                 setOeffnetKasse(true);
+                // Per `sendBeacon`, weil der Browser die Seite im selben
+                // Atemzug verlässt.
+                messung.kasse("modal", gewaehlt);
               }}
             >
               {oeffnetKasse ? "Kasse wird geöffnet …" : ctaLabel}
@@ -481,8 +514,21 @@ export function BeitrittModalProvider({ children }: { children: ReactNode }) {
  * in `rest`, würde ein mitgegebener Handler den Öffner stillschweigend
  * ersetzen, und der Knopf täte gar nichts mehr.
  */
-export function BeitrittCta({ children = ctaLabel, onClick, ...rest }: ButtonProps) {
+export function BeitrittCta({
+  children = ctaLabel,
+  onClick,
+  herkunft,
+  ...rest
+}: ButtonProps & {
+  /**
+   * Wo dieser Knopf steht. Pflichtangabe, damit die Auswertung sagen kann,
+   * welcher der sieben Knöpfe verkauft — eine Voreinstellung würde jeden
+   * vergessenen Aufruf still in denselben Topf werfen.
+   */
+  herkunft: Bauteil;
+}) {
   const { oeffnen } = useBeitrittModal();
+  const messung = useFunnelTracker();
 
   return (
     <Button
@@ -491,7 +537,8 @@ export function BeitrittCta({ children = ctaLabel, onClick, ...rest }: ButtonPro
       {...rest}
       onClick={(e) => {
         onClick?.(e);
-        oeffnen();
+        messung.klick(herkunft);
+        oeffnen(herkunft);
       }}
     >
       {children}
