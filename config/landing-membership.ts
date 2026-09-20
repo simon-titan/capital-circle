@@ -363,6 +363,10 @@ export const prozess = {
  * Wissen, und das ist nichts Schlechtes — es ist nur etwas anderes.
  *
  * Die Reihenfolge der Werte entspricht `spalten`.
+ *
+ * `­` (weiches Trennzeichen) steht in den zwei längsten Wörtern: In der
+ * schmalen Handy-Tabelle (drei Spalten à ~100px) trennt der Browser sonst mitten
+ * im Wort. Unsichtbar, solange das Wort in die Zeile passt.
  */
 export const vergleich = {
   eyebrow: "Der Unterschied",
@@ -400,7 +404,7 @@ export const vergleich = {
       icon: "anwendung" as const,
       werte: [
         {
-          kurz: "Live-Marktvorbereitung & Analyse",
+          kurz: "Live-Markt­vorbereitung & Analyse",
           erklaerung: "Regelmäßige Live-Calls, gemeinsame Analysen und konkrete Setups.",
         },
         { kurz: "Meist eigenständig", erklaerung: "Du musst das Gelernte allein umsetzen." },
@@ -424,7 +428,7 @@ export const vergleich = {
       icon: "ergebnis" as const,
       werte: [
         {
-          kurz: "Eigener wiederholbarer Prozess",
+          kurz: "Eigener wieder­holbarer Prozess",
           erklaerung: "Klarheit, Disziplin und ein System, das auch in Zukunft funktioniert.",
         },
         { kurz: "Wissen ohne laufende Struktur", erklaerung: "Du hast Wissen, aber keine konstante Umsetzung." },
