@@ -33,8 +33,15 @@ export const LIFETIME_SETTINGS_KEY = "lifetime_offer_enabled";
 /** Aus diesen Stufen heraus ist der Kauf möglich. */
 const ZAHLENDE_ABOS: ReadonlySet<string> = new Set(["monthly", "quarterly", "yearly"]);
 
+/**
+ * Lifetime steht erst ab einem Monat Mitgliedschaft zur Wahl. Begründung
+ * steht bei der Prüfung weiter unten.
+ */
+export const LIFETIME_MINDESTTAGE = 30;
+
 export type LifetimeGrund =
   | "erlaubt"
+  | "zu_jung"
   | "kein_profil"
   | "kein_zahlendes_abo"
   | "abo_abgelaufen"
@@ -118,7 +125,7 @@ export async function pruefeLifetimeAngebot(userId: string): Promise<LifetimeAng
     Versuch ohne die Spalte; dieselbe Vorsichtsmassnahme wie in
     `app/api/admin/users/route.ts` für `lifetime_offer_group`.
   */
-  const SPALTEN = "membership_tier,access_until,lifetime_offer_group";
+  const SPALTEN = "membership_tier,access_until,lifetime_offer_group,created_at";
   let { data, error } = await supabase
     .from("profiles")
     .select(`${SPALTEN},whop_umzug_am`)
@@ -135,6 +142,7 @@ export async function pruefeLifetimeAngebot(userId: string): Promise<LifetimeAng
     membership_tier: string | null;
     access_until: string | null;
     lifetime_offer_group: string | null;
+    created_at?: string | null;
     whop_umzug_am?: string | null;
   };
   const gruppe = profil.lifetime_offer_group?.trim() || null;
@@ -173,6 +181,30 @@ export async function pruefeLifetimeAngebot(userId: string): Promise<LifetimeAng
       };
     }
     ehemalig = true;
+  }
+
+  /*
+    Erst nach einem Monat Mitgliedschaft (Entscheidung Simon, 20.09.2026).
+
+    Wer gerade erst gekauft hat, bekommt sonst zwei Tage später ein Angebot,
+    das seinen frischen Kauf wie einen Fehler aussehen lässt. Die Wartezeit
+    lag vorher auf dem Jahreswechsel; der steht jetzt ohne Sperre in der
+    Paketreihe, und die Zeit gilt dafür hier.
+
+    Gemessen am Konto (`profiles.created_at`), nicht am Abo: Lifetime löst
+    kein Paket ab, es ersetzt die Mitgliedschaft als Ganzes.
+
+    Ehemalige und die aus dem Whop-Umzug sind ausgenommen: Sie sind seit
+    Langem dabei, ihr Konto bei uns ist nur neu.
+  */
+  if (!ehemalig) {
+    const seit = profil.created_at ? new Date(profil.created_at) : null;
+    const tage = seit && !Number.isNaN(seit.getTime())
+      ? Math.floor((Date.now() - seit.getTime()) / 86_400_000)
+      : null;
+    if (tage !== null && tage < LIFETIME_MINDESTTAGE) {
+      return { erlaubt: false, grund: "zu_jung", gruppe, ehemalig };
+    }
   }
 
   if (await istLifetimeGlobalOffen()) {

@@ -25,7 +25,6 @@ import { formatDate } from "./format";
  */
 
 const FEHLER: Record<string, string> = {
-  zu_jung: "Das Angebot gilt erst ab einem Monat Mitgliedschaft.",
   gekuendigt: "Nimm zuerst die Kündigung zurück.",
   pausiert: "Dein Abo pausiert gerade.",
   nicht_aktiv: "Dein Abo ist gerade nicht aktiv.",
@@ -36,15 +35,10 @@ const FEHLER: Record<string, string> = {
 /**
  * Warum der Knopf (noch) nicht geht, in der Sprache des Nutzers.
  *
- * Der Text nennt immer, was **er** tun kann oder worauf er wartet. „zu_jung"
- * bekommt ein Datum mit: eine Regel merkt sich niemand, einen Termin schon.
+ * Der Text nennt immer, was **er** tun kann oder worauf er wartet.
  */
-function sperrText(grund: UpgradeGrund, freiAb: string | null): string {
+function sperrText(grund: UpgradeGrund): string {
   switch (grund) {
-    case "zu_jung":
-      return freiAb
-        ? `Der Wechsel steht dir ab dem 30. Tag deiner Mitgliedschaft offen, bei dir ab dem ${formatDate(freiAb)}.`
-        : "Der Wechsel steht dir ab dem 30. Tag deiner Mitgliedschaft offen.";
     case "gekuendigt":
       return "Du hast gekündigt. Nimm die Kündigung zurück, dann steht dir der Wechsel wieder offen.";
     case "pausiert":
@@ -62,13 +56,10 @@ function sperrText(grund: UpgradeGrund, freiAb: string | null): string {
 
 export function JahresWechselButton({
   grund,
-  freiAb,
   hervorgehoben = true,
 }: {
   /** Ergebnis von `pruefeUpgrade()`; alles außer „moeglich" sperrt den Knopf. */
   grund: UpgradeGrund;
-  /** Ab wann der Wechsel greift (ISO), nur bei `zu_jung` von Belang. */
-  freiAb: string | null;
   /** Gold statt Kontur, wenn die Karte die empfohlene ist. */
   hervorgehoben?: boolean;
 }) {
@@ -133,7 +124,7 @@ export function JahresWechselButton({
 
       <Text fontSize="12px" lineHeight={1.5} color="var(--cc-text-3)">
         {gesperrt
-          ? sperrText(grund, freiAb)
+          ? sperrText(grund)
           : "Der bezahlte Rest deiner Laufzeit wird angerechnet, die Differenz sofort abgerechnet. Kein zweites Abo, keine neue Zahlungsmethode."}
       </Text>
     </Stack>

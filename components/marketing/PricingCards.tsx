@@ -36,7 +36,7 @@ type PricingCardsProps = {
 };
 
 /** Was der Server über den Wechsel auf das Jahr weiß (`pruefeUpgrade()`). */
-export type Jahreswechsel = { grund: UpgradeGrund; freiAb: string | null };
+export type Jahreswechsel = { grund: UpgradeGrund };
 
 /**
  * Laufzeit-Auswahl für **eingeloggte** Nutzer (Upgrade aus `/billing`).
@@ -388,7 +388,6 @@ export function PricingCards({
                 ) : aktion.art === "jahreswechsel" ? (
                   <JahresWechselButton
                     grund={aktion.wechsel.grund}
-                    freiAb={aktion.wechsel.freiAb}
                     hervorgehoben={hervorheben}
                   />
                 ) : (

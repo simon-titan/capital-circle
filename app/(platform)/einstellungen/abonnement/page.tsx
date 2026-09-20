@@ -12,7 +12,7 @@ import { pruefeLifetimeAngebot } from "@/lib/access-control/lifetime-offer";
 import { createClient } from "@/lib/supabase/server";
 import { aboLaeuftSeit, ladeAboKontext } from "@/lib/stripe/abo-kontext";
 import { getStripe } from "@/lib/stripe/server";
-import { istUpgradeQuelle, pruefeUpgrade, upgradeFreiAb } from "@/lib/stripe/upgrade";
+import { istUpgradeQuelle, pruefeUpgrade } from "@/lib/stripe/upgrade";
 
 export const metadata: Metadata = {
   title: "Abonnement · Capital Circle",
@@ -143,7 +143,7 @@ export default async function AbonnementPage() {
           kontoAnsicht
           hatAbo={Boolean(kontext?.abo)}
           jahreswechsel={
-            istUpgradeQuelle(tier) ? { grund: upgrade.grund, freiAb: upgradeFreiAb(laufendSeit) } : null
+            istUpgradeQuelle(tier) ? { grund: upgrade.grund } : null
           }
         />
       </Box>

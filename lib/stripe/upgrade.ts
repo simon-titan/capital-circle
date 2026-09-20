@@ -7,14 +7,14 @@
  */
 
 /**
- * Erst ab einem Monat Mitgliedschaft.
+ * Der Wechsel auf das Jahrespaket hat **keine** Wartezeit mehr.
  *
- * Wer gerade erst gekauft hat, bekommt sonst zwei Tage später ein günstigeres
- * Angebot für dasselbe Produkt zu sehen — das liest sich wie ein Fehler im
- * ersten Kauf. Gemessen wird am Abo, nicht am Konto: `profiles.created_at`
- * ist bei einem Wechsel von Free auf zahlend Monate zu früh.
+ * Bis zum 20.09.2026 galt ein Monat Mindestmitgliedschaft, damit ein frischer
+ * Käufer nicht zwei Tage später ein günstigeres Angebot für dasselbe Produkt
+ * sieht. Entscheidung Simon: Das Jahrespaket steht in der Paketreihe und ist
+ * sofort buchbar; die Wartezeit gilt jetzt für Lifetime
+ * (`LIFETIME_MINDESTTAGE` in `lib/access-control/lifetime-offer.ts`).
  */
-export const UPGRADE_MINDESTTAGE = 30;
 
 /** Aus diesen Laufzeiten heraus lohnt der Wechsel auf das Jahr. */
 const UPGRADE_QUELLEN: ReadonlySet<string> = new Set(["monthly", "quarterly"]);
@@ -40,8 +40,7 @@ export type UpgradeGrund =
   | "falscher_tarif"
   | "nicht_aktiv"
   | "pausiert"
-  | "gekuendigt"
-  | "zu_jung";
+  | "gekuendigt";
 
 export function pruefeUpgrade(lage: UpgradeLage): { moeglich: boolean; grund: UpgradeGrund } {
   if (!lage.status) return { moeglich: false, grund: "kein_abo" };
@@ -56,11 +55,6 @@ export function pruefeUpgrade(lage: UpgradeLage): { moeglich: boolean; grund: Up
   // Ein gekündigtes Abo hochstufen hieße, es gegen den erklärten Willen des
   // Nutzers wiederzubeleben. Er soll erst die Kündigung zurücknehmen.
   if (lage.cancelAtPeriodEnd) return { moeglich: false, grund: "gekuendigt" };
-
-  const seit = lage.laufendSeit ? new Date(lage.laufendSeit) : null;
-  if (!seit || Number.isNaN(seit.getTime())) return { moeglich: false, grund: "zu_jung" };
-  const tage = Math.floor((Date.now() - seit.getTime()) / 86_400_000);
-  if (tage < UPGRADE_MINDESTTAGE) return { moeglich: false, grund: "zu_jung" };
 
   return { moeglich: true, grund: "moeglich" };
 }
@@ -79,20 +73,6 @@ export function istUpgradeQuelle(tier: string): boolean {
   return UPGRADE_QUELLEN.has(tier);
 }
 
-/**
- * Ab wann greift das Angebot? (ISO, oder `null` ohne bekannten Beginn.)
- *
- * Nur für die Anzeige: „Ab dem 30. Tag" ist eine Regel, „ab dem 14. Oktober"
- * ein Termin — und nur den kann sich jemand merken. Gerechnet wird aus
- * demselben Datum, das `pruefeUpgrade()` prüft, damit Text und Riegel nicht
- * auseinanderlaufen.
- */
-export function upgradeFreiAb(laufendSeit: string | null): string | null {
-  if (!laufendSeit) return null;
-  const seit = new Date(laufendSeit);
-  if (Number.isNaN(seit.getTime())) return null;
-  return new Date(seit.getTime() + UPGRADE_MINDESTTAGE * 86_400_000).toISOString();
-}
 
 /**
  * Rabatt-Coupon für das Upgrade.
