@@ -126,3 +126,13 @@ angezeigt. Der Hinweis liest die Adresse **im Client** in einer `Suspense`-Grenz
 neuen Fehlercode in der Route ergänzt, ergänzt auch den Text dort; unbekannte Codes fallen auf den
 allgemeinen Kassenfehler zurück. Der Kaufknopf in `AngebotSection.tsx` sperrt sich nach dem ersten
 Klick und zeigt „Kasse wird geöffnet …" — ohne das entsteht beim Doppeltipp eine zweite Stripe-Kasse.
+
+2026-09-22 (**Kasse mit bestehendem Kunden**): Jede Stripe-Kasse, die `customer` übergibt, braucht
+`customer_update: { address: "auto" }` — sonst lehnt Stripe Tax (`automatic_tax`) die Session ab,
+weil unsere Kunden nur mit E-Mail angelegt werden und keine Adresse haben. Stand bis dahin nur beim
+Lifetime-Kauf; die drei Abos scheiterten für jeden eingeloggten Käufer mit Stripe-Kunde, praktisch
+also für die Whop-Umzügler („Unexpected end of JSON input" bzw. in Safari „The string did not match
+the expected pattern" im Toast). Betrifft `app/api/stripe/create-checkout-session/route.ts` und
+`app/go/[plan]/route.ts` (dort nur im `customer`-Zweig, bei `customer_email` verbietet Stripe das
+Feld). Der Stripe-Block der eingebetteten Kasse steht jetzt in try/catch und antwortet mit
+`stripe_fehler`; der Client liest die Antwort über `components/billing/kassenFehler.ts`.

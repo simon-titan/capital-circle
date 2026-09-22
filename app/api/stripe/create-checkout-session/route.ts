@@ -126,78 +126,96 @@ export async function POST(request: NextRequest) {
   const profile = profileRaw as { stripe_customer_id: string | null } | null;
   let customerId = profile?.stripe_customer_id ?? null;
 
-  const stripe = getStripe();
-
-  if (!customerId) {
-    const customer = await stripe.customers.create({
-      email: user.email ?? undefined,
-      metadata: { user_id: user.id },
-    });
-    customerId = customer.id;
-
-    const { error: updateError } = await service
-      .from("profiles")
-      .update({ stripe_customer_id: customerId })
-      .eq("id", user.id);
-
-    if (updateError) {
-      // Customer wurde bereits in Stripe angelegt — wir loggen, geben aber
-      // weiter zurück, weil Webhook später noch Sync möglich macht.
-      console.error(
-        `[create-checkout] stripe_customer_id Persist fehlgeschlagen für ${user.id}:`,
-        updateError,
-      );
-    }
-  }
-
   const appUrl = getAppUrl();
 
-  // Optionaler vorausgefüllter Rabattcode (z. B. `?promo=XYZ` aus einer
-  // Marketing-E-Mail). `discounts` und `allow_promotion_codes` schließen sich
-  // in der Checkout-Session-API gegenseitig aus — bei einem gültigen Code
-  // wird der Code direkt angewendet, sonst bleibt das normale Eingabefeld.
-  let promotionCodeId: string | null = null;
-  const promoCode = body.promo?.trim();
-  if (promoCode) {
-    const found = await stripe.promotionCodes.list({ code: promoCode, active: true, limit: 1 });
-    promotionCodeId = found.data[0]?.id ?? null;
+  /*
+    Jeder Stripe-Aufruf ab hier kann aus Gruenden scheitern, die nicht im Code
+    stehen (Stripe Tax, deaktivierter Preis, abgelaufener Schluessel). Ohne
+    try/catch antwortet Next mit einer leeren 500, und der Browser meldet nur
+    einen JSON-Parserfehler („Unexpected end of JSON input", in Safari „The
+    string did not match the expected pattern"). So stand es bis 22.09.2026
+    bei den Whop-Umzueglern im Toast. Der Grund gehoert ins Serverprotokoll,
+    der Nutzer bekommt einen Fehlercode, den der Client uebersetzt.
+  */
+  try {
+    const stripe = getStripe();
+
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: user.email ?? undefined,
+        metadata: { user_id: user.id },
+      });
+      customerId = customer.id;
+
+      const { error: updateError } = await service
+        .from("profiles")
+        .update({ stripe_customer_id: customerId })
+        .eq("id", user.id);
+
+      if (updateError) {
+        // Customer wurde bereits in Stripe angelegt — wir loggen, geben aber
+        // weiter zurück, weil Webhook später noch Sync möglich macht.
+        console.error(
+          `[create-checkout] stripe_customer_id Persist fehlgeschlagen für ${user.id}:`,
+          updateError,
+        );
+      }
+    }
+
+    // Optionaler vorausgefüllter Rabattcode (z. B. `?promo=XYZ` aus einer
+    // Marketing-E-Mail). `discounts` und `allow_promotion_codes` schließen sich
+    // in der Checkout-Session-API gegenseitig aus — bei einem gültigen Code
+    // wird der Code direkt angewendet, sonst bleibt das normale Eingabefeld.
+    let promotionCodeId: string | null = null;
+    const promoCode = body.promo?.trim();
+    if (promoCode) {
+      const found = await stripe.promotionCodes.list({ code: promoCode, active: true, limit: 1 });
+      promotionCodeId = found.data[0]?.id ?? null;
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      // `embedded_page` ist seit Stripe-API `2026-03-25.dahlia` der neue Name
+      // für das vorherige `embedded` (Stripe-Checkout als iframe in der eigenen
+      // Seite, gesteuert via `client_secret` + `<EmbeddedCheckout/>`).
+      ui_mode: "embedded_page",
+      // Die drei Laufzeiten sind Abos — "vierteljaehrlich" und "jaehrlich" sind
+      // Abrechnungsintervalle, keine Einmalzahlungen. Lifetime ist die einzige
+      // Einmalzahlung.
+      mode: istLifetime ? "payment" : "subscription",
+      customer: customerId,
+      // Pflicht fuer **jede** Kasse mit bestehendem `customer` und
+      // `automatic_tax`, egal ob Abo oder Einmalzahlung: Hat der Kunde keine
+      // gueltige Adresse, lehnt Stripe die Session sonst ab. Unsere Kunden
+      // legt die Route oben nur mit E-Mail an, haben also nie eine. Mit
+      // "auto" fragt die Kasse die Adresse ab und schreibt sie an den Kunden.
+      // Bis 22.09.2026 stand das nur bei Lifetime — die drei Abos scheiterten
+      // fuer jeden eingeloggten Kaeufer, praktisch also fuer die Whop-Umzuegler.
+      customer_update: { address: "auto" },
+      line_items: [{ price: priceId, quantity: 1 }],
+      return_url: `${appUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+      automatic_tax: { enabled: true },
+      ...(promotionCodeId
+        ? { discounts: [{ promotion_code: promotionCodeId }] }
+        : { allow_promotion_codes: true }),
+      // Pflicht-Häkchen (AGB + sofortiger Leistungsbeginn), Laufzeit am
+      // Bezahlknopf, deutsche Kasse — siehe `lib/stripe/kasse-recht.ts`. Nach
+      // den Prüfungen oben ist `plan` entweder ein Abo-Plan oder "lifetime".
+      ...kassenRechtsangaben(appUrl, isMembershipPlan(plan) ? plan : "lifetime"),
+      // `metadata.user_id` ist beim Lifetime-Kauf die einzige Bruecke zum Konto:
+      // `checkout-completed.ts` schreibt den Dauerzugang daraufhin.
+      metadata: { user_id: user.id, plan, ...kassenRechtsMetadata },
+      ...(istLifetime
+        ? {}
+        : { subscription_data: { metadata: { user_id: user.id, plan, ...kassenRechtsMetadata } } }),
+    });
+
+    return NextResponse.json({
+      ok: true,
+      clientSecret: session.client_secret,
+      sessionId: session.id,
+    });
+  } catch (err) {
+    console.error(`[create-checkout] Stripe-Session fuer ${user.id} (${plan}) fehlgeschlagen:`, err);
+    return NextResponse.json({ ok: false, error: "stripe_fehler" }, { status: 502 });
   }
-
-  const session = await stripe.checkout.sessions.create({
-    // `embedded_page` ist seit Stripe-API `2026-03-25.dahlia` der neue Name
-    // für das vorherige `embedded` (Stripe-Checkout als iframe in der eigenen
-    // Seite, gesteuert via `client_secret` + `<EmbeddedCheckout/>`).
-    ui_mode: "embedded_page",
-    // Die drei Laufzeiten sind Abos — "vierteljaehrlich" und "jaehrlich" sind
-    // Abrechnungsintervalle, keine Einmalzahlungen. Lifetime ist die einzige
-    // Einmalzahlung.
-    mode: istLifetime ? "payment" : "subscription",
-    customer: customerId,
-    // Bei einer Einmalzahlung hat Stripe keine Abo-Adresse, aus der es den
-    // Steuersatz ableiten koennte — ohne `customer_update` lehnt es die Kasse
-    // mit aktivierter `automatic_tax` ab.
-    ...(istLifetime ? { customer_update: { address: "auto" as const } } : {}),
-    line_items: [{ price: priceId, quantity: 1 }],
-    return_url: `${appUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-    automatic_tax: { enabled: true },
-    ...(promotionCodeId
-      ? { discounts: [{ promotion_code: promotionCodeId }] }
-      : { allow_promotion_codes: true }),
-    // Pflicht-Häkchen (AGB + sofortiger Leistungsbeginn), Laufzeit am
-    // Bezahlknopf, deutsche Kasse — siehe `lib/stripe/kasse-recht.ts`. Nach
-    // den Prüfungen oben ist `plan` entweder ein Abo-Plan oder "lifetime".
-    ...kassenRechtsangaben(appUrl, isMembershipPlan(plan) ? plan : "lifetime"),
-    // `metadata.user_id` ist beim Lifetime-Kauf die einzige Bruecke zum Konto:
-    // `checkout-completed.ts` schreibt den Dauerzugang daraufhin.
-    metadata: { user_id: user.id, plan, ...kassenRechtsMetadata },
-    ...(istLifetime
-      ? {}
-      : { subscription_data: { metadata: { user_id: user.id, plan, ...kassenRechtsMetadata } } }),
-  });
-
-  return NextResponse.json({
-    ok: true,
-    clientSecret: session.client_secret,
-    sessionId: session.id,
-  });
 }

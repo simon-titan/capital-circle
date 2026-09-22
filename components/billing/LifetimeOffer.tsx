@@ -8,6 +8,7 @@ import { DashCard, IconTile, Meta } from "@/components/platform/dashboard/primit
 import { LIFETIME_PREIS } from "@/config/lifetime";
 import { euro, lifetimeRechnung, ordinalWort } from "./ersparnis";
 import { formatDate } from "./format";
+import { kassenFehlerText, leseKassenAntwort } from "./kassenFehler";
 
 /**
  * Lifetime-Angebot für zahlende Mitglieder.
@@ -51,13 +52,9 @@ export function LifetimeOffer({ ehemalig = false, freiAb = null }: { ehemalig?: 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan: "lifetime" }),
       });
-      const json = (await res.json()) as { ok?: boolean; clientSecret?: string; error?: string };
+      const json = await leseKassenAntwort(res);
       if (!res.ok || !json.ok || !json.clientSecret) {
-        throw new Error(
-          json.error === "lifetime_gesperrt"
-            ? "Das Angebot steht dir gerade nicht zur Verfügung."
-            : (json.error ?? "checkout_failed"),
-        );
+        throw new Error(kassenFehlerText(json.error));
       }
       router.push(`/checkout?plan=lifetime&cs=${encodeURIComponent(json.clientSecret)}`);
     } catch (err) {

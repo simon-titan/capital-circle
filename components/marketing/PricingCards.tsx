@@ -7,6 +7,7 @@ import { useState } from "react";
 import { ManageSubscriptionButton } from "@/components/billing/ManageSubscriptionButton";
 import { euro, planErsparnis, type PlanErsparnis } from "@/components/billing/ersparnis";
 import { JahresWechselButton } from "@/components/billing/JahresWechsel";
+import { kassenFehlerText, leseKassenAntwort } from "@/components/billing/kassenFehler";
 import { istAbo, TIER_LABEL, type Tier } from "@/components/billing/format";
 import { preiskarten } from "@/config/landing-membership";
 import type { MembershipPlan } from "@/lib/stripe/plan-map";
@@ -228,14 +229,10 @@ export function PricingCards({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan }),
       });
-      const json = (await res.json()) as {
-        ok?: boolean;
-        clientSecret?: string;
-        error?: string;
-      };
+      const json = await leseKassenAntwort(res);
 
       if (!res.ok || !json.ok || !json.clientSecret) {
-        throw new Error(json.error ?? "checkout_failed");
+        throw new Error(kassenFehlerText(json.error));
       }
 
       // Das clientSecret wandert per Query an /checkout, das daraus den

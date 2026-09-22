@@ -176,7 +176,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ plan
     session = await getStripe().checkout.sessions.create({
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
-      ...(customerId ? { customer: customerId } : customerEmail ? { customer_email: customerEmail } : {}),
+      /*
+        Mit bestehendem `customer` verlangt Stripe Tax entweder eine Adresse am
+        Kunden oder `customer_update.address = "auto"` — unsere Kunden haben
+        keine (angelegt nur mit E-Mail), ohne die Zeile landete jeder
+        eingeloggte Kaeufer mit Stripe-Kunde auf `/?fehler=checkout`
+        (Whop-Umzuegler, 22.09.2026). Bei `customer_email` ist
+        `customer_update` von Stripe nicht erlaubt, daher nur in diesem Zweig.
+      */
+      ...(customerId
+        ? { customer: customerId, customer_update: { address: "auto" as const } }
+        : customerEmail
+          ? { customer_email: customerEmail }
+          : {}),
       success_url: `${appUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       /**
        * Eigene Rückleitung statt zurück auf die Landing, damit ein Abbruch
