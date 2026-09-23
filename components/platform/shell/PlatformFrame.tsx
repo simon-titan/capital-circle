@@ -2,6 +2,7 @@
 
 import { Box, Flex } from "@chakra-ui/react";
 import { PlatformBackground } from "@/components/layout/PlatformBackground";
+import { LifetimePopup } from "./LifetimePopup";
 import { PlatformSidebar } from "./PlatformSidebar";
 import { PlatformTopStrip } from "./PlatformTopStrip";
 import { UmzugBand } from "./UmzugBand";
@@ -38,6 +39,7 @@ export function PlatformFrame({ children }: { children: React.ReactNode }) {
             </Box>
           </Flex>
         </Box>
+        <LifetimePopup />
       </PlatformBackground>
     </ViewerProvider>
   );

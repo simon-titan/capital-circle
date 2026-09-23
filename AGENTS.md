@@ -136,3 +136,10 @@ the expected pattern" im Toast). Betrifft `app/api/stripe/create-checkout-sessio
 `app/go/[plan]/route.ts` (dort nur im `customer`-Zweig, bei `customer_email` verbietet Stripe das
 Feld). Der Stripe-Block der eingebetteten Kasse steht jetzt in try/catch und antwortet mit
 `stripe_fehler`; der Client liest die Antwort über `components/billing/kassenFehler.ts`.
+
+2026-09-23 (**Lifetime-Popup**): Im Mitgliederbereich erscheint **einmal** ein Popup mit dem
+Lifetime-Angebot, ab dem 30. Tag nach Kontoanlage (`profiles.created_at`) und nur für Konten, denen
+`pruefeLifetimeAngebot()` den Kauf erlaubt. Anzeige in `components/platform/shell/LifetimePopup.tsx`
+(hängt in `PlatformFrame`), Entscheidung und Merken in `app/api/lifetime/popup/route.ts`, gemerkt in
+`profiles.lifetime_popup_gesehen_am` (Migration 104) plus `localStorage`. Auf Abo-, Checkout- und
+Billing-Seiten kommt es nicht. Neutral gerahmt (kein Gold-Schein), weil es auch über dem Dashboard aufgeht.

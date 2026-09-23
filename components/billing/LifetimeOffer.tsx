@@ -35,6 +35,23 @@ import { kassenFehlerText, leseKassenAntwort } from "./kassenFehler";
  * trotzdem da, mit Countdown statt Knopf. Sie einfach wegzulassen hiesse,
  * dass niemand von Lifetime erfaehrt, bevor es buchbar ist.
  */
+/**
+ * Öffnet die Lifetime-Kasse und liefert die Adresse der Checkout-Seite.
+ * Geteilt mit dem Lifetime-Popup (`components/platform/shell/LifetimePopup.tsx`).
+ */
+export async function lifetimeKasseAdresse(): Promise<string> {
+  const res = await fetch("/api/stripe/create-checkout-session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ plan: "lifetime" }),
+  });
+  const json = await leseKassenAntwort(res);
+  if (!res.ok || !json.ok || !json.clientSecret) {
+    throw new Error(kassenFehlerText(json.error));
+  }
+  return `/checkout?plan=lifetime&cs=${encodeURIComponent(json.clientSecret)}`;
+}
+
 export function LifetimeOffer({ ehemalig = false, freiAb = null }: { ehemalig?: boolean; freiAb?: string | null }) {
   const router = useRouter();
   const toast = useToast();
@@ -47,16 +64,7 @@ export function LifetimeOffer({ ehemalig = false, freiAb = null }: { ehemalig?: 
   async function kaufen() {
     setLaeuft(true);
     try {
-      const res = await fetch("/api/stripe/create-checkout-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: "lifetime" }),
-      });
-      const json = await leseKassenAntwort(res);
-      if (!res.ok || !json.ok || !json.clientSecret) {
-        throw new Error(kassenFehlerText(json.error));
-      }
-      router.push(`/checkout?plan=lifetime&cs=${encodeURIComponent(json.clientSecret)}`);
+      router.push(await lifetimeKasseAdresse());
     } catch (err) {
       toast({
         title: "Checkout konnte nicht gestartet werden",
