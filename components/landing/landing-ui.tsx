@@ -12,6 +12,7 @@ import {
   type HeadingProps,
 } from "@chakra-ui/react";
 import { ArrowRight, Lock, Play } from "lucide-react";
+import NextLink from "next/link";
 import { Children, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Logo } from "@/components/brand/Logo";
 import { RechtsLinks } from "@/components/legal/RechtsFusszeile";
@@ -446,6 +447,22 @@ export function LandingFooter({ applicationNote = false }: { applicationNote?: b
   return (
     <Box as="footer" py={10} px={{ base: 4, md: 8 }} textAlign="center" borderTop="1px solid var(--cc-line)">
       <Stack spacing={2}>
+        {/* Der Weg zum Login steht auf jeder Funnel-Seite auch ganz unten. */}
+        <Text fontSize="14px" color="var(--cc-text-2)" pb={3}>
+          Bereits Mitglied?{" "}
+          <Box
+            as={NextLink}
+            href="/login"
+            color="var(--cc-gold)"
+            fontWeight={500}
+            textDecoration="underline"
+            textUnderlineOffset="3px"
+            _hover={{ color: "var(--cc-text)" }}
+            _focusVisible={{ outline: "2px solid var(--cc-gold-line)", outlineOffset: "2px", borderRadius: "4px" }}
+          >
+            Anmelden
+          </Box>
+        </Text>
         <Text fontSize="12px" color="var(--cc-text-3)" maxW="560px" mx="auto" lineHeight={1.7}>
           {applicationNote ? "Mit dem Abschicken der Bewerbung stimmst du unserer Datenschutzerklärung zu. " : null}
           Trading und Investitionen sind mit erheblichen Verlustrisiken verbunden. Frühere Ergebnisse sind keine Garantie

@@ -1,7 +1,8 @@
 "use client";
 
-import { Box, Flex, HStack, IconButton, Stack } from "@chakra-ui/react";
+import { Box, Button, Flex, HStack, IconButton, Stack } from "@chakra-ui/react";
 import { Menu, X } from "lucide-react";
+import NextLink from "next/link";
 import { useEffect, useState } from "react";
 import { navAnker } from "@/config/landing-membership";
 import { BeitrittCta } from "./BeitrittModal";
@@ -92,6 +93,20 @@ export function MembershipNav() {
         </HStack>
 
         <HStack spacing={2}>
+          {/* Anmelden für Mitglieder — auf jeder Breite sichtbar, damit der Weg
+              zum Login nie erst im Menü oder in der Fußzeile gesucht werden muss. */}
+          <Button
+            as={NextLink}
+            href="/login"
+            variant="line"
+            h="40px"
+            px={4}
+            fontSize="15px"
+            whiteSpace="nowrap"
+          >
+            Anmelden
+          </Button>
+
           <BeitrittCta
             herkunft="nav"
             h="40px"
