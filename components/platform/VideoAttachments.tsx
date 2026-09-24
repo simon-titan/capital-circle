@@ -1,8 +1,9 @@
 "use client";
 
-import { Button, Flex, HStack, Stack, Text } from "@chakra-ui/react";
+import { Button, Flex, HStack, Stack, Text, useToast } from "@chakra-ui/react";
 import { Download, FileText } from "lucide-react";
 import { useCallback, useState } from "react";
+import { ladeAnhang } from "@/components/platform/anhangDownload";
 
 export type VideoAttachmentItem = {
   id: string;
@@ -17,27 +18,20 @@ type VideoAttachmentsProps = {
 export function VideoAttachments({ attachments }: VideoAttachmentsProps) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  const download = useCallback(async (id: string, filename: string) => {
-    setLoadingId(id);
-    try {
-      const res = await fetch(`/api/attachment-url?id=${encodeURIComponent(id)}`);
-      const json = (await res.json()) as { ok?: boolean; url?: string; error?: string };
-      if (!json.ok || !json.url) {
-        console.error(json.error);
-        return;
+  const toast = useToast();
+
+  const download = useCallback(
+    async (id: string, filename: string) => {
+      setLoadingId(id);
+      try {
+        const fehler = await ladeAnhang(id, filename);
+        if (fehler) toast({ status: "error", title: fehler });
+      } finally {
+        setLoadingId(null);
       }
-      const a = document.createElement("a");
-      a.href = json.url;
-      a.download = filename;
-      a.target = "_blank";
-      a.rel = "noopener noreferrer";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    } finally {
-      setLoadingId(null);
-    }
-  }, []);
+    },
+    [toast],
+  );
 
   if (!attachments.length) return null;
 

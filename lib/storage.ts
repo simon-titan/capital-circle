@@ -101,18 +101,19 @@ export function getStorageMisconfiguration(): string | null {
  */
 export const getHetznerStorageMisconfiguration = getStorageMisconfiguration;
 
-/** Liegt der Schlüssel in R2? Ergebnis wird im Prozess gemerkt (Keys ändern sich nicht rückwirkend). */
-const r2TrefferCache = new Map<string, boolean>();
+/**
+ * Liegt der Schlüssel in R2? Gemerkt werden nur Treffer: Eine fehlende Datei kann jederzeit per
+ * Presigned PUT direkt aus dem Browser nachgeladen werden, ohne dass dieser Prozess davon erfährt.
+ */
+const r2TrefferCache = new Set<string>();
 
-async function existiertInR2(storageKey: string): Promise<boolean> {
-  const gemerkt = r2TrefferCache.get(storageKey);
-  if (gemerkt !== undefined) return gemerkt;
+export async function existiertInR2(storageKey: string): Promise<boolean> {
+  if (r2TrefferCache.has(storageKey)) return true;
   try {
     await storageClient.send(new HeadObjectCommand({ Bucket: bucket, Key: storageKey }));
-    r2TrefferCache.set(storageKey, true);
+    r2TrefferCache.add(storageKey);
     return true;
   } catch {
-    r2TrefferCache.set(storageKey, false);
     return false;
   }
 }
@@ -124,6 +125,16 @@ export async function getPresignedGetUrl(storageKey: string, expiresIn = 60 * 15
     });
   }
   return getSignedUrl(storageClient, new GetObjectCommand({ Bucket: bucket, Key: storageKey }), { expiresIn });
+}
+
+/**
+ * Wie `getPresignedGetUrl`, liefert aber `null`, wenn die Datei in R2 fehlt. Für Downloads, die der
+ * Browser direkt öffnet: Eine signierte URL auf einen fehlenden Schlüssel landet sonst als rohe
+ * `NoSuchKey`-XML-Seite beim Nutzer. (Mit Legacy-Rückfallebene wird nicht geprüft, dort entscheidet Hetzner.)
+ */
+export async function getPresignedGetUrlWennVorhanden(storageKey: string, expiresIn = 60 * 15) {
+  if (!legacyClient && !(await existiertInR2(storageKey))) return null;
+  return getPresignedGetUrl(storageKey, expiresIn);
 }
 
 export async function getPresignedPutUrl(storageKey: string, contentType: string) {
@@ -156,7 +167,7 @@ export async function putObjectBody(
       ...(contentLength !== undefined ? { ContentLength: contentLength } : {}),
     }),
   );
-  r2TrefferCache.set(storageKey, true);
+  r2TrefferCache.add(storageKey);
 }
 
 export type ListedObject = { key: string; size?: number };

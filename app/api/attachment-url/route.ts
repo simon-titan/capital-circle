@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getPresignedGetUrl } from "@/lib/storage";
+import { getPresignedGetUrlWennVorhanden } from "@/lib/storage";
 
 /**
  * Kurzlebige Signed-URL für Anhang-Download (PDF etc.).
@@ -13,6 +13,9 @@ import { getPresignedGetUrl } from "@/lib/storage";
  *     - standalone_attachments nur wenn is_free = true
  *     - video_attachments nur wenn is_free = true UND Parent-Video ist published
  *       UND das Parent-Modul gehoert zu einem is_free-Kurs.
+ *
+ * Fehlt die Datei im Speicher, antwortet die Route mit `datei_fehlt` statt einer
+ * signierten URL, die im Browser als `NoSuchKey`-XML aufgehen wuerde.
  */
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -49,7 +52,8 @@ export async function GET(request: Request) {
     if (!isAdmin && !isPaid && !isFree) {
       return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
     }
-    const signedUrl = await getPresignedGetUrl(standaloneAtt.storage_key);
+    const signedUrl = await getPresignedGetUrlWennVorhanden(standaloneAtt.storage_key);
+    if (!signedUrl) return dateiFehlt(standaloneAtt.storage_key);
     const expiresInSeconds = 60 * 15;
     return NextResponse.json({
       ok: true,
@@ -113,7 +117,8 @@ export async function GET(request: Request) {
     }
   }
 
-  const signedUrl = await getPresignedGetUrl(videoAtt.storage_key);
+  const signedUrl = await getPresignedGetUrlWennVorhanden(videoAtt.storage_key);
+  if (!signedUrl) return dateiFehlt(videoAtt.storage_key);
   const expiresInSeconds = 60 * 15;
   return NextResponse.json({
     ok: true,
@@ -121,4 +126,9 @@ export async function GET(request: Request) {
     expiresInSeconds,
     expiresAt: Date.now() + expiresInSeconds * 1000,
   });
+}
+
+function dateiFehlt(storageKey: string) {
+  console.error(`[attachment-url] Datei fehlt in R2: ${storageKey}`);
+  return NextResponse.json({ ok: false, error: "datei_fehlt" }, { status: 404 });
 }

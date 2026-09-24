@@ -1,6 +1,7 @@
 "use client";
 
-import { Box, Button, Flex, Input, InputGroup, InputLeftElement, Select, SimpleGrid, Stack, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, Input, InputGroup, InputLeftElement, Select, SimpleGrid, Stack, Text, useToast } from "@chakra-ui/react";
+import { ladeAnhang } from "@/components/platform/anhangDownload";
 import type { ArsenalAttachmentListItem } from "@/lib/server-data";
 import NextLink from "next/link";
 import { FileDown, Lock, Search } from "lucide-react";
@@ -273,27 +274,20 @@ export function ArsenalAttachmentsBrowser({
     setCategoryId("all");
   }, []);
 
-  const onDownload = useCallback(async (attachmentId: string, filename: string) => {
-    setLoadingId(attachmentId);
-    try {
-      const res = await fetch(`/api/attachment-url?id=${encodeURIComponent(attachmentId)}`);
-      const json = (await res.json()) as { ok?: boolean; url?: string; error?: string };
-      if (!json.ok || !json.url) {
-        console.error(json.error ?? "attachment-url failed");
-        return;
+  const toast = useToast();
+
+  const onDownload = useCallback(
+    async (attachmentId: string, filename: string) => {
+      setLoadingId(attachmentId);
+      try {
+        const fehler = await ladeAnhang(attachmentId, filename);
+        if (fehler) toast({ status: "error", title: fehler });
+      } finally {
+        setLoadingId(null);
       }
-      const a = document.createElement("a");
-      a.href = json.url;
-      a.download = filename;
-      a.target = "_blank";
-      a.rel = "noopener noreferrer";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    } finally {
-      setLoadingId(null);
-    }
-  }, []);
+    },
+    [toast],
+  );
 
   const onModuleChange = (v: string) => {
     setModuleId(v);
