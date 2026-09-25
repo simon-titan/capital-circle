@@ -3,6 +3,7 @@ import {
   Building2,
   GraduationCap,
   LayoutGrid,
+  LineChart,
   Package,
   Radio,
   Repeat,
@@ -95,6 +96,8 @@ export type ToolItem = {
   label: string;
   icon: LucideIcon;
   href: string;
+  /** Sichtbar, aber gesperrt mit Badge „Demnächst“; ein Klick meldet nur „Erscheint bald“. */
+  demnaechst?: boolean;
 };
 
 /**
@@ -106,12 +109,13 @@ export type ToolItem = {
  * Nicht verwechseln mit „Tools & Software“ unter Ressourcen: das ist die
  * Arsenal-Liste aus dem Admin, hier stehen unsere eigenen Partner-Zugänge.
  *
- * „TradingView“ (Indikator-Zugang) am 25.09.2026 auf Wunsch vorerst aus der
- * Navigation genommen. Seite `/tools/tradingview`, API und Admin-Liste bleiben
- * bestehen und sind über die direkte URL erreichbar. Zum Zurückholen:
- *   { key: "tradingview", label: "TradingView", icon: LineChart, href: "/tools/tradingview" },
+ * „TradingView“ (Indikator-Zugang) steht seit 25.09.2026 mit Schloss und Badge
+ * „Demnächst“ in der Liste — für alle, auch zahlende Mitglieder. Ein Klick führt
+ * nirgendwohin, sondern meldet „Erscheint bald“. Seite `/tools/tradingview`, API
+ * und Admin-Liste bleiben bestehen; zum Freischalten `demnaechst` entfernen.
  */
 export const TOOLS_ITEMS: ToolItem[] = [
+  { key: "tradingview", label: "TradingView", icon: LineChart, href: "/tools/tradingview", demnaechst: true },
   { key: "tradesyncer", label: "TradeSyncer", icon: Repeat, href: "/tools/tradesyncer" },
   { key: "propfirms", label: "Propfirms", icon: Building2, href: "/tools/propfirms" },
 ];

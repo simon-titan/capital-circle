@@ -13,6 +13,7 @@ import {
   Text,
   VisuallyHidden,
   useDisclosure,
+  useToast,
 } from "@chakra-ui/react";
 import { Lock, LogOut, Menu as MenuIcon, MessageCircle, Settings, UserRound, X, type LucideIcon } from "lucide-react";
 import Image from "next/image";
@@ -346,13 +347,58 @@ function NavList({ pathname, viewer, onNavigate }: { pathname: string; viewer: V
  */
 function ToolsList({ pathname, viewer, onNavigate }: { pathname: string; viewer: Viewer; onNavigate?: () => void }) {
   const locked = viewer.isPending || !viewer.isPaid;
+  const toast = useToast();
   return (
     <Stack as="ul" spacing={1} listStyleType="none">
       {TOOLS_ITEMS.map((item) => {
         const active = !locked && matches(pathname, item.href);
         return (
           <Box as="li" key={item.key}>
-            {locked ? (
+            {item.demnaechst ? (
+              <Box
+                as="button"
+                type="button"
+                onClick={() => {
+                  if (!toast.isActive("demnaechst")) {
+                    toast({
+                      id: "demnaechst",
+                      status: "info",
+                      title: "Erscheint bald",
+                      description: `${item.label} ist in Kürze für Mitglieder verfügbar.`,
+                      duration: 3500,
+                      isClosable: true,
+                    });
+                  }
+                }}
+                {...rowProps(false, "48px")}
+                color="var(--cc-text-3)"
+              >
+                <RowInner
+                  icon={item.icon}
+                  label={item.label}
+                  trailing={
+                    <Flex align="center" gap="8px" flexShrink={0}>
+                      <Box
+                        as="span"
+                        px="7px"
+                        py="3px"
+                        borderRadius="full"
+                        border="1px solid var(--cc-gold-line)"
+                        color="var(--cc-gold-light)"
+                        fontSize="10px"
+                        fontWeight={500}
+                        letterSpacing="0.04em"
+                        textTransform="uppercase"
+                        lineHeight={1}
+                      >
+                        Demnächst
+                      </Box>
+                      <Lock size={13} strokeWidth={1.75} aria-hidden />
+                    </Flex>
+                  }
+                />
+              </Box>
+            ) : locked ? (
               <Box
                 aria-disabled="true"
                 title="Nur für Mitglieder"
