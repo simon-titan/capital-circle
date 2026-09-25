@@ -55,8 +55,6 @@ const OPTIONAL_ENV = [
   "TURNSTILE_SECRET_KEY",
   "NEXT_PUBLIC_TURNSTILE_SITE_KEY",
   "NEXT_PUBLIC_APP_URL",
-  /** Journal-Home: YouTube-RSS. Ohne Wert greift der Default-Kanal (@emre.capital). */
-  "YOUTUBE_CHANNEL_ID",
   /** Telegram-Bot: Token von @BotFather. Ohne ihn antwortet der Bot nicht. */
   "TELEGRAM_BOT_TOKEN",
   /** Telegram-Bot: secret_token des Webhooks. Ohne ihn ist die Route ungeschützt. */

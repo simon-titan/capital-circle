@@ -130,7 +130,7 @@ Kündigungs-Flow; ohne: nur die Pause). Coupon-**IDs**, nicht Codes — die Höh
 `NEXT_PUBLIC_HT_THANKS_VIDEO_*`, `NEXT_PUBLIC_MEMBERSHIP_THANKS_VIDEO_*`,
 `NEXT_PUBLIC_DISCORD_COMMUNITY_URL`, `NEXT_PUBLIC_DISCORD_CALENDLY_URL`,
 `DISCORD_FUNNEL_ROLE_ID`, `DISCORD_WAITING_ROOM_ROLE_ID`,
-`RESEND_PLATFORM_MIGRATION_SEGMENT_ID`, `YOUTUBE_CHANNEL_ID`.
+`RESEND_PLATFORM_MIGRATION_SEGMENT_ID`.
 
 Die URL-Varianten fallen alle auf `NEXT_PUBLIC_APP_URL` zurück — solange das stimmt,
 funktioniert alles. Die Video-Poster bleiben leer, dann zeigt der Player nur das erste Bild.

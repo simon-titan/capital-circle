@@ -1,6 +1,7 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { sendWelcomeMail } from "@/lib/email/welcome-mail";
+import { stempleProfil } from "@/lib/onboarding/server";
 import { requireAdmin } from "@/lib/supabase/admin-auth";
 
 /** Service-Role-Client — nur serverseitig, nie im Browser. */
@@ -61,6 +62,9 @@ export async function POST(request: Request) {
     );
   }
 
+  // Vom Admin mit Passwort angelegt — „Zugang absichern" in der Start-Checkliste entfällt.
+  await stempleProfil(service, data.user.id, "passwort_gesetzt_am");
+
   try {
     await sendWelcomeMail(email.trim(), password.trim(), fullName?.trim());
   } catch (mailErr) {
@@ -111,6 +115,18 @@ export async function GET() {
 
   const profileMap = new Map((profiles ?? []).map((p) => [p.id as string, p]));
 
+  /*
+    Onboarding-Stand (Migration 107) getrennt gelesen: Fehlt die Spalte noch,
+    bleibt die Liste vollständig, nur die Spalte „Onboarding" zeigt „—".
+  */
+  const onboardingMap = new Map<string, string | null>();
+  const { data: onboardingRows, error: onboardingErr } = await service
+    .from("profiles")
+    .select("id,onboarding_fragen_am");
+  if (!onboardingErr) {
+    for (const r of onboardingRows ?? []) onboardingMap.set(r.id as string, (r.onboarding_fragen_am as string | null) ?? null);
+  }
+
   const users = (authUsers.users ?? []).map((u) => {
     const p = profileMap.get(u.id);
     return {
@@ -142,6 +158,11 @@ export async function GET() {
           | undefined) ?? null,
       /** Freischalt-Gruppe fuer das Lifetime-Angebot (071); null = keine. */
       lifetimeOfferGroup: (p?.lifetime_offer_group as string | null) ?? null,
+      /**
+       * Onboarding-Fragen beantwortet am (107). `undefined` = Spalte fehlt noch,
+       * `null` = noch nicht beantwortet.
+       */
+      onboardingFragenAm: onboardingErr ? undefined : (onboardingMap.get(u.id) ?? null),
     };
   });
 

@@ -64,6 +64,11 @@ export type Database = {
           payment_failed_email_2_sent_at?: string | null;
           payment_failed_email_3_sent_at?: string | null;
           ht_upsell_email_sent_at?: string | null;
+          // 107_onboarding (nur per Service-Client schreibbar, eigener Schutz-Trigger)
+          onboarding_gestartet_am?: string | null;
+          onboarding_fragen_am?: string | null;
+          onboarding_abgeschlossen_am?: string | null;
+          passwort_gesetzt_am?: string | null;
         };
         Insert: Record<string, unknown>;
         Update: Record<string, unknown>;
@@ -397,6 +402,22 @@ export type Database = {
           new_value: string | null;
           metadata: Json | null;
           created_at: string;
+        };
+        Insert: Record<string, unknown>;
+        Update: Record<string, unknown>;
+      };
+      // 105_tradingview_zugang
+      tradingview_zugaenge: {
+        Row: {
+          user_id: string;
+          tv_benutzername: string;
+          status: "angefragt" | "aktiv" | "entzug_offen" | "entzogen";
+          angefragt_am: string;
+          freigegeben_am: string | null;
+          entzug_angefordert_am: string | null;
+          entzogen_am: string | null;
+          bearbeitet_von: string | null;
+          updated_at: string;
         };
         Insert: Record<string, unknown>;
         Update: Record<string, unknown>;

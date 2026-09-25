@@ -4,14 +4,15 @@ import { Box, Button, Grid, GridItem, HStack, Icon, Stack, Text, useClipboard } 
 import { ArrowUpRight, Check, Copy } from "lucide-react";
 import Image from "next/image";
 import { APEX_PROMO } from "@/config/apex-promo";
-import { Panel } from "../Panel";
+import { Panel } from "@/components/journal/Panel";
 
 /**
- * Partner-Promo.
+ * Partner-Promo Apex Trader Funding — seit 25.09.2026 auf `/tools/propfirms`,
+ * vorher im Journal-Home.
  *
  * Das Logo ist die für dunkle Flächen gedachte Variante der Marke und wird
  * unverändert gezeigt — kein CSS-Filter, kein Kachel-Hintergrund. Der blaue
- * Chevron ist die einzige Farbe im Journal, die weder Weiß noch Gewinn/Verlust
+ * Chevron ist die einzige Farbe der Seite, die weder Weiß noch Gewinn/Verlust
  * ist; sie gehört Apex, nicht uns, und markiert die Karte als Fremdmarke.
  *
  * Rabatt-Badge und CTA in Brand-Gold — wie jede Hauptaktion der Plattform.

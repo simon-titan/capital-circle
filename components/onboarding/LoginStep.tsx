@@ -110,6 +110,9 @@ export function LoginStep({ onAuthenticated, footer }: LoginStepProps) {
         setError(anmeldeFehlerText(loginError));
         return;
       }
+      // Wer sich mit Passwort anmeldet, hat eins — der Punkt „Zugang absichern"
+      // in der Start-Checkliste entfällt. Nur ein Merker, nicht abwarten.
+      void fetch("/api/onboarding/passwort", { method: "POST" }).catch(() => undefined);
       await onAuthenticated();
     } finally {
       setLoading(false);

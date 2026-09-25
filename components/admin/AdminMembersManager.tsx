@@ -42,6 +42,7 @@ import {
   type AdminTone,
 } from "@/components/admin/adminUi";
 import { AdminLifetimeOfferPanel } from "./AdminLifetimeOfferPanel";
+import { OnboardingAntwortenModal } from "./OnboardingAntwortenModal";
 import { UserTierOverrideModal, type Tier } from "./UserTierOverrideModal";
 
 type UserRow = {
@@ -59,6 +60,8 @@ type UserRow = {
   applicationStatus: "pending" | "approved" | "rejected" | null;
   /** Freischalt-Gruppe fuer das Lifetime-Angebot (071); null = keine. */
   lifetimeOfferGroup: string | null;
+  /** Onboarding-Fragen beantwortet (107); `undefined` = Migration fehlt. */
+  onboardingFragenAm?: string | null;
 };
 
 /** Tier-Pill: Free neutral, zahlende Tiers grün, High-Ticket in Champagner. */
@@ -106,6 +109,7 @@ export function AdminMembersManager() {
 
   const { isOpen: isTierOpen, onOpen: onTierOpen, onClose: onTierClose } = useDisclosure();
   const [tierTarget, setTierTarget] = useState<UserRow | null>(null);
+  const [onboardingTarget, setOnboardingTarget] = useState<UserRow | null>(null);
 
   const [gdprLoadingId, setGdprLoadingId] = useState<string | null>(null);
 
@@ -459,7 +463,7 @@ export function AdminMembersManager() {
               aria-label="Alle sichtbaren Mitglieder auswählen"
               flexShrink={0}
             />
-            {["E-Mail / Name", "Tier", "Paid", "Admin", "Codex", "Discord", "Registriert", ""].map(
+            {["E-Mail / Name", "Tier", "Paid", "Admin", "Onboarding", "Discord", "Registriert", ""].map(
               (h) => (
                 <Text
                   key={h}
@@ -565,11 +569,25 @@ export function AdminMembersManager() {
                     />
                   </Box>
 
-                  {/* Codex */}
+                  {/* Onboarding — Klick zeigt die Antworten (ersetzt die alte Codex-Spalte). */}
                   <Box w={{ base: "auto", lg: "70px" }}>
-                    <StatusPill tone={user.codexAccepted ? "success" : "neutral"}>
-                      {user.codexAccepted ? "Ja" : "Nein"}
-                    </StatusPill>
+                    {user.onboardingFragenAm === undefined ? (
+                      <Text fontSize="xs" color="var(--cc-text-3)">
+                        —
+                      </Text>
+                    ) : (
+                      <Box
+                        as="button"
+                        type="button"
+                        onClick={() => setOnboardingTarget(user)}
+                        title="Antworten ansehen"
+                        _focusVisible={{ outline: "2px solid var(--cc-gold-line)", borderRadius: "full" }}
+                      >
+                        <StatusPill tone={user.onboardingFragenAm ? "success" : "neutral"} cursor="pointer">
+                          {user.onboardingFragenAm ? "Ja" : "Offen"}
+                        </StatusPill>
+                      </Box>
+                    )}
                   </Box>
 
                   {/* Discord */}
@@ -661,6 +679,12 @@ export function AdminMembersManager() {
               : prev,
           );
         }}
+      />
+
+      {/* ── Onboarding-Antworten ── */}
+      <OnboardingAntwortenModal
+        user={onboardingTarget ? { id: onboardingTarget.id, email: onboardingTarget.email } : null}
+        onClose={() => setOnboardingTarget(null)}
       />
 
       {/* ── Löschen-Bestätigung ── */}

@@ -354,6 +354,8 @@ export function ProfilFormular() {
     if (!error) {
       setPassword("");
       setPasswordConfirm("");
+      // Merker für die Start-Checkliste im Dashboard („Zugang absichern" entfällt).
+      void fetch("/api/onboarding/passwort", { method: "POST" }).catch(() => undefined);
     }
 
     toast({

@@ -23,7 +23,7 @@ import { RechtsLinks } from "@/components/legal/RechtsFusszeile";
 import { DiscordGlyph } from "@/components/platform/DiscordBanner";
 import { getDiscordAuthUrl } from "@/lib/discord";
 import { createClient } from "@/lib/supabase/client";
-import { NAV_GROUPS, type NavChild, type NavGroup } from "./nav";
+import { NAV_GROUPS, TOOLS_ITEMS, type NavChild, type NavGroup } from "./nav";
 import { useViewer, type Viewer } from "./viewer";
 
 /*
@@ -339,6 +339,54 @@ function NavList({ pathname, viewer, onNavigate }: { pathname: string; viewer: V
 }
 
 /**
+ * Sektion „Tools“: flache Zeilen ohne Unterpunkte, etwas niedriger als die
+ * Hauptbereiche (48 statt 52px, wie der Konto-Block), damit die drei
+ * Partner-Seiten nicht gleich schwer wirken wie Institut oder Journal.
+ * Gesperrt nach derselben Regel wie ein `paid`-Unterpunkt.
+ */
+function ToolsList({ pathname, viewer, onNavigate }: { pathname: string; viewer: Viewer; onNavigate?: () => void }) {
+  const locked = viewer.isPending || !viewer.isPaid;
+  return (
+    <Stack as="ul" spacing={1} listStyleType="none">
+      {TOOLS_ITEMS.map((item) => {
+        const active = !locked && matches(pathname, item.href);
+        return (
+          <Box as="li" key={item.key}>
+            {locked ? (
+              <Box
+                aria-disabled="true"
+                title="Nur für Mitglieder"
+                {...rowProps(false, "48px")}
+                color="var(--cc-text-3)"
+                cursor="not-allowed"
+                _hover={undefined}
+              >
+                <RowInner
+                  icon={item.icon}
+                  label={item.label}
+                  trailing={<Lock size={13} strokeWidth={1.75} aria-hidden />}
+                />
+                <VisuallyHidden> (nur für Mitglieder)</VisuallyHidden>
+              </Box>
+            ) : (
+              <Box
+                as={Link}
+                href={item.href}
+                onClick={onNavigate}
+                aria-current={active ? "page" : undefined}
+                {...rowProps(active, "48px")}
+              >
+                <RowInner icon={item.icon} label={item.label} />
+              </Box>
+            )}
+          </Box>
+        );
+      })}
+    </Stack>
+  );
+}
+
+/**
  * Discord-Zeile im Konto-Block.
  *
  * Nicht verbunden: `getDiscordAuthUrl()` als gewöhnlicher Anker — /api/discord/connect
@@ -536,8 +584,30 @@ export function PlatformSidebar() {
 
   const panel = (onNavigate?: () => void) => (
     <>
-      <Box as="nav" aria-label="Hauptnavigation" flex="1">
+      <Box as="nav" aria-label="Hauptnavigation" flexShrink={0}>
         <NavList pathname={pathname} viewer={viewer} onNavigate={onNavigate} />
+      </Box>
+      {/*
+        Sektion „Tools“ zwischen Hauptnavigation und Konto-Block (Mockup
+        25.09.2026). Sie trägt `flex="1"`, das bis dahin die Hauptnavigation
+        hatte — so bleibt der Konto-Block unten stehen.
+      */}
+      <Box as="nav" aria-labelledby="cc-nav-tools" flex="1" flexShrink={0}>
+        <Box h="1px" bg="var(--cc-line)" my={5} />
+        <Text
+          id="cc-nav-tools"
+          px="14px"
+          mb={2}
+          fontSize="12px"
+          lineHeight="16px"
+          fontWeight={500}
+          letterSpacing="0.12em"
+          textTransform="uppercase"
+          color="var(--cc-text-2)"
+        >
+          Tools
+        </Text>
+        <ToolsList pathname={pathname} viewer={viewer} onNavigate={onNavigate} />
       </Box>
       {viewer.showApplyCta ? <ApplyCta onNavigate={onNavigate} /> : null}
       <Box h="1px" bg="var(--cc-line)" my={5} flexShrink={0} />

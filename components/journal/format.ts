@@ -91,3 +91,29 @@ export function pnlColor(value: number): string {
   if (value < 0) return "var(--color-loss)";
   return "var(--cc-text-2)";
 }
+
+/** Haltedauer eines Trades: „45 s“, „14 Min. 32 s“, „2 Std. 5 Min.“. */
+export function formatDuration(ms: number): string {
+  if (!Number.isFinite(ms) || ms < 0) return "—";
+  const total = Math.round(ms / 1000);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  if (h >= 24) {
+    const d = Math.floor(h / 24);
+    return `${d} ${d === 1 ? "Tag" : "Tage"} ${h % 24} Std.`;
+  }
+  if (h > 0) return `${h} Std. ${m} Min.`;
+  if (m > 0) return `${m} Min. ${s} s`;
+  return `${s} s`;
+}
+
+/** Uhrzeit mit Sekunden — in der Detailansicht zählt bei Scalps jede Sekunde. */
+export function formatTimeSeconds(isoTimestamp: string): string {
+  return new Intl.DateTimeFormat("de-DE", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZone: "Europe/Berlin",
+  }).format(new Date(isoTimestamp));
+}

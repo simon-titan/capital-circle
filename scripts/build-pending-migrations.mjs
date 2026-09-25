@@ -13,36 +13,16 @@ import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 const AUSSTEHEND = [
-  "006_dashboard",
-  "019_live_session_replays",
-  "040_learning_seconds_accumulation",
-  // Achtung: loescht alle Live-Session-Daten (Feedback 17.09.2026). Der Hinweis
-  // steht ausfuehrlich im Kopf der Migration und wandert in die Sammeldatei mit.
-  "070_live_session_kategorien_neu",
-  // Lifetime-Freischaltung: Spalte `profiles.lifetime_offer_group` plus den
-  // globalen Schalter in `app_settings`. Additiv, loescht nichts.
-  "071_lifetime_freischaltung",
-  // Kündigungsbutton (§ 312k BGB): neue Tabelle `kuendigungen`, RLS an, keine
-  // Policies. Additiv. Solange sie fehlt, nimmt `/kuendigen` Kündigungen trotzdem
-  // an — dann ist nur die Betreiber-Mail der Beleg.
-  "072_kuendigungen",
-  // Mahn- und Warteraum-System (agent/retention, 19.09.2026). Alle drei
-  // additiv, loeschen nichts. 080 zuerst: Ohne `zahlungsfall` eroeffnet der
-  // Webhook keine Faelle und der Nachtlauf mahnt nicht (beides laeuft dann
-  // ohne Fehler leer). 081: Schalter „keine Discord-DMs" in den Einstellungen.
-  // 082: Kampagnen-Merkliste und der Schalter der Rueckgewinnungs-Mail (aus).
-  "080_zahlungsfall",
-  "081_discord_dm_widerspruch",
-  "082_rueckgewinnung",
-  // Widerrufsfunktion (§ 356a BGB): neue Tabelle `widerrufe`, RLS an, keine
-  // Policies, Rechte für anon/authenticated entzogen. Additiv. Solange sie
-  // fehlt, nimmt `/widerrufen` Widerrufe trotzdem an — dann ist nur die
-  // Betreiber-Mail der Beleg.
-  "090_widerrufe",
-  // Zustimmungsnachweis der Kasse: drei Spalten an `checkout_sessions`
-  // (agb_zustimmung, zustimmung_am, rechtstexte_version). Additiv. Solange sie
-  // fehlen, schreibt der Webhook den Trichter ohne sie weiter.
-  "091_checkout_zustimmung",
+  // Stand 25.09.2026 (laut `npm run db:check`). Alle vier additiv, loeschen nichts.
+  // 104: Merker fuer das Lifetime-Popup (`profiles.lifetime_popup_gesehen_am`).
+  "104_lifetime_popup",
+  // 105: TradingView-Zugaenge (Tools-Bereich), Admin-Liste und Entzug im Nachtlauf.
+  "105_tradingview_zugang",
+  // 106: Bilder pro Journal-Trade + gemerkte geloeschte Trades fuer den Re-Import.
+  "106_journal_trade_bilder",
+  // 107: Onboarding. ACHTUNG: Ab dem Einspielen muss jedes zahlende Konto einmal
+  // die fuenf Fragen beantworten (Entscheidung Simon, 25.09.2026).
+  "107_onboarding",
 ];
 
 const DIR = path.resolve(process.cwd(), "supabase/migrations");

@@ -11,6 +11,7 @@ import {
   CreditCard,
   FileX,
   Funnel,
+  KeyRound,
   LayoutDashboard,
   LifeBuoy,
   Link2,
@@ -25,6 +26,7 @@ import {
   Ticket,
   Truck,
   Undo2,
+  UserSearch,
   Users,
   Video,
   Wrench,
@@ -57,6 +59,8 @@ const groups: AdminGroup[] = [
       // Zahlungen. Getrennt von „Analytics", weil dort das Geschaeft steht
       // (MRR, Umsatz, Churn) und hier der Weg dorthin.
       { href: "/admin/kaufweg", label: "Kaufweg", icon: Route },
+      // Antworten aus dem Onboarding-Fragebogen und Aktivierung der Neukäufer.
+      { href: "/admin/icp", label: "Kunden & ICP", icon: UserSearch },
     ],
   },
   {
@@ -78,6 +82,8 @@ const groups: AdminGroup[] = [
     links: [
       { href: "/admin/mitglieder", label: "Mitglieder", icon: Users },
       { href: "/admin/discord", label: "Discord", icon: MessageSquare },
+      // Freischalten/Entziehen des Invite-only-Indikators (Migration 105).
+      { href: "/admin/tradingview", label: "TradingView", icon: KeyRound },
       { href: "/admin/reviews", label: "Bewertungen", icon: Star },
       { href: "/admin/tickets", label: "Support-Tickets", icon: LifeBuoy },
       { href: "/admin/zertifikate", label: "Zertifikate", icon: Award },

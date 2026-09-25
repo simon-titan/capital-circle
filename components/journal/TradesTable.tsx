@@ -4,7 +4,11 @@ import {
   Badge,
   Box,
   HStack,
+  IconButton,
   Input,
+  Link,
+  LinkBox,
+  LinkOverlay,
   Select,
   SimpleGrid,
   Stack,
@@ -17,9 +21,18 @@ import {
   Thead,
   Tr,
 } from "@chakra-ui/react";
+import { NotebookPen, Trash2 } from "lucide-react";
+import NextLink from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { formatDate, formatMoney, formatPrice, formatTime, pnlColor } from "./format";
+import { TradeLoeschenDialog } from "./TradeLoeschenDialog";
 import type { JournalTradeRow } from "./types";
+
+/** Adresse der Detailansicht eines Trades. */
+export function tradeHref(id: string): string {
+  return `/trading-journal/trades/${id}`;
+}
 
 type ResultFilter = "all" | "win" | "loss" | "scratch";
 
@@ -33,7 +46,7 @@ const controlSx = {
 
 const opt = { background: "#0e1217" };
 
-function DirectionBadge({ direction }: { direction: "long" | "short" }) {
+export function DirectionBadge({ direction }: { direction: "long" | "short" }) {
   const long = direction === "long";
   return (
     <Badge
@@ -52,7 +65,16 @@ function DirectionBadge({ direction }: { direction: "long" | "short" }) {
   );
 }
 
+/**
+ * Trades als Tabelle (ab md) bzw. Karten (darunter). Jede Zeile öffnet die
+ * Detailansicht des Trades. In der vollen Liste (ohne `limit`) sitzt am
+ * Zeilenende zusätzlich der Mülleimer — in der kompakten Vorschau auf dem
+ * Dashboard nicht, dort wäre er zu nah an „mal eben reinschauen“.
+ */
 export function TradesTable({ trades, limit }: { trades: JournalTradeRow[]; limit?: number }) {
+  const router = useRouter();
+  const [zuLoeschen, setZuLoeschen] = useState<JournalTradeRow | null>(null);
+  const mitLoeschen = !limit;
   const [symbol, setSymbol] = useState("all");
   const [direction, setDirection] = useState("all");
   const [result, setResult] = useState<ResultFilter>("all");
@@ -75,6 +97,7 @@ export function TradesTable({ trades, limit }: { trades: JournalTradeRow[]; limi
   }, [trades, symbol, direction, result, date, limit]);
 
   const columns = ["Datum", "Zeit", "Symbol", "Richtung", "Kontr.", "Einstieg", "Ausstieg", "Netto-P&L", "Quelle"];
+  if (mitLoeschen) columns.push("");
 
   return (
     <Box>
@@ -136,9 +159,24 @@ export function TradesTable({ trades, limit }: { trades: JournalTradeRow[]; limi
               const pnl = Number(trade.net_pnl);
               const cellSx = { borderBottom: "1px solid rgba(255,255,255,0.04)", fontSize: "sm", py: 3 };
               return (
-                <Tr key={trade.id} transition="background 0.12s ease" _hover={{ bg: "rgba(212,176,128,0.05)" }}>
+                <Tr
+                  key={trade.id}
+                  transition="background 0.12s ease"
+                  _hover={{ bg: "rgba(212,176,128,0.05)" }}
+                  cursor="pointer"
+                  onClick={() => router.push(tradeHref(trade.id))}
+                >
                   <Td {...cellSx} className="cc-num" whiteSpace="nowrap">
-                    {formatDate(trade.trade_date)}
+                    {/* Echter Link für Tastatur und Mittelklick; der Zeilenklick deckt die Maus ab. */}
+                    <Link
+                      as={NextLink}
+                      href={tradeHref(trade.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      _hover={{ textDecoration: "none" }}
+                      _focusVisible={{ outline: "2px solid var(--cc-gold)", outlineOffset: "2px", borderRadius: "4px" }}
+                    >
+                      {formatDate(trade.trade_date)}
+                    </Link>
                   </Td>
                   <Td {...cellSx} className="cc-num" color="var(--cc-text-3)">
                     {formatTime(trade.exit_time)}
@@ -150,6 +188,7 @@ export function TradesTable({ trades, limit }: { trades: JournalTradeRow[]; limi
                         {trade.contract}
                       </Text>
                     )}
+                    {trade.notes ? <NotizMarke /> : null}
                   </Td>
                   <Td {...cellSx}>
                     <DirectionBadge direction={trade.direction} />
@@ -173,6 +212,16 @@ export function TradesTable({ trades, limit }: { trades: JournalTradeRow[]; limi
                       {trade.source === "manual" ? "Manuell" : "Import"}
                     </Text>
                   </Td>
+                  {mitLoeschen ? (
+                    <Td {...cellSx} py={1} textAlign="right">
+                      <LoeschKnopf
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setZuLoeschen(trade);
+                        }}
+                      />
+                    </Td>
+                  ) : null}
                 </Tr>
               );
             })}
@@ -185,19 +234,23 @@ export function TradesTable({ trades, limit }: { trades: JournalTradeRow[]; limi
         {filtered.map((trade) => {
           const pnl = Number(trade.net_pnl);
           return (
-            <Box
+            <LinkBox
               key={trade.id}
               borderRadius="10px"
               border="1px solid var(--j-line)"
               bg="var(--j-panel-raised)"
               p={3.5}
+              _active={{ bg: "rgba(212,176,128,0.05)" }}
             >
               <HStack justify="space-between" align="start" gap={3} mb={2.5}>
                 <HStack gap={2} minW={0}>
-                  <Text className="inter-semibold" fontSize="sm" color="var(--cc-text)">
-                    {trade.symbol}
-                  </Text>
+                  <LinkOverlay as={NextLink} href={tradeHref(trade.id)}>
+                    <Text className="inter-semibold" fontSize="sm" color="var(--cc-text)">
+                      {trade.symbol}
+                    </Text>
+                  </LinkOverlay>
                   <DirectionBadge direction={trade.direction} />
+                  {trade.notes ? <NotizMarke /> : null}
                 </HStack>
                 <Text className="cc-num" fontSize="md" color={pnlColor(pnl)} whiteSpace="nowrap">
                   {formatMoney(pnl)}
@@ -211,8 +264,13 @@ export function TradesTable({ trades, limit }: { trades: JournalTradeRow[]; limi
                 <MobileField label="Kontr." value={String(trade.qty)} />
                 <MobileField label="Einstieg" value={formatPrice(Number(trade.entry_price))} />
                 <MobileField label="Ausstieg" value={formatPrice(Number(trade.exit_price))} />
+                {mitLoeschen ? (
+                  <Box display="flex" justifyContent="flex-end" alignItems="end" position="relative" zIndex={1}>
+                    <LoeschKnopf onClick={() => setZuLoeschen(trade)} />
+                  </Box>
+                ) : null}
               </SimpleGrid>
-            </Box>
+            </LinkBox>
           );
         })}
       </Stack>
@@ -222,7 +280,40 @@ export function TradesTable({ trades, limit }: { trades: JournalTradeRow[]; limi
           Keine Trades für diese Filter.
         </Text>
       )}
+
+      {mitLoeschen ? <TradeLoeschenDialog trade={zuLoeschen} onClose={() => setZuLoeschen(null)} /> : null}
     </Box>
+  );
+}
+
+/** Kleiner Hinweis „zu diesem Trade gibt es eine Notiz“. */
+function NotizMarke() {
+  return (
+    <Box
+      as="span"
+      display="inline-flex"
+      verticalAlign="middle"
+      ml={1.5}
+      color="var(--cc-gold-light)"
+      title="Mit Notiz"
+      aria-label="Mit Notiz"
+    >
+      <NotebookPen size={13} strokeWidth={2} />
+    </Box>
+  );
+}
+
+function LoeschKnopf({ onClick }: { onClick: (e: React.MouseEvent) => void }) {
+  return (
+    <IconButton
+      aria-label="Trade löschen"
+      icon={<Trash2 size={15} strokeWidth={2} />}
+      size="sm"
+      variant="ghost"
+      color="var(--cc-text-3)"
+      _hover={{ color: "var(--cc-danger)", bg: "rgba(248, 113, 113, 0.1)" }}
+      onClick={onClick}
+    />
   );
 }
 

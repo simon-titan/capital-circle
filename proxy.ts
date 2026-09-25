@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/middleware";
 import { updateLastLoginIfNeeded } from "@/lib/auth/middleware-last-login";
 import { isFreeMember } from "@/lib/membership";
+import { onboardingErledigt } from "@/lib/onboarding/weiche";
 import { createServiceClient } from "@/lib/supabase/service";
 
 // Marketing-Pfade (öffentlich, kein Auth nötig).
@@ -239,14 +240,30 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  const { data: rawProfile } = await supabase
+  /*
+   * `onboarding_fragen_am` kommt aus Migration 107. Ist die noch nicht
+   * eingespielt, scheitert der ganze Select — und ohne Profil schickte die
+   * Weiche unten jeden nach `/einsteig`. Deshalb dann ohne die Spalte nochmal
+   * lesen, und die neue Bedingung gilt als erfüllt (`fragenSpalteDa = false`).
+   */
+  const PROFIL_SPALTEN =
+    "usage_agreement_accepted,is_admin,is_paid,application_status,membership_tier,step2_application_status,access_until,last_login_at,churn_email_1_sent_at,churn_email_2_sent_at";
+  let fragenSpalteDa = true;
+  let { data: rawProfile, error: profilFehler } = await supabase
     .from("profiles")
-    .select(
-      "usage_agreement_accepted,is_admin,is_paid,application_status,membership_tier,step2_application_status,access_until,last_login_at,churn_email_1_sent_at,churn_email_2_sent_at",
-    )
+    .select(`${PROFIL_SPALTEN},onboarding_fragen_am`)
     .eq("id", user.id)
     .single();
+  if (profilFehler) {
+    fragenSpalteDa = false;
+    ({ data: rawProfile, error: profilFehler } = await supabase
+      .from("profiles")
+      .select(PROFIL_SPALTEN)
+      .eq("id", user.id)
+      .single());
+  }
   const profile = rawProfile as {
+    onboarding_fragen_am?: string | null;
     usage_agreement_accepted?: boolean;
     is_admin?: boolean;
     is_paid?: boolean;
@@ -298,8 +315,14 @@ export async function proxy(request: NextRequest) {
    * besteht nur noch aus der Nutzungsvereinbarung. `codex_accepted` bleibt in
    * der Datenbank stehen — bestehende Zustimmungen sind ein Nachweis und
    * werden nicht geloescht —, ist aber keine Bedingung mehr fuer den Zugang.
+   *
+   * Seit 26.09.2026 (Migration 107) zusaetzlich: Zahlende Konten beantworten
+   * einmal die fuenf Onboarding-Fragen (auch Bestandsmitglieder, Entscheidung
+   * Simon). Die Regel steht in `lib/onboarding/weiche.ts` und gilt dort
+   * genauso fuer `/api/onboarding/status` — sonst schickten sich Proxy und
+   * `/einsteig` gegenseitig hin und her.
    */
-  const onboardingDone = isFreeMember(profile) || Boolean(profile?.usage_agreement_accepted);
+  const onboardingDone = onboardingErledigt(profile, fragenSpalteDa);
 
   if (onboardingDone && pathname === "/einsteig") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
@@ -341,6 +364,6 @@ export async function proxy(request: NextRequest) {
 export const config = {
   // Statische Icons: Safari/WebKit u. a. holen apple-touch-icon / favicon ohne HTML — nicht zur Login-HTML umleiten.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|logo/|bg/|svg/|tg-slides/|founder/|cases/|apex/|prozess/|nachweise/|apple-touch-icon|new-apple).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|logo/|bg/|svg/|tg-slides/|founder/|cases/|apex/|prozess/|nachweise/|partner/|apple-touch-icon|new-apple).*)",
   ],
 };

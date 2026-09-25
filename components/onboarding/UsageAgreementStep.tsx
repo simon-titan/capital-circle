@@ -68,7 +68,11 @@ const leadTextProps: HTMLChakraProps<"p"> = {
   textAlign: "center",
 };
 
-export function UsageAgreementStep() {
+/**
+ * `onDone`: was nach der Zustimmung kommt. Ohne ihn geht es wie bisher direkt
+ * ins Dashboard; im Onboarding folgt bei Neukäufern noch „Du bist startklar."
+ */
+export function UsageAgreementStep({ onDone }: { onDone?: () => void } = {}) {
   const [accepted, setAccepted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -112,6 +116,10 @@ export function UsageAgreementStep() {
     }
 
     setSaving(false);
+    if (onDone) {
+      onDone();
+      return;
+    }
     router.replace("/dashboard");
     router.refresh();
   };

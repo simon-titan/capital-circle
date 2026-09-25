@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { addGuildMember, discordBotConfigured } from "@/lib/discord/api";
 import { hatZugangLautProfil, mitgliedsRolleId, setzeMitgliedsrolle } from "@/lib/discord/mitgliedschaft";
+import { protokolliere, stempleSchritt } from "@/lib/onboarding/server";
 
 function siteUrl() {
   return process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -191,6 +192,11 @@ export async function GET(request: Request) {
     return NextResponse.redirect(
       new URL("/dashboard?discord=error&reason=profile_not_updated", siteUrl()),
     );
+  }
+
+  // Start-Checkliste: Schritt 1 abhaken und messen. Wirft nie (Migration 107 evtl. noch nicht da).
+  if (await stempleSchritt(service, user.id, "discord_verbunden_am")) {
+    await protokolliere(service, user.id, "onboarding_discord_connected");
   }
 
   return NextResponse.redirect(new URL("/dashboard?discord=connected", siteUrl()));

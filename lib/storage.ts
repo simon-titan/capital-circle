@@ -1,4 +1,5 @@
 import {
+  DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
   ListObjectsV2Command,
@@ -168,6 +169,31 @@ export async function putObjectBody(
     }),
   );
   r2TrefferCache.add(storageKey);
+}
+
+/**
+ * Löscht ein Objekt in R2. Fehlt es schon, meldet S3 trotzdem Erfolg — ein
+ * zweiter Aufruf ist also harmlos. Der Altbestand (Hetzner) wird nie
+ * angefasst: Dort wird nur noch gelesen.
+ */
+export async function deleteObject(storageKey: string) {
+  const cfgErr = getStorageMisconfiguration();
+  if (cfgErr) {
+    throw new Error(cfgErr);
+  }
+  await storageClient.send(new DeleteObjectCommand({ Bucket: bucket, Key: storageKey }));
+  r2TrefferCache.delete(storageKey);
+}
+
+/** Größe eines Objekts in R2 in Bytes — `null`, wenn es nicht existiert. */
+export async function getObjectSize(storageKey: string): Promise<number | null> {
+  try {
+    const out = await storageClient.send(new HeadObjectCommand({ Bucket: bucket, Key: storageKey }));
+    r2TrefferCache.add(storageKey);
+    return typeof out.ContentLength === "number" ? out.ContentLength : 0;
+  } catch {
+    return null;
+  }
 }
 
 export type ListedObject = { key: string; size?: number };

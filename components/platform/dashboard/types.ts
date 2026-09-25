@@ -143,6 +143,23 @@ export type DiscordStatus = {
   username: string | null;
 };
 
+/**
+ * Start-Checkliste über „Als nächstes“ („Dein Start bei Capital Circle“) —
+ * nur für Neukäufer bis zum Abschluss des Onboardings, sonst `null`.
+ * Zustand und Erkennung: `lib/onboarding/checkliste.ts`.
+ */
+export type OnboardingCheckliste = {
+  discord: boolean;
+  community: boolean;
+  communityLinkGeoeffnet: boolean;
+  kurs: boolean;
+  passwortOffen: boolean;
+  fertig: boolean;
+  vorstellungsLink: string | null;
+  /** Erste Lektion des empfohlenen Moduls bzw. das zuletzt gesehene. */
+  lernpfadHref: string;
+};
+
 export type DashboardViewData = {
   firstName: string;
   isPaid: boolean;
@@ -157,4 +174,5 @@ export type DashboardViewData = {
   appointment: AppointmentSummary;
   termine: TerminZeile[];
   discord: DiscordStatus;
+  onboarding: OnboardingCheckliste | null;
 };

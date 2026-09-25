@@ -23,6 +23,10 @@ interface JournalContextValue {
   loading: boolean;
   reload: () => Promise<void>;
   reloadAccounts: () => Promise<void>;
+  /** Nach dem Löschen: Trade sofort aus dem State nehmen — Kennzahlen rechnen ohne Neuladen neu. */
+  removeTrade: (id: string) => void;
+  /** Nach einer Änderung (Notiz, Gebühren): die Zeile durch die Antwort des Servers ersetzen. */
+  replaceTrade: (row: JournalTradeRow) => void;
   /** Öffnet den "Trade hinzufügen"-Dialog — Sidebar, Home und Empty-State teilen ihn. */
   addTradeOpen: boolean;
   openAddTrade: () => void;
@@ -133,6 +137,14 @@ export function JournalProvider({ children }: { children: React.ReactNode }) {
     setTrades(await fetchTrades(activeAccountId));
   }, [reloadAccounts, fetchTrades, activeAccountId]);
 
+  const removeTrade = useCallback((id: string) => {
+    setTrades((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  const replaceTrade = useCallback((row: JournalTradeRow) => {
+    setTrades((prev) => prev.map((t) => (t.id === row.id ? row : t)));
+  }, []);
+
   useEffect(() => {
     void (async () => {
       setLoading(true);
@@ -173,6 +185,8 @@ export function JournalProvider({ children }: { children: React.ReactNode }) {
       loading,
       reload,
       reloadAccounts,
+      removeTrade,
+      replaceTrade,
       addTradeOpen,
       openAddTrade,
       closeAddTrade,
@@ -188,6 +202,8 @@ export function JournalProvider({ children }: { children: React.ReactNode }) {
       loading,
       reload,
       reloadAccounts,
+      removeTrade,
+      replaceTrade,
       addTradeOpen,
       openAddTrade,
       closeAddTrade,

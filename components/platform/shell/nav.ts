@@ -1,4 +1,14 @@
-import { BookMarked, GraduationCap, LayoutGrid, Package, Radio, type LucideIcon } from "lucide-react";
+import {
+  BookMarked,
+  Building2,
+  GraduationCap,
+  LayoutGrid,
+  LineChart,
+  Package,
+  Radio,
+  Repeat,
+  type LucideIcon,
+} from "lucide-react";
 
 /**
  * `paid` = Free-Mitglieder sehen den Punkt, aber gesperrt.
@@ -30,9 +40,8 @@ export const NAV_GROUPS: NavGroup[] = [
   /**
    * „Codex“ am 16.09.2026 auf Wunsch aus der Navigation genommen. Die Seite
    * /codex bleibt bestehen und unverändert, wird aber von keiner Stelle mehr
-   * verlinkt — sie ist nur noch über die direkte URL erreichbar. Die
-   * Codex-Inhalte selbst laufen davon unabhängig weiter im Onboarding
-   * (components/onboarding/CodexStep.tsx).
+   * verlinkt — sie ist nur noch über die direkte URL erreichbar. Der alte
+   * Codex-Schritt im Onboarding ist seit 26.09.2026 entfernt.
    *
    * Damit blieb nur noch „Module“ übrig, und das zeigte auf dieselbe Seite wie
    * der Bereich selbst. Ein Aufklapp-Pfeil auf einen einzigen Unterpunkt, der
@@ -80,4 +89,26 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: "/arsenal/pdfs", label: "PDFs", access: "paid" },
     ],
   },
+];
+
+export type ToolItem = {
+  key: string;
+  label: string;
+  icon: LucideIcon;
+  href: string;
+};
+
+/**
+ * Sektion „Tools“ (seit 25.09.2026, Kunden-Mockup „DASHBOARD UPDATE“): steht
+ * zwischen Hauptnavigation und Konto-Block. Alle drei Seiten sind nur für
+ * zahlende Mitglieder — Free sieht sie mit Schloss, wie die übrigen
+ * `paid`-Punkte.
+ *
+ * Nicht verwechseln mit „Tools & Software“ unter Ressourcen: das ist die
+ * Arsenal-Liste aus dem Admin, hier stehen unsere eigenen Partner-Zugänge.
+ */
+export const TOOLS_ITEMS: ToolItem[] = [
+  { key: "tradingview", label: "TradingView", icon: LineChart, href: "/tools/tradingview" },
+  { key: "tradesyncer", label: "TradeSyncer", icon: Repeat, href: "/tools/tradesyncer" },
+  { key: "propfirms", label: "Propfirms", icon: Building2, href: "/tools/propfirms" },
 ];

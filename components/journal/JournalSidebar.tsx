@@ -13,6 +13,12 @@ const NAV_ITEMS = [
   { href: "/trading-journal/tage", label: "Tages Ansicht", short: "Tage", icon: CalendarDays },
 ] as const;
 
+/** Die Detailansicht eines Trades gehört zu „Trades“ — sonst wäre dort kein Eintrag aktiv. */
+function istAktiv(pathname: string, href: string): boolean {
+  if (pathname === href) return true;
+  return href === "/trading-journal/trades" && pathname.startsWith("/trading-journal/trades/");
+}
+
 /** Aktiver Eintrag wie in der Plattform-Sidebar: Gold-Wash, Gold-Kante, leichter Glow. */
 function navItemProps(active: boolean) {
   return {
@@ -109,7 +115,7 @@ export function JournalSidebar() {
           }}
         >
           {NAV_ITEMS.map((item) => {
-            const active = pathname === item.href;
+            const active = istAktiv(pathname, item.href);
             return (
               <Button
                 key={item.href}
@@ -175,7 +181,7 @@ export function JournalSidebar() {
         </Text>
 
         {NAV_ITEMS.map((item) => {
-          const active = pathname === item.href;
+          const active = istAktiv(pathname, item.href);
           return (
             <Button
               key={item.href}

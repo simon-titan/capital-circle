@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { protokolliere, stempleSchritt } from "@/lib/onboarding/server";
 import {
   addSecondsToDayMap,
   berlinCalendarDayKey,
@@ -167,6 +168,23 @@ export async function POST(request: Request) {
   if (upsertError) {
     console.error("[progress] upsert error:", upsertError.code, upsertError.message, { userId, moduleId });
     return NextResponse.json({ ok: false, error: upsertError.message }, { status: 500 });
+  }
+
+  /*
+   * Start-Checkliste, Schritt 3 „Lernpfad starten": erledigt mit dem ersten
+   * gesehenen Fortschritt. Nur beim ersten Fortschritt in einem Modul
+   * nachsehen (alte Karte leer), damit nicht jeder Fünf-Sekunden-Ping eine
+   * Abfrage mehr kostet. Beiwerk — wirft nie, ändert an der Antwort nichts.
+   */
+  if (Object.keys(oldMap).length === 0 && Object.values(mergedMap).some((s) => s > 0)) {
+    try {
+      const service = createServiceClient();
+      if (await stempleSchritt(service, userId, "kurs_gestartet_am")) {
+        await protokolliere(service, userId, "onboarding_course_started", { modul: moduleId });
+      }
+    } catch (err) {
+      console.warn("[progress] Onboarding-Kursstart nicht gestempelt:", err);
+    }
   }
 
   /**

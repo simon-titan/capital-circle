@@ -1,11 +1,19 @@
 "use client";
 
-import { Box, Stack, Text } from "@chakra-ui/react";
+import { Box, Button, Stack, Text } from "@chakra-ui/react";
+import { ArrowRight } from "lucide-react";
+import NextLink from "next/link";
 import { useJournal } from "../JournalProvider";
-import { ApexPromoCard } from "./ApexPromoCard";
+import { SectionCard } from "../SectionCard";
+import { TradesTable } from "../TradesTable";
 import { StarterChecklist } from "./StarterChecklist";
-import { YoutubeCarousel } from "./YoutubeCarousel";
 
+/**
+ * Journal-Home. Bewusst schlank: Das Journal dreht sich nur um Trades,
+ * Auswertung und Verbesserung. Die Apex-Werbung wohnt seit 25.09.2026 unter
+ * Tools → Propfirms, die YouTube-Leiste ist ersatzlos entfallen. An ihrer
+ * Stelle stehen die letzten Trades — ein Klick führt direkt in den Eintrag.
+ */
 export function HomeView({ firstName }: { firstName: string }) {
   const { trades, loading, openAddTrade } = useJournal();
 
@@ -32,9 +40,26 @@ export function HomeView({ firstName }: { firstName: string }) {
 
       {!loading && <StarterChecklist done={trades.length > 0} onAddTrade={openAddTrade} />}
 
-      <ApexPromoCard />
-
-      <YoutubeCarousel />
+      {trades.length > 0 ? (
+        <SectionCard
+          title="Letzte Trades"
+          action={
+            <Button
+              as={NextLink}
+              href="/trading-journal/trades"
+              size="xs"
+              variant="ghost"
+              color="var(--cc-text-2)"
+              rightIcon={<ArrowRight size={13} />}
+              _hover={{ color: "var(--cc-gold-light)", bg: "transparent" }}
+            >
+              Alle Trades
+            </Button>
+          }
+        >
+          <TradesTable trades={trades} limit={5} />
+        </SectionCard>
+      ) : null}
     </Stack>
   );
 }

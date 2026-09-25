@@ -484,6 +484,7 @@ const PRIVAT = [
   "discord_video_views",
   "discord_channels",
   "discord_sync_log",
+  "tradingview_zugaenge",
   "telegram_leads",
   "insight_tracking_links",
   "insight_tracking_events",
@@ -492,12 +493,17 @@ const PRIVAT = [
   "journal_accounts",
   "journal_import_batches",
   "journal_trades",
+  "journal_trade_bilder",
+  "journal_trade_geloescht",
   "user_notes",
   "user_progress",
   "homework_user_official_done",
   "homework_user_custom_tasks",
   "news_saves",
   "news_read_status",
+  // 107_onboarding: Antworten nur die eigene Zeile, Ereignisse gar nicht.
+  "onboarding_antworten",
+  "onboarding_ereignisse",
 ];
 
 async function zaehlen(client, tabelle, filter) {

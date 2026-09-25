@@ -9,6 +9,7 @@ import { ContinueCard } from "./ContinueCard";
 import { DiscordCard } from "./DiscordCard";
 import { JournalCard } from "./JournalCard";
 import { LiveCard } from "./LiveCard";
+import { OnboardingCheckliste } from "./OnboardingCheckliste";
 import { ProgressCard } from "./ProgressCard";
 import { UmzugCard } from "./UmzugCard";
 import { WeekTaskCard } from "./WeekTaskCard";
@@ -88,10 +89,16 @@ export function DashboardView({ data }: { data: DashboardViewData }) {
       */}
       <UmzugCard mb={5} {...rise(0)} />
 
-      {/* Nur mobil sichtbar; auf dem Desktop trägt die Sidebar den Discord-Punkt. */}
-      <DiscordCard discord={data.discord} mb={5} {...rise(0)} />
+      {/*
+        Nur mobil sichtbar; auf dem Desktop trägt die Sidebar den Discord-Punkt.
+        Solange die Start-Checkliste steht, ist Discord dort Schritt 1 — nicht doppelt.
+      */}
+      {data.onboarding ? null : <DiscordCard discord={data.discord} mb={5} {...rise(0)} />}
 
       {data.showApplyPrompt ? <ApplyPrompt mb={5} {...rise(0)} /> : null}
+
+      {/* Nur für Neukäufer bis zum Abschluss des Onboardings, über „Als nächstes“. */}
+      {data.onboarding ? <OnboardingCheckliste zustand={data.onboarding} mb={5} {...rise(0)} /> : null}
 
       <Stack spacing={5}>
         <Grid templateColumns={{ base: "minmax(0, 1fr)", xl: "minmax(0, 1.8fr) minmax(0, 1fr)" }} gap={5}>

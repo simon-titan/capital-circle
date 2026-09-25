@@ -145,6 +145,16 @@ export async function POST(request: Request) {
         .eq("account_id", accountId)
         .in("dedupe_key", keys.slice(i, i + INSERT_CHUNK_SIZE));
       for (const row of data ?? []) if (row.dedupe_key) known.add(row.dedupe_key);
+
+      // Vom Nutzer gelöschte Trades bleiben gelöscht — auch wenn dieselbe CSV
+      // noch einmal kommt. Ohne Migration 106 fehlt die Tabelle; dann kommt
+      // der Fehler zurück und es bleibt beim alten Verhalten.
+      const { data: geloescht } = await supabase
+        .from("journal_trade_geloescht")
+        .select("dedupe_key")
+        .eq("account_id", accountId)
+        .in("dedupe_key", keys.slice(i, i + INSERT_CHUNK_SIZE));
+      for (const row of geloescht ?? []) if (row.dedupe_key) known.add(row.dedupe_key);
     }
 
     const fresh = trades.filter((t) => !known.has(t.dedupeKey));

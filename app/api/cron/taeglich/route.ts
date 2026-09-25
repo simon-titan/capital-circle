@@ -12,8 +12,10 @@ import {
   ladeAufraeumstand,
 } from "@/lib/discord/aufraeumen";
 import { mitgliedsRolleId } from "@/lib/discord/mitgliedschaft";
+import { erkenneVorstellungen } from "@/lib/onboarding/vorstellung";
 import { reconcileDiscordRoles, type ReconcileResult } from "@/lib/discord/reconcile";
 import { requireAdminRole } from "@/lib/supabase/admin-auth";
+import { markiereTvEntzuege } from "@/lib/tradingview/ablauf";
 import { createServiceClient } from "@/lib/supabase/service";
 import { beendeAbgelaufeneWhopZugaenge } from "@/lib/whop-umzug/ablauf";
 import { ladeUmzugKreis, zaehleKreis } from "@/lib/whop-umzug/kreis";
@@ -49,6 +51,10 @@ export const maxDuration = 300;
  *    der einmal ausblieb oder an Discord scheiterte. Über
  *    `ROLLENENTZUG_MAX_PRO_NACHT` wird niemandem etwas genommen (Datenfehler,
  *    keine Abwanderung).
+ * 3a. **TradingView-Zugänge zum Entzug vormerken** (`lib/tradingview/ablauf.ts`):
+ *    Wer keinen Plattformzugang mehr hat, landet in der Admin-Queue „Entziehen“,
+ *    das Team bekommt eine Sammelmeldung. Ausgetragen wird von Hand auf
+ *    TradingView. Gleiche Regel und gleiche Stelle wie beim Rollenabgleich.
  * 4. **Der Rauswurf nach der Karenz** (`lib/discord/aufraeumen.ts`): Wer seit
  *    `KARENZ_TAGE` keinen Zugang mehr hat, bekommt eine Abschiedsnachricht und
  *    wird vom Server entfernt. Die einzige Handlung hier, die sich nicht
@@ -116,6 +122,9 @@ async function lauf() {
   */
   const rollen = await rollenAbgleich(true);
 
+  // Nach den Rollen: derselbe Zustand der Nacht, dieselbe Regel (`is_paid`).
+  const tradingview = await markiereTvEntzuege(supabase, true);
+
   // Zuletzt der Rauswurf. Ohne Discord-Einrichtung übersprungen.
   const entfernt = discordBotConfigured()
     ? await entferneFaelligeAutomatisch(supabase)
@@ -134,6 +143,9 @@ async function lauf() {
   */
   const kaufweg = await kaufwegAbschluss();
 
+  // Onboarding: Vorstellungen im Discord-Kanal abhaken. Statistik wie oben, nicht in `ok`.
+  const vorstellungen = await erkenneVorstellungen(supabase);
+
   return NextResponse.json({
     ok:
       aufschuebe.fehler.length === 0 &&
@@ -142,6 +154,7 @@ async function lauf() {
       !whopAblauf.ausgesetzt &&
       !rollen.fehler &&
       !rollen.ausgesetzt &&
+      tradingview.fehler.length === 0 &&
       (entfernt.gelaufen || !discordBotConfigured()),
     dauer_ms: Date.now() - start,
     aufschuebe,
@@ -149,8 +162,10 @@ async function lauf() {
     whopAblauf,
     whopKampagne: await whopKampagneStand(),
     rollen,
+    tradingview,
     entfernt,
     kaufweg,
+    vorstellungen,
   });
 }
 
@@ -308,6 +323,7 @@ async function probe() {
     whopAblauf: await beendeAbgelaufeneWhopZugaenge(supabase, false),
     whopKampagne: await whopKampagneStand(),
     rollen: await rollenAbgleich(false),
+    tradingview: await markiereTvEntzuege(supabase, false),
     rauswurf: await rauswurfProbe(supabase),
     hinweis:
       "Grob gerechnet. Hat eine Person inzwischen einen anderen Zugang (neues Abo, Lifetime), " +

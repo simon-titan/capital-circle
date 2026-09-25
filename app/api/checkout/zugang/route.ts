@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ladeKaufStatus } from "@/lib/checkout/kauf-status";
+import { stempleProfil } from "@/lib/onboarding/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -62,6 +63,9 @@ export async function POST(request: Request) {
     console.error("[checkout/zugang] Passwort setzen fehlgeschlagen:", setzFehler.message);
     return NextResponse.json({ ok: false, fehler: setzFehler.message }, { status: 500 });
   }
+
+  // Merker für die Start-Checkliste im Dashboard („Zugang absichern" entfällt). Wirft nie.
+  await stempleProfil(service, status.userId, "passwort_gesetzt_am");
 
   /**
    * Direkt anmelden — mit dem Passwort, das wir gerade selbst gesetzt haben.

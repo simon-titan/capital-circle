@@ -21,7 +21,7 @@ const ziele = [
   ["videos", ["thumbnail_key"]], ["analysis_posts", ["image_storage_key","cover_image_storage_key"]],
   ["news_posts", ["cover_image_storage_key"]], ["arsenal_cards", ["logo_storage_key"]],
   ["live_sessions", ["thumbnail_storage_key"]], ["live_session_videos", ["thumbnail_key"]],
-  ["journal_trades", ["screenshot_storage_key"]],
+  ["journal_trades", ["screenshot_storage_key"]], ["journal_trade_bilder", ["storage_key"]],
 ];
 let alle = 0;
 for (const [t, cols] of ziele) {

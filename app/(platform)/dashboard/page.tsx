@@ -42,7 +42,8 @@ import {
   type LastWatchedModuleData,
   type RecommendedModuleData,
 } from "@/lib/server-data";
-import { createClient } from "@/lib/supabase/server";
+import { ladeCheckliste, schliesseAbWennFertig } from "@/lib/onboarding/checkliste";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { calculateStreak, maxPlausibleStreakDays, sanitizeStreakValue } from "@/lib/streak";
 
 export const dynamic = "force-dynamic";
@@ -433,6 +434,21 @@ export default async function DashboardPage({
 
   const continueItem = await toContinueItem(supabase, lastWatched, recommended, academyRows);
 
+  /*
+   * Start-Checkliste („Dein Start bei Capital Circle") — nur Neukäufer nach den
+   * Onboarding-Fragen. Wirft nie; ohne Migration 107 bleibt sie einfach weg.
+   * Sind alle Schritte erledigt, zeigt die Box einmal „Alles eingerichtet."
+   * und ist ab dem nächsten Aufruf verschwunden (Abschluss wird hier gestempelt).
+   */
+  let checkliste: Awaited<ReturnType<typeof ladeCheckliste>> = null;
+  try {
+    const onboardingService = createServiceClient();
+    checkliste = await ladeCheckliste(onboardingService, userId, profileAny);
+    if (checkliste?.fertig) await schliesseAbWennFertig(onboardingService, userId);
+  } catch (err) {
+    console.warn("[dashboard] Start-Checkliste übersprungen:", err);
+  }
+
   const data: DashboardViewData = {
     firstName: firstName(displayName),
     isPaid,
@@ -466,6 +482,7 @@ export default async function DashboardPage({
     termine: toTermine(kommendeEvents, now),
     // Sichtbar nur unterhalb von `lg` — darüber steht Discord in der Sidebar.
     discord: { visible: isPaid, username: (discordConnection?.discord_username as string | null) ?? null },
+    onboarding: checkliste ? { ...checkliste, lernpfadHref: continueItem?.href ?? "/ausbildung" } : null,
   };
 
   return (

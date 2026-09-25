@@ -97,6 +97,10 @@ export function SetPasswordForm() {
       return;
     }
 
+    // Merker für die Start-Checkliste („Zugang absichern" entfällt). Kurz
+    // abwarten, sonst bricht der Seitenwechsel die Anfrage ab — ein Fehler
+    // hier hält aber niemanden auf.
+    await fetch("/api/onboarding/passwort", { method: "POST" }).catch(() => undefined);
     window.location.assign("/dashboard");
   }
 
