@@ -373,30 +373,29 @@ function ToolsList({ pathname, viewer, onNavigate }: { pathname: string; viewer:
                 {...rowProps(false, "48px")}
                 color="var(--cc-text-3)"
               >
-                <RowInner
-                  icon={item.icon}
-                  label={item.label}
-                  trailing={
-                    <Flex align="center" gap="8px" flexShrink={0}>
-                      <Box
-                        as="span"
-                        px="7px"
-                        py="3px"
-                        borderRadius="full"
-                        border="1px solid var(--cc-gold-line)"
-                        color="var(--cc-gold-light)"
-                        fontSize="10px"
-                        fontWeight={500}
-                        letterSpacing="0.04em"
-                        textTransform="uppercase"
-                        lineHeight={1}
-                      >
-                        Demnächst
-                      </Box>
-                      <Lock size={13} strokeWidth={1.75} aria-hidden />
-                    </Flex>
-                  }
-                />
+                {/*
+                  Badge unter statt neben dem Label: In der 264px-Spalte blieben
+                  neben Badge und Schloss nur rund 30px für „TradingView“, das
+                  Wort brach buchstabenweise um (Screenshot Simon, 26.09.2026).
+                */}
+                <item.icon size={24} strokeWidth={1.5} aria-hidden />
+                <Flex as="span" direction="column" align="flex-start" gap="5px" flex="1" minW={0}>
+                  <Box as="span" whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis" maxW="100%">
+                    {item.label}
+                  </Box>
+                  <Box
+                    as="span"
+                    color="var(--cc-gold-light)"
+                    fontSize="10px"
+                    fontWeight={500}
+                    letterSpacing="0.06em"
+                    textTransform="uppercase"
+                    lineHeight={1}
+                  >
+                    Demnächst
+                  </Box>
+                </Flex>
+                <Lock size={13} strokeWidth={1.75} aria-hidden style={{ flexShrink: 0 }} />
               </Box>
             ) : locked ? (
               <Box
