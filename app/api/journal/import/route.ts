@@ -1,10 +1,10 @@
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
-import { hasActivePaidAccess } from "@/lib/access-control/has-access";
 import { parseCsv, toObjects } from "@/lib/journal/import/csv";
 import { reconstructTrades } from "@/lib/journal/import/reconstruct";
 import { DEFAULT_IMPORT_TIMEZONE, isSupportedTimezone } from "@/lib/journal/import/time";
 import { adaptTradovate } from "@/lib/journal/import/tradovate";
+import { ladeInhaltsZugang } from "@/lib/membership";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -61,9 +61,8 @@ export async function POST(request: Request) {
   }
 
   // Zweite Verteidigungslinie neben dem Layout-Gate: RLS prüft Eigentum,
-  // nicht den Bezahlstatus.
-  const { hasAccess } = await hasActivePaidAccess(user.id);
-  if (!hasAccess) {
+  // nicht den Bezahlstatus. Dieselbe Regel wie das Layout-Gate.
+  if (!(await ladeInhaltsZugang(supabase, user.id))) {
     return NextResponse.json({ ok: false, error: "paid_membership_required" }, { status: 403 });
   }
 

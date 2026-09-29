@@ -1,3 +1,5 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 export function isFreeMember(profile: {
   membership_tier?: string | null;
   is_paid?: boolean | null;
@@ -29,14 +31,25 @@ export function isApprovedFreeMember(profile: {
  *
  * Bewusst nicht `evaluateAccess()` aus `lib/access-control/has-access.ts`: Die
  * Whop-Altkonten stehen auf `membership_tier = 'free'` mit `is_paid = true`
- * und haben über `is_paid` vollen Institutszugang. `evaluateAccess()` gilt nur
- * für das Trading Journal.
+ * und haben über `is_paid` vollen Institutszugang. Auch das Trading Journal
+ * gibt seit 29.09.2026 nach dieser Regel frei — mit `evaluateAccess()` flog bis
+ * dahin jedes Whop-Konto beim Öffnen des Journals zurück aufs Dashboard.
  */
 export function hatInhaltsZugang(profile: {
   is_paid?: boolean | null;
   is_admin?: boolean | null;
 } | null | undefined): boolean {
   return Boolean(profile?.is_paid) || Boolean(profile?.is_admin);
+}
+
+/**
+ * `hatInhaltsZugang()` für Route-Handler, die das Profil noch nicht geladen
+ * haben. Liest mit dem Client des Aufrufers — das eigene Profil ist per RLS
+ * lesbar. Fehlt es, gibt es keinen Zugang.
+ */
+export async function ladeInhaltsZugang(supabase: SupabaseClient, userId: string): Promise<boolean> {
+  const { data } = await supabase.from("profiles").select("is_paid,is_admin").eq("id", userId).maybeSingle();
+  return hatInhaltsZugang(data as { is_paid: boolean | null; is_admin: boolean | null } | null);
 }
 
 /**

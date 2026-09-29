@@ -10,7 +10,6 @@ import type {
   StreakDay,
   TerminZeile,
 } from "@/components/platform/dashboard/types";
-import { evaluateAccess } from "@/lib/access-control/has-access";
 import { getLektionsFenster } from "@/lib/dashboard-lektion";
 import { clockLabel, daysFromToday, relativeDayLabel, shortDateLabel } from "@/lib/dashboard-time";
 import {
@@ -42,6 +41,7 @@ import {
   type LastWatchedModuleData,
   type RecommendedModuleData,
 } from "@/lib/server-data";
+import { hatInhaltsZugang } from "@/lib/membership";
 import { ladeCheckliste, schliesseAbWennFertig } from "@/lib/onboarding/checkliste";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { calculateStreak, maxPlausibleStreakDays, sanitizeStreakValue } from "@/lib/streak";
@@ -452,7 +452,8 @@ export default async function DashboardPage({
   const data: DashboardViewData = {
     firstName: firstName(displayName),
     isPaid,
-    canUseJournal: evaluateAccess(profile).hasAccess,
+    // Dieselbe Regel wie das Layout-Gate des Journals (`hatInhaltsZugang`).
+    canUseJournal: hatInhaltsZugang(profile),
     showApplyPrompt,
     continueItem,
     streak: { days: streakDaysSanitized, week, weekdaysActive, weekdaysTotal: 5 },

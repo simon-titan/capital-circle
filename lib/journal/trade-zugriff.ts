@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
-import { hasActivePaidAccess } from "@/lib/access-control/has-access";
+import { ladeInhaltsZugang } from "@/lib/membership";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -44,8 +44,7 @@ export async function ladeEigenenTrade(tradeId: string): Promise<Ergebnis> {
     return { ok: false, antwort: NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 }) };
   }
 
-  const { hasAccess } = await hasActivePaidAccess(user.id);
-  if (!hasAccess) {
+  if (!(await ladeInhaltsZugang(supabase, user.id))) {
     return {
       ok: false,
       antwort: NextResponse.json({ ok: false, error: "paid_membership_required" }, { status: 403 }),
