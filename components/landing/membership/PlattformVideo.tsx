@@ -96,29 +96,18 @@ export function PlattformVideo() {
       aria-hidden
       position="relative"
       overflow="hidden"
-      // Rahmen mit Gold-/Weiß-Schein (Nutzerwunsch 29.09.2026): Champagner-
-      // Kante, darum ein warmer Gold-Glow und weit außen ein Hauch Weiß, der
-      // das Video vom Himmel abhebt. Werte aus der Hero-Karte (DESIGN.md →
+      // Nur Schein, keine Kante (Nutzerwunsch 29.09.2026): ein warmer
+      // Gold-Glow und weit außen ein Hauch Weiß heben das Video vom Himmel ab.
+      // Rahmenlinie und Lichtkante oben standen einen Tag lang hier und sind
+      // ausdrücklich wieder raus. Werte aus der Hero-Karte (DESIGN.md →
       // „Hero atmend"), nur ohne Atmen — ein Video bewegt sich schon selbst.
       borderRadius={{ base: "12px", md: "16px" }}
-      border="1px solid rgba(232, 192, 148, 0.5)"
       boxShadow={{
         base: "0 0 22px rgba(212, 176, 128, 0.22), 0 0 48px rgba(255, 255, 255, 0.05), 0 14px 34px rgba(0, 0, 0, 0.5)",
-        md: "0 0 0 1px rgba(255, 255, 255, 0.04), 0 0 40px rgba(212, 176, 128, 0.26), 0 0 110px rgba(255, 255, 255, 0.07), 0 28px 70px rgba(0, 0, 0, 0.55)",
+        md: "0 0 40px rgba(212, 176, 128, 0.26), 0 0 110px rgba(255, 255, 255, 0.07), 0 28px 70px rgba(0, 0, 0, 0.55)",
       }}
       bg="var(--cc-bg)"
     >
-      {/* Lichtkante oben: Weiß in der Mitte, zu den Ecken Gold, dann aus. */}
-      <Box
-        position="absolute"
-        top={0}
-        left="6%"
-        right="6%"
-        h="1px"
-        zIndex={1}
-        pointerEvents="none"
-        bg="linear-gradient(90deg, transparent, rgba(232, 192, 148, 0.8) 25%, rgba(255, 255, 255, 0.95) 50%, rgba(232, 192, 148, 0.8) 75%, transparent)"
-      />
       <Box
         as="video"
         ref={ref}
