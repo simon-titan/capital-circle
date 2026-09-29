@@ -40,12 +40,17 @@ export function MembershipHero({ bewertungen }: { bewertungen: Bewertungsspiegel
             etwas läuft, statt es nur zu behaupten. Der Punkt bleibt Gold hell:
             ein zweiter Akzentton käme sonst über die Türschwelle der Seite.
           */}
+          {/* Seit 29.09.2026 ein ganzer Satz statt „Premium Trading Community":
+              Auf dem Handy passt er nicht in eine Zeile, die Pill bricht dort
+              deshalb um und rundet sich zur Kapsel statt zum Kreis. */}
           <HStack
             {...heroRise(0)}
             spacing={{ base: 2.5, md: 3 }}
-            h={{ base: "32px", md: "36px" }}
+            minH={{ base: "32px", md: "36px" }}
+            py={{ base: 2, md: 0 }}
             px={{ base: 4, md: 5 }}
-            borderRadius="full"
+            maxW="100%"
+            borderRadius={{ base: "18px", md: "full" }}
             border="1px solid var(--cc-line-strong)"
             bg="rgba(255, 255, 255, 0.02)"
           >
@@ -62,11 +67,12 @@ export function MembershipHero({ bewertungen }: { bewertungen: Bewertungsspiegel
             <Text
               as="span"
               fontSize={{ base: "11px", md: "13px" }}
+              lineHeight={{ base: "16px", md: "normal" }}
               fontWeight={600}
-              letterSpacing="0.22em"
+              letterSpacing={{ base: "0.16em", md: "0.22em" }}
               textTransform="uppercase"
               color="var(--cc-text-soft)"
-              whiteSpace="nowrap"
+              whiteSpace={{ base: "normal", md: "nowrap" }}
             >
               {hero.eyebrow}
             </Text>
@@ -106,21 +112,12 @@ export function MembershipHero({ bewertungen }: { bewertungen: Bewertungsspiegel
         </Stack>
 
         {/*
-          Das Video taucht nach unten ab, statt mit einer Kante zu enden —
-          sie ist ein Blick in die Plattform, kein abgeschlossenes Element.
+          Das Video steht seit 29.09.2026 in einem geschlossenen Rahmen mit
+          Gold-/Weiß-Schein (Nutzerwunsch). Der frühere Verlauf, mit dem die
+          Vorschau nach unten abtauchte, hätte die untere Kante verschluckt.
         */}
-        <Box {...heroRise(4)} position="relative" mb={{ base: -6, md: -10 }}>
+        <Box {...heroRise(4)} position="relative">
           <PlattformVideo />
-          <Box
-            aria-hidden
-            position="absolute"
-            left={0}
-            right={0}
-            bottom={0}
-            h={{ base: "80px", md: "140px" }}
-            pointerEvents="none"
-            bg="linear-gradient(180deg, transparent, var(--cc-bg))"
-          />
         </Box>
       </Stack>
     </Box>
