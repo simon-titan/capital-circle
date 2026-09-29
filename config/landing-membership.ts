@@ -67,29 +67,6 @@ export const hero = {
   ],
 } as const;
 
-/**
- * Plattform-Vorschau im Hero. Wird als echtes Markup nachgebaut (kein Bild),
- * damit die Vorschau bei einer Designänderung nicht veraltet und auf kleinen
- * Bildschirmen scharf bleibt.
- */
-export const plattformVorschau = {
-  // Nicht "Emre": Die Vorschau zeigt, was der Besucher nach dem Kauf sieht —
-  // und das ist sein eigenes Dashboard, nicht das des Gruenders.
-  begruessung: "Trader",
-  frage: "Was ist jetzt dran?",
-  navPunkte: ["Dashboard", "Institut", "Journal", "Live", "Ressourcen"],
-  lektion: { titel: "NYSE iFVG Momentum", meta: "Lektion 7 von 24", fortschrittProzent: 62 },
-  /**
-   * Die Zahlen muessen zueinander passen — die Vorschau steht unter der
-   * Ueberschrift „Belegt statt behauptet", und wer dort nachrechnet, findet
-   * sonst als Erstes einen Widerspruch. 5 Tage in Folge heisst 5 von 5
-   * Arbeitstagen; 83 Prozent heissen 83 Prozent, also 63 von 76 Lektionen und
-   * acht von zehn Segmenten.
-   */
-  streak: { tage: 5, wocheAktiv: 5, wocheGesamt: 5 },
-  fortschritt: { prozent: 83, lektionen: "63 von 76 Lektionen abgeschlossen", segmenteGefuellt: 8 },
-} as const;
-
 /* ─── 03 Ergebnisse ─────────────────────────────────────────────────────── */
 
 export interface Auszahlung {

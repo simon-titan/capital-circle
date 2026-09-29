@@ -16,6 +16,20 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "2gb",
     },
   },
+  /**
+   * Das Hero-Video (`components/landing/membership/PlattformVideo.tsx`) liegt
+   * unter `public/hero/`. Vercel liefert `public/` sonst mit `max-age=0` aus,
+   * und jeder Besuch fragt die 1–2 MB neu an. Die Dateinamen tragen eine
+   * Versionsziffer — wer eine Datei ersetzt, vergibt einen neuen Namen.
+   */
+  async headers() {
+    return [
+      {
+        source: "/hero/:datei*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
+    ];
+  },
   async redirects() {
     return [
       {

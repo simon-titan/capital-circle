@@ -109,15 +109,16 @@ einmal als Auszahlung.
 Aussortiert wurden ein Zertifikat ohne lesbares Datum, eine Topstep-Funding-Mail ohne Kontogröße
 und eine Dublette.
 
-2026-09-17 (**Hero-Vorschau hängt am Dashboard**): `components/landing/membership/PlattformVorschau.tsx`
-baut das Dashboard als Markup nach und steht auf der Verkaufsseite direkt unter der Headline. Sie
-ist **kein eigenständiges Design** — wer `components/platform/dashboard/**` ändert, zieht sie mit.
-Am 17.09.2026 hing sie einen Tag lang hinterher und zeigte die gelöschte Streak-Karte mit der
-Siebenerreihe. Die Vorschau läuft deshalb jetzt unter **`cc-neutral`** wie das echte Dashboard, und
-ihre Zahlen in `config/landing-membership.ts` (`plattformVorschau`) müssen zueinander passen: Der
-Prozentwert, die Lektionszahl und die gefüllten Segmente zeigen denselben Stand, die Streak-Tage
-passen zu „N von 5 Tagen diese Woche". Ein Widerspruch dort steht unter der Überschrift
-„Belegt statt behauptet" — das ist die teuerste Stelle der Seite für einen Rechenfehler.
+2026-09-29 (**Hero-Video statt Dashboard-Nachbau**): Unter der Headline der Verkaufsseite läuft
+jetzt eine echte Bildschirmaufnahme der Plattform als stummer Loop
+(`components/landing/membership/PlattformVideo.tsx`, Dateien in `public/hero/`). Der Markup-Nachbau
+`PlattformVorschau` samt `plattformVorschau` in der Config ist entfernt — der Eintrag vom 17.09.
+(„Hero-Vorschau hängt am Dashboard") gilt damit nicht mehr. Kein Player: keine Steuerelemente,
+keine Klicks, `aria-hidden`. Je vier Fassungen (AV1 und H.264, Desktop 1872 px und Mobil 1080 px)
+plus WebP-Poster; die Aufnahme ist um die ersten 1,6 s Ladebildschirm gekürzt, damit der Loop auf
+demselben Bild beginnt und endet. `public/hero/` wird ein Jahr `immutable` gecacht
+(`next.config.ts`) — **beim Austausch neue Dateinamen vergeben** (`plattform-2-…`). Der Ordner
+steht im Matcher von `proxy.ts` unter den Ausnahmen.
 
 2026-09-17 (**Kaufweg**): `app/go/[plan]/route.ts` leitet bei jedem Fehlschlag auf `/?fehler=<code>`.
 Der Code wird von `components/landing/membership/KaufFehlerHinweis.tsx` gelesen und über dem Hero

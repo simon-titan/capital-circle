@@ -20,7 +20,7 @@ import { Sektion, SektionsEyebrow } from "./membership-ui";
  * „Ablauf" zeigt seit 09/2026 hierher statt auf die Vergleichstabelle.
  *
  * ── Zwei Nachbauten, ein Screenshot ────────────────────────────────────────
- * 01 und 03 sind Markup (wie `PlattformVorschau`): Sie altern mit dem
+ * 01 und 03 sind Markup: Sie altern mit dem
  * Designsystem statt gegen es und bleiben auf jedem Display scharf. 02 ist ein
  * echter Screenshot aus einer Live-Session — den ließe sich nicht nachbauen,
  * ohne genau das zu verlieren, was ihn glaubwürdig macht: dass dort echte

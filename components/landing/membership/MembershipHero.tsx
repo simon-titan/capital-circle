@@ -5,7 +5,7 @@ import { hero } from "@/config/landing-membership";
 import { heroRise } from "../landing-ui";
 import { BeitrittCta } from "./BeitrittModal";
 import { SterneZeile } from "./membership-ui";
-import { PlattformVorschau } from "./PlattformVorschau";
+import { PlattformVideo } from "./PlattformVideo";
 
 /**
  * Der Seitenkopf.
@@ -16,8 +16,8 @@ import { PlattformVorschau } from "./PlattformVorschau";
  * guten Tagen" ist das, was die meisten nicht schaffen. Stünden beide gleich
  * hell, läse sich der zweite Teil wie ein Nachsatz.
  *
- * Darunter die Plattform-Vorschau: Der Besucher sieht, was er kauft, bevor er
- * ein Wort über den Preis liest.
+ * Darunter die Plattform als stummer Video-Loop (`PlattformVideo`): Der
+ * Besucher sieht, was er kauft, bevor er ein Wort über den Preis liest.
  */import type { Bewertungsspiegel } from "@/lib/landing-reviews";
 
 export function MembershipHero({ bewertungen }: { bewertungen: Bewertungsspiegel }) {
@@ -106,11 +106,11 @@ export function MembershipHero({ bewertungen }: { bewertungen: Bewertungsspiegel
         </Stack>
 
         {/*
-          Die Vorschau taucht nach unten ab, statt mit einer Kante zu enden —
+          Das Video taucht nach unten ab, statt mit einer Kante zu enden —
           sie ist ein Blick in die Plattform, kein abgeschlossenes Element.
         */}
         <Box {...heroRise(4)} position="relative" mb={{ base: -6, md: -10 }}>
-          <PlattformVorschau />
+          <PlattformVideo />
           <Box
             aria-hidden
             position="absolute"

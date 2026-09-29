@@ -368,6 +368,6 @@ export const config = {
   // Sitzung — ohne die Ausnahme bekäme er die Weiterleitung auf `/login`
   // (bzw. im Wartungsmodus auf `/wartung`) und zeigte kein Bild.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|logo/|bg/|svg/|tg-slides/|founder/|cases/|apex/|prozess/|nachweise/|partner/|apple-touch-icon|new-apple|opengraph-image|twitter-image|discord-og|termin-og).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|logo/|bg/|svg/|tg-slides/|founder/|cases/|apex/|prozess/|nachweise/|hero/|partner/|apple-touch-icon|new-apple|opengraph-image|twitter-image|discord-og|termin-og).*)",
   ],
 };
