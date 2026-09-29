@@ -110,15 +110,15 @@ Aussortiert wurden ein Zertifikat ohne lesbares Datum, eine Topstep-Funding-Mail
 und eine Dublette.
 
 2026-09-29 (**Hero-Video statt Dashboard-Nachbau**): Unter der Headline der Verkaufsseite läuft
-jetzt eine echte Bildschirmaufnahme der Plattform als stummer Loop
-(`components/landing/membership/PlattformVideo.tsx`, Dateien in `public/hero/`). Der Markup-Nachbau
-`PlattformVorschau` samt `plattformVorschau` in der Config ist entfernt — der Eintrag vom 17.09.
-(„Hero-Vorschau hängt am Dashboard") gilt damit nicht mehr. Kein Player: keine Steuerelemente,
-keine Klicks, `aria-hidden`. Je vier Fassungen (AV1 und H.264, Desktop 1872 px und Mobil 1080 px)
-plus WebP-Poster; die Aufnahme ist um die ersten 1,6 s Ladebildschirm gekürzt, damit der Loop auf
-demselben Bild beginnt und endet. `public/hero/` wird ein Jahr `immutable` gecacht
-(`next.config.ts`) — **beim Austausch neue Dateinamen vergeben** (`plattform-2-…`). Der Ordner
-steht im Matcher von `proxy.ts` unter den Ausnahmen.
+jetzt ein geschnittener 60-s-Rundgang durch die Plattform als stummer Loop
+(`components/landing/membership/PlattformVideo.tsx`, Dateien in `public/hero/`, Quelle
+„website hero.mp4"). Der Markup-Nachbau `PlattformVorschau` samt `plattformVorschau` in der Config
+ist entfernt — der Eintrag vom 17.09. („Hero-Vorschau hängt am Dashboard") gilt damit nicht mehr.
+Kein Player: keine Steuerelemente, keine Klicks, `aria-hidden`. Vier Fassungen (AV1 und H.264,
+Desktop 1920 px und Mobil 1080 px, 30 fps) plus WebP-Poster, AV1 Desktop ~4,8 MB, Mobil ~2,5 MB.
+`public/hero/` wird ein Jahr `immutable` gecacht (`next.config.ts`) — **beim Austausch neue
+Dateinamen vergeben** (aktuell `plattform-2-…`, als Nächstes `plattform-3-…`). Der Ordner steht im
+Matcher von `proxy.ts` unter den Ausnahmen.
 
 2026-09-17 (**Kaufweg**): `app/go/[plan]/route.ts` leitet bei jedem Fehlschlag auf `/?fehler=<code>`.
 Der Code wird von `components/landing/membership/KaufFehlerHinweis.tsx` gelesen und über dem Hero

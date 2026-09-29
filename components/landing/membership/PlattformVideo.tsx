@@ -5,23 +5,27 @@ import { useEffect, useRef } from "react";
 import { preload } from "react-dom";
 
 /**
- * Die Plattform im Hero — eine echte Bildschirmaufnahme als stummer Loop.
+ * Die Plattform im Hero — ein geschnittener Rundgang als stummer Loop.
  *
  * Ersetzt seit 29.09.2026 den Markup-Nachbau des Dashboards
- * (`PlattformVorschau`): Das Video zeigt die echte Plattform in Bewegung,
- * Klick für Klick, statt eines Standbilds mit ausgedachten Zahlen.
+ * (`PlattformVorschau`): Das Video zeigt die echte Plattform in Bewegung —
+ * Dashboard, Institut, Journal, Live — statt eines Standbilds mit
+ * ausgedachten Zahlen.
  *
  * ── Dateien (`public/hero/`) ───────────────────────────────────────────────
- * Aus einer 18,5-MB-Aufnahme (1872 × 950, 30 fps) ohne Tonspur neu kodiert,
- * die ersten 1,6 s abgeschnitten: Dort lädt die Seite noch, und der Loop
- * sprang sonst jedes Mal vom fertigen Dashboard in einen leeren Bildschirm.
- * Jetzt beginnt und endet er auf demselben Bild.
+ * Quelle: „website hero.mp4", 60 s, 3648 × 2160, 60 fps, 263 MB. Neu kodiert
+ * mit 30 fps und ohne Tonspur. Das Video beginnt und endet auf dem vollen
+ * Dashboard, der Loop braucht deshalb keinen Schnitt.
  *
- *   plattform-1-av1.mp4         AV1, 1872 px     ~1,0 MB
- *   plattform-1.mp4             H.264, 1872 px   ~2,1 MB  (ohne AV1-Decoder)
- *   plattform-1-mobil-av1.mp4   AV1, 1080 px     ~0,5 MB
- *   plattform-1-mobil.mp4       H.264, 1080 px   ~0,9 MB
- *   plattform-1-poster.webp     erstes Bild      ~64 KB
+ *   plattform-2-av1.mp4         AV1, 1920 px     ~4,8 MB
+ *   plattform-2.mp4             H.264, 1920 px   ~9,3 MB  (ohne AV1-Decoder)
+ *   plattform-2-mobil-av1.mp4   AV1, 1080 px     ~2,5 MB
+ *   plattform-2-mobil.mp4       H.264, 1080 px   ~3,8 MB
+ *   plattform-2-poster.webp     erstes Bild      ~66 KB
+ *
+ * H.264 bekommen nur Geräte ohne AV1-Decoder, vor allem iPhones vor dem
+ * 15 Pro und Macs vor M3. HEVC wäre für sie nur ~15 % kleiner gewesen
+ * (8,1 statt 9,3 MB) — zu wenig für zwei weitere Dateien.
  *
  * Der Browser nimmt die **erste** `<source>`, die er abspielen kann. Deshalb
  * stehen die Mobil-Fassungen (mit `media`) vorn und AV1 jeweils vor H.264.
@@ -30,7 +34,7 @@ import { preload } from "react-dom";
  *
  * **Die Ziffer im Dateinamen ist die Version.** `next.config.ts` liefert
  * `public/hero/` mit einem Jahr Cache und `immutable` aus. Wer das Video
- * austauscht, vergibt neue Namen (`plattform-2-…`), sonst sehen
+ * austauscht, vergibt neue Namen (`plattform-3-…`), sonst sehen
  * wiederkehrende Besucher noch ein Jahr lang das alte.
  *
  * ── Kein Player ────────────────────────────────────────────────────────────
@@ -38,9 +42,9 @@ import { preload } from "react-dom";
  * (`pointerEvents="none"`). Das Video ist Dekoration wie der Nachbau davor,
  * daher `aria-hidden`.
  *
- * `muted` setzt der Effekt zusätzlich als Eigenschaft: React schreibt das
- * Attribut beim Server-Rendern nicht ins HTML, und ohne Stummschaltung
- * verweigern Browser das automatische Abspielen.
+ * `muted` setzt der Effekt zusätzlich als Eigenschaft — doppelt hält besser:
+ * Ohne Stummschaltung verweigern Browser das automatische Abspielen, und
+ * ältere React-Versionen schrieben das Attribut nicht ins Server-HTML.
  *
  * ── Leistung ───────────────────────────────────────────────────────────────
  * Das Poster wird mit hoher Priorität vorgeladen — es ist das größte Element
@@ -49,7 +53,7 @@ import { preload } from "react-dom";
  * `prefers-reduced-motion` bleibt es beim Poster stehen.
  */
 
-const POSTER = "/hero/plattform-1-poster.webp";
+const POSTER = "/hero/plattform-2-poster.webp";
 
 export function PlattformVideo() {
   const ref = useRef<HTMLVideoElement>(null);
@@ -117,18 +121,18 @@ export function PlattformVideo() {
         display="block"
         w="100%"
         h="auto"
-        sx={{ aspectRatio: "1872 / 950" }}
+        sx={{ aspectRatio: "1920 / 1136" }}
         pointerEvents="none"
         userSelect="none"
       >
         <source
-          src="/hero/plattform-1-mobil-av1.mp4"
-          type='video/mp4; codecs="av01.0.04M.08"'
+          src="/hero/plattform-2-mobil-av1.mp4"
+          type='video/mp4; codecs="av01.0.05M.08"'
           media="(max-width: 767px)"
         />
-        <source src="/hero/plattform-1-mobil.mp4" type='video/mp4; codecs="avc1.640028"' media="(max-width: 767px)" />
-        <source src="/hero/plattform-1-av1.mp4" type='video/mp4; codecs="av01.0.08M.08"' />
-        <source src="/hero/plattform-1.mp4" type='video/mp4; codecs="avc1.640028"' />
+        <source src="/hero/plattform-2-mobil.mp4" type='video/mp4; codecs="avc1.640028"' media="(max-width: 767px)" />
+        <source src="/hero/plattform-2-av1.mp4" type='video/mp4; codecs="av01.0.08M.08"' />
+        <source src="/hero/plattform-2.mp4" type='video/mp4; codecs="avc1.640028"' />
       </Box>
     </Box>
   );
