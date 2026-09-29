@@ -2,10 +2,29 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { inter } from "./fonts";
 import { Providers } from "@/components/providers";
+import { getAppUrl } from "@/lib/site-url";
 
 export const metadata: Metadata = {
   title: "Capital Circle Institut",
   description: "Exklusive Trading-Lernplattform",
+  /*
+   * Vorschaubild beim Teilen eines Links (WhatsApp, Telegram, LinkedIn, X …):
+   * `app/opengraph-image.png` im Look des Hero, Alt-Text daneben in
+   * `opengraph-image.alt.txt`. Next hängt es an jede Seite, die kein eigenes
+   * `openGraph` setzt; Titel und Beschreibung kommen dann aus der Seite.
+   * Seiten mit eigenem `openGraph` (`/discord`, `/termin`) müssen ihr Bild
+   * selbst mitbringen — ein `openGraph` in der Seite ersetzt diesen Block
+   * vollständig, statt ihn zu ergänzen.
+   *
+   * `metadataBase` macht die Bildadresse absolut; ohne sie stünde im Tag die
+   * Deployment-URL oder `localhost`, und die Portale laden nichts.
+   */
+  metadataBase: new URL(getAppUrl()),
+  openGraph: {
+    type: "website",
+    siteName: "Capital Circle",
+    locale: "de_DE",
+  },
   /*
    * Eigene Dateinamen statt `/new-apple.png` (20.09.2026): Browser halten
    * Favicons hartnäckig im Zwischenspeicher, teils über Wochen. Nach dem
