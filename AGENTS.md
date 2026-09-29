@@ -116,9 +116,10 @@ jetzt ein geschnittener 60-s-Rundgang durch die Plattform als stummer Loop
 ist entfernt — der Eintrag vom 17.09. („Hero-Vorschau hängt am Dashboard") gilt damit nicht mehr.
 Kein Player: keine Steuerelemente, keine Klicks, `aria-hidden`. Das Video trägt **nur einen Gold-/Weiß-Glow, keine
 Rahmenlinie** (Nutzerwunsch; eine Champagner-Kante mit Lichtkante oben war kurz drin und ist
-ausdrücklich wieder raus). Der frühere Verlauf, mit dem die Vorschau nach unten abtauchte, ist weg. Die Dachzeile über der Headline
-lautet seit demselben Tag „Von einem echten Trader entwickelt, für echte Ergebnisse" und bricht auf
-dem Handy in zwei Zeilen um. Vier Fassungen (AV1 und H.264,
+ausdrücklich wieder raus). Der frühere Verlauf, mit dem die Vorschau nach unten abtauchte, ist weg. Direkt über dem Video
+steht ein **kleines Badge** „Von einem echten Trader entwickelt, für echte Ergebnisse"
+(`hero.videoBadge`). Die Dachzeile über der Headline bleibt „Premium Trading Community" — sie
+ersetzen war ein Missverständnis und ist zurückgenommen, ebenso im Vorschaubild. Vier Fassungen (AV1 und H.264,
 Desktop 1920 px und Mobil 1080 px, 30 fps) plus WebP-Poster, AV1 Desktop ~4,8 MB, Mobil ~2,5 MB.
 `public/hero/` wird ein Jahr `immutable` gecacht (`next.config.ts`) — **beim Austausch neue
 Dateinamen vergeben** (aktuell `plattform-2-…`, als Nächstes `plattform-3-…`). Der Ordner steht im

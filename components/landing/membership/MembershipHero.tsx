@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Heading, HStack, Stack, Text } from "@chakra-ui/react";
+import { Box, Flex, Heading, HStack, Stack, Text } from "@chakra-ui/react";
 import { hero } from "@/config/landing-membership";
 import { heroRise } from "../landing-ui";
 import { BeitrittCta } from "./BeitrittModal";
@@ -40,17 +40,12 @@ export function MembershipHero({ bewertungen }: { bewertungen: Bewertungsspiegel
             etwas läuft, statt es nur zu behaupten. Der Punkt bleibt Gold hell:
             ein zweiter Akzentton käme sonst über die Türschwelle der Seite.
           */}
-          {/* Seit 29.09.2026 ein ganzer Satz statt „Premium Trading Community":
-              Auf dem Handy passt er nicht in eine Zeile, die Pill bricht dort
-              deshalb um und rundet sich zur Kapsel statt zum Kreis. */}
           <HStack
             {...heroRise(0)}
             spacing={{ base: 2.5, md: 3 }}
-            minH={{ base: "32px", md: "36px" }}
-            py={{ base: 2, md: 0 }}
+            h={{ base: "32px", md: "36px" }}
             px={{ base: 4, md: 5 }}
-            maxW="100%"
-            borderRadius={{ base: "18px", md: "full" }}
+            borderRadius="full"
             border="1px solid var(--cc-line-strong)"
             bg="rgba(255, 255, 255, 0.02)"
           >
@@ -67,12 +62,11 @@ export function MembershipHero({ bewertungen }: { bewertungen: Bewertungsspiegel
             <Text
               as="span"
               fontSize={{ base: "11px", md: "13px" }}
-              lineHeight={{ base: "16px", md: "normal" }}
               fontWeight={600}
-              letterSpacing={{ base: "0.16em", md: "0.22em" }}
+              letterSpacing="0.22em"
               textTransform="uppercase"
               color="var(--cc-text-soft)"
-              whiteSpace={{ base: "normal", md: "nowrap" }}
+              whiteSpace="nowrap"
             >
               {hero.eyebrow}
             </Text>
@@ -117,6 +111,42 @@ export function MembershipHero({ bewertungen }: { bewertungen: Bewertungsspiegel
           Vorschau nach unten abtauchte, hätte die untere Kante verschluckt.
         */}
         <Box {...heroRise(4)} position="relative">
+          {/*
+            Kleines Badge direkt über dem Video (Nutzerwunsch 29.09.2026) —
+            bewusst leiser als die Dachzeile oben: normale Schreibweise statt
+            Versalien, kein Pulsieren, damit es das Video beschriftet und nicht
+            mit der Headline um Aufmerksamkeit konkurriert.
+          */}
+          <Flex justify="center" mb={{ base: 3, md: 4 }}>
+            <HStack
+              spacing={2}
+              h={{ base: "24px", md: "26px" }}
+              px={{ base: 2.5, md: 3 }}
+              maxW="100%"
+              borderRadius="full"
+              border="1px solid var(--cc-line)"
+              bg="rgba(255, 255, 255, 0.02)"
+            >
+              <Box
+                aria-hidden
+                w="5px"
+                h="5px"
+                flexShrink={0}
+                borderRadius="full"
+                bg="var(--cc-gold-light)"
+                boxShadow="0 0 6px rgba(232, 192, 148, 0.6)"
+              />
+              <Text
+                as="span"
+                fontSize={{ base: "10px", md: "12px" }}
+                fontWeight={500}
+                color="var(--cc-text-2)"
+                whiteSpace="nowrap"
+              >
+                {hero.videoBadge}
+              </Text>
+            </HStack>
+          </Flex>
           <PlattformVideo />
         </Box>
       </Stack>

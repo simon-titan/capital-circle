@@ -55,7 +55,9 @@ export const ctaAnker = "#angebot";
 
 export const hero = {
   /** Steht als Pill mit Live-Punkt über der Headline (siehe `MembershipHero`). */
-  eyebrow: "Von einem echten Trader entwickelt, für echte Ergebnisse",
+  eyebrow: "Premium Trading Community",
+  /** Kleines Badge direkt über dem Hero-Video (siehe `MembershipHero`). */
+  videoBadge: "Von einem echten Trader entwickelt, für echte Ergebnisse",
   headlineHell: "Werde endlich konstant profitabel",
   headlineGedimmt: "nicht nur an guten Tagen.",
   /**
