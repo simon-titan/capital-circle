@@ -108,7 +108,7 @@ export default function ErgebnissePage() {
             },
             {
               titel: "Meine Auszahlungen",
-              hinweis: "Payout-Zertifikate von Lucid Trading, ausgestellt auf Emre Kopal.",
+              hinweis: "Payout-Zertifikate von Apex Trader Funding und Lucid Trading, ausgestellt auf Emre Kopal.",
               zeilen: auszahlungenEmre,
             },
             /* Eigener Block, eigene Überschrift — und der Unterschied steht im

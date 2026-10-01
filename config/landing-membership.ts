@@ -117,10 +117,32 @@ export const auszahlungenCommunity: Auszahlung[] = [
   { quelle: "Lucid Trading", betrag: "968,00 $", datum: "24.08.2026", bild: "/nachweise/member-lucid-2026-08-24.jpg" },
 ];
 
+/**
+ * Emres eigene Payout-Zertifikate (Apex Trader Funding und Lucid Trading),
+ * geliefert am 01.10.2026. Sie ersetzen drei Lucid-Zertifikate über je
+ * 10.000 $ — zwei davon trugen dasselbe Datum wie ein neues Zertifikat mit
+ * anderem Betrag (08.04. und 16.07.), beide Fassungen nebeneinander hätten
+ * sich widersprochen.
+ *
+ * Die Apex-Belege kamen als PDF und sind 1:1 als Bild gerendert, die
+ * Lucid-Belege stehen so, wie sie geliefert wurden.
+ */
 export const auszahlungenEmre: Auszahlung[] = [
-  { quelle: "Lucid Trading", betrag: "10.000,00 $", datum: "16.07.2026", bild: "/nachweise/emre-lucid-2026-07-16.jpg" },
-  { quelle: "Lucid Trading", betrag: "10.000,00 $", datum: "17.05.2026", bild: "/nachweise/emre-lucid-2026-05-17.jpg" },
-  { quelle: "Lucid Trading", betrag: "10.000,00 $", datum: "08.04.2026", bild: "/nachweise/emre-lucid-2026-04-08.jpg" },
+  { quelle: "Lucid Trading", betrag: "2.000,00 $", datum: "16.04.2026", bild: "/nachweise/emre-lucid-2026-04-16.jpg" },
+  { quelle: "Lucid Trading", betrag: "2.000,00 $", datum: "08.04.2026", bild: "/nachweise/emre-lucid-2026-04-08.jpg" },
+  { quelle: "Lucid Trading", betrag: "1.509,00 $", datum: "16.07.2026", bild: "/nachweise/emre-lucid-2026-07-16.jpg" },
+  { quelle: "Apex Trader Funding", betrag: "1.500,00 $", datum: "09.07.2026", bild: "/nachweise/emre-apex-2026-07-09.jpg" },
+  { quelle: "Apex Trader Funding", betrag: "1.304,00 $", datum: "07.07.2026", bild: "/nachweise/emre-apex-2026-07-07.jpg" },
+  { quelle: "Apex Trader Funding", betrag: "1.155,00 $", datum: "26.06.2026", bild: "/nachweise/emre-apex-2026-06-26.jpg" },
+  { quelle: "Apex Trader Funding", betrag: "1.082,00 $", datum: "09.06.2026", bild: "/nachweise/emre-apex-2026-06-09.jpg" },
+  { quelle: "Apex Trader Funding", betrag: "1.000,00 $", datum: "07.07.2026", bild: "/nachweise/emre-apex-2026-07-07-b.jpg" },
+];
+
+/** Auf der Verkaufsseite: die drei vom Nutzer ausgesuchten (Ordner „ABLAGE", 01.10.2026). */
+export const auszahlungenEmreLanding: Auszahlung[] = [
+  auszahlungenEmre[0],
+  auszahlungenEmre[3],
+  auszahlungenEmre[4],
 ];
 
 export interface ChallengeNachweis {
@@ -235,7 +257,7 @@ export const ergebnisse = {
       titel: "Aus der Community",
       zeilen: auszahlungenLanding,
     },
-    { titel: "Meine Auszahlungen", zeilen: auszahlungenEmre },
+    { titel: "Meine Auszahlungen", zeilen: auszahlungenEmreLanding },
   ],
   fussLink: { label: "Alle Nachweise ansehen", href: "/ergebnisse" },
 } as const;
