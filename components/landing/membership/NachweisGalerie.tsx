@@ -149,14 +149,9 @@ function NachweisKarte({ zeile, onZeigen }: { zeile: Zeile; onZeigen: (zeile: Ze
       </Flex>
 
       <Flex px={5} py={4} align="baseline" justify="space-between" gap={3}>
-        <Stack gap={0.5} minW={0}>
-          <Text fontSize="15px" fontWeight={500} color="var(--cc-text)" noOfLines={1}>
-            {zeile.quelle}
-          </Text>
-          <Text fontSize="13px" color="var(--cc-text-3)">
-            {zeile.datum}
-          </Text>
-        </Stack>
+        <Text fontSize="15px" fontWeight={500} color="var(--cc-text)" noOfLines={1} minW={0}>
+          {zeile.quelle}
+        </Text>
 
         {/* Nur die Kontogröße bekommt ihr Wort dazu. Ein grüner Betrag neben
             einer Prop-Firma ist eindeutig — Grün heißt Geld. Eine neutrale Zahl
@@ -263,12 +258,6 @@ function NachweisLightbox({
               >
                 {zeile.wert}
               </Box>
-            </Text>
-            <Box as="span" aria-hidden color="var(--cc-text-3)">
-              ·
-            </Box>
-            <Text as="span" className="cc-num">
-              {zeile.datum}
             </Text>
           </HStack>
         </ModalBody>

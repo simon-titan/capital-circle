@@ -128,15 +128,12 @@ function AuszahlungsZeile({ zeile, onZeigen }: { zeile: Auszahlung; onZeigen: (z
       <Grid
         flex={1}
         minW={0}
-        templateColumns={{ base: "1fr auto", sm: "1fr auto auto" }}
+        templateColumns="1fr auto"
         gap={{ base: 2, md: 4 }}
         alignItems="center"
       >
         <Feld label="Prop-Firma" wert={zeile.quelle} />
         <Feld label="Betrag" wert={zeile.betrag} gewinn />
-        <Box display={{ base: "none", sm: "block" }}>
-          <Feld label="Datum" wert={zeile.datum} gedimmt />
-        </Box>
       </Grid>
     </Flex>
   );
@@ -309,12 +306,6 @@ export function ZertifikatLightbox({
             </Box>
             <Text as="span" className="cc-num" color="var(--cc-success)" fontWeight={600}>
               {zeile.betrag}
-            </Text>
-            <Box as="span" aria-hidden color="var(--cc-text-3)">
-              ·
-            </Box>
-            <Text as="span" className="cc-num">
-              {zeile.datum}
             </Text>
           </HStack>
         </ModalBody>
