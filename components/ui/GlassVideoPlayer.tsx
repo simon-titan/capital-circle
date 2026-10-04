@@ -473,14 +473,23 @@ export function GlassVideoPlayer({
       return;
     }
 
-    if (typeof iosVid.webkitEnterFullscreen === "function" && (iosVid.webkitSupportsFullscreen ?? true)) {
-      iosVid.webkitEnterFullscreen();
+    const canNativeVideoFs =
+      typeof iosVid.webkitEnterFullscreen === "function" && (iosVid.webkitSupportsFullscreen ?? true);
+    const elShell = shell as HTMLElement & { webkitRequestFullscreen?: () => void };
+
+    /**
+     * Natives Video-Vollbild nur bei Apple-WebKit (iPhone kennt kein Element-Vollbild).
+     * Chrome auf Android kennt `webkitEnterFullscreen` ebenfalls — dort ging sonst nur
+     * das nackte <video> ins Vollbild, ohne unsere Leiste und ohne deren Ausblenden.
+     */
+    if (canNativeVideoFs && /apple/i.test(navigator.vendor ?? "")) {
+      iosVid.webkitEnterFullscreen?.();
       return;
     }
 
-    const elShell = shell as HTMLElement & { webkitRequestFullscreen?: () => void };
     if (shell.requestFullscreen) void shell.requestFullscreen();
     else if (elShell.webkitRequestFullscreen) void elShell.webkitRequestFullscreen();
+    else if (canNativeVideoFs) iosVid.webkitEnterFullscreen?.();
   }, [fullscreen]);
 
   const toggleMute = useCallback(() => {
@@ -555,10 +564,15 @@ export function GlassVideoPlayer({
     setProgressPct((clamped / el.duration) * 100);
   };
 
-  /* ── Touch: Steuerleiste automatisch aus-/einblenden ─────────────────────────
-     Desktop blendet die Leiste per CSS-Hover aus. Touch-Geräte haben kein Hover,
-     daher hier per Timer: während der Wiedergabe nach kurzer Zeit ausblenden,
-     bei Tipp/Interaktion wieder einblenden. Nicht im Vollbild (dort immer sichtbar). */
+  /* ── Steuerleiste automatisch aus-/einblenden ────────────────────────────────
+     Desktop blendet die Leiste außerhalb des Vollbilds per CSS-Hover aus. Schmale
+     Touch-Geräte und jedes Vollbild laufen über den Timer: während der Wiedergabe
+     nach kurzer Zeit ausblenden, bei Tipp/Mausbewegung wieder einblenden.
+     Das Vollbild gehört ausdrücklich dazu: Ein Android-Handy im Querformat ist
+     breiter als `md` (also kein `isMobileControls`), und `:hover` ist im Vollbild
+     am Desktop immer wahr — ohne Timer bliebe die Leiste dort dauerhaft stehen. */
+  const autoHideControls = isMobileControls === true || fullscreen;
+
   const clearControlsTimer = useCallback(() => {
     if (controlsTimerRef.current) {
       clearTimeout(controlsTimerRef.current);
@@ -570,13 +584,13 @@ export function GlassVideoPlayer({
     clearControlsTimer();
     setControlsHidden(false);
     // Offenes Menü: Leiste bleibt stehen, bis es wieder zu ist.
-    if (isMobileControls === true && playing && !fullscreen && !menuOpen) {
+    if (autoHideControls && playing && !menuOpen) {
       controlsTimerRef.current = setTimeout(() => setControlsHidden(true), 2800);
     }
-  }, [clearControlsTimer, isMobileControls, playing, fullscreen, menuOpen]);
+  }, [clearControlsTimer, autoHideControls, playing, menuOpen]);
 
   useEffect(() => {
-    if (isMobileControls !== true || fullscreen) {
+    if (!autoHideControls) {
       clearControlsTimer();
       setControlsHidden(false);
       return;
@@ -589,7 +603,7 @@ export function GlassVideoPlayer({
       setControlsHidden(false);
     }
     return clearControlsTimer;
-  }, [playing, fullscreen, isMobileControls, clearControlsTimer, menuOpen]);
+  }, [playing, autoHideControls, clearControlsTimer, menuOpen]);
 
   /** Pausiert oder Menü offen: Leiste bleibt sichtbar (Desktop sonst nur beim Hover). */
   const controlsPinned = menuOpen || !playing;
@@ -705,11 +719,20 @@ export function GlassVideoPlayer({
           opacity: 1,
           pointerEvents: "auto",
         },
-        // Im Vollbildmodus bleiben die Controls sichtbar (überschreibt das Hover-Hide).
+        // Vollbild: `:hover` ist dort immer wahr — Sichtbarkeit steuert allein der
+        // Timer über `.cc-controls-hidden` (gilt für Maus und Touch).
         "&:fullscreen .cc-video-controls, &:-webkit-full-screen .cc-video-controls": {
           opacity: 1,
           pointerEvents: "auto",
         },
+        "&:fullscreen .cc-video-controls.cc-controls-hidden, &:-webkit-full-screen .cc-video-controls.cc-controls-hidden": {
+          opacity: 0,
+          pointerEvents: "none",
+        },
+      }}
+      onPointerMove={(e) => {
+        // Maus im Vollbild: jede Bewegung blendet die Leiste ein (Touch läuft über den Tipp).
+        if (fullscreen && e.pointerType === "mouse") revealControls();
       }}
       boxShadow={`0 16px 56px rgba(0, 0, 0, 0.55), 0 0 36px rgba(${accentRgb}, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)`}
     >
@@ -718,6 +741,8 @@ export function GlassVideoPlayer({
         position="relative"
         w="full"
         pt="56.25%"
+        // Vollbild mit ausgeblendeter Leiste: auch der Mauszeiger verschwindet.
+        cursor={fullscreen && controlsHidden ? "none" : undefined}
         // Größen-Container fürs Einstellungsmenü (Kachelraster bei niedrigem Player).
         // Unbedenklich: Die Bühne hat nur absolut positionierte Kinder, ihre Höhe
         // kommt allein aus `pt` bzw. im Vollbild aus dem Flex-Layout.
@@ -746,13 +771,13 @@ export function GlassVideoPlayer({
               swallowVideoClickUntilRef.current = 0;
               return;
             }
-            // Touch & Leiste ausgeblendet: erster Tipp blendet nur ein (kein Pausieren).
-            if (isMobileControls === true && controlsHidden) {
+            // Leiste ausgeblendet: erster Tipp blendet nur ein (kein Pausieren).
+            if (controlsHidden) {
               revealControls();
               return;
             }
             void togglePlay();
-            if (isMobileControls === true) revealControls();
+            if (autoHideControls) revealControls();
           }}
           onLoadedMetadata={(e) => {
             const el = e.currentTarget;
@@ -859,7 +884,7 @@ export function GlassVideoPlayer({
         <Box
           className={controlsClassName}
           onPointerDown={() => {
-            if (isMobileControls === true) revealControls();
+            if (autoHideControls) revealControls();
           }}
           position="absolute"
           bottom={0}
