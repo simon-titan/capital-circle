@@ -9,10 +9,15 @@ import {
   FormHelperText,
   FormLabel,
   Input,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalOverlay,
   Stack,
   Text,
+  type ButtonProps,
 } from "@chakra-ui/react";
-import { ArrowDown, ArrowUp, CalendarDays } from "lucide-react";
+import { ArrowRight, CalendarDays, Check } from "lucide-react";
 import {
   createContext,
   useCallback,
@@ -24,16 +29,16 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-import { buchung } from "@/config/call-funnel";
+import { buchung, ctaLabel } from "@/config/call-funnel";
 import { DISCORD_FUNNEL_QUESTIONS } from "@/config/discord-funnel-questions";
 import { CalendlyZweiKlick } from "@/components/marketing/CalendlyZweiKlick";
 import { EMAIL_RE, RadioStep, type ContactValue } from "@/components/marketing/DiscordQuestionsModal";
 import {
-  CardLabel,
   FunnelAlert,
   FunnelFinePrint,
   FunnelHeadline,
   FunnelLead,
+  FunnelModalTopBar,
   FunnelProgress,
   FunnelStepIndicator,
   SuccessMark,
@@ -42,12 +47,14 @@ import {
   funnelFieldProps,
   funnelHelperProps,
   funnelLabelProps,
+  funnelModalContentProps,
+  funnelOverlayProps,
   noMotion,
 } from "@/components/marketing/funnel-ui";
-import { CALL_LEAD_SOURCE, readCallTracking, scrolleZu } from "./call-ui";
+import { CALL_LEAD_SOURCE, readCallTracking } from "./call-ui";
 
 /**
- * Fragebogen und Terminbuchung inline auf `/call`.
+ * Fragebogen und Terminbuchung auf `/call` — als Modal.
  *
  * ── Ablauf ──────────────────────────────────────────────────────────────────
  *
@@ -59,19 +66,17 @@ import { CALL_LEAD_SOURCE, readCallTracking, scrolleZu } from "./call-ui";
  * Anders als dort gibt es **kein** Warn-Overlay mit Countdown: Die Seite soll
  * einladen, nicht abschrecken.
  *
- * ── Zwei Instanzen, ein Zustand ─────────────────────────────────────────────
+ * ── Ein Modal, viele Knöpfe ─────────────────────────────────────────────────
  *
- * Der Baustein steht zweimal auf der Seite (nach dem Video und am Ende). Beide
- * lesen denselben Zustand aus `CallBuchungProvider`: Wer oben anfängt und
- * unten weitermacht, findet dort denselben Schritt mit denselben Antworten,
- * und der Lead wird nur einmal angelegt. Jede Instanz liegt in einem eigenen
- * `<form>` — Radios mit gleichem `name` gruppiert der Browser sonst über die
- * ganze Seite, und ein Klick unten würde oben die Auswahl löschen.
+ * Auf der Seite stehen nur Knöpfe (`CallBuchungKnopf`), die alle dasselbe
+ * Modal öffnen. Der Zustand liegt im `CallBuchungProvider`, nicht im Modal:
+ * Wer es schließt und später wieder öffnet, landet im selben Schritt mit
+ * denselben Antworten, und der Lead wird nur einmal angelegt. Ältere Links auf
+ * `/call#termin` öffnen das Modal direkt.
  *
- * Der Kalender lädt nur in **einer** Instanz — der, in der zuletzt getippt
- * oder geklickt wurde (`aktiv`). Zwei eingebettete Calendly-Widgets wären zwei
- * Verbindungen in die USA und zwei Stellen, an denen gebucht werden kann. Die
- * andere zeigt einen kurzen Hinweis mit Sprunglink.
+ * Während der Kalender offen ist, schließt ein Klick neben das Modal es nicht —
+ * ein versehentlicher Tipp daneben würde mitten in der Terminwahl das Widget
+ * abbauen. Schließen geht dort über das X oder Escape.
  *
  * ── Vorschau ────────────────────────────────────────────────────────────────
  *
@@ -83,9 +88,8 @@ import { CALL_LEAD_SOURCE, readCallTracking, scrolleZu } from "./call-ui";
 type Phase = "kontakt" | "fragen" | "kalender" | "gebucht";
 type FeldFehler = Partial<Record<keyof ContactValue, string>>;
 
-/** Sprungmarken der beiden Instanzen; die erste ist zugleich das Ziel der Hauptaktion. */
-export const BUCHUNG_IDS = { oben: "termin", unten: "termin-abschluss" } as const;
-export type BuchungId = (typeof BUCHUNG_IDS)[keyof typeof BUCHUNG_IDS];
+/** Sprungmarken, unter denen `/call` früher die Buchungskarten hatte — sie öffnen jetzt das Modal. */
+const ALTE_SPRUNGMARKEN = ["#termin", "#termin-abschluss"];
 
 interface BuchungApi {
   phase: Phase;
@@ -98,16 +102,15 @@ interface BuchungApi {
   fehler: string | null;
   serverFehler: string | null;
   laeuft: boolean;
-  aktiv: BuchungId | null;
   calendlyUrl: string;
+  offen: boolean;
+  oeffne: () => void;
+  schliesse: () => void;
   setKontakt: (patch: Partial<ContactValue>) => void;
   /** `weiterNach`: per Klick/Tipp gewählt — dann geht es von selbst zur nächsten Frage. */
   waehle: (antwort: string, weiterNach?: boolean) => void;
   weiter: () => Promise<void>;
   zurueck: () => void;
-  aktiviere: (id: BuchungId) => void;
-  /** Scrollt zur Instanz, in der der Nutzer gerade ist (sonst zur oberen). */
-  springen: () => void;
 }
 
 const BuchungContext = createContext<BuchungApi | null>(null);
@@ -183,7 +186,15 @@ export function CallBuchungProvider({ children, vorschau = false }: { children: 
   const [fehler, setFehler] = useState<string | null>(null);
   const [serverFehler, setServerFehler] = useState<string | null>(null);
   const [laeuft, setLaeuft] = useState(false);
-  const [aktiv, setAktiv] = useState<BuchungId | null>(null);
+  const [offen, setOffen] = useState(false);
+
+  const oeffne = useCallback(() => setOffen(true), []);
+  const schliesse = useCallback(() => setOffen(false), []);
+
+  // Alte Links (Anzeigen, Mails) zeigen noch auf die Sprungmarken der früheren Inline-Karten.
+  useEffect(() => {
+    if (ALTE_SPRUNGMARKEN.includes(window.location.hash)) setOffen(true);
+  }, []);
 
   // Ein Feld verliert seinen Fehler, sobald darin getippt wird — die übrigen
   // bleiben stehen, bis erneut abgeschickt wird.
@@ -218,19 +229,6 @@ export function CallBuchungProvider({ children, vorschau = false }: { children: 
     [frageIndex],
   );
 
-  // Während der Kalender offen ist, bleibt er, wo er ist: Ein Wechsel der
-  // aktiven Instanz würde das Widget hier ab- und dort neu aufbauen.
-  const aktiviere = useCallback(
-    (id: BuchungId) => {
-      if (phase === "kontakt" || phase === "fragen") setAktiv(id);
-    },
-    [phase],
-  );
-
-  const springen = useCallback(() => {
-    scrolleZu(document.getElementById(aktiv ?? BUCHUNG_IDS.oben));
-  }, [aktiv]);
-
   const weiter = useCallback(async () => {
     setServerFehler(null);
 
@@ -238,9 +236,9 @@ export function CallBuchungProvider({ children, vorschau = false }: { children: 
       const pruefung = pruefeKontakt(kontakt);
       setFeldFehler(pruefung);
       if (Object.keys(pruefung).length > 0) {
-        // Fokus aufs erste fehlerhafte Feld der aktiven Instanz, damit Screenreader den Fehler vorlesen.
+        // Fokus aufs erste fehlerhafte Feld, damit Screenreader den Fehler vorlesen.
         const erstes = (["name", "email", "phone"] as const).find((k) => pruefung[k]);
-        if (erstes) document.querySelector<HTMLInputElement>(`[data-call-feld="${erstes}"][data-aktiv="true"]`)?.focus();
+        if (erstes) document.querySelector<HTMLInputElement>(`[data-call-feld="${erstes}"]`)?.focus();
         return;
       }
       setFehler(null);
@@ -304,7 +302,6 @@ export function CallBuchungProvider({ children, vorschau = false }: { children: 
     }
 
     if (vorschau) {
-      setAktiv((a) => a ?? BUCHUNG_IDS.oben);
       setPhase("kalender");
       return;
     }
@@ -321,8 +318,6 @@ export function CallBuchungProvider({ children, vorschau = false }: { children: 
         setServerFehler(t.fehlerServer);
         return;
       }
-      // Kalender in der Instanz öffnen, in der gerade geklickt wurde.
-      setAktiv((a) => a ?? BUCHUNG_IDS.oben);
       setPhase("kalender");
     } catch {
       setServerFehler(t.fehlerVerbindung);
@@ -377,14 +372,14 @@ export function CallBuchungProvider({ children, vorschau = false }: { children: 
       fehler,
       serverFehler,
       laeuft,
-      aktiv,
       calendlyUrl,
+      offen,
+      oeffne,
+      schliesse,
       setKontakt,
       waehle,
       weiter,
       zurueck,
-      aktiviere,
-      springen,
     }),
     [
       phase,
@@ -397,87 +392,120 @@ export function CallBuchungProvider({ children, vorschau = false }: { children: 
       fehler,
       serverFehler,
       laeuft,
-      aktiv,
       calendlyUrl,
+      offen,
+      oeffne,
+      schliesse,
       setKontakt,
       waehle,
       weiter,
       zurueck,
-      aktiviere,
-      springen,
     ],
   );
 
-  return <BuchungContext.Provider value={api}>{children}</BuchungContext.Provider>;
+  return (
+    <BuchungContext.Provider value={api}>
+      {children}
+      <CallBuchungModal />
+    </BuchungContext.Provider>
+  );
 }
 
-/* ─────────────────────────── Instanz ─────────────────────────── */
+/* ─────────────────────────── Knopf ─────────────────────────── */
 
 /**
- * Eine Instanz des Buchungsbausteins. `id` ist zugleich die Sprungmarke.
- * Die Karte ist eine Hero-Karte (DESIGN.md: „Hero-for-Next-Step" — die
- * Bewerbungsaufforderung ist genau so ein nächster Schritt).
+ * Hauptaktion der Seite — öffnet das Buchungs-Modal. Nach der Buchung sagt der
+ * Knopf das auch und öffnet die Bestätigung, statt erneut „sichern" anzubieten.
  */
-export function CallBuchung({ id, hero = true }: { id: BuchungId; hero?: boolean }) {
+export function CallBuchungKnopf(props: ButtonProps) {
   const b = useCallBuchung();
-  const ref = useRef<HTMLDivElement>(null);
-  const hier = b.aktiv === id;
-  const kalenderHier = b.phase === "kalender" && (hier || b.aktiv === null);
+  const gebucht = b.phase === "gebucht";
+  return (
+    <Button
+      type="button"
+      variant="gold"
+      w={{ base: "full", sm: "auto" }}
+      h="auto"
+      minH={{ base: "52px", md: "56px" }}
+      py={3}
+      px={{ base: 6, md: 9 }}
+      fontSize={{ base: "16px", md: "17px" }}
+      whiteSpace="normal"
+      aria-haspopup="dialog"
+      rightIcon={gebucht ? <Check size={18} strokeWidth={2} /> : <ArrowRight size={18} strokeWidth={2} />}
+      onClick={b.oeffne}
+      {...props}
+    >
+      {gebucht ? buchung.karte.gebuchtKnopf : ctaLabel}
+    </Button>
+  );
+}
 
-  // Beim Schrittwechsel die Karte wieder ins Bild holen, falls ihr Kopf nach
-  // oben aus dem Bild gerutscht ist (mobil: lange Optionsliste, Knopf ganz
-  // unten). Beim Öffnen des Kalenders immer, der ist deutlich höher.
-  // Nur bei einem echten Schrittwechsel: Wird die Instanz bloß aktiv (erster
-  // Tipp hinein), darf nichts springen — sonst rutscht der Knopf unter dem
-  // Finger weg, bevor der Klick ankommt.
-  const vorher = useRef({ phase: b.phase, frageIndex: b.frageIndex });
+/* ─────────────────────────── Modal ─────────────────────────── */
+
+function CallBuchungModal() {
+  const b = useCallBuchung();
+  const t = buchung.karte;
+  const koerper = useRef<HTMLDivElement>(null);
+
+  // Jeder Schritt beginnt oben — mobil steht der Knopf unter einer langen Optionsliste.
   useEffect(() => {
-    const alt = vorher.current;
-    vorher.current = { phase: b.phase, frageIndex: b.frageIndex };
-    if (alt.phase === b.phase && alt.frageIndex === b.frageIndex) return;
-    if (!hier || !ref.current) return;
-    if (b.phase === "kalender" || ref.current.getBoundingClientRect().top < 0) scrolleZu(ref.current);
-  }, [b.phase, b.frageIndex, hier]);
+    koerper.current?.scrollTo({ top: 0 });
+  }, [b.phase, b.frageIndex]);
 
-  const markiere = () => b.aktiviere(id);
+  const label =
+    b.phase === "kontakt"
+      ? t.labelKontakt
+      : b.phase === "fragen"
+        ? t.labelFragen
+        : b.phase === "kalender"
+          ? t.labelKalender
+          : t.labelGebucht;
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
-    b.aktiviere(id);
     void b.weiter();
   };
 
   return (
-    <Box
-      ref={ref}
-      id={id}
-      className={hero ? "cc-card cc-card--hero cc-card--still" : "cc-card cc-card--still"}
-      w="full"
-      maxW="760px"
-      mx="auto"
-      scrollMarginTop="24px"
-      onFocusCapture={markiere}
-      onPointerDownCapture={markiere}
+    <Modal
+      isOpen={b.offen}
+      onClose={b.schliesse}
+      size="xl"
+      scrollBehavior="inside"
+      isCentered
+      closeOnOverlayClick={b.phase !== "kalender"}
     >
-      {b.phase === "gebucht" ? (
-        <Gebucht />
-      ) : b.phase === "kalender" ? (
-        kalenderHier ? (
-          <Kalender url={b.calendlyUrl} vorschau={b.vorschau} />
-        ) : (
-          <KalenderAnderswo zielId={b.aktiv ?? BUCHUNG_IDS.oben} eigeneId={id} />
-        )
-      ) : (
-        <Box as="form" onSubmit={onSubmit} noValidate p={{ base: 5, md: 8 }}>
-          <Formular hier={hier || b.aktiv === null} />
+      <ModalOverlay {...funnelOverlayProps} />
+      {/* Kein ModalHeader: Der setzt `aria-labelledby` auf die kleine Kopfzeile — das Modal heißt aber `modalTitel`. */}
+      <ModalContent
+        {...funnelModalContentProps}
+        aria-label={t.modalTitel}
+        maxW={b.phase === "kalender" ? "760px" : "620px"}
+        maxH={{ base: "calc(100% - 24px)", md: "calc(100% - 80px)" }}
+        my={{ base: 3, md: 10 }}
+      >
+        <Box px={{ base: 5, md: 8 }} pt={{ base: 5, md: 6 }} pb={2} flexShrink={0}>
+          <FunnelModalTopBar label={label} onClose={b.schliesse} />
         </Box>
-      )}
-    </Box>
+        <ModalBody ref={koerper} p={0}>
+          {b.phase === "gebucht" ? (
+            <Gebucht />
+          ) : b.phase === "kalender" ? (
+            <Kalender url={b.calendlyUrl} vorschau={b.vorschau} />
+          ) : (
+            <Box as="form" onSubmit={onSubmit} noValidate px={{ base: 5, md: 8 }} pt={3} pb={{ base: 6, md: 8 }}>
+              <Formular />
+            </Box>
+          )}
+        </ModalBody>
+      </ModalContent>
+    </Modal>
   );
 }
 
-/** Kontakt- bzw. Frageschritt mit Kopf (Label, Schrittzähler, Balken) und Fuß (Weiter, Zurück). */
-function Formular({ hier }: { hier: boolean }) {
+/** Kontakt- bzw. Frageschritt mit Kopf (Schrittzähler, Balken) und Fuß (Weiter, Zurück). */
+function Formular() {
   const b = useCallBuchung();
   const t = buchung.karte;
   const imKontakt = b.phase === "kontakt";
@@ -492,8 +520,6 @@ function Formular({ hier }: { hier: boolean }) {
   return (
     <Stack spacing={6}>
       <Stack spacing={4}>
-        {/* Kein Überschriften-Element: Die Frage darunter ist die Überschrift (h2). */}
-        <CardLabel hero>{imKontakt ? t.labelKontakt : t.labelFragen}</CardLabel>
         <FunnelStepIndicator current={schritt} total={SCHRITTE_GESAMT} unit="Schritt" />
         <FunnelProgress value={(schritt / SCHRITTE_GESAMT) * 100} label="Fortschritt der Einordnung" />
       </Stack>
@@ -503,7 +529,7 @@ function Formular({ hier }: { hier: boolean }) {
         sx={{ animation: "appStepEnter 0.3s cubic-bezier(0.16,1,0.3,1)", ...noMotion }}
       >
         {imKontakt ? (
-          <KontaktSchritt hier={hier} />
+          <KontaktSchritt />
         ) : frage ? (
           <Box
             onClickCapture={(e) => {
@@ -566,12 +592,8 @@ function Formular({ hier }: { hier: boolean }) {
   );
 }
 
-/**
- * Name, E-Mail, Telefon mit sichtbarer Beschriftung und Fehler je Feld.
- * `hier` markiert die Instanz, in der zuletzt gearbeitet wurde — dorthin geht
- * der Fokus, wenn ein Feld fehlt (die Felder stehen zweimal auf der Seite).
- */
-function KontaktSchritt({ hier }: { hier: boolean }) {
+/** Name, E-Mail, Telefon mit sichtbarer Beschriftung und Fehler je Feld. */
+function KontaktSchritt() {
   const b = useCallBuchung();
   const f = buchung.karte.felder;
   const felder = [
@@ -607,7 +629,6 @@ function KontaktSchritt({ hier }: { hier: boolean }) {
                 value={b.kontakt[feld.key]}
                 onChange={(e) => b.setKontakt({ [feld.key]: e.target.value })}
                 data-call-feld={feld.key}
-                data-aktiv={hier ? "true" : "false"}
                 h="52px"
                 fontSize="16px"
               />
@@ -625,23 +646,22 @@ function KontaktSchritt({ hier }: { hier: boolean }) {
 }
 
 /**
- * Calendly in der aktiven Instanz. Lädt sofort: Die Einwilligung war der Klick
- * auf „Weiter zum Kalender", der Hinweis dazu stand direkt darüber.
+ * Calendly im Modal. Lädt sofort: Die Einwilligung war der Klick auf
+ * „Weiter zum Kalender", der Hinweis dazu stand direkt darüber.
  */
 function Kalender({ url, vorschau }: { url: string; vorschau: boolean }) {
   const t = buchung.karte;
   return (
     <Box>
-      <Stack spacing={2} px={{ base: 5, md: 8 }} pt={{ base: 6, md: 8 }} pb={5} textAlign="center" align="center">
-        <FunnelHeadline as="h3" scale="md">
+      <Stack spacing={2} px={{ base: 5, md: 8 }} pt={3} pb={5} textAlign="center" align="center">
+        <FunnelHeadline as="h2" scale="md">
           {t.kalenderTitel}
         </FunnelHeadline>
         <Text fontSize="15px" lineHeight={1.6} color="var(--cc-text-2)" maxW="520px">
           {t.kalenderText}
         </Text>
       </Stack>
-      {/* Innerer Clip, damit die Gold-Kante (::before) der Karte sichtbar bleibt. */}
-      <Box position="relative" borderBottomRadius="11px" overflow="hidden" borderTop="1px solid var(--cc-line)">
+      <Box borderTop="1px solid var(--cc-line)">
         {vorschau ? (
           <Flex
             direction="column"
@@ -677,44 +697,22 @@ function Kalender({ url, vorschau }: { url: string; vorschau: boolean }) {
   );
 }
 
-/** Zweite Instanz, während der Kalender in der anderen offen ist. */
-function KalenderAnderswo({ zielId, eigeneId }: { zielId: BuchungId; eigeneId: BuchungId }) {
-  const t = buchung.karte;
-  // Die obere Instanz steht vor der unteren im Dokument — daran hängt die Pfeilrichtung.
-  const nachOben = zielId === BUCHUNG_IDS.oben && eigeneId === BUCHUNG_IDS.unten;
-  return (
-    <Flex direction="column" align="center" textAlign="center" gap={4} p={{ base: 6, md: 8 }} role="status">
-      <Text fontSize={{ base: "17px", md: "19px" }} fontWeight={600} color="var(--cc-text)">
-        {t.anderswoTitel}
-      </Text>
-      <Button
-        as="a"
-        href={`#${zielId}`}
-        variant="line"
-        rightIcon={nachOben ? <ArrowUp size={16} strokeWidth={1.75} /> : <ArrowDown size={16} strokeWidth={1.75} />}
-        onClick={(e: React.MouseEvent) => {
-          e.preventDefault();
-          scrolleZu(document.getElementById(zielId));
-        }}
-      >
-        {t.anderswoLink}
-      </Button>
-    </Flex>
-  );
-}
-
-/** Bestätigung nach `calendly.event_scheduled` — in beiden Instanzen. */
+/** Bestätigung nach `calendly.event_scheduled`. */
 function Gebucht() {
+  const b = useCallBuchung();
   const t = buchung.karte;
   return (
-    <Stack spacing={5} align="center" textAlign="center" p={{ base: 7, md: 10 }} role="status">
+    <Stack spacing={5} align="center" textAlign="center" px={{ base: 6, md: 10 }} pt={4} pb={{ base: 8, md: 10 }} role="status">
       <SuccessMark size={64} />
-      <FunnelHeadline as="h3" scale="md">
+      <FunnelHeadline as="h2" scale="md">
         {t.gebuchtTitel}
       </FunnelHeadline>
       <Text fontSize={{ base: "15px", md: "16px" }} lineHeight={1.7} color="var(--cc-text-soft)" maxW="520px">
         {t.gebuchtText}
       </Text>
+      <Button variant="line" onClick={b.schliesse}>
+        {t.schliessen}
+      </Button>
     </Stack>
   );
 }

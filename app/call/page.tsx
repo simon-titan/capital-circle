@@ -12,7 +12,7 @@ const SHARE_IMAGE = `${SITE_URL}${meta.shareImage}`;
 
 /**
  * `/call` — Call-Funnel (Board von Emre, 17.10.2026): VSL, Fragebogen und
- * Calendly inline, Case Studies, belegte Auszahlungen.
+ * Calendly im Modal, Case Studies, belegte Auszahlungen.
  *
  * Öffentlich: `/call` steht in `PUBLIC_PREFIXES` von `proxy.ts`. Die Bilder
  * (`/cases/`, `/nachweise/`, `termin-og`) stehen im Matcher unter den

@@ -1,13 +1,13 @@
 "use client";
 
 import { Box, Button, Flex, HStack, IconButton, Stack, Text } from "@chakra-ui/react";
-import { ArrowDown, ArrowUpRight, Pause, Play, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, Pause, Play, ShieldCheck } from "lucide-react";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Logo } from "@/components/brand/Logo";
 import { GlassVideoPlayer } from "@/components/ui/GlassVideoPlayer";
 import { FunnelEyebrow as FunnelPill } from "@/components/marketing/funnel-ui";
 import { NachweisGalerie } from "@/components/landing/membership/NachweisGalerie";
-import { abschluss, buchung, ctaLabel, ergebnisseAuswahl, ergebnisseKopf, fusszeile, hero } from "@/config/call-funnel";
+import { abschluss, buchung, ergebnisseAuswahl, ergebnisseKopf, fusszeile, hero } from "@/config/call-funnel";
 import { auszahlungenCommunity, auszahlungenEmreLanding } from "@/config/landing-membership";
 import { garantie } from "@/config/mentoring";
 import { createVideoTracker } from "@/lib/discord-funnel/video-tracking";
@@ -21,16 +21,17 @@ import {
   FunnelVideoPlaceholder,
 } from "../DiscordFunnelChrome";
 import { Reveal } from "../landing-ui";
-import { BUCHUNG_IDS, CallBuchung, CallBuchungProvider, useCallBuchung } from "./CallBuchung";
+import { CallBuchungKnopf, CallBuchungProvider, useCallBuchung } from "./CallBuchung";
 import { CallCaseStudies } from "./CallCaseStudies";
 import { CallSektion, CallSektionsKopf, readCallTracking } from "./call-ui";
 
 /**
  * `/call` — Call-Funnel nach Emres Board vom 17.10.2026.
  *
- * Struktur: Laufzeile · Hero mit VSL (Schritt 1) · Fragebogen und Calendly
- * inline (Schritt 2) · Case Studies · Kundenergebnisse · Abschluss mit
- * demselben Buchungsbaustein · Footer. Alle Texte in `config/call-funnel.ts`.
+ * Struktur: Laufzeile · Hero mit VSL (Schritt 1) · Strategie-Gespräch
+ * (Schritt 2) · Case Studies · Kundenergebnisse · Abschluss · Footer. Jede
+ * Hauptaktion öffnet dasselbe Buchungs-Modal mit Fragebogen und Calendly
+ * (`CallBuchung.tsx`). Alle Texte in `config/call-funnel.ts`.
  *
  * Leads landen im selben System wie `/termin` (`discord_leads`, ohne
  * Discord-Invite), markiert mit `source_origin = "call_funnel"` und — ohne
@@ -96,7 +97,9 @@ export function CallFunnelClient({ vorschau = false }: { vorschau?: boolean }) {
               text={buchung.text}
             />
             <GespraechsPunkte />
-            <CallBuchung id={BUCHUNG_IDS.oben} />
+            <Flex justify="center">
+              <CallBuchungKnopf />
+            </Flex>
           </Stack>
         </CallSektion>
 
@@ -112,8 +115,9 @@ export function CallFunnelClient({ vorschau = false }: { vorschau?: boolean }) {
               headline={abschluss.headline}
               text={abschluss.text}
             />
-            {/* Ohne Hero-Glow: Zwei atmende Hero-Karten auf einer Seite machen keine davon zum nächsten Schritt. */}
-            <CallBuchung id={BUCHUNG_IDS.unten} hero={false} />
+            <Flex justify="center">
+              <CallBuchungKnopf />
+            </Flex>
           </Stack>
         </CallSektion>
 
@@ -275,25 +279,7 @@ function Hero({ videoSrc, mitVideo, vorschau }: { videoSrc: string | null; mitVi
         ) : null}
 
         <Stack w="full" maxW="560px" spacing={4} align="center">
-          <Button
-            as="a"
-            href={`#${BUCHUNG_IDS.oben}`}
-            variant="gold"
-            w={{ base: "full", sm: "auto" }}
-            h="auto"
-            minH={{ base: "52px", md: "56px" }}
-            py={3}
-            px={{ base: 6, md: 9 }}
-            fontSize={{ base: "16px", md: "17px" }}
-            whiteSpace="normal"
-            rightIcon={<ArrowDown size={18} strokeWidth={2} />}
-            onClick={(e: React.MouseEvent) => {
-              e.preventDefault();
-              b.springen();
-            }}
-          >
-            {ctaLabel}
-          </Button>
+          <CallBuchungKnopf />
 
           {/* Garantiesatz nur, wenn Emre die Bedingungen abgenommen hat
               (`garantie.freigegeben` in `config/mentoring.ts`) — vorher wäre es

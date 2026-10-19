@@ -151,7 +151,7 @@ Lifetime-Angebot, ab dem 30. Tag nach Kontoanlage (`profiles.created_at`) und nu
 Billing-Seiten kommt es nicht. Neutral gerahmt (kein Gold-Schein), weil es auch über dem Dashboard aufgeht.
 
 2026-10-17 (**Call-Funnel und Mentoring-Programme**): Nach Emres Board gibt es neben der Abo-Verkaufsseite
-`/` (bleibt unverändert) einen Call-Funnel **`/call`** (VSL mit Ton, Fragebogen + Calendly inline, Case
+`/` (bleibt unverändert) einen Call-Funnel **`/call`** (VSL mit Ton, Fragebogen + Calendly, Case
 Studies, Nachweis-Wand) und drei Programme, verkauft im Closing-Call über einen **Kassenlink**:
 Ausbildung 599 € (max. 2 Raten), Main 3.000 € und Premium 5.000 € (max. 4 Raten), dazu das Live-Trading-Abo
 99 €/Monat. Alles Fachliche steht in `config/mentoring.ts`, die Kasse in `lib/mentoring/kasse.ts`, der
@@ -191,3 +191,7 @@ Nachweis-Wand als Auswahl (`ergebnisseAuswahl`, ohne die Belege, die schon Case 
 Klick auf eine Option (nicht per Tastatur, nie auf der letzten Frage), eigene Budgetfrage (`buchung.karte.fragen`,
 `/termin` unverändert), VSL-Untertitel über `NEXT_PUBLIC_CALL_VIDEO_CAPTIONS` (WebVTT unter `public/untertitel/`,
 steht im Matcher von `proxy.ts`).
+Danach auf Wunsch: **Buchung auf `/call` als Modal** statt zweier Inline-Karten. Jede Hauptaktion ist ein
+`CallBuchungKnopf` und öffnet dasselbe Modal (`CallBuchung.tsx`); der Zustand liegt im Provider, Schließen und
+Wiederöffnen landet im selben Schritt. Alte Links auf `/call#termin` öffnen das Modal direkt. Während der
+Kalender offen ist, schließt ein Klick daneben das Modal nicht.

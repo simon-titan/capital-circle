@@ -7,10 +7,10 @@
  *
  * Aufbau der Seite (Reihenfolge hier = Reihenfolge dort):
  *   1. Hero mit VSL („Schritt 1 von 2")
- *   2. Fragebogen und Calendly inline („Schritt 2 von 2")
+ *   2. Strategie-Gespräch („Schritt 2 von 2"): Fragebogen und Calendly im Modal
  *   3. Case Studies
  *   4. Kundenergebnisse (belegte Auszahlungen aus `landing-membership.ts`)
- *   5. Abschluss mit demselben Buchungsbaustein
+ *   5. Abschluss mit demselben Knopf
  *
  * ── Schreibregeln für diese Datei ───────────────────────────────────────────
  *
@@ -38,7 +38,7 @@ export const meta = {
   shareImageAlt: "Capital Circle: kostenloses Strategie-Gespräch",
 } as const;
 
-/** Hauptaktion — steht unter dem Video und am Ende der Seite. */
+/** Hauptaktion — öffnet das Buchungs-Modal; steht unter dem Video, in Schritt 2 und am Ende der Seite. */
 export const ctaLabel = "Kostenloses Strategie-Gespräch sichern";
 
 /* ─── 1 Hero ────────────────────────────────────────────────────────────── */
@@ -86,10 +86,15 @@ export const buchung = {
     "ob Capital Circle dich weiterbringt. Und wenn nicht, sagen wir dir das.",
   ],
 
-  /** Texte in der Karte. */
+  /** Texte im Buchungs-Modal (der Schlüssel heißt aus Gewohnheit noch `karte`). */
   karte: {
+    /** Name des Dialogs für Screenreader. */
+    modalTitel: "Kostenloses Strategie-Gespräch buchen",
+    /** Kopfzeile des Modals je Schritt. */
     labelKontakt: "Deine Daten",
     labelFragen: "Kurze Einordnung",
+    labelKalender: "Termin wählen",
+    labelGebucht: "Gebucht",
     weiter: "Weiter",
     /** Letzte Frage: Der Klick lädt zugleich Calendly (Einwilligung, siehe `kalenderEinwilligung`). */
     abschicken: "Weiter zum Kalender",
@@ -144,9 +149,9 @@ export const buchung = {
     gebuchtText:
       "Die Bestätigung mit dem Link zum Gespräch ist gleich in deinem Postfach. Passt der Termin doch nicht, kannst du ihn über die Mail verschieben. Wir freuen uns auf dich.",
 
-    /** Zweite Instanz, während der Kalender in der anderen offen ist. */
-    anderswoTitel: "Dein Kalender ist schon offen.",
-    anderswoLink: "Zum Kalender springen",
+    /** Knöpfe auf der Seite nach der Buchung (öffnen die Bestätigung). */
+    gebuchtKnopf: "Dein Gespräch ist gebucht",
+    schliessen: "Schließen",
 
     /** Ohne konfigurierte Calendly-URL (sollte nicht vorkommen, es gibt einen Rückfall). */
     keinKalender: "Die Terminbuchung ist gerade nicht verfügbar. Bitte versuch es später noch einmal.",
