@@ -6,7 +6,7 @@
  * ausschließlich von hier, damit die Response-Shapes nicht auseinanderdriften.
  *
  * Werte-Konvention: in DB + API werden Kleinbuchstaben-Slugs gespeichert/übertragen
- * (kevin/simon, one_to_one/membership, discord_funnel/termin_direct). Die UI mappt auf Labels.
+ * (kevin/simon, one_to_one/membership, discord_funnel/termin_direct/call_funnel). Die UI mappt auf Labels.
  */
 
 /* ── Enums / Slugs ─────────────────────────────────────────────────────────────── */
@@ -20,14 +20,20 @@ export type CloseType = (typeof CLOSE_TYPES)[number];
 export const MEMBERSHIP_INSTALLMENTS = [1, 2, 4] as const;
 export type MembershipInstallments = (typeof MEMBERSHIP_INSTALLMENTS)[number];
 
-export const SOURCE_ORIGINS = ["discord_funnel", "termin_direct"] as const;
+/**
+ * Herkunft eines Leads. `call_funnel` = öffentliche Funnel-Seite `/call`
+ * (Board vom 17.10.2026: VSL, Fragebogen und Calendly inline auf einer Seite).
+ * Die DB-CHECKs dafür ergänzt Migration 108 — wer hier eine Herkunft ergänzt,
+ * braucht auch dort einen neuen Wert, sonst scheitert der Insert.
+ */
+export const SOURCE_ORIGINS = ["discord_funnel", "termin_direct", "call_funnel"] as const;
 export type SourceOrigin = (typeof SOURCE_ORIGINS)[number];
 
 export const CLOSED_VALUES = ["pending", "closed_won", "closed_lost"] as const;
 export type ClosedValue = (typeof CLOSED_VALUES)[number];
 
-/** Quelle eines Video-View-Events. `video_only` = anonyme /video-Seite. */
-export const VIDEO_SOURCES = ["discord_funnel", "termin_direct", "video_only", "unknown"] as const;
+/** Quelle eines Video-View-Events. `video_only` = anonyme /video-Seite, `call_funnel` = VSL auf `/call`. */
+export const VIDEO_SOURCES = ["discord_funnel", "termin_direct", "video_only", "call_funnel", "unknown"] as const;
 export type VideoSource = (typeof VIDEO_SOURCES)[number];
 
 export type RangeId = "today" | "week" | "month" | "last_month" | "custom";
@@ -42,6 +48,7 @@ export const CLOSER_LABELS: Record<CloserId, string> = {
 export const SOURCE_ORIGIN_LABELS: Record<SourceOrigin, string> = {
   discord_funnel: "Discord-Funnel",
   termin_direct: "Termin direkt",
+  call_funnel: "Call-Funnel",
 };
 
 /* ── DB-Rows ───────────────────────────────────────────────────────────────────── */
@@ -193,6 +200,7 @@ export interface PerCloserStats {
 export interface FunnelByOrigin {
   discord_funnel: FunnelStage[];
   termin_direct: FunnelStage[];
+  call_funnel: FunnelStage[];
 }
 
 export interface TimeOnDiscord {

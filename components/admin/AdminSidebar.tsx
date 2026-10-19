@@ -20,6 +20,7 @@ import {
   Newspaper,
   NotebookPen,
   Package,
+  Receipt,
   Route,
   ShieldCheck,
   Star,
@@ -94,6 +95,8 @@ const groups: AdminGroup[] = [
     links: [
       { href: "/admin/tracking", label: "Tracking Links", icon: Link2 },
       { href: "/admin/discord-funnel", label: "Discord Funnel", icon: Funnel },
+      // Kassenlinks nach dem Closing-Call und die Mentoring-Käufe (`config/mentoring.ts`).
+      { href: "/admin/kassenlinks", label: "Kassenlinks", icon: Receipt },
       // Die letzten Whop-Zahler holen (`config/whop-umzug.ts`). Nur Ansicht —
       // verschickt wird über `npm run whop:umzug`.
       { href: "/admin/whop-umzug", label: "Whop-Umzug", icon: Truck },

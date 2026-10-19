@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Button, Flex, Text } from "@chakra-ui/react";
-import { CalendarDays } from "lucide-react";
+import { ArrowUpRight, CalendarDays } from "lucide-react";
 import NextLink from "next/link";
 import Script from "next/script";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -18,7 +18,16 @@ interface Props {
   flaeche?: string;
   /** Höhe des eingebetteten Kalenders in Pixeln. */
   hoehe?: number;
+  /**
+   * Ohne Platzhalter sofort laden. Nur, wenn der Klick davor schon die
+   * Einwilligung war und der Hinweis direkt daneben stand — auf `/call` der
+   * Knopf „Weiter zum Kalender" im letzten Frageschritt.
+   */
+  sofort?: boolean;
 }
+
+/** So lange darf Calendly brauchen, bevor der Direktlink erscheint. */
+const FALLBACK_NACH_MS = 8000;
 
 /**
  * Calendly-Buchungskalender mit Zwei-Klick-Lösung.
@@ -39,11 +48,15 @@ interface Props {
  * `onReady` von `next/script` läuft dagegen bei jedem Einhängen.
  *
  * Das Ereignis `calendly.event_scheduled` werten die Seiten selbst aus (eigener
- * `message`-Listener); hier geht es nur ums Laden.
+ * `message`-Listener); hier geht es nur ums Laden. Lädt Calendly nicht
+ * (Skriptfehler oder nach 8 s noch kein iframe), erscheint ein Direktlink.
  */
-export function CalendlyZweiKlick({ url, flaeche = "var(--cc-surface)", hoehe = 700 }: Props) {
-  const [geladen, setGeladen] = useState(false);
+export function CalendlyZweiKlick({ url, flaeche = "var(--cc-surface)", hoehe = 700, sofort = false }: Props) {
+  const [geladen, setGeladen] = useState(sofort);
   const [bereit, setBereit] = useState(false);
+  // Skript blockiert (Adblocker, Firmennetz) oder Calendly antwortet nicht:
+  // Statt einer leeren Fläche steht dann der Direktlink da.
+  const [gescheitert, setGescheitert] = useState(false);
   const ziel = useRef<HTMLDivElement>(null);
 
   const einbetten = useCallback(() => {
@@ -64,9 +77,13 @@ export function CalendlyZweiKlick({ url, flaeche = "var(--cc-surface)", hoehe = 
     };
     window.addEventListener("message", meldung);
     const zeit = window.setTimeout(() => setBereit(true), 5000);
+    const fallback = window.setTimeout(() => {
+      if (!ziel.current?.querySelector("iframe")) setGescheitert(true);
+    }, FALLBACK_NACH_MS);
     return () => {
       window.removeEventListener("message", meldung);
       window.clearTimeout(zeit);
+      window.clearTimeout(fallback);
     };
   }, [geladen]);
 
@@ -123,6 +140,43 @@ export function CalendlyZweiKlick({ url, flaeche = "var(--cc-surface)", hoehe = 
     );
   }
 
+  if (gescheitert) {
+    return (
+      <Flex
+        direction="column"
+        align="center"
+        justify="center"
+        textAlign="center"
+        gap={4}
+        minH="320px"
+        px={{ base: 5, md: 10 }}
+        py={10}
+        bg={flaeche}
+        role="alert"
+      >
+        <Text fontSize={{ base: "17px", md: "19px" }} fontWeight={600} lineHeight={1.3} color="var(--cc-text)">
+          Der Kalender lädt hier gerade nicht.
+        </Text>
+        <Text fontSize="14px" lineHeight={1.65} color="var(--cc-text-2)" maxW="440px">
+          Oft blockiert ein Werbeblocker oder das Firmennetz die Einbindung. Direkt bei Calendly kannst du genauso
+          buchen, deine Angaben sind dort schon eingetragen.
+        </Text>
+        <Button
+          as="a"
+          href={url}
+          target="_blank"
+          rel="noopener"
+          variant="gold"
+          size="lg"
+          px={8}
+          rightIcon={<ArrowUpRight size={18} strokeWidth={2} />}
+        >
+          Kalender bei Calendly öffnen
+        </Button>
+      </Flex>
+    );
+  }
+
   return (
     <Box position="relative">
       {!bereit ? (
@@ -159,11 +213,13 @@ export function CalendlyZweiKlick({ url, flaeche = "var(--cc-surface)", hoehe = 
         </Flex>
       ) : null}
 
-      <div ref={ziel} style={{ minWidth: "320px", height: `${hoehe}px`, width: "100%" }} />
+      {/* Kein `minWidth`: In einer Karte mit 16-px-Rand wäre der Kalender unter 352 px abgeschnitten. */}
+      <div ref={ziel} style={{ height: `${hoehe}px`, width: "100%" }} />
       <Script
         src="https://assets.calendly.com/assets/external/widget.js"
         strategy="afterInteractive"
         onReady={einbetten}
+        onError={() => setGescheitert(true)}
       />
     </Box>
   );

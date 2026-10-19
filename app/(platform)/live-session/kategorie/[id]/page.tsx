@@ -10,6 +10,8 @@ import { kategorieHinweis } from "@/components/platform/live-session-ui";
 import { getLiveSessionCategory, getLiveSessionsWithCounts } from "@/lib/live-session-overview";
 import { getCurrentUserAndProfile } from "@/lib/server-data";
 import { liveSessionsNurFrei } from "@/lib/membership";
+import { liveZugangAbgelaufen } from "@/lib/mentoring/zugang";
+import { LiveZugangAbgelaufen } from "@/components/platform/LiveZugangAbgelaufen";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -45,6 +47,18 @@ export default async function LiveSessionCategoryPage({ params }: PageProps) {
 
   const category = await getLiveSessionCategory(id);
   if (!category) notFound();
+
+  // Mentoring-Programm, Live-Zeitraum vorbei: statt „Mitglied werden" das Live-Abo.
+  if (liveZugangAbgelaufen(profile) && !isFreeLiveSessionCategory(category.title)) {
+    return (
+      <Stack spacing={5} align="stretch">
+        <Box className="cc-rise">
+          <ZurueckLink />
+        </Box>
+        <LiveZugangAbgelaufen titel={category.title} />
+      </Stack>
+    );
+  }
 
   // Free-Mitglieder sehen genau eine Kategorie (siehe live-session-free.ts).
   // Die gesperrte wird benannt statt versteckt — so wie DESIGN.md es vorgibt.

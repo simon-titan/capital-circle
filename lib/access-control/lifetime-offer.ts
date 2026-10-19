@@ -154,7 +154,9 @@ export async function pruefeLifetimeAngebot(userId: string): Promise<LifetimeAng
   const gruppe = profil.lifetime_offer_group?.trim() || null;
   const tier = profil.membership_tier ?? "free";
 
-  if (tier === "lifetime" || tier === "ht_1on1") {
+  // Ein Mentoring-Programm schließt die Plattform dauerhaft ein — Lifetime für
+  // 997 € wäre dort ein Kauf von etwas, das schon bezahlt ist.
+  if (tier === "lifetime" || tier === "ht_1on1" || tier === "mentoring") {
     return { erlaubt: false, grund: "hat_bereits_lifetime", gruppe };
   }
 

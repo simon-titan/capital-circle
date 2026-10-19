@@ -51,7 +51,8 @@ export type Tier =
   | "quarterly"
   | "yearly"
   | "lifetime"
-  | "ht_1on1";
+  | "ht_1on1"
+  | "mentoring";
 
 const TIER_LABELS: Record<Tier, string> = {
   free: "Free",
@@ -60,6 +61,7 @@ const TIER_LABELS: Record<Tier, string> = {
   yearly: "Jährlich (599 €)",
   lifetime: "Lifetime",
   ht_1on1: "High-Ticket 1on1",
+  mentoring: "Mentoring-Programm",
 };
 
 /** Bezahlte Dauer-Tiers in Champagner, alles andere neutral — keine Zusatzfarben. */
@@ -70,6 +72,7 @@ const TIER_TONE: Record<Tier, AdminTone> = {
   yearly: "neutral",
   lifetime: "attention",
   ht_1on1: "attention",
+  mentoring: "attention",
 };
 
 interface AuditItem {

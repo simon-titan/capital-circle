@@ -133,6 +133,7 @@ export function computeFunnelByOrigin(leads: AggLeadRow[]): FunnelByOrigin {
   return {
     discord_funnel: byOrigin("discord_funnel"),
     termin_direct: byOrigin("termin_direct"),
+    call_funnel: byOrigin("call_funnel"),
   };
 }
 

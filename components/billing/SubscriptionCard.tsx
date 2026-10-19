@@ -71,7 +71,7 @@ export function SubscriptionCard({
       <DashCard label="Dein Abonnement" labelId="abo-karte" hero={tier === "free"} action={action}>
         <Stack spacing={4}>
           <Flex wrap="wrap" gap={2}>
-            <Pill tone={tier === "lifetime" || tier === "ht_1on1" ? "gold" : "neutral"}>{TIER_LABEL[tier]}</Pill>
+            <Pill tone={tier === "lifetime" || tier === "ht_1on1" || tier === "mentoring" ? "gold" : "neutral"}>{TIER_LABEL[tier]}</Pill>
             {pausiert ? <Pill tone="neutral">Pausiert</Pill> : null}
             {abo?.cancelAtPeriodEnd ? <Pill tone="danger">Wird gekündigt</Pill> : null}
             {status && !abo?.cancelAtPeriodEnd && !pausiert ? (
@@ -85,6 +85,8 @@ export function SubscriptionCard({
                 ? "Lebenslanger Zugang"
                 : tier === "ht_1on1"
                   ? "1:1-Mentoring mit Emre"
+                  : tier === "mentoring"
+                    ? "Mentoring-Programm"
                   : tier === "free"
                     ? "Du bist im Free-Zugang"
                     : `Mitgliedschaft · ${TIER_LABEL[tier]}`}
@@ -133,6 +135,13 @@ export function SubscriptionCard({
 
             {tier === "ht_1on1" ? (
               <Text>Persönliches 1:1-Programm. Termine vereinbaren wir direkt mit dir per E-Mail.</Text>
+            ) : null}
+
+            {tier === "mentoring" ? (
+              <Text>
+                Plattform, Kurse und Journal sind dauerhaft freigeschaltet. Leistungen und Live-Zeitraum stehen in
+                deiner Kaufbestätigung per E-Mail.
+              </Text>
             ) : null}
 
             {tier === "free" ? (

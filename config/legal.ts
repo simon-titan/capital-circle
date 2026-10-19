@@ -20,16 +20,20 @@
  * Versionskennung der Rechtstexte (ISO-Datum des Stands, bei mehreren Ständen
  * am selben Tag mit laufender Nummer).
  *
+ * `2026-10-17.1`: AGB § 7a Mentoring-Programme (Programme mit befristetem
+ * Live-Bereich, Ratenzahlung, Live-Trading-Abo). Datenschutz: Calendly auf
+ * `/call` lädt nach „Weiter zum Kalender" im letzten Frageschritt.
+ *
  * `2026-09-20.1`: Datenschutz um das Kontaktformular ohne Anmeldung ergänzt.
  *
  * `2026-09-19.2`: Widerrufsfunktion (Satz nach Gestaltungshinweis 3 in der
  * Belehrung, AGB § 8), Datenschutz ohne Google Fonts, mit Calendly erst nach
  * Klick, mit Kündigungs- und Widerrufsfunktion und dem Zustimmungsnachweis.
  */
-export const rechtstexteVersion = "2026-09-20.1";
+export const rechtstexteVersion = "2026-10-17.1";
 
 /** Derselbe Stand als Lesedatum für die Seiten. */
-export const rechtstexteStand = "20. September 2026";
+export const rechtstexteStand = "17. Oktober 2026";
 
 export interface Anbieter {
   /** Vollständiger Name der natürlichen Person (Einzelunternehmen). */

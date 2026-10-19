@@ -1069,6 +1069,28 @@ export async function hatAnderenZugang(
   if (tier === "lifetime") return "Lifetime-Zugang besteht.";
   if (tier === "ht_1on1") return "Zugang über das 1:1-Mentoring.";
 
+  /*
+    Mentoring-Programm (`config/mentoring.ts`): Die Plattform ist bezahlt — es
+    sei denn, der Fall gehört gerade zu den Raten dieses Programms. Dann ist
+    das Programm nicht der „andere Zugang", sondern genau der, um den es geht,
+    und der Lauf soll am siebten Tag sperren (Entscheidung Simon, 17.10.2026).
+  */
+  if (tier === "mentoring") {
+    let istProgrammRate = false;
+    if (ausserAboId) {
+      const { data: kauf, error: kaufFehler } = await supabase
+        .from("mentoring_kauf")
+        .select("id")
+        .eq("stripe_subscription_id", ausserAboId)
+        .maybeSingle();
+      if (kaufFehler && kaufFehler.code !== "PGRST205" && kaufFehler.code !== "42P01") {
+        throw new Error(`Zugang nicht prüfbar (mentoring_kauf, user=${userId}): ${kaufFehler.message}`);
+      }
+      istProgrammRate = Boolean(kauf);
+    }
+    if (!istProgrammRate) return "Zugang über ein Mentoring-Programm.";
+  }
+
   const andere = ((aboRes.data ?? []) as Array<{ stripe_subscription_id: string }>).filter(
     (a) => !ausserAboId || a.stripe_subscription_id !== ausserAboId,
   );

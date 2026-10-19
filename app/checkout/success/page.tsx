@@ -9,6 +9,7 @@ import { RechtsLinks } from "@/components/legal/RechtsFusszeile";
 import { ladeKaufStatus, type KaufStatus } from "@/lib/checkout/kauf-status";
 import { createClient } from "@/lib/supabase/server";
 import { preiskarten } from "@/config/landing-membership";
+import { PRODUKTE } from "@/config/mentoring";
 import { getDiscordAuthUrl } from "@/lib/discord";
 import { DiscordGlyph } from "@/components/platform/DiscordBanner";
 
@@ -60,10 +61,20 @@ function zugangAus(status: KaufStatus, sitzung: { id: string; email: string | nu
   return { art: "per_mail", kaufAlt: status.grund === "session_expired" };
 }
 
-const KOPFZEILE: Record<Zugang["art"], string> = {
+/**
+ * Kopfzeile je Zustand. `programm`: Gekauft wurde über einen Kassenlink
+ * (Mentoring-Programm oder Live-Abo), nicht die Mitgliedschaft — dann heißt es
+ * „Dein Zugang", weil „Mitgliedschaft" dort schlicht falsch wäre.
+ */
+function kopfzeile(art: Zugang["art"], programm: boolean): string {
+  const freigeschaltet = programm ? "Dein Zugang ist freigeschaltet." : "Deine Mitgliedschaft ist freigeschaltet.";
+  if (art === "anmelden") return `${freigeschaltet} Melde dich an, und du bist drin.`;
+  if (art === "anderes_konto") return `${freigeschaltet} Melde dich mit dem richtigen Konto an.`;
+  return KOPFZEILE[art];
+}
+
+const KOPFZEILE: Record<Exclude<Zugang["art"], "anmelden" | "anderes_konto">, string> = {
   eingeloggt: "Alles eingerichtet. Schön, dass du dabei bist.",
-  anmelden: "Deine Mitgliedschaft ist freigeschaltet. Melde dich an, und du bist drin.",
-  anderes_konto: "Deine Mitgliedschaft ist freigeschaltet. Melde dich mit dem richtigen Konto an.",
   passwort_waehlen: "Ein kurzer Schritt fehlt noch, dann bist du drin.",
   wartet: "Ein kurzer Schritt fehlt noch, dann bist du drin.",
   per_mail: "Ein kurzer Schritt fehlt noch, dann bist du drin.",
@@ -142,8 +153,11 @@ export default async function CheckoutSuccessPage({
   } = await supabase.auth.getUser();
   const zugang = zugangAus(status, user ? { id: user.id, email: user.email ?? null } : null);
   const erledigt = zugang.art === "eingeloggt";
-  const planLabel =
-    status.ok && status.tier
+  const programm = status.ok && status.produkt ? PRODUKTE[status.produkt].name : null;
+  const freigeschaltetText = programm ? `dein Zugang (${programm})` : "die Mitgliedschaft";
+  const planLabel = programm
+    ? programm
+    : status.ok && status.tier
       ? (preiskarten.find((k) => k.plan === status.tier)?.laufzeit ?? null)
       : null;
 
@@ -196,7 +210,7 @@ export default async function CheckoutSuccessPage({
                 </Text>
               ) : null}
               <Text fontSize="15px" lineHeight={1.6} color="var(--cc-text-2)" maxW="42ch">
-                {KOPFZEILE[zugang.art]}
+                {kopfzeile(zugang.art, Boolean(programm))}
               </Text>
             </Stack>
           </Stack>
@@ -250,7 +264,7 @@ export default async function CheckoutSuccessPage({
                 <Stack spacing={4} align="flex-start">
                   <Text fontSize="15px" lineHeight={1.6} color="var(--cc-text-2)">
                     Für <Box as="span" color="var(--cc-text)">{zugang.email}</Box> gibt es schon ein Konto, und dort
-                    ist die Mitgliedschaft jetzt freigeschaltet. Melde dich mit deinem bestehenden Passwort an.
+                    ist {freigeschaltetText} jetzt freigeschaltet. Melde dich mit deinem bestehenden Passwort an.
                   </Text>
                   <Box as="a" {...goldKnopf} href="/login">
                     Zur Anmeldung
@@ -271,7 +285,7 @@ export default async function CheckoutSuccessPage({
                     ) : (
                       "mit einem anderen Konto"
                     )}{" "}
-                    angemeldet. Melde dich ab und mit der Adresse des Kaufs wieder an. Dort ist die Mitgliedschaft
+                    angemeldet. Melde dich ab und mit der Adresse des Kaufs wieder an. Dort ist {freigeschaltetText}{" "}
                     freigeschaltet.
                   </Text>
                   <KontoWechseln />

@@ -7,6 +7,8 @@ import { isFreeLiveSessionCategory } from "@/components/platform/live-session-fr
 import { LiveSessionDetailClient } from "@/components/platform/LiveSessionDetailClient";
 import { getCurrentUserAndProfile, getLiveSessionDetail } from "@/lib/server-data";
 import { liveSessionsNurFrei } from "@/lib/membership";
+import { liveZugangAbgelaufen } from "@/lib/mentoring/zugang";
+import { LiveZugangAbgelaufen } from "@/components/platform/LiveZugangAbgelaufen";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -27,6 +29,30 @@ export default async function LiveSessionDetailPage({ params }: PageProps) {
 
   const freeMember = liveSessionsNurFrei(profile);
   const freeCategory = isFreeLiveSessionCategory(detail.category.title);
+
+  // Mentoring-Programm, Live-Zeitraum vorbei: statt „Mitglied werden" das Live-Abo.
+  if (liveZugangAbgelaufen(profile) && !freeCategory) {
+    return (
+      <Stack spacing={5} align="stretch">
+        <Box>
+          <ChakraLinkButton
+            href="/live-session"
+            variant="ghost"
+            size="sm"
+            h="auto"
+            px={0}
+            leftIcon={<ArrowLeft size={15} strokeWidth={2} />}
+            color="var(--cc-text-2)"
+            fontWeight={500}
+            _hover={{ color: "var(--cc-gold-light)", bg: "transparent" }}
+          >
+            Zurück zur Übersicht
+          </ChakraLinkButton>
+        </Box>
+        <LiveZugangAbgelaufen titel={detail.title} />
+      </Stack>
+    );
+  }
 
   if (freeMember && !freeCategory) {
     return (

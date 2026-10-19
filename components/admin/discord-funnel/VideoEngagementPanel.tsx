@@ -10,6 +10,7 @@ const VIDEO_SOURCE_LABELS: Record<VideoSource, string> = {
   discord_funnel: "Discord-Funnel",
   termin_direct: "Termin direkt",
   video_only: "/video (anonym)",
+  call_funnel: "Call-Funnel (/call)",
   unknown: "Unbekannt",
 };
 

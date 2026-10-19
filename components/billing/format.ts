@@ -8,7 +8,7 @@
  */
 
 /** Jede Stufe, die ein Profil tragen kann — auch die nicht mehr frei verkäufliche. */
-export type Tier = "free" | "monthly" | "quarterly" | "yearly" | "lifetime" | "ht_1on1";
+export type Tier = "free" | "monthly" | "quarterly" | "yearly" | "lifetime" | "ht_1on1" | "mentoring";
 
 /** Die drei wiederkehrend abgerechneten Laufzeiten. */
 export const ABO_TIERS: readonly Tier[] = ["monthly", "quarterly", "yearly"];
@@ -24,6 +24,8 @@ export const TIER_LABEL: Record<Tier, string> = {
   yearly: "Jährlich",
   lifetime: "Lifetime",
   ht_1on1: "1:1-Mentoring",
+  // Ausbildung, Main oder Premium (`config/mentoring.ts`); welches genau, steht in `mentoring_kauf`.
+  mentoring: "Mentoring-Programm",
 };
 
 /** Endpreis inkl. MwSt. und Abrechnungsrhythmus — dieselben Zahlen wie auf der Verkaufsseite. */

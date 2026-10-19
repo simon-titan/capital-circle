@@ -3,6 +3,7 @@ import { findeUserIdZuEmail } from "@/lib/checkout/user-lookup";
 import { ladeAboKontext, type AboZeile } from "@/lib/stripe/abo-kontext";
 import { kuendigeAboZumPeriodenende } from "@/lib/stripe/kuendigung";
 import { resolvePlanFromPriceId } from "@/lib/stripe/plan-map";
+import { getStripe } from "@/lib/stripe/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { tagBerlin, type KuendigungsArt, type KuendigungsErgebnis } from "./shared";
 
@@ -180,6 +181,19 @@ export async function ordneZuUndFuehreAus(eingabe: KuendigungsEingabe, sitzung: 
     ergebnis: { art: "manuell_pruefen", plan },
   });
 
+  /*
+    Mentoring-Programm (`config/mentoring.ts`): Das einzige kündbare
+    Dauerschuldverhältnis ist das Live-Trading-Abo, und das steht bewusst nicht
+    in `subscriptions` (siehe `lib/stripe/webhooks/mentoring.ts`). Ordentlich
+    gekündigt wird es hier direkt bei Stripe zum Monatsende; der Live-Bereich
+    bleibt bis dahin offen, weil `live_bis` nicht verkürzt wird. Die Raten
+    eines Programms sind keine Laufzeit, sondern Zahlungen eines Kaufs — eine
+    „Kündigung" dazu prüft der Betreiber.
+  */
+  if (kontext.tier === "mentoring" && laufende.length === 0) {
+    return kuendigeLiveAbo(service, eingabe, { ...leer, ...basis });
+  }
+
   if (laufende.length === 0) {
     if (kontext.tier === "free") {
       return {
@@ -266,6 +280,67 @@ export async function ordneZuUndFuehreAus(eingabe: KuendigungsEingabe, sitzung: 
     ausgefuehrtAm: new Date().toISOString(),
     ergebnis: { art: "ausgefuehrt", plan, wirksamZum: ausfuehrung.accessUntil, warBereitsGekuendigt: false },
   };
+}
+
+async function kuendigeLiveAbo(
+  service: ReturnType<typeof createServiceClient>,
+  eingabe: KuendigungsEingabe,
+  basis: Omit<Zuordnung, "status" | "pruefHinweis" | "ergebnis" | "plan">,
+): Promise<Zuordnung> {
+  const plan = "Live-Trading-Abo";
+  const manuell = (pruefHinweis: string): Zuordnung => ({
+    ...basis,
+    plan,
+    status: "manuell_pruefen",
+    pruefHinweis,
+    ergebnis: { art: "manuell_pruefen", plan },
+  });
+
+  const { data, error } = await service
+    .from("mentoring_kauf")
+    .select("stripe_subscription_id")
+    .eq("user_id", basis.userId as string)
+    .eq("produkt", "live")
+    .eq("status", "aktiv")
+    .not("stripe_subscription_id", "is", null);
+  if (error) return manuell(`Live-Abo nicht lesbar: ${error.message}`);
+  const abos = (data ?? []) as Array<{ stripe_subscription_id: string }>;
+
+  if (abos.length === 0) {
+    return manuell("Mentoring-Programm ohne laufendes Live-Abo. Kündigung zu Programm oder Raten von Hand prüfen.");
+  }
+  if (abos.length > 1) return manuell(`${abos.length} laufende Live-Abos: nicht eindeutig.`);
+  if (eingabe.art === "ausserordentlich") {
+    return manuell("Außerordentliche Kündigung des Live-Abos: Grund prüfen und Beendigung von Hand bestätigen.");
+  }
+
+  const subId = abos[0].stripe_subscription_id;
+  try {
+    const sub = await getStripe().subscriptions.update(subId, {
+      cancel_at_period_end: true,
+      cancellation_details: { comment: "Kündigungsbutton (§ 312k BGB)" },
+    });
+    const ende = sub.items.data[0]?.current_period_end;
+    if (!ende) {
+      return { ...manuell("Live-Abo gekündigt, Monatsende aber nicht lesbar: Termin von Hand bestätigen."), stripeSubscriptionId: subId };
+    }
+    const wirksamZum = new Date(ende * 1000).toISOString();
+    if (eingabe.zeitpunktWunsch && eingabe.zeitpunktWunsch > tagBerlin(wirksamZum)) {
+      return { ...manuell(`Wunschtermin ${eingabe.zeitpunktWunsch} liegt nach dem Monatsende; zum Monatsende gekündigt.`), stripeSubscriptionId: subId };
+    }
+    return {
+      ...basis,
+      plan,
+      stripeSubscriptionId: subId,
+      status: "ausgefuehrt",
+      pruefHinweis: null,
+      wirksamZum,
+      ausgefuehrtAm: new Date().toISOString(),
+      ergebnis: { art: "ausgefuehrt", plan, wirksamZum, warBereitsGekuendigt: false },
+    };
+  } catch (err) {
+    return { ...manuell(`Stripe-Kündigung des Live-Abos fehlgeschlagen: ${err instanceof Error ? err.message : "unbekannt"}`), stripeSubscriptionId: subId };
+  }
 }
 
 /** Tarif für Anzeige und Beleg: Profilstufe, sonst aus der Preis-ID. */

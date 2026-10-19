@@ -13,16 +13,12 @@ import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 const AUSSTEHEND = [
-  // Stand 25.09.2026 (laut `npm run db:check`). Alle vier additiv, loeschen nichts.
-  // 104: Merker fuer das Lifetime-Popup (`profiles.lifetime_popup_gesehen_am`).
-  "104_lifetime_popup",
-  // 105: TradingView-Zugaenge (Tools-Bereich), Admin-Liste und Entzug im Nachtlauf.
-  "105_tradingview_zugang",
-  // 106: Bilder pro Journal-Trade + gemerkte geloeschte Trades fuer den Re-Import.
-  "106_journal_trade_bilder",
-  // 107: Onboarding. ACHTUNG: Ab dem Einspielen muss jedes zahlende Konto einmal
-  // die fuenf Fragen beantworten (Entscheidung Simon, 25.09.2026).
-  "107_onboarding",
+  // Stand 17.10.2026 (laut `npm run db:check`): 104–107 sind eingespielt.
+  // 108: Mentoring-Programme und Call-Funnel — Stufe `mentoring`, `profiles.live_bis`,
+  // Tabellen `kassenlink`, `mentoring_kauf`, `mentoring_rate`, Herkunft `call_funnel`
+  // und `hat_live_zugang()` fuer Analysen und Live-Session-Videos. Additiv; die
+  // beiden Lese-Policies werden ersetzt (gleiche Wirkung fuer alle ausser der neuen Stufe).
+  "108_mentoring",
 ];
 
 const DIR = path.resolve(process.cwd(), "supabase/migrations");

@@ -149,3 +149,45 @@ Lifetime-Angebot, ab dem 30. Tag nach Kontoanlage (`profiles.created_at`) und nu
 (hängt in `PlatformFrame`), Entscheidung und Merken in `app/api/lifetime/popup/route.ts`, gemerkt in
 `profiles.lifetime_popup_gesehen_am` (Migration 104) plus `localStorage`. Auf Abo-, Checkout- und
 Billing-Seiten kommt es nicht. Neutral gerahmt (kein Gold-Schein), weil es auch über dem Dashboard aufgeht.
+
+2026-10-17 (**Call-Funnel und Mentoring-Programme**): Nach Emres Board gibt es neben der Abo-Verkaufsseite
+`/` (bleibt unverändert) einen Call-Funnel **`/call`** (VSL mit Ton, Fragebogen + Calendly inline, Case
+Studies, Nachweis-Wand) und drei Programme, verkauft im Closing-Call über einen **Kassenlink**:
+Ausbildung 599 € (max. 2 Raten), Main 3.000 € und Premium 5.000 € (max. 4 Raten), dazu das Live-Trading-Abo
+99 €/Monat. Alles Fachliche steht in `config/mentoring.ts`, die Kasse in `lib/mentoring/kasse.ts`, der
+Webhook-Zweig in `lib/stripe/webhooks/mentoring.ts`, Tabellen in Migration 108.
+**Stufe `mentoring`**: Plattform, Kurse und Journal dauerhaft (wie Lifetime, aber `is_paid` zählt),
+**Live-Sessions und Analysen nur bis `profiles.live_bis`** (`hatLiveZugang` in `lib/mentoring/zugang.ts`,
+gespiegelt als `hat_live_zugang()` in der Datenbank). Wo sich das Board widersprach, gelten die
+Detailblätter (Entscheidung Simon): Live 3 bzw. 12 Monate, Gruppencall Main 4 / Premium 12 Monate.
+**Raten sind Monatsabos, aber keine Mitgliedschaft**: Alle Abo- und Rechnungs-Handler zweigen vorne an
+`metadata.art` ab (`mentoring`, `mentoring_raten`, `live_abo`), solche Abos stehen **nicht** in
+`subscriptions`. Die Raten enden über einen Subscription Schedule von selbst. Geplatzte Rate: Mahnen,
+an Tag 7 sperren (`is_paid`), nachgeholte Zahlung öffnet wieder. Geplatztes Live-Abo: kein Zahlungsfall,
+`live_bis` läuft einfach aus. Wer einen neuen Abo-Handler baut, muss denselben Abzweig setzen, sonst
+schreibt ein Ratenkauf `membership_tier: monthly` oder nimmt nach der letzten Rate den Zugang.
+**Garantie** (`garantie` in `config/mentoring.ts`) ist ein Entwurf mit `freigegeben: false` — bis Emre die
+Bedingungen abnimmt, zeigt keine Seite den Garantiesatz und `/garantie` ist 404 (Vorschau mit `?vorschau=1`).
+AGB § 7a ist neu und nicht anwaltlich geprüft.
+
+2026-10-19 (**Vorschau für Emre, P1-Fixes Funnel und Kasse**): **`/vorschau/mentoring`** zeigt den
+ganzen Mentoring-Funnel mit Beispieldaten — Call-Funnel (`/vorschau/mentoring/call`, ohne Tracking,
+Lead und Calendly), alle Kassenseiten (`kasse/<variante>`, Varianten in `app/vorschau/mentoring/varianten.ts`),
+die Bestätigungsmail als HTML (`mail/<variante>`) und den Garantie-Entwurf. Öffentlich und vom
+Wartungs-Gate ausgenommen (`proxy.ts`). Die Kassenseite rendert dafür über **`components/kasse/KassenAnsicht.tsx`**
+— echte Seite und Vorschau teilen sich das Layout; Änderungen dort, nicht in `app/kasse/[token]/page.tsx`.
+Auf `/call` ist der Klick auf **„Weiter zum Kalender"** im letzten Frageschritt die Calendly-Einwilligung
+(Hinweis steht direkt darüber, Datenschutz ergänzt); `CalendlyZweiKlick` hat dafür `sofort` und zeigt
+nach 8 s ohne iframe einen Direktlink. Ohne `NEXT_PUBLIC_CALL_VIDEO_URL` entfällt Schritt 1 samt
+„Schritt x von 2". Die Erfolgsseite sagt bei Programmkäufen „Dein Zugang" statt „Mitgliedschaft"
+(`produkt` in `ladeKaufStatus`).
+Danach die P2-Punkte: **Ratenzahlen nur, wo der Preis glatt aufgeht** (`erlaubteRaten`) — Premium also 1, 2
+oder 4 Raten, weil 3 × 1.666,66 € = 4.999,98 € ergäbe. Wer Premium in 3 Raten will, muss den Restcent auf eine
+Rate legen (Schedule, Webhook, Mail, Admin), nicht nur den Filter lockern. Die Kassenseite trennt „Dauerhaft
+enthalten" von „Live und Betreuung" (`Leistung.dauerhaft`), nennt beim Live-Abo das Datum der ersten Abbuchung
+(`ersteLiveAbbuchung` in `lib/mentoring/kasse.ts`, dieselbe Regel wie `trial_end`) und zeigt die
+Zahlungs-Logos nur, solange `STRIPE_PMC_MENTORING` leer ist. Auf `/call`: Laufzeile mit Pause-Knopf,
+Nachweis-Wand als Auswahl (`ergebnisseAuswahl`, ohne die Belege, die schon Case Study sind), Auto-Weiter nach
+Klick auf eine Option (nicht per Tastatur, nie auf der letzten Frage), eigene Budgetfrage (`buchung.karte.fragen`,
+`/termin` unverändert), VSL-Untertitel über `NEXT_PUBLIC_CALL_VIDEO_CAPTIONS` (WebVTT unter `public/untertitel/`,
+steht im Matcher von `proxy.ts`).

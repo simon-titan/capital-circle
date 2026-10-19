@@ -18,6 +18,9 @@ const ALLOWED_TIERS = [
   "yearly",
   "lifetime",
   "ht_1on1",
+  // Mentoring-Programme (`config/mentoring.ts`). Den Live-Zeitraum setzt das
+  // hier nicht — der steht in `profiles.live_bis` und kommt aus dem Kauf.
+  "mentoring",
 ] as const;
 type Tier = (typeof ALLOWED_TIERS)[number];
 

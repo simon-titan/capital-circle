@@ -72,6 +72,7 @@ const TIER_BADGE: Record<Tier, { tone: AdminTone; label: string }> = {
   yearly: { tone: "success", label: "Jährlich" },
   lifetime: { tone: "success", label: "Lifetime" },
   ht_1on1: { tone: "attention", label: "1on1" },
+  mentoring: { tone: "attention", label: "Mentoring" },
 };
 
 const iconButtonNeutral = {

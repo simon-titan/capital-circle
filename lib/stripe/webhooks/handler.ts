@@ -7,6 +7,7 @@ import { handleSubscriptionPaused } from "./subscription-paused";
 import { handleSubscriptionResumed } from "./subscription-resumed";
 import { handleInvoicePaid } from "./invoice-paid";
 import { handleInvoicePaymentFailed } from "./invoice-payment-failed";
+import { handleMentoringCheckout, mentoringArt } from "./mentoring";
 
 /**
  * Stripe-Event-Dispatcher.
@@ -57,6 +58,18 @@ export async function handleStripeEvent(
         event.data.object as Stripe.Checkout.Session,
         supabase,
       );
+
+    /*
+      Verzögerte Zahlarten (Lastschrift): `completed` kam mit `unpaid`, das
+      Geld kommt hier. Nur der Mentoring-Zweig wartet darauf; die Abo-Kasse
+      richtet sich nach `subscription.updated`, und den Lifetime-Pfad gibt es
+      nur noch für Nachzügler.
+    */
+    case "checkout.session.async_payment_succeeded": {
+      const session = event.data.object as Stripe.Checkout.Session;
+      if (!mentoringArt(session.metadata)) return;
+      return handleMentoringCheckout(session, supabase);
+    }
 
     // Läuft eine Kasse ab, ohne dass gezahlt wurde. Ohne diesen Fall bliebe
     // die Trichterzeile für immer auf „started" stehen.
