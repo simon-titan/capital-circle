@@ -12,6 +12,16 @@ function previousModuleIdFromOrderedIndices(
   return courseMap.get(prevOrder);
 }
 
+/*
+ * Freischaltung: erstes Modul, Vorgänger abgeschlossen — oder das Modul selbst
+ * hat schon eine Fortschrittszeile. Die entsteht nur beim Schauen, also nur,
+ * wenn das Modul früher einmal frei war. Ohne diese Ausnahme sperrt jede
+ * Umsortierung im Admin bereits angefangene und abgeschlossene Module wieder
+ * (28.10.2026: 68 Mitglieder im „Capital Circle Framework“).
+ *
+ * Die Kette besteht nur aus veröffentlichten Modulen — ein Entwurf ist für
+ * Mitglieder nicht abschließbar und würde alles dahinter dauerhaft sperren.
+ */
 export async function isModuleUnlocked(userId: string, moduleId: string): Promise<boolean> {
   const supabase = await createClient();
   const { data: currentModule } = await supabase
@@ -24,7 +34,8 @@ export async function isModuleUnlocked(userId: string, moduleId: string): Promis
   const { data: siblings } = await supabase
     .from("modules")
     .select("id,order_index")
-    .eq("course_id", currentModule.course_id);
+    .eq("course_id", currentModule.course_id)
+    .eq("is_published", true);
 
   const courseMap = new Map<number, string>();
   for (const row of siblings ?? []) {
@@ -38,16 +49,16 @@ export async function isModuleUnlocked(userId: string, moduleId: string): Promis
   if (currentModule.order_index === minOrder) return true;
 
   const prevId = previousModuleIdFromOrderedIndices(courseMap, currentModule.order_index);
-  if (!prevId) return false;
 
-  const { data: previousProgress } = await supabase
+  const { data: progress } = await supabase
     .from("user_progress")
-    .select("completed")
+    .select("module_id,completed")
     .eq("user_id", userId)
-    .eq("module_id", prevId)
-    .maybeSingle();
+    .in("module_id", prevId ? [moduleId, prevId] : [moduleId]);
 
-  return Boolean(previousProgress?.completed);
+  if ((progress ?? []).some((p) => p.module_id === moduleId)) return true;
+  if (!prevId) return false;
+  return Boolean(progress?.find((p) => p.module_id === prevId)?.completed);
 }
 
 /** course_id → (order_index → module_id) — für Batch-Freischaltung ohne N+1. */
@@ -62,12 +73,18 @@ export function buildCourseOrderIndexMap(
   return m;
 }
 
-/** Gleiche Regeln wie isModuleUnlocked, rein aus Maps (ohne DB-Roundtrip). */
+/**
+ * Gleiche Regeln wie isModuleUnlocked, rein aus Maps (ohne DB-Roundtrip).
+ * `completedByModuleId` muss für jede Fortschrittszeile einen Eintrag haben —
+ * ein vorhandener Schlüssel heißt „schon einmal betreten“ und hält das Modul frei.
+ * `orderIndexToModuleId` nur aus veröffentlichten Modulen bauen.
+ */
 export function isModuleUnlockedFromMaps(
-  module: { course_id: string; order_index: number },
+  module: { id: string; course_id: string; order_index: number },
   orderIndexToModuleId: Map<string, Map<number, string>>,
   completedByModuleId: Map<string, boolean>,
 ): boolean {
+  if (completedByModuleId.has(module.id)) return true;
   const courseMap = orderIndexToModuleId.get(module.course_id);
   if (!courseMap || courseMap.size === 0) return true;
 
@@ -110,7 +127,12 @@ export type CourseSequentialMeta = {
   created_at?: string;
 };
 
-/** Kurs frei, wenn Vorgänger-Kurs (nach sort_order, ohne exempt) vollständig abgeschlossen ist. */
+/**
+ * Kurs frei, wenn Vorgänger-Kurs (nach sort_order, ohne exempt) vollständig abgeschlossen ist —
+ * oder das Mitglied in diesem Kurs schon ein Modul betreten hat. Sonst sperrt ein neu
+ * veröffentlichtes Modul im Vorgänger-Kurs alle, die längst weiter sind (wie bei den Modulen).
+ * `completedByModuleId` muss für jede Fortschrittszeile einen Eintrag haben.
+ */
 export function isCourseUnlockedFromMaps(
   course: CourseSequentialMeta,
   sortedCourses: CourseSequentialMeta[],
@@ -120,6 +142,9 @@ export function isCourseUnlockedFromMaps(
   completionModuleIdsByCourseId: Map<string, Set<string>>,
 ): boolean {
   if (course.is_sequential_exempt) return true;
+  for (const moduleId of completionModuleIdsByCourseId.get(course.id) ?? []) {
+    if (completedByModuleId.has(moduleId)) return true;
+  }
   const chain = sortedCourses.filter((c) => !c.is_sequential_exempt);
   const idx = chain.findIndex((c) => c.id === course.id);
   if (idx <= 0) return true;
@@ -144,6 +169,23 @@ export async function isCourseUnlocked(userId: string, courseId: string): Promis
   if (!courseRow) return false;
   if (courseRow.slug === "__unassigned__") return true;
   if (Boolean(courseRow.is_sequential_exempt)) return true;
+
+  // Schon ein Modul dieses Kurses betreten → bleibt frei (siehe isCourseUnlockedFromMaps).
+  const { data: ownMods } = await supabase
+    .from("modules")
+    .select("id")
+    .eq("course_id", courseId)
+    .eq("is_published", true);
+  const ownModIds = (ownMods ?? []).map((m) => m.id as string);
+  if (ownModIds.length > 0) {
+    const { data: ownProg } = await supabase
+      .from("user_progress")
+      .select("module_id")
+      .eq("user_id", userId)
+      .in("module_id", ownModIds)
+      .limit(1);
+    if ((ownProg ?? []).length > 0) return true;
+  }
 
   const { data: allCourses } = await supabase
     .from("courses")
