@@ -22,7 +22,11 @@ function formatMinutes(sec: number | null | undefined) {
   return `${Math.max(1, Math.round(sec / 60))} Min.`;
 }
 
-/** Index freigeschaltet: erstes Video oder vorheriges vollständig gesehen. */
+/**
+ * Index freigeschaltet: erstes Video, vorheriges vollständig gesehen — oder das
+ * Video selbst schon angeschaut. Sonst sperrt eine Umsortierung im Admin bereits
+ * gesehene Videos wieder (wie bei den Modulen, siehe `lib/progress.ts`).
+ */
 export function isPlaylistIndexUnlocked(
   playlist: PlaylistVideoRow[],
   progressMap: Record<string, number>,
@@ -30,6 +34,7 @@ export function isPlaylistIndexUnlocked(
 ): boolean {
   if (idx < 0 || idx >= playlist.length) return false;
   if (idx === 0) return true;
+  if ((progressMap[playlist[idx]!.id] ?? 0) > 0) return true;
   return isPlaylistVideoDone(playlist[idx - 1]!, progressMap);
 }
 

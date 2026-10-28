@@ -558,7 +558,11 @@ export async function getAcademyModulesOverview(
   }
 
   const courseIds = [...new Set(list.map((m) => m.course_id))];
-  const { data: chainMods } = await supabase.from("modules").select("id,course_id,order_index").in("course_id", courseIds);
+  const { data: chainMods } = await supabase
+    .from("modules")
+    .select("id,course_id,order_index")
+    .eq("is_published", true)
+    .in("course_id", courseIds);
   const orderIndexToModuleId = buildCourseOrderIndexMap((chainMods ?? []) as { id: string; course_id: string; order_index: number }[]);
 
   const { data: chainCoursesRows } = await supabase
@@ -621,7 +625,7 @@ export async function getAcademyModulesOverview(
       completionModuleIdsByCourseId,
     );
     const moduleUnlocked = isModuleUnlockedFromMaps(
-      { course_id: m.course_id, order_index: m.order_index },
+      { id: m.id, course_id: m.course_id, order_index: m.order_index },
       orderIndexToModuleId,
       completedByModuleId,
     );
