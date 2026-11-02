@@ -9,7 +9,7 @@ import { LiveSessionTiles } from "@/components/platform/LiveSessionTiles";
 import { kategorieHinweis } from "@/components/platform/live-session-ui";
 import { getLiveSessionCategory, getLiveSessionsWithCounts } from "@/lib/live-session-overview";
 import { getCurrentUserAndProfile } from "@/lib/server-data";
-import { liveSessionsNurFrei } from "@/lib/membership";
+import { liveSessionsNurFrei, mitgliedWerdenZiel } from "@/lib/membership";
 import { liveZugangAbgelaufen } from "@/lib/mentoring/zugang";
 import { LiveZugangAbgelaufen } from "@/components/platform/LiveZugangAbgelaufen";
 
@@ -99,7 +99,7 @@ export default async function LiveSessionCategoryPage({ params }: PageProps) {
             Diese Kategorie ist vollwertigen Capital Circle Mitgliedern vorbehalten. Als Free-Mitglied hast du Zugang zu
             allen Wochenrecap-Sessions.
           </Text>
-          <ChakraLinkButton href="/bewerbung" variant="gold" mt={6} px={8}>
+          <ChakraLinkButton href={mitgliedWerdenZiel(profile)} variant="gold" mt={6} px={8}>
             Jetzt Mitglied werden
           </ChakraLinkButton>
         </Flex>

@@ -195,3 +195,20 @@ Danach auf Wunsch: **Buchung auf `/call` als Modal** statt zweier Inline-Karten.
 `CallBuchungKnopf` und öffnet dasselbe Modal (`CallBuchung.tsx`); der Zustand liegt im Provider, Schließen und
 Wiederöffnen landet im selben Schritt. Alte Links auf `/call#termin` öffnen das Modal direkt. Während der
 Kalender offen ist, schließt ein Klick daneben das Modal nicht.
+
+2026-11-02 (**Verkaufsschalter: normalen Zugang schließen**): Unter **`/admin/verkauf`** (System → Verkaufsseite)
+lässt sich der normale Zugang schließen; neue Mitglieder kommen dann nur noch über den Funnel (vorerst `/call`,
+später das Free Training — Ziel und Texte sind im Admin einstellbar). Logik zentral in `lib/verkauf/schalter.ts`,
+gespeichert in `app_settings` unter `verkauf_geschlossen` (Upsert, keine Migration nötig; fehlt die Zeile, gilt „offen").
+Geschlossen heißt: `/` zeigt per **Rewrite in `proxy.ts`** die Hinweisseite `app/geschlossen/page.tsx` (die
+Verkaufsseite selbst bleibt statisch, `/vorschau` zeigt sie weiter), `/go/<plan>` legt keine Kasse an — **auch nicht
+für `?src=whop`** —, `/api/stripe/create-checkout-session` antwortet `verkauf_geschlossen`, die Abo-Seite zeigt Konten
+ohne laufendes Abo den Funnel-Hinweis statt der Pakete, und `pruefeLifetimeAngebot()` liefert `verkauf_geschlossen`
+(damit verschwinden Lifetime-Karte, -Popup und -Absätze in Mails). Die Folgemails der Plattform-Umzugskampagne
+pausieren, der Whop-Umzug verweigert das Senden. **Offen bleiben** laufende Abos (Verlängerung, Jahreswechsel,
+Kündigung, Mahnungen), Mentoring-Kassenlinks, `/call`, Login und Rechtstexte. Wer einen neuen Kaufweg für Abo oder
+Lifetime baut, fragt `istVerkaufGeschlossen()` — ungecacht; nur der Proxy cacht 15 s.
+Achtung beim Testen: Der Schalter liegt in der Produktionsdatenbank — lokal umlegen schließt die Live-Seite.
+Nebenbei behoben: „Jetzt Mitglied werden" in `PaywallOverlay` und auf gesperrten Live-Sessions führte jeden auf
+`/bewerbung`, die der Proxy nur freigegebenen Free-Mitgliedern öffnet — alle anderen landeten zurück auf dem
+Dashboard. Das Ziel kommt jetzt aus `mitgliedWerdenZiel()` in `lib/membership.ts`.

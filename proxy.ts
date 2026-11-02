@@ -4,6 +4,7 @@ import { updateLastLoginIfNeeded } from "@/lib/auth/middleware-last-login";
 import { isFreeMember } from "@/lib/membership";
 import { onboardingErledigt } from "@/lib/onboarding/weiche";
 import { createServiceClient } from "@/lib/supabase/service";
+import { VERKAUF_REWRITE_HEADER, VERKAUF_SCHLUESSEL } from "@/lib/verkauf/schalter";
 
 // Marketing-Pfade (öffentlich, kein Auth nötig).
 //
@@ -27,6 +28,9 @@ const PUBLIC_PATHS = [
   // deshalb ohne Anmeldung erreichbar sein.
   "/ergebnisse",
   "/wartung",
+  // Hinweisseite bei geschlossenem Verkauf (`app/geschlossen/page.tsx`). Im
+  // Normalfall kommt man über den Rewrite von `/` dorthin, siehe unten.
+  "/geschlossen",
   "/checkout/success",
   "/checkout/zurueck",
   "/set-password",
@@ -142,6 +146,33 @@ async function getMaintenanceState(): Promise<MaintenanceState> {
   }
 }
 
+// Verkaufsschalter (`lib/verkauf/schalter.ts`, Admin `/admin/verkauf`): Ist der
+// normale Zugang geschlossen, zeigt `/` die Hinweisseite statt der
+// Verkaufsseite. Gleiches Caching wie beim Wartungsmodus; bei einem Lesefehler
+// gilt „offen". Die Kassen prüfen den Schalter selbst und ungecacht — hier
+// geht es nur darum, was der Besucher auf `/` sieht.
+let verkaufCache: { geschlossen: boolean; fetchedAt: number } | null = null;
+
+async function istVerkaufGeschlossenGecacht(): Promise<boolean> {
+  const now = Date.now();
+  if (verkaufCache && now - verkaufCache.fetchedAt < MAINTENANCE_CACHE_TTL_MS) {
+    return verkaufCache.geschlossen;
+  }
+  try {
+    const { data } = await createServiceClient()
+      .from("app_settings")
+      .select("value")
+      .eq("key", VERKAUF_SCHLUESSEL)
+      .maybeSingle();
+    const value = (data?.value ?? {}) as { geschlossen?: unknown };
+    const geschlossen = value.geschlossen === true;
+    verkaufCache = { geschlossen, fetchedAt: now };
+    return geschlossen;
+  } catch {
+    return false;
+  }
+}
+
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
@@ -229,8 +260,17 @@ export async function proxy(request: NextRequest) {
   }
 
   if (!user) {
-    // "/" zeigt die Landing Page — kein Login-Redirect für nicht-eingeloggte User
+    // "/" zeigt die Landing Page — kein Login-Redirect für nicht-eingeloggte User.
+    // Ist der Verkauf geschlossen, an derselben Adresse die Hinweisseite: als
+    // Rewrite, damit `/` selbst statisch bleibt (siehe AGENTS.md, „Kaufweg").
     if (pathname === "/") {
+      if (await istVerkaufGeschlossenGecacht()) {
+        // Der Header sagt der Seite, dass sie über den Rewrite kam — siehe
+        // `app/geschlossen/page.tsx`, sonst droht nach dem Öffnen eine Schleife.
+        const kopf = new Headers(request.headers);
+        kopf.set(VERKAUF_REWRITE_HEADER, "geschlossen");
+        return NextResponse.rewrite(new URL("/geschlossen", request.url), { request: { headers: kopf } });
+      }
       return response;
     }
     if (!isPublicPath(pathname)) {

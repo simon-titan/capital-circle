@@ -4,6 +4,7 @@ import { getResend } from "@/lib/email/resend";
 import { sendPlatformMigrationMail2, sendPlatformMigrationMail3 } from "@/lib/email/templates";
 import { PLATFORM_MIGRATION } from "@/config/platform-migration-campaign";
 import { isAuthorizedCron } from "@/lib/cron/auth";
+import { istVerkaufGeschlossen } from "@/lib/verkauf/schalter";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -83,6 +84,13 @@ async function firstNameFor(email: string, userId: string | null, profileNames: 
 export async function GET(request: NextRequest) {
   if (!isAuthorizedCron(request)) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
+
+  // Die Mails verlinken `/#angebot`. Bei geschlossenem Verkauf (`/admin/verkauf`)
+  // steht dort die Hinweisseite — pausieren statt ins Leere werben. Fällige
+  // Mails gehen raus, sobald wieder geöffnet ist.
+  if (await istVerkaufGeschlossen()) {
+    return NextResponse.json({ ok: true, sent: 0, uebersprungen: "Verkauf ist geschlossen." });
   }
 
   let rows: LogRow[];

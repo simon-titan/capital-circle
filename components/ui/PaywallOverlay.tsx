@@ -8,15 +8,17 @@ import NextLink from "next/link";
 interface PaywallOverlayProps {
   active: boolean;
   children: ReactNode;
+  /** Ziel des Knopfs, siehe `mitgliedWerdenZiel()` in `lib/membership.ts`. */
+  href?: string;
 }
 
 /**
  * Seiten-Paywall (v3.2): Der Seiteninhalt bleibt sichtbar, ist aber `inert`.
  * Darüber liegt ein ruhiger Graphit-Schleier; mittig eine Glas-Karte mit
- * Champagner-Schloss und Gold-Button zur Bewerbung. Sidebar und Navigation
+ * Champagner-Schloss und Gold-Button zum Mitgliedwerden. Sidebar und Navigation
  * liegen außerhalb und bleiben bedienbar (der Schleier lässt Klicks durch).
  */
-export function PaywallOverlay({ active, children }: PaywallOverlayProps) {
+export function PaywallOverlay({ active, children, href = "/einstellungen/abonnement#mitgliedschaft" }: PaywallOverlayProps) {
   if (!active) return <>{children}</>;
 
   return (
@@ -64,7 +66,7 @@ export function PaywallOverlay({ active, children }: PaywallOverlayProps) {
           <Text role="status" fontSize="16px" fontWeight={600} color="var(--cc-text)">
             Nur für vollwertige Member
           </Text>
-          <Button as={NextLink} href="/bewerbung" variant="gold" w="full">
+          <Button as={NextLink} href={href} variant="gold" w="full">
             Jetzt Mitglied werden
           </Button>
         </Flex>

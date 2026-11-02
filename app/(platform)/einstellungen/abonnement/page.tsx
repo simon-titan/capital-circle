@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import type Stripe from "stripe";
-import { Box } from "@chakra-ui/react";
+import { Box, Button, Stack, Text } from "@chakra-ui/react";
 import { CancelFlow } from "@/components/billing/CancelFlow";
 import { LifetimeOffer } from "@/components/billing/LifetimeOffer";
 import { ManageSubscriptionButton } from "@/components/billing/ManageSubscriptionButton";
@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/server";
 import { aboLaeuftSeit, ladeAboKontext } from "@/lib/stripe/abo-kontext";
 import { getStripe } from "@/lib/stripe/server";
 import { istUpgradeQuelle, pruefeUpgrade } from "@/lib/stripe/upgrade";
+import { ladeVerkaufsSchalter } from "@/lib/verkauf/schalter";
 
 export const metadata: Metadata = {
   title: "Abonnement · Capital Circle",
@@ -76,7 +77,15 @@ export default async function AbonnementPage() {
     pausiert: Boolean(stripeAbo?.pause_collection),
   });
 
-  const lifetime = await pruefeLifetimeAngebot(user.id);
+  const [lifetime, verkauf] = await Promise.all([pruefeLifetimeAngebot(user.id), ladeVerkaufsSchalter()]);
+
+  /*
+    Verkauf geschlossen (`/admin/verkauf`): Wer kein laufendes Abo hat, sieht
+    statt der Paketreihe den Hinweis auf den Funnel — kaufen könnte er dort
+    ohnehin nichts mehr (`verkauf_geschlossen` in der Kasse). Mit laufendem
+    Abo bleibt die Übersicht samt Jahreswechsel stehen.
+  */
+  const paketeGesperrt = verkauf.geschlossen && !kontext?.abo;
 
   const aboAnsicht =
     kontext?.abo && periodenEnde
@@ -138,17 +147,38 @@ export default async function AbonnementPage() {
         zu verschwinden — ein verstecktes Angebot verkauft nichts. Der Riegel
         selbst sitzt unverändert in `/api/stripe/subscription/upgrade`.
       */}
-      <Box id="mitgliedschaft" className="cc-rise" style={{ animationDelay: "220ms" }}>
-        <PricingCards
-          isLoggedIn
-          membershipTier={tier}
-          kontoAnsicht
-          hatAbo={Boolean(kontext?.abo)}
-          jahreswechsel={
-            istUpgradeQuelle(tier) ? { grund: upgrade.grund } : null
-          }
-        />
-      </Box>
+      {paketeGesperrt ? (
+        <Stack
+          id="mitgliedschaft"
+          className="cc-card cc-card--still cc-rise"
+          style={{ animationDelay: "220ms" }}
+          p={{ base: 5, md: 7 }}
+          gap={4}
+          align="flex-start"
+        >
+          <Text fontSize="17px" fontWeight={600} color="var(--cc-text)">
+            {verkauf.ueberschrift}
+          </Text>
+          <Text fontSize="14px" lineHeight={1.6} color="var(--cc-text-2)" whiteSpace="pre-line">
+            {verkauf.nachricht}
+          </Text>
+          <Button as="a" href={verkauf.zielUrl} variant="gold">
+            {verkauf.zielLabel} →
+          </Button>
+        </Stack>
+      ) : (
+        <Box id="mitgliedschaft" className="cc-rise" style={{ animationDelay: "220ms" }}>
+          <PricingCards
+            isLoggedIn
+            membershipTier={tier}
+            kontoAnsicht
+            hatAbo={Boolean(kontext?.abo)}
+            jahreswechsel={
+              istUpgradeQuelle(tier) ? { grund: upgrade.grund } : null
+            }
+          />
+        </Box>
+      )}
 
       {istAbo(tier) && kontext?.abo && periodenEnde ? (
         <CancelFlow

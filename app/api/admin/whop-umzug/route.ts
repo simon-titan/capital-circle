@@ -18,6 +18,7 @@ import { sendWhopUmzug3 } from "@/lib/email/templates/whop-umzug-3-ende";
 import { getAppUrl } from "@/lib/site-url";
 import { requireAdminRole } from "@/lib/supabase/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
+import { istVerkaufGeschlossen } from "@/lib/verkauf/schalter";
 import { ladeUmzugKreis, zaehleKreis, type UmzugMitglied } from "@/lib/whop-umzug/kreis";
 
 export const runtime = "nodejs";
@@ -180,6 +181,15 @@ export async function POST(request: Request) {
 
   const blocker = hindernis();
   if (blocker) return NextResponse.json({ ok: false, error: blocker }, { status: 409 });
+
+  // Jede Nachricht dieser Kampagne verlinkt `/go/<plan>?src=whop`. Ist der
+  // Verkauf geschlossen (`/admin/verkauf`), führt der Link auf die Hinweisseite.
+  if (await istVerkaufGeschlossen()) {
+    return NextResponse.json(
+      { ok: false, error: "Verkauf ist geschlossen (/admin/verkauf) — die Kauflinks der Kampagne führen ins Leere." },
+      { status: 409 },
+    );
+  }
 
   const body = ((await request.json().catch(() => ({}))) ?? {}) as {
     stufe?: string;

@@ -1,5 +1,6 @@
 import { lifetimePriceId } from "@/lib/stripe/plan-map";
 import { createServiceClient } from "@/lib/supabase/service";
+import { istVerkaufGeschlossen } from "@/lib/verkauf/schalter";
 
 /**
  * Wer darf Lifetime kaufen?
@@ -47,7 +48,8 @@ export type LifetimeGrund =
   | "abo_abgelaufen"
   | "hat_bereits_lifetime"
   | "nicht_freigeschaltet"
-  | "kein_preis";
+  | "kein_preis"
+  | "verkauf_geschlossen";
 
 export interface LifetimeAngebot {
   erlaubt: boolean;
@@ -119,6 +121,16 @@ export async function pruefeLifetimeAngebot(userId: string): Promise<LifetimeAng
   */
   if (!lifetimePriceId()) {
     return { erlaubt: false, grund: "kein_preis", gruppe: null };
+  }
+
+  /*
+    Verkauf geschlossen (`/admin/verkauf`, Entscheidung Simon 02.11.2026):
+    Lifetime gibt es dann für niemanden. Weil jeder Aufrufer über diese
+    Funktion fragt, verschwinden damit Karte, Popup, Kasse und die
+    Lifetime-Absätze in Mahnung, Rückgewinnung und Discord-Abschied zugleich.
+  */
+  if (await istVerkaufGeschlossen()) {
+    return { erlaubt: false, grund: "verkauf_geschlossen", gruppe: null };
   }
 
   const supabase = createServiceClient();
