@@ -4,7 +4,7 @@ import { AdminPageHeader } from "@/components/admin/adminUi";
 import { AdminVerkaufManager, type AdminVerkaufFelder } from "@/components/admin/AdminVerkaufManager";
 import { requireAdmin } from "@/lib/supabase/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
-import { VERKAUF_SCHLUESSEL, VERKAUF_STANDARD } from "@/lib/verkauf/schalter";
+import { VERKAUF_SCHLUESSEL, VERKAUF_STANDARD, VERKAUF_VORLAGEN } from "@/lib/verkauf/schalter";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +28,7 @@ export default async function AdminVerkaufPage() {
   const v = (data?.value ?? {}) as Record<string, unknown>;
   const initial: AdminVerkaufFelder = {
     geschlossen: v.geschlossen === true,
+    knopf: v.knopf === true,
     ueberschrift: text(v.ueberschrift),
     nachricht: text(v.nachricht),
     zielUrl: text(v.zielUrl),
@@ -38,11 +39,12 @@ export default async function AdminVerkaufPage() {
     <Box maxW="760px" mx="auto">
       <AdminPageHeader
         title="Verkaufsseite"
-        subtitle="Schließt den normalen Zugang über die Verkaufsseite. Neue Mitglieder kommen dann nur noch über den Funnel."
+        subtitle="Schließt den normalen Zugang über die Verkaufsseite. Besucher sehen stattdessen die Hinweisseite: übergangsweise eine Ankündigung, später den Weg in den Funnel."
       />
       <AdminVerkaufManager
         initial={initial}
         standard={VERKAUF_STANDARD}
+        vorlagen={VERKAUF_VORLAGEN}
         updatedAt={(data?.updated_at as string | null) ?? null}
       />
     </Box>

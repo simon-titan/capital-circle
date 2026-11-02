@@ -4,8 +4,8 @@ import { createServiceClient } from "@/lib/supabase/service";
  * Verkaufsschalter: Ist der normale Zugang (Verkaufsseite + Abo-/Lifetime-Kauf)
  * geschlossen? (Entscheidung Simon, 02.11.2026)
  *
- * Der Zugang läuft dann nur noch über den Funnel (vorerst `/call`, später das
- * kostenlose Training). Umgelegt wird unter `/admin/verkauf`, gespeichert in
+ * Übergangsweise kündigt die Hinweisseite nur an, dass etwas kommt (ohne
+ * Knopf); sobald das kostenlose Training live ist, zeigt ihr Knopf dorthin. Umgelegt wird unter `/admin/verkauf`, gespeichert in
  * `app_settings` unter `verkauf_geschlossen` — dieselbe Tabelle wie der
  * Wartungsmodus, öffentlich lesbar, Schreiben nur über die Admin-API.
  *
@@ -24,8 +24,7 @@ import { createServiceClient } from "@/lib/supabase/service";
  *     Plattform-Umzug), pausieren.
  *
  *   Offen bleiben: laufende Abos (Verlängerung, Jahreswechsel, Kündigung,
- *   Zahlungsstörungen), der Mentoring-Verkauf über Kassenlinks (`/kasse`),
- *   `/call`, Login und Rechtsseiten.
+ *   Zahlungsstörungen), Login, Mitgliederbereich und Rechtsseiten.
  *
  * **Fehlt die Zeile oder ist sie nicht lesbar, gilt „offen".** Ein DB-Aussetzer
  * soll die Seite nicht wie geschlossen aussehen lassen — die Kasse funktionierte
@@ -43,19 +42,42 @@ export type VerkaufsSchalter = {
   ueberschrift: string;
   /** Fließtext darunter. */
   nachricht: string;
-  /** Wohin der Hauptknopf führt: interner Pfad (`/call`) oder `https://…`. */
+  /** Wohin der Hauptknopf führt: interner Pfad (`/training`) oder `https://…`. */
   zielUrl: string;
   /** Beschriftung des Hauptknopfs. */
   zielLabel: string;
+  /** Knopf überhaupt zeigen? In der Übergangsphase nicht — es gibt noch kein Ziel. */
+  knopf: boolean;
 };
 
-export const VERKAUF_STANDARD: Omit<VerkaufsSchalter, "geschlossen"> = {
-  ueberschrift: "Die Aufnahme läuft ab sofort nur noch über ein persönliches Gespräch.",
-  nachricht:
-    "Wir nehmen neue Mitglieder nicht mehr direkt über diese Seite auf. Sprich mit uns: Wir schauen uns deine Situation an und sagen dir ehrlich, welcher Weg für dich passt.",
-  zielUrl: "/call",
-  zielLabel: "Kostenloses Gespräch anfragen",
+/**
+ * Zwei Vorlagen für die Hinweisseite (Admin: „Vorlage einsetzen").
+ *
+ * - `uebergang`: Der neue Funnel steht noch nicht. Die Seite kündigt nur an,
+ *   dass etwas kommt, ohne Knopf (Wunsch Simon, 02.11.2026). Das ist der
+ *   Standard: Leere Felder fallen auf diese Texte zurück.
+ * - `funnel`: Sobald das Free Training live ist, zeigt der Knopf dorthin.
+ */
+export const VERKAUF_VORLAGEN: Record<"uebergang" | "funnel", Omit<VerkaufsSchalter, "geschlossen">> = {
+  uebergang: {
+    ueberschrift: "Etwas Großes steht an.",
+    nachricht:
+      "Die Aufnahme in Capital Circle ist gerade geschlossen, denn wir bereiten etwas Neues für dich vor. Schau in den nächsten Tagen wieder vorbei, es lohnt sich.",
+    zielUrl: "/tg",
+    zielLabel: "Telegram-Kanal folgen",
+    knopf: false,
+  },
+  funnel: {
+    ueberschrift: "Die Aufnahme läuft ab sofort über unser kostenloses Training.",
+    nachricht:
+      "Neue Mitglieder nehmen wir nicht mehr direkt über diese Seite auf. Starte mit dem kostenlosen Training: drei Videos, danach entscheidest du, welcher Weg zu dir passt.",
+    zielUrl: "/training",
+    zielLabel: "Jetzt kostenlos starten",
+    knopf: true,
+  },
 };
+
+export const VERKAUF_STANDARD = VERKAUF_VORLAGEN.uebergang;
 
 const GRENZEN = { ueberschrift: 160, nachricht: 1000, zielUrl: 300, zielLabel: 60 } as const;
 
@@ -84,6 +106,7 @@ export function leseVerkaufsSchalter(roh: unknown): VerkaufsSchalter {
   const ziel = text(v.zielUrl, GRENZEN.zielUrl);
   return {
     geschlossen: v.geschlossen === true,
+    knopf: v.knopf === true,
     ueberschrift: text(v.ueberschrift, GRENZEN.ueberschrift) || VERKAUF_STANDARD.ueberschrift,
     nachricht: text(v.nachricht, GRENZEN.nachricht) || VERKAUF_STANDARD.nachricht,
     zielUrl: ziel && istGueltigesZiel(ziel) ? ziel : VERKAUF_STANDARD.zielUrl,
@@ -102,13 +125,15 @@ export function pruefeEingabe(
   const v = (roh && typeof roh === "object" ? roh : {}) as Record<string, unknown>;
   if (typeof v.geschlossen !== "boolean") return { ok: false, fehler: "geschlossen_muss_boolean_sein" };
   const ziel = text(v.zielUrl, GRENZEN.zielUrl);
+  if (v.knopf !== undefined && typeof v.knopf !== "boolean") return { ok: false, fehler: "knopf_muss_boolean_sein" };
   if (ziel && !istGueltigesZiel(ziel)) {
-    return { ok: false, fehler: "Ziel muss ein Pfad wie /call oder eine https://-Adresse sein." };
+    return { ok: false, fehler: "Ziel muss ein Pfad wie /training oder eine https://-Adresse sein." };
   }
   return {
     ok: true,
     wert: {
       geschlossen: v.geschlossen,
+      knopf: v.knopf === true,
       ueberschrift: text(v.ueberschrift, GRENZEN.ueberschrift),
       nachricht: text(v.nachricht, GRENZEN.nachricht),
       zielUrl: ziel,

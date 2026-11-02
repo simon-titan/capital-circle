@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Capital Circle · Trading-Community & Plattform",
-  description: "Die Aufnahme in Capital Circle läuft über ein persönliches Gespräch.",
+  description: "Die Aufnahme in Capital Circle ist gerade geschlossen. Bald gibt es Neues.",
 };
 
 /**
@@ -89,20 +89,22 @@ export default async function GeschlossenPage({
           {schalter.nachricht}
         </Text>
 
-        {/* Bares <a>: Das Ziel kann extern sein, und interne Ziele wie `/call`
-            sollen nicht vorab vom Router geladen werden. */}
-        <Button
-          as="a"
-          href={schalter.zielUrl}
-          variant="gold"
-          h={{ base: "52px", md: "56px" }}
-          px={{ base: 7, md: 9 }}
-          fontSize={{ base: "16px", md: "17px" }}
-          letterSpacing="0.01em"
-          w={{ base: "full", sm: "auto" }}
-        >
-          {schalter.zielLabel} →
-        </Button>
+        {/* Bares <a>: Das Ziel kann extern sein, und interne Ziele sollen nicht
+            vorab vom Router geladen werden. In der Übergangsphase ohne Knopf. */}
+        {schalter.knopf ? (
+          <Button
+            as="a"
+            href={schalter.zielUrl}
+            variant="gold"
+            h={{ base: "52px", md: "56px" }}
+            px={{ base: 7, md: 9 }}
+            fontSize={{ base: "16px", md: "17px" }}
+            letterSpacing="0.01em"
+            w={{ base: "full", sm: "auto" }}
+          >
+            {schalter.zielLabel} →
+          </Button>
+        ) : null}
 
         <Text fontSize="14px" color="var(--cc-text-3)">
           Bereits Mitglied?{" "}

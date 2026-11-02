@@ -162,9 +162,11 @@ export default async function AbonnementPage() {
           <Text fontSize="14px" lineHeight={1.6} color="var(--cc-text-2)" whiteSpace="pre-line">
             {verkauf.nachricht}
           </Text>
-          <Button as="a" href={verkauf.zielUrl} variant="gold">
-            {verkauf.zielLabel} →
-          </Button>
+          {verkauf.knopf ? (
+            <Button as="a" href={verkauf.zielUrl} variant="gold">
+              {verkauf.zielLabel} →
+            </Button>
+          ) : null}
         </Stack>
       ) : (
         <Box id="mitgliedschaft" className="cc-rise" style={{ animationDelay: "220ms" }}>
