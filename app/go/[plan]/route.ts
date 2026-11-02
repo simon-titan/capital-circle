@@ -9,6 +9,7 @@ import { kassenRechtsangaben, kassenRechtsMetadata } from "@/lib/stripe/kasse-re
 import { isMembershipPlan, priceIdForPlan } from "@/lib/stripe/plan-map";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { istVerkaufGeschlossen } from "@/lib/verkauf/schalter";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -67,6 +68,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ plan
 
   if (istBot(request.headers.get("user-agent") ?? "")) {
     return new NextResponse(null, { status: 204 });
+  }
+
+  /*
+    Verkauf geschlossen (`/admin/verkauf`, `lib/verkauf/schalter.ts`): keine
+    Kasse, auch nicht für die Whop-Umzugslinks (Entscheidung Simon,
+    02.11.2026). `/` zeigt dann die Hinweisseite mit dem Weg in den Funnel.
+    Ungecacht gelesen — ein alter Link oder ein Lesezeichen soll nach dem
+    Schließen keine einzige Stripe-Session mehr anlegen.
+  */
+  if (await istVerkaufGeschlossen()) {
+    return NextResponse.redirect(new URL("/", appUrl));
   }
 
   if (!isMembershipPlan(plan)) {

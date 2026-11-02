@@ -31,6 +31,8 @@ export function kassenFehlerText(code: string | undefined): string {
       return "Deine Anmeldung ist abgelaufen. Bitte melde dich erneut an und versuch es noch einmal.";
     case "lifetime_gesperrt":
       return "Das Angebot steht dir gerade nicht zur Verfügung.";
+    case "verkauf_geschlossen":
+      return "Neue Mitgliedschaften gibt es gerade nicht direkt zu kaufen. Schreib uns, wenn du Fragen hast.";
     default:
       return `Die Kasse konnte gerade nicht geöffnet werden. Bitte versuch es gleich noch einmal oder schreib uns an ${TEAM_POSTFACH}.`;
   }

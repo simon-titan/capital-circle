@@ -28,6 +28,7 @@ import {
   Undo2,
   UserSearch,
   Users,
+  Store,
   Video,
   Wrench,
   type LucideIcon,
@@ -109,6 +110,8 @@ const groups: AdminGroup[] = [
     label: "System",
     links: [
       { href: "/admin/team", label: "Team", icon: ShieldCheck },
+      // Normalen Zugang schließen, nur noch über den Funnel (`lib/verkauf/schalter.ts`).
+      { href: "/admin/verkauf", label: "Verkaufsseite", icon: Store },
       { href: "/admin/wartung", label: "Wartungsmodus", icon: Wrench },
     ],
   },

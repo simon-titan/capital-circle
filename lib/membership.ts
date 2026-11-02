@@ -21,6 +21,26 @@ export function isApprovedFreeMember(profile: {
 }
 
 /**
+ * Wohin „Jetzt Mitglied werden" an einer gesperrten Stelle führt.
+ *
+ * `/bewerbung` (Step 2) lässt `proxy.ts` nur für freigegebene Free-Mitglieder
+ * mit noch offener Step-2-Bewerbung durch. Alle anderen — Gekündigte,
+ * Konten aus einer abgebrochenen Gast-Kasse, später die Free-Mitglieder aus
+ * dem neuen Funnel — schickte der Proxy von dort zurück aufs Dashboard: eine
+ * Sackgasse. Sie landen deshalb auf der Abo-Seite, die je nach
+ * Verkaufsschalter die Pakete oder den Weg in den Funnel zeigt.
+ */
+export function mitgliedWerdenZiel(profile: {
+  application_status?: string | null;
+  step2_application_status?: string | null;
+} | null | undefined): string {
+  if (profile?.application_status === "approved" && profile.step2_application_status == null) {
+    return "/bewerbung";
+  }
+  return "/einstellungen/abonnement#mitgliedschaft";
+}
+
+/**
  * Zugang zu bezahlten Inhalten (Institut, Anhänge, Analysen, Quizze,
  * Live-Session-Videos): `profiles.is_paid` oder Admin.
  *

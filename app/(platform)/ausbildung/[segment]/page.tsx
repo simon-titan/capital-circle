@@ -2,6 +2,7 @@ import { Box, Heading, Stack, Text } from "@chakra-ui/react";
 import { notFound, redirect } from "next/navigation";
 import { ChakraLinkButton } from "@/components/platform/ChakraLinkButton";
 import { PaywallOverlay } from "@/components/ui/PaywallOverlay";
+import { mitgliedWerdenZiel } from "@/lib/membership";
 import { AusbildungModuleLearningClient } from "@/components/platform/AusbildungPageCards";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { isCourseUnlocked, isModuleUnlocked } from "@/lib/progress";
@@ -56,7 +57,11 @@ export default async function AcademyModulePage({ params, searchParams }: PagePr
 
   const [{ data: courseRow }, { data: profileRow }] = await Promise.all([
     supabase.from("courses").select("is_free,title").eq("id", mod.course_id).maybeSingle(),
-    supabase.from("profiles").select("is_paid").eq("id", user.id).maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("is_paid,application_status,step2_application_status")
+      .eq("id", user.id)
+      .maybeSingle(),
   ]);
 
   const hasAccess = userCanAccessAcademyModule(Boolean(profileRow?.is_paid), courseRow?.is_free);
@@ -184,7 +189,11 @@ export default async function AcademyModulePage({ params, searchParams }: PagePr
   );
 
   if (!hasAccess) {
-    return <PaywallOverlay active>{pageContent}</PaywallOverlay>;
+    return (
+      <PaywallOverlay active href={mitgliedWerdenZiel(profileRow)}>
+        {pageContent}
+      </PaywallOverlay>
+    );
   }
 
   return pageContent;

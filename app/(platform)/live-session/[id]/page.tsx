@@ -6,7 +6,7 @@ import { IconTile } from "@/components/platform/dashboard/primitives";
 import { isFreeLiveSessionCategory } from "@/components/platform/live-session-free";
 import { LiveSessionDetailClient } from "@/components/platform/LiveSessionDetailClient";
 import { getCurrentUserAndProfile, getLiveSessionDetail } from "@/lib/server-data";
-import { liveSessionsNurFrei } from "@/lib/membership";
+import { liveSessionsNurFrei, mitgliedWerdenZiel } from "@/lib/membership";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -79,7 +79,7 @@ export default async function LiveSessionDetailPage({ params }: PageProps) {
             Diese Live Session ist exklusiv für vollwertige Capital Circle Mitglieder verfügbar.
             Als Free-Mitglied hast du Zugang zu allen Wochenrecap-Sessions.
           </Text>
-          <ChakraLinkButton href="/bewerbung" variant="gold" mt={6} px={8}>
+          <ChakraLinkButton href={mitgliedWerdenZiel(profile)} variant="gold" mt={6} px={8}>
             Jetzt Mitglied werden
           </ChakraLinkButton>
         </Flex>

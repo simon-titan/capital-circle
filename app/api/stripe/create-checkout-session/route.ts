@@ -11,6 +11,7 @@ import {
   priceIdForPlan,
 } from "@/lib/stripe/plan-map";
 import { pruefeLifetimeAngebot } from "@/lib/access-control/lifetime-offer";
+import { istVerkaufGeschlossen } from "@/lib/verkauf/schalter";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -64,6 +65,12 @@ export async function POST(request: NextRequest) {
       { ok: false, error: "unauthorized" },
       { status: 401 },
     );
+  }
+
+  // Verkauf geschlossen (`/admin/verkauf`): weder Abo noch Lifetime. Laufende
+  // Abos wechseln über `/api/stripe/subscription/upgrade`, nicht über hier.
+  if (await istVerkaufGeschlossen()) {
+    return NextResponse.json({ ok: false, error: "verkauf_geschlossen" }, { status: 403 });
   }
 
   let priceId: string;
