@@ -32,6 +32,7 @@ import {
 
 export type AdminVerkaufFelder = {
   geschlossen: boolean;
+  knopf: boolean;
   ueberschrift: string;
   nachricht: string;
   zielUrl: string;
@@ -43,12 +44,14 @@ type Props = {
   initial: AdminVerkaufFelder;
   /** Standardtexte als Platzhalter. */
   standard: Omit<AdminVerkaufFelder, "geschlossen">;
+  /** Vorlagen „Übergang" und „Funnel" zum Einsetzen. */
+  vorlagen: Record<"uebergang" | "funnel", Omit<AdminVerkaufFelder, "geschlossen">>;
   updatedAt: string | null;
 };
 
 const TEXTFELDER = ["ueberschrift", "nachricht", "zielUrl", "zielLabel"] as const;
 
-export function AdminVerkaufManager({ initial, standard, updatedAt: initialUpdatedAt }: Props) {
+export function AdminVerkaufManager({ initial, standard, vorlagen, updatedAt: initialUpdatedAt }: Props) {
   const [gespeichert, setGespeichert] = useState(initial);
   const [felder, setFelder] = useState(initial);
   const [updatedAt, setUpdatedAt] = useState(initialUpdatedAt);
@@ -58,6 +61,7 @@ export function AdminVerkaufManager({ initial, standard, updatedAt: initialUpdat
   const dirty = useMemo(
     () =>
       felder.geschlossen !== gespeichert.geschlossen ||
+      felder.knopf !== gespeichert.knopf ||
       TEXTFELDER.some((k) => felder[k].trim() !== gespeichert[k].trim()),
     [felder, gespeichert],
   );
@@ -179,7 +183,7 @@ export function AdminVerkaufManager({ initial, standard, updatedAt: initialUpdat
             </Text>
             <Stack as="ul" gap={1} pl={4} fontSize="xs" color="var(--cc-text-2)" lineHeight={1.55}>
               <li>Laufende Abos: Verlängerung, Wechsel aufs Jahr, Kündigung, Mahnungen.</li>
-              <li>Mentoring-Verkauf über Kassenlinks, der Call-Funnel /call, Login und Rechtstexte.</li>
+              <li>Login, Mitgliederbereich und Rechtstexte.</li>
             </Stack>
           </Box>
         </Stack>
@@ -187,9 +191,20 @@ export function AdminVerkaufManager({ initial, standard, updatedAt: initialUpdat
 
       <Box className={ADMIN_CARD_CLASS} p={adminCardPadding}>
         <Stack gap={5}>
-          <AdminCardTitle>Hinweisseite</AdminCardTitle>
+          <Flex justify="space-between" align="center" wrap="wrap" gap={3}>
+            <AdminCardTitle>Hinweisseite</AdminCardTitle>
+            <HStack gap={2}>
+              <Button size="xs" variant="line" onClick={() => setFelder((alt) => ({ ...alt, ...vorlagen.uebergang }))}>
+                Vorlage: Übergang
+              </Button>
+              <Button size="xs" variant="line" onClick={() => setFelder((alt) => ({ ...alt, ...vorlagen.funnel }))}>
+                Vorlage: Funnel
+              </Button>
+            </HStack>
+          </Flex>
           <Text fontSize="xs" color="var(--cc-text-2)" mt={-2}>
-            Leere Felder zeigen den Standardtext (grau im Feld).
+            Leere Felder zeigen den Standardtext (grau im Feld) — das ist die Übergangs-Ankündigung „Etwas Großes steht
+            an“. Die Vorlage „Funnel“ zeigt mit Knopf auf /training; erst einsetzen, wenn das Training live ist.
           </Text>
 
           <FormControl>
@@ -219,7 +234,24 @@ export function AdminVerkaufManager({ initial, standard, updatedAt: initialUpdat
             />
           </FormControl>
 
-          <Flex gap={4} direction={{ base: "column", md: "row" }}>
+          <FormControl display="flex" alignItems="center" justifyContent="space-between" gap={4}>
+            <Box>
+              <FormLabel htmlFor="verkauf-knopf" mb={1} fontWeight={600} color="var(--cc-text)">
+                Knopf anzeigen
+              </FormLabel>
+              <Text fontSize="xs" color="var(--cc-text-2)">
+                Aus in der Übergangsphase. An, sobald es ein Ziel gibt (z. B. /training oder /tg für den Telegram-Kanal).
+              </Text>
+            </Box>
+            <Switch
+              id="verkauf-knopf"
+              sx={adminSwitchSx}
+              isChecked={felder.knopf}
+              onChange={(e) => setze("knopf", e.target.checked)}
+            />
+          </FormControl>
+
+          <Flex gap={4} direction={{ base: "column", md: "row" }} opacity={felder.knopf ? 1 : 0.5}>
             <FormControl>
               <FormLabel fontWeight={600} color="var(--cc-text)">
                 Knopf-Text
@@ -244,7 +276,7 @@ export function AdminVerkaufManager({ initial, standard, updatedAt: initialUpdat
                 {...adminInputProps}
               />
               <FormHelperText color="var(--cc-text-2)" fontSize="xs">
-                Pfad wie /call oder eine https://-Adresse.
+                Pfad wie /training oder eine https://-Adresse.
               </FormHelperText>
             </FormControl>
           </Flex>
