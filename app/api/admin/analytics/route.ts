@@ -49,7 +49,7 @@ interface ProfileFunnelRow {
   id: string;
   created_at: string;
   is_paid: boolean;
-  membership_tier: "free" | "monthly" | "quarterly" | "yearly" | "lifetime" | "ht_1on1" | null;
+  membership_tier: "free" | "monthly" | "quarterly" | "yearly" | "lifetime" | "ht_1on1" | "mentoring" | null;
 }
 
 interface EmailLogRow {

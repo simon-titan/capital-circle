@@ -11,6 +11,7 @@ import {
   CreditCard,
   FileX,
   Funnel,
+  GraduationCap,
   KeyRound,
   LayoutDashboard,
   LifeBuoy,
@@ -20,6 +21,7 @@ import {
   Newspaper,
   NotebookPen,
   Package,
+  Receipt,
   Route,
   ShieldCheck,
   Star,
@@ -30,6 +32,7 @@ import {
   Users,
   Store,
   Video,
+  Clapperboard,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
@@ -95,6 +98,12 @@ const groups: AdminGroup[] = [
     links: [
       { href: "/admin/tracking", label: "Tracking Links", icon: Link2 },
       { href: "/admin/discord-funnel", label: "Discord Funnel", icon: Funnel },
+      // Eigenes Board für das kostenlose Training (`/training`): Registrierungen + Analysegespräche.
+      { href: "/admin/training", label: "Free Training", icon: GraduationCap },
+      // Reihenfolge, Titel und Sichtbarkeit der Trainingsvideos (Modul aus Migration 109).
+      { href: "/admin/training/videos", label: "Trainingsvideos", icon: Clapperboard },
+      // Kassenlinks nach dem Closing-Call und die Mentoring-Käufe (`config/mentoring.ts`).
+      { href: "/admin/kassenlinks", label: "Kassenlinks", icon: Receipt },
       // Die letzten Whop-Zahler holen (`config/whop-umzug.ts`). Nur Ansicht —
       // verschickt wird über `npm run whop:umzug`.
       { href: "/admin/whop-umzug", label: "Whop-Umzug", icon: Truck },
@@ -291,7 +300,12 @@ export function AdminSidebar() {
               onSchalten={group.label ? () => schalte(group.label!) : undefined}
             >
               {group.links.map((item) => {
-                const active = isActive(pathname, item.href);
+                // Ein Unterpfad mit eigenem Eintrag (z. B. /admin/training/videos) markiert nur diesen.
+                const active =
+                  isActive(pathname, item.href) &&
+                  !group.links.some(
+                    (l) => l.href !== item.href && l.href.startsWith(`${item.href}/`) && isActive(pathname, l.href),
+                  );
                 const Icon = item.icon;
                 return (
                   <Box as="li" key={item.href}>

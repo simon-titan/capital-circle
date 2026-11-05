@@ -3,6 +3,7 @@ import { sendCancellationSurvey } from "@/lib/email/templates/cancellation-surve
 import { zugangBeendetInDiscord } from "@/lib/discord/warteraum";
 import { resolvePlanFromPriceId } from "@/lib/stripe/plan-map";
 import { laufenderAufschub } from "@/lib/zahlung/aufschub";
+import { handleMentoringAboEnde, mentoringArt } from "./mentoring";
 import {
   loadAuthEmail,
   loadProfileByCustomerId,
@@ -41,6 +42,15 @@ export async function handleSubscriptionDeleted(
   sub: Stripe.Subscription,
   supabase: WebhookSupabase,
 ): Promise<void> {
+  /*
+    Ende eines Raten- oder Live-Abos: Nach der letzten Rate ist das der
+    planmäßige Abschluss, kein Abschied. Der Zugang hängt am Kauf und bleibt;
+    `lib/stripe/webhooks/mentoring.ts` vermerkt nur den Stand.
+  */
+  if (mentoringArt(sub.metadata)) {
+    return handleMentoringAboEnde(sub, supabase);
+  }
+
   const customerId =
     typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
   if (!customerId) {
@@ -70,8 +80,11 @@ export async function handleSubscriptionDeleted(
     );
   }
 
+  // Mentoring-Programme: Plattform dauerhaft bezahlt, ein Mitgliedsabo daneben endet folgenlos.
   const dauerzugang =
-    profile.membership_tier === "lifetime" || profile.membership_tier === "ht_1on1";
+    profile.membership_tier === "lifetime" ||
+    profile.membership_tier === "ht_1on1" ||
+    profile.membership_tier === "mentoring";
 
   const verbleibend = dauerzugang ? null : await verbleibendesAbo(supabase, profile.id, sub.id);
   const aufschub = dauerzugang || verbleibend ? null : await laufenderAufschub(supabase, profile.id);

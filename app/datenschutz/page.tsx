@@ -283,7 +283,8 @@ export default function DatenschutzPage() {
         <strong>Terminbuchung mit Calendly:</strong> Auf den Bestätigungsseiten nach einer Bewerbung oder Anfrage
         kannst du einen Termin über den Buchungskalender von Calendly (Calendly LLC, USA) buchen. Der Kalender wird
         erst geladen, wenn du auf „Termin-Kalender laden“ klickst; vorher stellt dein Browser keine Verbindung zu
-        Calendly her. Mit dem Klick willigst du ein, dass der Kalender geladen wird: Dein Browser verbindet sich mit
+        Calendly her. Auf der Seite zum kostenlosen Strategie-Gespräch übernimmt der Knopf „Weiter zum Kalender“ im
+        letzten Frageschritt diese Rolle, der Hinweis dazu steht direkt darüber. Mit dem Klick willigst du ein, dass der Kalender geladen wird: Dein Browser verbindet sich mit
         Calendly, Calendly verarbeitet dabei deine IP-Adresse und kann Cookies setzen (Art. 6 Abs. 1 lit. a DSGVO,
         § 25 Abs. 1 TDDDG). Du kannst die Einwilligung jederzeit für die Zukunft widerrufen, indem du den Kalender
         nicht erneut lädst und die Cookies von Calendly in deinem Browser löschst. Zum Vorausfüllen übergeben wir

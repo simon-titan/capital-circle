@@ -12,6 +12,7 @@ import {
   sendeFallNachricht,
 } from "@/lib/zahlung/fall";
 import { loadProfileByCustomerId, type WebhookSupabase } from "./_helpers";
+import { ART_LIVE, ART_RATEN, mentoringArtAusRechnung } from "./mentoring";
 
 /** Die wiederkehrenden Stufen. Nur deren Zugang hängt an `access_until`. */
 const ABO_STUFEN: ReadonlySet<string> = new Set(["monthly", "quarterly", "yearly"]);
@@ -94,7 +95,17 @@ export async function handleInvoicePaymentFailed(
     throw new Error(`payments UPSERT (failed) fehlgeschlagen (invoice=${invoice.id}): ${paymentError.message}`);
   }
 
-  await bearbeiteFall(invoice, profile.id, profile.membership_tier, supabase);
+  /*
+    Live-Abo: Eine gescheiterte Abbuchung verlängert `live_bis` schlicht nicht,
+    der Live-Bereich schließt am Ende des bezahlten Monats von selbst. Ein
+    Zahlungsfall mit Sperre am siebten Tag nähme dagegen die ganze Plattform —
+    die der Kunde mit seinem Programm dauerhaft bezahlt hat. Stripe mahnt
+    selbst (Einstellungen → Billing → Mails bei fehlgeschlagener Zahlung).
+  */
+  const mentoring = mentoringArtAusRechnung(invoice);
+  if (mentoring === ART_LIVE) return;
+
+  await bearbeiteFall(invoice, profile.id, profile.membership_tier, supabase, mentoring === ART_RATEN);
 }
 
 /**
@@ -107,6 +118,8 @@ async function bearbeiteFall(
   userId: string,
   tier: string | null,
   supabase: WebhookSupabase,
+  /** Rate eines Mentoring-Programms: Mahnen und am siebten Tag sperren wie beim Abo. */
+  istRate = false,
 ): Promise<void> {
   try {
     if (!invoice.id) return;
@@ -129,7 +142,16 @@ async function bearbeiteFall(
       Verlängerung liegt es naturgemäss schon Sekunden in der Vergangenheit.
     */
     const { data: stand } = await supabase.from("profiles").select("is_paid").eq("id", userId).maybeSingle();
-    const istAbo = Boolean(tier && ABO_STUFEN.has(tier) && (stand as { is_paid: boolean | null } | null)?.is_paid);
+    /*
+      Eine geplatzte Programm-Rate zählt wie ein Abo-Ausfall (Entscheidung Simon,
+      17.10.2026: „Mahnen, dann sperren"). Nur bei der Stufe `mentoring`: Ein
+      Lifetime-Konto, das ein Programm in Raten kauft, behält seinen Zugang —
+      die Rate steht dann ohne Frist in der Fallakte.
+    */
+    const ratenSperre = istRate && tier === "mentoring";
+    const istAbo = Boolean(
+      tier && (ABO_STUFEN.has(tier) || ratenSperre) && (stand as { is_paid: boolean | null } | null)?.is_paid,
+    );
 
     const fall = await eroeffneZahlungsfall(supabase, {
       userId,

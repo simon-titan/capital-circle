@@ -5,6 +5,7 @@ import { Activity } from "lucide-react";
 import { useState } from "react";
 import { ADMIN_CHART, adminChipProps, adminInsetProps } from "@/components/admin/adminUi";
 import {
+  SOURCE_ORIGINS,
   SOURCE_ORIGIN_LABELS,
   type FunnelByOrigin,
   type FunnelStage,
@@ -101,8 +102,8 @@ export function FunnelSection({
       }
     >
       {byOrigin && funnelByOrigin ? (
-        <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={6}>
-          {(["discord_funnel", "termin_direct"] as const).map((origin) => (
+        <SimpleGrid columns={{ base: 1, lg: 3 }} spacing={6}>
+          {SOURCE_ORIGINS.map((origin) => (
             <Box key={origin} {...adminInsetProps} p={4}>
               <Text fontSize="14px" fontWeight={600} color="var(--cc-text)" mb={4}>
                 {SOURCE_ORIGIN_LABELS[origin]}

@@ -1,4 +1,5 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { TRAINING_KURS_ID } from "@/config/training";
 import { buildThumbnailUrl } from "@/lib/cloudflare-stream";
 import { getPresignedGetUrl } from "@/lib/storage";
 import {
@@ -472,7 +473,9 @@ export async function getAcademyModulesOverview(
       `id,title,description,slug,order_index,course_id,thumbnail_storage_key,is_published,is_locked,
       courses ( id, title, slug, created_at, is_free, icon, accent_color, sort_order, is_sequential_exempt )`,
     )
-    .eq("is_published", true);
+    .eq("is_published", true)
+    // Das kostenlose Training hat eine eigene Seite (`/kostenloses-training`) und gehört nicht ins Institut.
+    .neq("course_id", TRAINING_KURS_ID);
 
   type ModRow = {
     id: string;

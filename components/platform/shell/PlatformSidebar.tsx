@@ -311,7 +311,30 @@ function NavList({ pathname, viewer, onNavigate }: { pathname: string; viewer: V
                 aria-current={pathname === target ? "page" : undefined}
                 {...rowProps(active)}
               >
-                <RowInner icon={group.icon} label={group.label} />
+                <RowInner
+                  icon={group.icon}
+                  label={group.label}
+                  trailing={
+                    group.badge ? (
+                      <Box
+                        as="span"
+                        color="var(--cc-gold-light)"
+                        border="1px solid var(--cc-gold-line)"
+                        borderRadius="full"
+                        px={2}
+                        py="2px"
+                        fontSize="10px"
+                        fontWeight={600}
+                        letterSpacing="0.06em"
+                        textTransform="uppercase"
+                        lineHeight={1.2}
+                        flexShrink={0}
+                      >
+                        {group.badge}
+                      </Box>
+                    ) : undefined
+                  }
+                />
               </Box>
             ) : (
               <Box

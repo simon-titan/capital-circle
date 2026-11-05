@@ -156,7 +156,9 @@ async function ladeKreis(): Promise<Kreis> {
   const gesehen = new Set<string>();
 
   for (const p of profile) {
-    const dauer = p.membership_tier === "lifetime" || p.membership_tier === "ht_1on1";
+    // Mentoring: auch gesperrt (geplatzte Rate) kein Rückgewinnungsfall, sondern ein offener Zahlungsfall.
+    const dauer =
+      p.membership_tier === "lifetime" || p.membership_tier === "ht_1on1" || p.membership_tier === "mentoring";
     if (p.is_paid || p.is_admin || dauer) {
       kreis.mitZugang++;
       continue;

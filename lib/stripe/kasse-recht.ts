@@ -66,13 +66,53 @@ export function kassenLaufzeittext(plan: KassenPlan): string {
   );
 }
 
+/**
+ * Text am Bezahlknopf für die Mentoring-Programme und das Live-Abo
+ * (`config/mentoring.ts`, Kasse über `/kasse/<token>`). Muss zum
+ * Mentoring-Paragrafen der AGB passen — wer die Regel dort ändert, ändert sie
+ * hier mit.
+ *
+ * Bei Raten steht ausdrücklich „ohne Aufschlag" und „endet von selbst": Das
+ * sind die beiden Angaben, nach denen jemand vor einer Ratenzahlung fragt, und
+ * § 312j BGB verlangt die wesentlichen Vertragsbedingungen genau hier.
+ */
+export function mentoringLaufzeittext(daten: {
+  produkt: "ausbildung" | "main" | "premium" | "live";
+  liveMonate: number | null;
+  raten: number;
+  rateText?: string;
+}): string {
+  if (daten.produkt === "live") {
+    return (
+      "Monatsabo für Live Trading, Daily Bias und Trade Recaps. Es verlängert sich monatlich und ist jederzeit " +
+      "zum Ende des laufenden Monats kündbar."
+    );
+  }
+  const umfang =
+    `Plattform, Kursinhalte und Journal dauerhaft, Live-Zugang ${daten.liveMonate ?? 0} Monate ab Kauf.`;
+  if (daten.raten > 1) {
+    return (
+      `${umfang} Zahlung in ${daten.raten} Monatsraten${daten.rateText ? ` à ${daten.rateText}` : ""} ohne Aufschlag. ` +
+      "Die Ratenzahlung endet nach der letzten Rate von selbst, eine Kündigung ist nicht nötig."
+    );
+  }
+  return `${umfang} Einmalzahlung, keine Verlängerung und keine weitere Abbuchung.`;
+}
+
 /** Zum Einspreizen in `stripe.checkout.sessions.create({ ... })`. */
 export function kassenRechtsangaben(
   appUrl: string,
   plan: KassenPlan,
 ): Pick<Stripe.Checkout.SessionCreateParams, "locale" | "consent_collection" | "custom_text"> {
+  return kassenRechtsangabenMitText(appUrl, kassenLaufzeittext(plan));
+}
+
+/** Wie `kassenRechtsangaben`, mit eigenem Text am Bezahlknopf (Mentoring-Kasse). */
+export function kassenRechtsangabenMitText(
+  appUrl: string,
+  laufzeit: string,
+): Pick<Stripe.Checkout.SessionCreateParams, "locale" | "consent_collection" | "custom_text"> {
   const zustimmung = kassenZustimmungstext(appUrl);
-  const laufzeit = kassenLaufzeittext(plan);
   if (zustimmung.length > STRIPE_TEXT_MAX || laufzeit.length > STRIPE_TEXT_MAX) {
     // Lieber hier laut als in der Kasse still: Stripe lehnt die ganze Session ab.
     throw new Error("Kassentext überschreitet die Stripe-Grenze von 1200 Zeichen");

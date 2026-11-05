@@ -8,6 +8,7 @@ import {
   unixToISO,
   type WebhookSupabase,
 } from "./_helpers";
+import { handleMentoringRechnung, mentoringArtAusRechnung } from "./mentoring";
 
 /**
  * Abo-ID einer Rechnung.
@@ -111,6 +112,20 @@ export async function handleInvoicePaid(
     throw new Error(
       `payments UPSERT fehlgeschlagen (invoice=${invoice.id}): ${paymentError.message}`,
     );
+  }
+
+  /*
+    Rate eines Mentoring-Programms oder Live-Abo: kein Mitgliedsabo, also weder
+    `subscriptions` noch `access_until` anfassen. Die Rate wird gezählt, eine
+    nachgeholte Zahlung öffnet den gesperrten Zugang wieder, das Live-Abo
+    schiebt `live_bis` weiter (`lib/stripe/webhooks/mentoring.ts`).
+  */
+  const mentoring = mentoringArtAusRechnung(invoice);
+  if (subId && mentoring) {
+    await handleMentoringRechnung(invoice, mentoring, subId, profile.id, supabase);
+    if (invoice.id) await schliesseFallZuRechnung(supabase, invoice.id);
+    await synchronisiereNachProfil(supabase, profile.id, "invoice.paid (Mentoring)");
+    return;
   }
 
   // Subscription-spezifischer Periodendaten-Refresh (nur bei

@@ -4,6 +4,8 @@ import { notFound, redirect } from "next/navigation";
 import { ChakraLinkButton } from "@/components/platform/ChakraLinkButton";
 import { ArticleRenderer } from "@/components/platform/ArticleRenderer";
 import { getAnalysisPostById, getCurrentUserAndProfile } from "@/lib/server-data";
+import { liveZugangAbgelaufen } from "@/lib/mentoring/zugang";
+import { LiveZugangAbgelaufen } from "@/components/platform/LiveZugangAbgelaufen";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -13,6 +15,15 @@ export default async function AnalysisArticlePage({ params }: PageProps) {
   const { id } = await params;
   const { user, profile } = await getCurrentUserAndProfile();
   if (!user || !profile) redirect("/einsteig");
+
+  // Live-Zeitraum eines Mentoring-Programms vorbei (siehe `/analysis`).
+  if (liveZugangAbgelaufen(profile)) {
+    return (
+      <Box maxW="46rem" w="100%" mx="auto">
+        <LiveZugangAbgelaufen titel="Analysen und Daily Bias" />
+      </Box>
+    );
+  }
 
   const post = await getAnalysisPostById(id);
   if (!post) notFound();

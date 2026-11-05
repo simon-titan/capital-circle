@@ -31,6 +31,9 @@ const PUBLIC_PATHS = [
   // Hinweisseite bei geschlossenem Verkauf (`app/geschlossen/page.tsx`). Im
   // Normalfall kommt man über den Rewrite von `/` dorthin, siehe unten.
   "/geschlossen",
+  // Landingpage des kostenlosen Trainings (`app/training`). Nur die Adresse
+  // selbst — die Videos liegen im Mitgliederbereich (`/kostenloses-training`).
+  "/training",
   "/checkout/success",
   "/checkout/zurueck",
   "/set-password",
@@ -73,6 +76,19 @@ const PUBLIC_PREFIXES = [
   "/survey",
   "/discord",
   "/termin",
+  // Call-Funnel nach dem Board vom 17.10.2026 (`app/call`): Video, Termin,
+  // Ergebnisse. Cold Traffic, also ohne Anmeldung.
+  "/call",
+  // Kassenlink nach dem Closing-Call (`app/kasse/[token]`). Der Käufer hat oft
+  // noch kein Konto; ausgewiesen wird er über den Token, das Konto entsteht
+  // im Webhook.
+  "/kasse",
+  // Garantiebedingungen (`app/garantie`), verlinkt von Funnel und Kasse.
+  "/garantie",
+  // Abnahme-Vorschau des Mentoring-Funnels für Emre (`app/vorschau/mentoring`):
+  // Call-Funnel, Kassenseiten, Mails, Garantie-Entwurf mit Beispieldaten.
+  // Wie `/vorschau` auch vom Wartungs-Gate ausgenommen (siehe unten).
+  "/vorschau/mentoring",
   "/go",
   "/auth",
 ];
@@ -220,6 +236,8 @@ export async function proxy(request: NextRequest) {
   const maintenanceExempt =
     pathname === "/wartung" ||
     pathname === "/vorschau" ||
+    pathname === "/vorschau/mentoring" ||
+    pathname.startsWith("/vorschau/mentoring/") ||
     pathname.startsWith("/admin") ||
     pathname === "/login" ||
     pathname === "/passwort-vergessen" ||
@@ -269,6 +287,12 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
+  // Die Landing des Free Trainings ist für Eingeloggte eine Sackgasse (die
+  // Registrierung meldete „schon registriert") — direkt zu den Videos.
+  if (pathname === "/training") {
+    return NextResponse.redirect(new URL("/kostenloses-training", request.url));
+  }
+
   // Profil nur wenn Admin-/Onboarding-Logik wirklich nötig (nicht auf /login oder /register eingeloggt)
   const needsProfile =
     pathname.startsWith("/admin") ||
@@ -308,7 +332,7 @@ export async function proxy(request: NextRequest) {
     is_admin?: boolean;
     is_paid?: boolean;
     application_status?: "pending" | "approved" | "rejected" | null;
-    membership_tier?: "free" | "monthly" | "quarterly" | "yearly" | "lifetime" | "ht_1on1";
+    membership_tier?: "free" | "monthly" | "quarterly" | "yearly" | "lifetime" | "ht_1on1" | "mentoring";
     step2_application_status?: "pending" | "approved" | "rejected" | null;
     access_until?: string | null;
     last_login_at?: string | null;
@@ -408,6 +432,6 @@ export const config = {
   // Sitzung — ohne die Ausnahme bekäme er die Weiterleitung auf `/login`
   // (bzw. im Wartungsmodus auf `/wartung`) und zeigte kein Bild.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|logo/|bg/|svg/|tg-slides/|founder/|cases/|apex/|prozess/|nachweise/|hero/|partner/|apple-touch-icon|new-apple|opengraph-image|twitter-image|discord-og|termin-og).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|logo/|bg/|svg/|tg-slides/|founder/|cases/|apex/|prozess/|nachweise/|hero/|untertitel/|partner/|apple-touch-icon|new-apple|opengraph-image|twitter-image|discord-og|termin-og).*)",
   ],
 };

@@ -160,7 +160,12 @@ export type OnboardingCheckliste = {
   lernpfadHref: string;
 };
 
+/** Stand im kostenlosen Training (Free-Dashboard). */
+export type TrainingKachel = { gesehen: number; gesamt: number; naechstes: number; abgeschlossen: boolean };
+
 export type DashboardViewData = {
+  /** Nur für Konten ohne Zahlung: Karte zum kostenlosen Training. */
+  training?: TrainingKachel | null;
   firstName: string;
   isPaid: boolean;
   canUseJournal: boolean;

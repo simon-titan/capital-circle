@@ -70,7 +70,7 @@ export function PaketZeile({
         }
       >
         <Flex align="baseline" gap={3} wrap="wrap">
-          <Pill tone={tier === "lifetime" || tier === "ht_1on1" ? "gold" : "neutral"}>{TIER_LABEL[tier]}</Pill>
+          <Pill tone={tier === "lifetime" || tier === "ht_1on1" || tier === "mentoring" ? "gold" : "neutral"}>{TIER_LABEL[tier]}</Pill>
           {status?.danger ? <Pill tone="danger">{status.label}</Pill> : null}
 
           {/* Tabellarische Ziffern nur, wo eine Zahl steht. */}
@@ -89,6 +89,7 @@ export function PaketZeile({
 function kopfzeile(tier: Tier): string {
   if (tier === "lifetime") return "Einmal bezahlt";
   if (tier === "ht_1on1") return "1:1-Mentoring";
+  if (tier === "mentoring") return "Mentoring-Programm";
   return "Kostenfreier Zugang";
 }
 
@@ -105,6 +106,7 @@ function kopfzeile(tier: Tier): string {
 function laufzeit(tier: Tier, abo: PaketAbo | null, lifetimeGekauftAm: string | null, accessUntil: string | null) {
   if (tier === "lifetime") return `Erworben am ${formatDate(lifetimeGekauftAm)} · keine weitere Abbuchung`;
   if (tier === "ht_1on1") return "Termine vereinbaren wir direkt mit dir per E-Mail.";
+  if (tier === "mentoring") return "Plattform dauerhaft freigeschaltet · Live-Zeitraum laut Kaufbestätigung";
   if (tier === "free") return "Noch kein Paket gebucht. Die Plattform ist nur teilweise offen.";
   if (abo?.cancelAtPeriodEnd) return `Gekündigt · Zugang bis ${formatDate(abo.currentPeriodEnd)}`;
   if (abo) return `Laufzeit bis ${formatDate(abo.currentPeriodEnd)}`;
