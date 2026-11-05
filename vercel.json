@@ -10,7 +10,7 @@
       "schedule": "0 2 * * *"
     },
     {
-      "path": "/api/cron/free-course-sequence",
+      "path": "/api/cron/training-sequence",
       "schedule": "0 5 * * *"
     },
     {

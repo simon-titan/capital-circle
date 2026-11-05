@@ -73,9 +73,21 @@ interface LogRow {
   step: number;
 }
 
+/**
+ * Abgeschaltet am 02.11.2026: Die Strecke gehörte zum alten Bewerbungsweg
+ * (`/free`) und ist durch die Mailstrecke des Free Trainings ersetzt
+ * (`app/api/cron/training-sequence`). Der Eintrag in `vercel.json` zeigt jetzt
+ * dorthin; dieser Aufruf tut nichts mehr. Zum Wiederbeleben `ABGESCHALTET`
+ * auf `false` setzen und den Cron wieder eintragen.
+ */
+const ABGESCHALTET = true;
+
 export async function GET(request: NextRequest) {
   if (!authorized(request)) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
+  if (ABGESCHALTET) {
+    return NextResponse.json({ ok: true, sent: 0, uebersprungen: "Ersetzt durch /api/cron/training-sequence." });
   }
 
   const service = createServiceClient();

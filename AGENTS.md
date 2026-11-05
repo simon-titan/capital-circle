@@ -214,3 +214,48 @@ Achtung beim Testen: Der Schalter liegt in der Produktionsdatenbank — lokal um
 Nebenbei behoben: „Jetzt Mitglied werden" in `PaywallOverlay` und auf gesperrten Live-Sessions führte jeden auf
 `/bewerbung`, die der Proxy nur freigegebenen Free-Mitgliedern öffnet — alle anderen landeten zurück auf dem
 Dashboard. Das Ziel kommt jetzt aus `mitgliedWerdenZiel()` in `lib/membership.ts`.
+
+2026-11-02 (**Free-Training-Funnel**, Board „Gesamtübersicht"): Neuer Weg in die Plattform. Alles Fachliche und alle
+Texte in **`config/training.ts`**, Datenmodell in Migration **109** (`profiles.funnel_quelle`,
+`profiles.training_registriert_am`, Kurs/Modul „Kostenloses Training" mit festen IDs `…0012`/`…0112`, CRM-Tabelle
+`training_leads`).
+- **`/training`** (öffentlich, statisch): Landingpage + Registrierungs-Modal (Name, E-Mail, Passwort, Turnstile).
+  `/api/training/registrieren` legt das Konto per `generateLink({ type: "signup" })` **unbestätigt** an und schickt
+  die Bestätigung über Resend; der Link geht über `/auth/confirm` direkt nach `/kostenloses-training`. Eine zweite
+  Registrierung mit unbestätigter Adresse schickt einen neuen Link (Magic Link). `application_status` bleibt null —
+  mit `pending` landete das Konto auf `/pending-review`. `/free` leitet dauerhaft auf `/training`; die alte
+  Free-Mailstrecke ist abgeschaltet (`free-course-sequence`, `ABGESCHALTET`), ersetzt durch
+  `app/api/cron/training-sequence` (vier Stufen, `email_sequence_log` sequence `training`, schweigt ohne Videos).
+- **`/kostenloses-training`** (Mitgliederbereich): spielt das Modul mit dem vorhandenen Kursplayer ab — Freischaltung
+  Video für Video nach der 90-%-Regel (`lib/module-video.ts`), Fortschritt in `user_progress`. Ohne hochgeladene
+  Videos stehen Platzhalter da. Der Kurs ist aus dem Institut ausgeblendet (`getAcademyModulesOverview`). Stand je
+  Konto: `lib/training/stand.ts`.
+- **Videos (Stand 05.11.2026):** **vier** Kursvideos (`TRAINING_VIDEO_ANZAHL = 4`, alle Texte sagen „4 Videos") plus
+  Emres **Einführungsvideo im Hero von `/training`** (`landingVideo` in `config/training.ts`). Angeordnet, benannt und
+  veröffentlicht wird unter **`/admin/training/videos`** (Admin → Vertrieb → Trainingsvideos): Drag & Drop, Auswahl aus
+  Cloudflare Stream (auch direkt im Cloudflare-Dashboard hochgeladene Dateien) oder neuer Upload. Beim Hinzufügen stellt
+  die Ansicht das Video auf `requireSignedURLs` (`setRequireSignedUrls` in `lib/cloudflare-stream.ts`) — Dashboard-Uploads
+  tragen das nicht. **Das Landingpage-Video bleibt unsigniert** (statische Seite, ein Token liefe ab): nie in ein Modul
+  hängen. Die Landingpage-Titel stehen statisch in `videoPlatzhalter` — mit den Titeln im Admin gleich halten.
+- **Free-Dashboard:** Konten ohne Zahlung sehen oben `TrainingKarte` (Fortschritt, nächstes Video, zwei Wege).
+- **`/programme`** („Ausbildung & Mentoring", Nav-Punkt mit Badge „Neu"): Ausbildung per Selbstkauf
+  (`/api/programme/ausbildung`, `starteKasse` mit `abbruchPfad`/`quelle`, einmal oder 2 Raten — **nicht** hinter dem
+  Verkaufsschalter), Mentoring über das Analysegespräch. Abo-Mitglieder dürfen kaufen (Entscheidung Simon), ihr Abo
+  endet dann zum Periodenende; Mentoring/Lifetime/1:1 sehen „Bereits freigeschaltet".
+- **Analysegespräch** (`components/platform/training/AnalyseGespraech.tsx`): Fragen wie `/call`, Name/E-Mail aus dem
+  Konto, Leads in **`training_leads`** mit `stelle` (nach_video_3, training, programme, dashboard) und Videostand —
+  **eigenes CRM-Board `/admin/training`**, getrennt von `discord_leads` (Wunsch Simon: „klar sehen, wer von wo kommt").
+  Calendly mit `utm_medium=training` + Token; der Webhook hat dafür einen eigenen Zweig. Eigener Termin-Typ optional
+  über `NEXT_PUBLIC_TRAINING_CALENDLY_URL`. Ein Mentoring-Kauf setzt den offenen Lead des Kontos auf „gewonnen".
+- **Herkunft** (Board, Spalte 1): Die Landing merkt sich UTM und Referrer (`lib/training/herkunft.ts`, localStorage,
+  30 Tage), die Registrierung speichert sie in `profiles.funnel_herkunft` mit `kanal` (youtube, instagram, tiktok,
+  podcast, google, direkt, sonstige), Leads übernehmen ihn (`training_leads.kanal`). Das Board schlüsselt danach auf.
+  **Links in Bio, Videobeschreibung und Shownotes deshalb mit `?utm_source=youtube|instagram|tiktok|podcast`.**
+- **Abgelaufener Bestätigungslink:** `/auth/confirm` schickt Links mit `next=/kostenloses-training` bei einem Fehler
+  zurück auf `/training?fehler=link_abgelaufen` (Hinweis + erneut eintragen), nicht auf den Login.
+- **Team-Benachrichtigung:** Mail an `TEAM_POSTFACH` (+ optional `TRAINING_LEAD_EMPFAENGER`, kommagetrennt) bei jeder
+  neuen Gesprächsanfrage und bei der Calendly-Buchung (`lib/email/templates/training-team.tsx`, wirft nie).
+- Eingeloggte auf `/training` leitet `proxy.ts` direkt nach `/kostenloses-training`.
+- **Community & Live** (Board, Spalte 9): `CommunityLiveKarte` auf dem Free-Dashboard — nächste Live-Termine und die
+  Discord-Kanäle mit Schloss (Kanalnamen in `community` in `config/training.ts`, nur Anzeige).
+- Sobald die Videos stehen: unter `/admin/verkauf` „Vorlage: Funnel" einsetzen (Knopf auf `/training`).

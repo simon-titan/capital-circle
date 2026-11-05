@@ -184,6 +184,13 @@ export async function starteKasse(
     token?: string | null;
     /** Schon bekanntes Konto (Live-Abo aus dem Mitgliederbereich). */
     userId?: string | null;
+    /**
+     * Wohin „Zurück" in der Stripe-Kasse führt, wenn es keinen Kassenlink gibt
+     * (interner Pfad). Ohne Angabe `/live-session` wie bisher.
+     */
+    abbruchPfad?: string | null;
+    /** Herkunft für die Auswertung, landet in den Metadaten (z. B. `programme`). */
+    quelle?: string | null;
   },
 ): Promise<KasseStart> {
   const produkt = PRODUKTE[angebot.produkt];
@@ -226,6 +233,7 @@ export async function starteKasse(
     ...(angebot.kassenlinkId ? { kassenlink_id: angebot.kassenlinkId } : {}),
     ...(angebot.closer ? { closer: angebot.closer } : {}),
     ...(userId ? { user_id: userId } : {}),
+    ...(angebot.quelle ? { quelle: angebot.quelle } : {}),
     ...kassenRechtsMetadata,
   };
 
@@ -292,7 +300,9 @@ export async function starteKasse(
           }),
       ...(zahlarten ? { payment_method_configuration: zahlarten } : {}),
       success_url: `${appUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: angebot.token ? `${appUrl}/kasse/${angebot.token}` : `${appUrl}/live-session`,
+      cancel_url: angebot.token
+        ? `${appUrl}/kasse/${angebot.token}`
+        : `${appUrl}${angebot.abbruchPfad?.startsWith("/") ? angebot.abbruchPfad : "/live-session"}`,
       expires_at: Math.floor(Date.now() / 1000) + 2 * 60 * 60,
       automatic_tax: { enabled: true },
       allow_promotion_codes: false,

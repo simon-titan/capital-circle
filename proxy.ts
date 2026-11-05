@@ -31,6 +31,9 @@ const PUBLIC_PATHS = [
   // Hinweisseite bei geschlossenem Verkauf (`app/geschlossen/page.tsx`). Im
   // Normalfall kommt man über den Rewrite von `/` dorthin, siehe unten.
   "/geschlossen",
+  // Landingpage des kostenlosen Trainings (`app/training`). Nur die Adresse
+  // selbst — die Videos liegen im Mitgliederbereich (`/kostenloses-training`).
+  "/training",
   "/checkout/success",
   "/checkout/zurueck",
   "/set-password",
@@ -282,6 +285,12 @@ export async function proxy(request: NextRequest) {
   // Eingeloggte User landen direkt im Dashboard (/ ist die Verkaufsseite)
   if (pathname === "/") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  // Die Landing des Free Trainings ist für Eingeloggte eine Sackgasse (die
+  // Registrierung meldete „schon registriert") — direkt zu den Videos.
+  if (pathname === "/training") {
+    return NextResponse.redirect(new URL("/kostenloses-training", request.url));
   }
 
   // Profil nur wenn Admin-/Onboarding-Logik wirklich nötig (nicht auf /login oder /register eingeloggt)

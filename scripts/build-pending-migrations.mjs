@@ -19,6 +19,10 @@ const AUSSTEHEND = [
   // und `hat_live_zugang()` fuer Analysen und Live-Session-Videos. Additiv; die
   // beiden Lese-Policies werden ersetzt (gleiche Wirkung fuer alle ausser der neuen Stufe).
   "108_mentoring",
+  // 109: Free Training — `profiles.funnel_quelle`, `profiles.training_registriert_am`,
+  // Kurs/Modul „Kostenloses Training" (feste IDs) und das CRM `training_leads`.
+  // Additiv, setzt 108 nicht voraus.
+  "109_free_training",
 ];
 
 const DIR = path.resolve(process.cwd(), "supabase/migrations");

@@ -218,6 +218,7 @@ export async function handleMentoringCheckout(
 
   if (neu) {
     await vermerkeKassenlink(supabase, kauf.kassenlink_id, session.id, kauf.soll_cents, def.name, zahlweise, raten, kauf.closer);
+    if (art !== ART_LIVE) await vermerkeTrainingLead(supabase, userId, kauf.soll_cents, def.name, zahlweise, raten);
     if (art !== ART_LIVE) await schliesseOffeneFaelle(supabase, userId, `${def.name} gekauft.`);
   }
 
@@ -328,6 +329,41 @@ async function vermerkeKassenlink(
     if (leadFehler) console.warn(`[stripe-webhook] Lead ${leadId} nicht als gewonnen vermerkt: ${leadFehler.message}`);
   } catch (err) {
     console.warn("[stripe-webhook] Kassenlink/Lead nicht nachgezogen:", err);
+  }
+}
+
+/**
+ * Offener Lead aus dem Free Training (`training_leads`, Board `/admin/training`)
+ * auf „gewonnen" — egal ob über den Kassenlink nach dem Gespräch oder per
+ * Selbstkauf der Ausbildung. Ohne Lead passiert nichts. Wirft nie.
+ */
+async function vermerkeTrainingLead(
+  supabase: WebhookSupabase,
+  userId: string,
+  sollCents: number | null,
+  produktName: string,
+  zahlweise: string,
+  raten: number,
+): Promise<void> {
+  try {
+    const jetzt = new Date().toISOString();
+    const { error } = await supabase
+      .from("training_leads")
+      .update({
+        status: "gewonnen",
+        gewonnen_am: jetzt,
+        produkt: zahlweise === "raten" ? `${produktName} (${raten} Raten)` : produktName,
+        ...(sollCents ? { revenue_cents: sollCents } : {}),
+        updated_at: jetzt,
+      })
+      .eq("user_id", userId)
+      .not("status", "in", "(gewonnen,verloren)");
+    // Ohne Migration 109 fehlt die Tabelle — das ist kein Grund, den Kauf zu kippen.
+    if (error && !/training_leads|does not exist|schema cache/i.test(error.message)) {
+      console.warn(`[stripe-webhook] Training-Lead für ${userId} nicht als gewonnen vermerkt: ${error.message}`);
+    }
+  } catch (err) {
+    console.warn("[stripe-webhook] Training-Lead nicht nachgezogen:", err);
   }
 }
 
