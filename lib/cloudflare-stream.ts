@@ -258,20 +258,6 @@ export async function listVideos(params: {
   return { items, next };
 }
 
-/**
- * Schaltet bei einem vorhandenen Video signierte Wiedergabe ein. Nötig für
- * Videos, die direkt im Cloudflare-Dashboard hochgeladen wurden — die tragen
- * `requireSignedURLs: false` und wären sonst über ihre UID frei abrufbar.
- * Ein Token öffnet auch unsignierte Videos, der Player merkt also keinen Unterschied.
- */
-export async function setRequireSignedUrls(uid: string, an = true): Promise<void> {
-  await cfFetch<unknown>(`/${encodeURIComponent(uid)}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ uid, requireSignedURLs: an }),
-  });
-}
-
 export async function deleteVideo(uid: string): Promise<void> {
   await cfFetch<null>(`/${encodeURIComponent(uid)}`, { method: "DELETE" });
 }

@@ -45,7 +45,6 @@ import { hatInhaltsZugang } from "@/lib/membership";
 import { ladeCheckliste, schliesseAbWennFertig } from "@/lib/onboarding/checkliste";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { calculateStreak, maxPlausibleStreakDays, sanitizeStreakValue } from "@/lib/streak";
-import { ladeTrainingsStand } from "@/lib/training/stand";
 
 export const dynamic = "force-dynamic";
 
@@ -450,25 +449,12 @@ export default async function DashboardPage({
     console.warn("[dashboard] Start-Checkliste übersprungen:", err);
   }
 
-  /*
-    Free-Konten (ohne Zahlung, kein Admin) sehen oben die Karte zum kostenlosen
-    Training (Board „Free Training", 02.11.2026). Ein Lesefehler lässt die
-    Karte weg, statt das Dashboard zu kippen.
-  */
-  const trainingKachel =
-    !isPaid && !profileAny.is_admin
-      ? await ladeTrainingsStand(await createClient(), userId)
-          .then((s) => ({ gesehen: s.gesehen, gesamt: s.gesamt, naechstes: s.naechstes, abgeschlossen: s.abgeschlossen }))
-          .catch(() => null)
-      : null;
-
   const data: DashboardViewData = {
     firstName: firstName(displayName),
     isPaid,
     // Dieselbe Regel wie das Layout-Gate des Journals (`hatInhaltsZugang`).
     canUseJournal: hatInhaltsZugang(profile),
     showApplyPrompt,
-    training: trainingKachel,
     continueItem,
     streak: { days: streakDaysSanitized, week, weekdaysActive, weekdaysTotal: 5 },
     progress: {

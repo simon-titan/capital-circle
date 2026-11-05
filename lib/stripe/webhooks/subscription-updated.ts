@@ -5,7 +5,6 @@ import { zugangBeendetInDiscord } from "@/lib/discord/warteraum";
 import { sendWelcomePaid } from "@/lib/email/templates/welcome-paid";
 import { getStripe } from "@/lib/stripe/server";
 import { MEMBERSHIP_PLANS, resolvePlanFromPriceId, type MembershipPlan } from "@/lib/stripe/plan-map";
-import { handleMentoringAbo, mentoringArt } from "./mentoring";
 import {
   extractCurrentPeriod,
   extractPriceId,
@@ -61,15 +60,6 @@ export async function handleSubscriptionUpdated(
    * egal: Jedes Ereignis schreibt, was jetzt gilt.
    */
   const sub = await getStripe().subscriptions.retrieve(ereignisAbo.id);
-
-  /*
-    Raten- und Live-Abos der Mentoring-Programme sind keine Mitgliedschaft und
-    gehören weder in `subscriptions` noch in `membership_tier`. Begründung in
-    `lib/stripe/webhooks/mentoring.ts`.
-  */
-  if (mentoringArt(sub.metadata)) {
-    return handleMentoringAbo(sub, supabase);
-  }
 
   const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
   if (!customerId) {
@@ -164,16 +154,7 @@ export async function handleSubscriptionUpdated(
    * Periodenende auf `free`. Der Kunde hätte 997 € gezahlt und stünde vor der
    * Bezahlschranke. Die Abo-Zeile oben wird trotzdem gepflegt.
    */
-  /*
-    Dasselbe gilt seit 17.10.2026 für die Mentoring-Programme: Wer ein Programm
-    kauft, dessen Mitgliedsabo endet zum Periodenende (`beendeLaufendesAbo`),
-    und das `updated` dazu darf die Stufe nicht zurück auf `monthly` setzen.
-  */
-  if (
-    profile.membership_tier === "lifetime" ||
-    profile.membership_tier === "ht_1on1" ||
-    profile.membership_tier === "mentoring"
-  ) {
+  if (profile.membership_tier === "lifetime" || profile.membership_tier === "ht_1on1") {
     return;
   }
 

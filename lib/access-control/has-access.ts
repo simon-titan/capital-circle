@@ -8,8 +8,6 @@ export type AccessReason =
   | "subscription_expired"
   | "free_tier"
   | "ht_1on1"
-  | "mentoring"
-  | "mentoring_gesperrt"
   | "no_profile"
   | "unknown";
 
@@ -20,8 +18,7 @@ export type AccessTier =
   | "quarterly"
   | "yearly"
   | "lifetime"
-  | "ht_1on1"
-  | "mentoring";
+  | "ht_1on1";
 
 /**
  * Die wiederkehrend abgerechneten Stufen.
@@ -118,24 +115,6 @@ export function evaluateAccess(profile: ProfileRow): AccessResult {
       tier: "ht_1on1",
       reason: "ht_1on1",
       accessUntil,
-    };
-  }
-
-  /*
-    Mentoring-Programme (Ausbildung, Main, Premium; `config/mentoring.ts`):
-    Die Plattform ist dauerhaft bezahlt wie bei Lifetime, aber anders als dort
-    zählt `is_paid`. Grund sind die Raten: Platzt eine, sperrt der Nachtlauf am
-    siebten Tag über `is_paid` (`lib/zahlung/fall.ts`), und bezahlt der Kunde,
-    setzt `invoice.paid` es zurück. Den befristeten Live-Bereich prüft
-    `hatLiveZugang()` in `lib/mentoring/zugang.ts`, nicht diese Funktion.
-  */
-  if (tier === "mentoring") {
-    const bezahlt = Boolean(profile.is_paid);
-    return {
-      hasAccess: bezahlt,
-      tier: "mentoring",
-      reason: bezahlt ? "mentoring" : "mentoring_gesperrt",
-      accessUntil: null,
     };
   }
 

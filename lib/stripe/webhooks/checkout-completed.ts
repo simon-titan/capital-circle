@@ -3,7 +3,6 @@ import { sendWelcomePaid } from "@/lib/email/templates/welcome-paid";
 import { getStripe } from "@/lib/stripe/server";
 import { synchronisiereNachProfil } from "@/lib/discord/mitgliedschaft";
 import { schliesseOffeneFaelle } from "@/lib/zahlung/fall";
-import { handleMentoringCheckout, mentoringArt } from "./mentoring";
 import {
   extractCustomerId,
   loadAuthEmail,
@@ -29,16 +28,6 @@ export async function handleCheckoutCompleted(
   supabase: WebhookSupabase,
 ): Promise<void> {
   await schreibeTrichter(supabase, session, "completed");
-
-  /*
-    Mentoring-Programme und Live-Abo (Kassenlink nach dem Closing-Call) haben
-    einen eigenen Zweig, für beide Modi: Ein Ratenkauf ist ein Abo, aber keine
-    Mitgliedschaft, und eine Einmalzahlung kommt ohne `metadata.user_id`
-    (Gastkauf). Siehe `lib/stripe/webhooks/mentoring.ts`.
-  */
-  if (mentoringArt(session.metadata)) {
-    return handleMentoringCheckout(session, supabase);
-  }
 
   /**
    * Der Abo-Fall verlässt die Funktion, BEVOR `metadata.user_id` verlangt
@@ -136,7 +125,7 @@ export async function handleCheckoutCompleted(
  * Stripe den automatischen Einzug offener Rechnungen ein; die Rechnung selbst
  * bleibt offen (kein Erlass — sie steht in der Fallakte).
  */
-export async function beendeLaufendesAbo(
+async function beendeLaufendesAbo(
   supabase: WebhookSupabase,
   userId: string,
 ): Promise<void> {

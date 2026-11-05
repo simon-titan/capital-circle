@@ -30,7 +30,6 @@ export const EIGENE_STUFEN: ReadonlySet<string> = new Set([
   "yearly",
   "lifetime",
   "ht_1on1",
-  "mentoring",
 ]);
 
 /**

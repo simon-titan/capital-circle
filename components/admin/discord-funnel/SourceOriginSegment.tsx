@@ -4,7 +4,6 @@ import { Box, HStack, SimpleGrid, Stack, Text } from "@chakra-ui/react";
 import { GitCompareArrows } from "lucide-react";
 import { adminInsetProps } from "@/components/admin/adminUi";
 import {
-  SOURCE_ORIGINS,
   SOURCE_ORIGIN_LABELS,
   type FunnelByOrigin,
   type FunnelStage,
@@ -117,19 +116,18 @@ export function SourceOriginSegment({
   perChannel?: PerChannelRow[];
 }) {
   const channels = perChannel ?? [];
+  const discord = computeMetrics("discord_funnel", funnelByOrigin, channels);
+  const direct = computeMetrics("termin_direct", funnelByOrigin, channels);
 
   return (
     <SectionCard
       title="Herkunfts-Segment"
-      subtitle="Discord-Funnel (Cold Traffic) vs. Termin direkt vs. Call-Funnel (/call)."
+      subtitle="Discord-Funnel (Cold Traffic) vs. Termin direkt."
       icon={<GitCompareArrows size={16} />}
     >
-      {/* Aus SOURCE_ORIGINS statt fest verdrahtet: Eine neue Herkunft taucht
-          hier von selbst auf, statt still zu fehlen (so ging es `call_funnel`). */}
-      <SimpleGrid columns={{ base: 1, lg: SOURCE_ORIGINS.length }} spacing={4}>
-        {SOURCE_ORIGINS.map((origin) => (
-          <OriginCard key={origin} origin={origin} metrics={computeMetrics(origin, funnelByOrigin, channels)} />
-        ))}
+      <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={4}>
+        <OriginCard origin="discord_funnel" metrics={discord} />
+        <OriginCard origin="termin_direct" metrics={direct} />
       </SimpleGrid>
     </SectionCard>
   );

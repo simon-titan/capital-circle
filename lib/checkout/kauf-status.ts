@@ -1,4 +1,3 @@
-import { istKassenProdukt, type KassenProdukt } from "@/config/mentoring";
 import { getStripe } from "@/lib/stripe/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { findeUserIdZuEmail } from "./user-lookup";
@@ -33,12 +32,6 @@ export interface KaufBekannt {
   /** `membership_tier` aus dem Profil, sobald der Webhook es gesetzt hat. */
   tier: string | null;
   /**
-   * Gekauftes Programm bzw. Live-Abo, wenn die Kasse von einem Kassenlink kam
-   * (`metadata.produkt`, gesetzt in `lib/mentoring/kasse.ts`); sonst `null`.
-   * Daran erkennt die Erfolgsseite, dass hier keine Mitgliedschaft gekauft wurde.
-   */
-  produkt: KassenProdukt | null;
-  /**
    * Es gab an diesem Konto schon einmal eine Anmeldung. Dient als
    * **Einmal-Sperre** für die Zugangsaktivierung: Danach ist die Checkout-URL
    * kein Ausweis mehr, mit dem sich ein Passwort setzen ließe.
@@ -72,7 +65,6 @@ export async function ladeKaufStatus(sessionId: string | undefined | null): Prom
   if (!id?.startsWith("cs_")) return { ok: false, grund: "missing_session" };
 
   let email: string | null = null;
-  let produkt: KassenProdukt | null = null;
   try {
     const session = await getStripe().checkout.sessions.retrieve(id);
     const bezahlt = session.status === "complete" || session.payment_status === "paid";
@@ -82,8 +74,6 @@ export async function ladeKaufStatus(sessionId: string | undefined | null): Prom
       return { ok: false, grund: "session_expired" };
     }
     email = session.customer_details?.email ?? session.customer_email ?? null;
-    const p = session.metadata?.produkt;
-    if (session.metadata?.art && istKassenProdukt(p)) produkt = p;
   } catch (err) {
     console.error("[kauf-status] Checkout-Session nicht abrufbar:", err);
     return { ok: false, grund: "session_unknown" };
@@ -116,7 +106,6 @@ export async function ladeKaufStatus(sessionId: string | undefined | null): Prom
     email,
     userId,
     tier: (profil as { membership_tier?: string | null } | null)?.membership_tier ?? null,
-    produkt,
     zugangAktiv: Boolean(authUser?.user?.last_sign_in_at),
   };
 }

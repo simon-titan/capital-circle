@@ -5,7 +5,6 @@ import {
   pausiereProfil,
   type WebhookSupabase,
 } from "./_helpers";
-import { mentoringArt } from "./mentoring";
 
 /**
  * `customer.subscription.paused`
@@ -22,13 +21,6 @@ export async function handleSubscriptionPaused(
   sub: Stripe.Subscription,
   supabase: WebhookSupabase,
 ): Promise<void> {
-  /*
-    Ein pausiertes Live-Abo (Probezeit bis zum Ende des Programm-Zeitraums,
-    danach ohne Zahlungsmittel) verlängert `live_bis` schlicht nicht mehr. Die
-    Plattform gehört dem Kunden trotzdem — `pausiereProfil` nähme sie ihm.
-  */
-  if (mentoringArt(sub.metadata)) return;
-
   const customerId =
     typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
   if (!customerId) return;

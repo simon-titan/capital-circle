@@ -54,11 +54,8 @@ export type Database = {
             | "quarterly"
             | "yearly"
             | "lifetime"
-            | "ht_1on1"
-            | "mentoring";
+            | "ht_1on1";
           access_until?: string | null;
-          // 108_mentoring: Ende des Live-Bereichs für die Stufe `mentoring`.
-          live_bis?: string | null;
           lifetime_purchased_at?: string | null;
           // 044_phase3_churn (Tracking-Timestamps für Churn- und Dunning-Mails)
           churn_email_1_sent_at?: string | null;

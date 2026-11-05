@@ -7,7 +7,6 @@ import {
   loadProfileByCustomerId,
   type WebhookSupabase,
 } from "./_helpers";
-import { handleMentoringAbo, mentoringArt } from "./mentoring";
 
 /**
  * `customer.subscription.resumed`
@@ -28,9 +27,6 @@ export async function handleSubscriptionResumed(
   sub: Stripe.Subscription,
   supabase: WebhookSupabase,
 ): Promise<void> {
-  // Raten- und Live-Abos: wie `updated` (Live-Zugang nachziehen), nie als Mitgliedschaft.
-  if (mentoringArt(sub.metadata)) return handleMentoringAbo(sub, supabase);
-
   const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
   if (!customerId) return;
 
@@ -57,13 +53,7 @@ export async function handleSubscriptionResumed(
   }
 
   // Lifetime und 1:1 stehen über jedem Abo (Begründung in subscription-updated.ts).
-  if (
-    profile.membership_tier === "lifetime" ||
-    profile.membership_tier === "ht_1on1" ||
-    profile.membership_tier === "mentoring"
-  ) {
-    return;
-  }
+  if (profile.membership_tier === "lifetime" || profile.membership_tier === "ht_1on1") return;
 
   const { error } = await supabase
     .from("profiles")
