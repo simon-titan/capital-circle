@@ -196,6 +196,40 @@ export function CallBuchungProvider({ children, vorschau = false }: { children: 
     if (ALTE_SPRUNGMARKEN.includes(window.location.hash)) setOffen(true);
   }, []);
 
+  /*
+    Angemeldete Besucher: Name und E-Mail aus dem Konto vorausfüllen (Wunsch
+    Simon, 06.11.2026). Erst beim ersten Öffnen und nur im Browser — die Seite
+    bleibt statisch, und wer nie klickt, lädt den Supabase-Client gar nicht.
+    Gefüllt werden nur leere Felder; was schon getippt ist, bleibt. Die
+    Telefonnummer steht nicht im Konto und bleibt ein Eingabefeld.
+  */
+  const kontoGeladen = useRef(false);
+  useEffect(() => {
+    if (!offen || vorschau || kontoGeladen.current) return;
+    kontoGeladen.current = true;
+    // Bewusst ohne Abbruch beim Schließen: Wer das Modal sofort wieder zumacht,
+    // findet die Felder beim nächsten Öffnen trotzdem gefüllt.
+    (async () => {
+      try {
+        const { createClient } = await import("@/lib/supabase/client");
+        const supabase = createClient();
+        const { data } = await supabase.auth.getUser();
+        const user = data.user;
+        if (!user) return;
+        const { data: profil } = await supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
+        const name = (profil?.full_name ?? (user.user_metadata?.full_name as string | undefined) ?? "").trim();
+        const email = (user.email ?? "").trim();
+        setKontaktState((k) => ({
+          ...k,
+          name: k.name.trim() ? k.name : name,
+          email: k.email.trim() ? k.email : email,
+        }));
+      } catch {
+        // Ohne Konto oder bei Netzfehler bleibt das Formular einfach leer.
+      }
+    })();
+  }, [offen, vorschau]);
+
   // Ein Feld verliert seinen Fehler, sobald darin getippt wird — die übrigen
   // bleiben stehen, bis erneut abgeschickt wird.
   const setKontakt = useCallback((patch: Partial<ContactValue>) => {
@@ -417,7 +451,7 @@ export function CallBuchungProvider({ children, vorschau = false }: { children: 
  * Hauptaktion der Seite — öffnet das Buchungs-Modal. Nach der Buchung sagt der
  * Knopf das auch und öffnet die Bestätigung, statt erneut „sichern" anzubieten.
  */
-export function CallBuchungKnopf(props: ButtonProps) {
+export function CallBuchungKnopf({ label, ...props }: ButtonProps & { label?: string }) {
   const b = useCallBuchung();
   const gebucht = b.phase === "gebucht";
   return (
@@ -436,7 +470,7 @@ export function CallBuchungKnopf(props: ButtonProps) {
       onClick={b.oeffne}
       {...props}
     >
-      {gebucht ? buchung.karte.gebuchtKnopf : ctaLabel}
+      {gebucht ? buchung.karte.gebuchtKnopf : (label ?? ctaLabel)}
     </Button>
   );
 }

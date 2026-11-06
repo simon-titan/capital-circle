@@ -2,7 +2,7 @@ import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
 import { EmailButton, EmailDivider, EmailHeading, EmailSmall, EmailText } from "../layout/components";
 import { sendEmail, type SendResult } from "../send";
-import { MAIL_SEQUENZ } from "@/config/training";
+import { MAIL_SEQUENZ, TRAINING_VIDEO_ANZAHL } from "@/config/training";
 
 /**
  * Mails des Free-Training-Funnels (`config/training.ts`).
@@ -58,7 +58,7 @@ export type TrainingMailArt = "start" | "weiter" | "naechsterSchritt" | "letzte"
 
 type ErinnerungProps = {
   vorname: string;
-  /** Nächstes offenes Video (1–3); bei `naechsterSchritt` ohne Bedeutung. */
+  /** Nächstes offenes Video (1–TRAINING_VIDEO_ANZAHL); bei `naechsterSchritt` ohne Bedeutung. */
   naechstesVideo: number;
   trainingUrl: string;
   programmeUrl: string;
@@ -68,8 +68,11 @@ type ErinnerungProps = {
 const BETREFF: Record<TrainingMailArt, (p: ErinnerungProps) => string> = {
   start: () => "Dein kostenloses Training wartet auf dich",
   weiter: (p) => `Weiter geht's mit Video ${p.naechstesVideo}`,
-  naechsterSchritt: () => "Du hast alle 4 Videos gesehen. Und jetzt?",
-  letzte: (p) => `Noch ${4 - p.naechstesVideo === 1 ? "ein Video" : `${4 - p.naechstesVideo} Videos`} bis zu deinem System`,
+  naechsterSchritt: () => "Du hast das komplette Training gesehen. Und jetzt?",
+  letzte: (p) => {
+    const rest = TRAINING_VIDEO_ANZAHL - p.naechstesVideo + 1;
+    return `Noch ${rest === 1 ? "ein Video" : `${rest} Videos`} bis zu deinem System`;
+  },
 };
 
 function TrainingErinnerungEmail({ art, ...p }: ErinnerungProps & { art: TrainingMailArt }) {

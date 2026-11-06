@@ -1,0 +1,49 @@
+/* Zertifikat-Variante von /training (/vorschau/training-2). Alle Klassen mit `cz-`. */
+.cz-root ::selection { background: rgba(31, 122, 90, 0.85); color: #f2f3f5; }
+.cz-root { scrollbar-color: #1f7a5a #0f1317; }
+.cz-root :focus-visible { outline: 2px solid rgba(232, 192, 148, 0.8); outline-offset: 3px; }
+
+/* Mit .cz-root davor und !important: Chakras Heading setzt sonst seine Theme-Schrift (Inter) darüber. */
+.cz-root .cz-serif { font-family: var(--font-zertifikat), "Bodoni 72", Didot, serif !important; font-optical-sizing: auto; font-kerning: normal; font-feature-settings: "kern" 1, "liga" 1; letter-spacing: -0.012em; }
+
+/* Guilloche: Linien ziehen sich einmal, danach dreht die Rosette sehr langsam. */
+.cz-zieht { stroke-dasharray: 1; stroke-dashoffset: 1; animation: cz-ziehen 2600ms cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@keyframes cz-ziehen { to { stroke-dashoffset: 0; } }
+.cz-dreht { transform-origin: 0 0; animation: cz-drehen 260s linear infinite; }
+.cz-dreht-langsam { transform-origin: 0 0; animation: cz-drehen 90s linear infinite; }
+@keyframes cz-drehen { to { transform: rotate(360deg); } }
+
+/* Rahmenlinien öffnen sich von der Mitte aus. */
+.cz-linie-auf { transform-origin: center; animation: cz-linie 1100ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+@keyframes cz-linie { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* Einstieg: aus der Unschärfe nach vorn. */
+.cz-auf { animation: cz-auf 1100ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+/* Startet sichtbar (0.4): Die Headline ist das größte Element im ersten Bild und darf nie leer sein. */
+@keyframes cz-auf { from { opacity: 0.4; transform: translateY(12px); filter: blur(6px); } to { opacity: 1; transform: none; filter: blur(0); } }
+
+/* Wellenbänder und römische Ziffern zeichnen sich beim Einscrollen (nur wo der Browser das kann). */
+@supports (animation-timeline: view()) {
+  .cz-welle path { stroke-dasharray: 1; animation: cz-ziehen linear both; animation-timeline: view(); animation-range: entry 10% cover 45%; stroke-dashoffset: 1; }
+  .cz-einblenden { animation: cz-auf linear both; animation-timeline: view(); animation-range: entry 0% cover 30%; }
+}
+
+/* Glanz, der einmal über den Knopf läuft, wenn er ins Bild kommt. */
+.cz-glanz { position: relative; overflow: hidden; }
+.cz-glanz::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.45) 50%, transparent 65%);
+  transform: translateX(-120%); animation: cz-glanz 1800ms cubic-bezier(0.16, 1, 0.3, 1) 1400ms 1;
+}
+@keyframes cz-glanz { from { transform: translateX(-120%); } to { transform: translateX(120%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .cz-zieht, .cz-welle path { animation: none !important; stroke-dashoffset: 0 !important; }
+  .cz-dreht, .cz-dreht-langsam, .cz-linie-auf, .cz-auf, .cz-einblenden { animation: none !important; }
+  .cz-glanz::after { animation: none !important; display: none; }
+}
+
+/* Wechsel der Stimmen: startet sichtbar (0.35), nicht aus dem Nichts. */
+.cz-wechsel { animation: cz-wechsel 700ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+@keyframes cz-wechsel { from { opacity: 0.35; filter: blur(4px); } to { opacity: 1; filter: blur(0); } }
+@media (prefers-reduced-motion: reduce) { .cz-wechsel { animation: none !important; } }

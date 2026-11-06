@@ -230,8 +230,12 @@ Texte in **`config/training.ts`**, Datenmodell in Migration **109** (`profiles.f
   Video für Video nach der 90-%-Regel (`lib/module-video.ts`), Fortschritt in `user_progress`. Ohne hochgeladene
   Videos stehen Platzhalter da. Der Kurs ist aus dem Institut ausgeblendet (`getAcademyModulesOverview`). Stand je
   Konto: `lib/training/stand.ts`.
-- **Videos (Stand 05.11.2026):** **vier** Kursvideos (`TRAINING_VIDEO_ANZAHL = 4`, alle Texte sagen „4 Videos") plus
-  Emres **Einführungsvideo im Hero von `/training`** (`landingVideo` in `config/training.ts`). Angeordnet, benannt und
+- **Videos (Stand 06.11.2026):** **fünf** Kursvideos (`TRAINING_VIDEO_ANZAHL = 5`; sichtbare Texte nennen **keine** Anzahl mehr, Entscheidung Simon 06.11.):
+  Einführung, Grundlagen, Auction Market Theory, Dein Tradingansatz, Das System in der Praxis. Das „einführungsvideo free
+  kurs 01" ist **Kursvideo 1**, nicht das Landingpage-Video — das war am 05.11. falsch zugeordnet. Emres eigenes
+  **Funnel-Video im Hero von `/training`** ist „free kurs video landingpage.mp4" (`landingVideo` in `config/training.ts`),
+  das **VSL auf `/call`** ist „1o1 landingpage.mp4" (`callVideo` in `config/call-funnel.ts`, unsigniert; die
+  Variablen `NEXT_PUBLIC_CALL_VIDEO_URL` / `_POSTER` überschreiben es nur noch). Angeordnet, benannt und
   veröffentlicht wird unter **`/admin/training/videos`** (Admin → Vertrieb → Trainingsvideos): Drag & Drop, Auswahl aus
   Cloudflare Stream (auch direkt im Cloudflare-Dashboard hochgeladene Dateien) oder neuer Upload. Beim Hinzufügen stellt
   die Ansicht das Video auf `requireSignedURLs` (`setRequireSignedUrls` in `lib/cloudflare-stream.ts`) — Dashboard-Uploads

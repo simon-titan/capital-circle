@@ -1,77 +1,105 @@
 "use client";
 
-import {
-  Accordion,
-  AccordionButton,
-  AccordionIcon,
-  AccordionItem,
-  AccordionPanel,
-  Box,
-  Flex,
-  Grid,
-  HStack,
-  Stack,
-  Text,
-} from "@chakra-ui/react";
-import { Check, Lock, PlayCircle } from "lucide-react";
+import { Box, Flex, Grid, Heading, HStack, Stack, Text } from "@chakra-ui/react";
+import { Check } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { Fragment, Suspense, useEffect, useState } from "react";
-import { Logo } from "@/components/brand/Logo";
-import { NachweisGalerie } from "@/components/landing/membership/NachweisGalerie";
-import { ergebnisseAuswahl, ergebnisseKopf, fusszeile } from "@/config/call-funnel";
-import { auszahlungenCommunity } from "@/config/landing-membership";
-import { landing, landingVideo, registrierung, videoPlatzhalter } from "@/config/training";
+import { Suspense, useEffect } from "react";
+import { ErgebnisseSection } from "@/components/landing/membership/ErgebnisseSection";
+import { FaqSection } from "@/components/landing/membership/FaqSection";
+import { Sektion, SektionsKopf } from "@/components/landing/membership/membership-ui";
 import { GlassVideoPlayer } from "@/components/ui/GlassVideoPlayer";
+import { fusszeile } from "@/config/call-funnel";
+import { landing, landingVideo, registrierung } from "@/config/training";
+import type { Bewertungsspiegel } from "@/lib/landing-reviews";
 import { merkeHerkunft } from "@/lib/training/herkunft";
-import { FunnelFooter, FunnelGround, FunnelHeroGlow, FunnelPageStyles, FunnelSplash } from "../DiscordFunnelChrome";
-import { Reveal } from "../landing-ui";
-import { CallSektion, CallSektionsKopf, akzentGold } from "../call/call-ui";
+import { FunnelFooter } from "../DiscordFunnelChrome";
+import {
+  FunnelKopfleiste,
+  HeroPill,
+  MobilAktionsleiste,
+  SchrittMarke,
+  VideoSchein,
+} from "../funnel-rahmen";
+import { GoldGlowDivider } from "../GoldGlowDivider";
+import { heroRise, Reveal } from "../landing-ui";
+import { ReviewSection } from "../ReviewSection";
+import { akzentGold } from "../call/call-ui";
 import { TrainingRegistrierungProvider, TrainingStartKnopf } from "./TrainingRegistrierung";
 
 /**
  * `/training` — Landingpage des kostenlosen Trainings (Board, Spalte 2).
  *
- * Aufbau: Kopfleiste · Hero mit Einführungsvideo · Die 4 Videos · Ablauf ·
- * Ergebnisse · FAQ · Abschluss · Footer. Alle Texte in `config/training.ts`.
- * Jede Hauptaktion öffnet dasselbe Registrierungs-Modal.
+ * Seit 06.11.2026 im Look der Verkaufsseite `/` (Nutzerwunsch): klebende
+ * Kopfleiste, zentrierter Hero (Pill, Headline, Video, Punkte, Knopf, Sterne),
+ * linksbündige Abschnittsköpfe, Gold-Lichtlinien zwischen den Abschnitten,
+ * dieselben Ergebnis-, Bewertungs- und FAQ-Abschnitte und die mobile
+ * Aktionsleiste. Die Sektion „Das Training" (fünf Videokacheln) ist auf
+ * Nutzerwunsch raus.
+ *
+ * Reihenfolge: Versprechen (Hero + Video) → Beweis (Auszahlungen,
+ * Bewertungen) → Ablauf → Einwände (FAQ) → Abschluss.
+ * Jede Hauptaktion öffnet dasselbe Registrierungs-Modal. Texte in
+ * `config/training.ts`.
+ *
+ * Den Seitengrund (`FunnelHimmel`) legt `app/training/page.tsx` darum.
  */
 
-const COMMUNITY_AUSWAHL = ergebnisseAuswahl.community.flatMap((bild) =>
-  auszahlungenCommunity.filter((a) => a.bild === bild),
-);
+/** Die Bewertungen der Verkaufsseite (Kategorie `global`). */
+export const TRAINING_BEWERTUNGEN = "global";
 
-export function TrainingLanding() {
-  const [laedt, setLaedt] = useState(true);
+export function TrainingLanding({ bewertungen }: { bewertungen: Bewertungsspiegel }) {
   useEffect(() => {
-    const t = setTimeout(() => setLaedt(false), 300);
     // Herkunft (YouTube, Instagram, …) für die Registrierung merken.
     merkeHerkunft();
-    return () => clearTimeout(t);
   }, []);
 
   return (
     <TrainingRegistrierungProvider>
-      <FunnelSplash visible={laedt} />
-      <FunnelPageStyles />
-      <FunnelGround>
-        <Kopfleiste />
-        {/* `?fehler=` im Client in einer Suspense-Grenze — so bleibt die Seite statisch. */}
-        <Suspense fallback={null}>
-          <LinkAbgelaufen />
-        </Suspense>
-        <Hero />
-        <Videos />
-        <Ablauf />
-        <Ergebnisse />
-        <Faq />
-        <CallSektion id="abschluss" labelledBy="abschluss-titel">
-          <Stack spacing={{ base: 8, md: 10 }} align="center">
-            <CallSektionsKopf id="abschluss-titel" headline={landing.abschluss.headline} text={landing.abschluss.text} />
-            <TrainingStartKnopf />
-          </Stack>
-        </CallSektion>
+        <FunnelKopfleiste
+          anker={landing.nav}
+          aktion={
+            <TrainingStartKnopf w="auto" minH="40px" h="40px" px={5} fontSize="15px" whiteSpace="nowrap" rightIcon={undefined}>
+              {landing.ctaKurz}
+            </TrainingStartKnopf>
+          }
+          menueAktion={
+            <TrainingStartKnopf w="full" minH="48px" fontSize="16px">
+              {landing.ctaKurz}
+            </TrainingStartKnopf>
+          }
+        />
+
+        <Box as="main">
+          {/* `?fehler=` im Client in einer Suspense-Grenze — so bleibt die Seite statisch. */}
+          <Suspense fallback={null}>
+            <LinkAbgelaufen />
+          </Suspense>
+
+          <Hero bewertungen={bewertungen} />
+
+          <Box pt={{ base: 16, md: 24 }}>
+            <GoldGlowDivider />
+          </Box>
+          <ErgebnisseSection />
+          <GoldGlowDivider />
+          <ReviewSection landingSlug={TRAINING_BEWERTUNGEN} />
+          <GoldGlowDivider />
+          <Ablauf />
+          <GoldGlowDivider />
+          <FaqSection inhalt={{ ...landing.faq, headline: akzentGold(landing.faq.headline) }} />
+          <GoldGlowDivider />
+          <Abschluss bewertungen={bewertungen} />
+        </Box>
+
         <FunnelFooter>{fusszeile}</FunnelFooter>
-      </FunnelGround>
+
+        <MobilAktionsleiste hinweis={landing.mobilHinweis} ausblendenBei={["abschluss"]}>
+          {(tabIndex) => (
+            <TrainingStartKnopf w="full" minH="52px" fontSize="16px" tabIndex={tabIndex}>
+              {landing.hero.cta}
+            </TrainingStartKnopf>
+          )}
+        </MobilAktionsleiste>
     </TrainingRegistrierungProvider>
   );
 }
@@ -80,7 +108,7 @@ function LinkAbgelaufen() {
   const t = registrierung.linkAbgelaufen;
   if (useSearchParams().get("fehler") !== "link_abgelaufen") return null;
   return (
-    <Box px={{ base: 4, md: 8, lg: 12 }} position="relative" zIndex={3}>
+    <Box px={{ base: 4, md: 8, lg: 12 }} pt={4} position="relative" zIndex={3}>
       <Flex
         role="alert"
         maxW="1180px"
@@ -108,250 +136,202 @@ function LinkAbgelaufen() {
   );
 }
 
-function Kopfleiste() {
-  return (
-    <Box as="header" px={{ base: 4, md: 8, lg: 12 }} py={5} position="relative" zIndex={3}>
-      <Flex maxW="1180px" mx="auto" align="center" justify="space-between" gap={6}>
-        <Logo variant="onDark" width={150} />
-        <HStack as="nav" aria-label="Seitenabschnitte" spacing={8} display={{ base: "none", md: "flex" }}>
-          {landing.nav.map((p) => (
-            <Box
-              as="a"
-              key={p.href}
-              href={p.href}
-              fontSize="14px"
-              color="var(--cc-text-2)"
-              _hover={{ color: "var(--cc-text)" }}
-            >
-              {p.label}
-            </Box>
-          ))}
-        </HStack>
-        <Box as="a" href="/login" fontSize="14px" color="var(--cc-text-2)" _hover={{ color: "var(--cc-text)" }}>
-          Anmelden
-        </Box>
-      </Flex>
-    </Box>
-  );
-}
+/* ─────────────────────────── Hero ─────────────────────────── */
 
-function Hero() {
+/**
+ * Emres Funnel-Video (`landingVideo`) ist unsigniert: Die Seite ist statisch,
+ * ein Token liefe ab. Ohne Stream-Subdomain (lokal ohne .env) entfällt es.
+ */
+const STREAM_SUBDOMAIN = process.env.NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_SUBDOMAIN?.trim() || null;
+
+function Hero({ bewertungen }: { bewertungen: Bewertungsspiegel }) {
   const h = landing.hero;
-  return (
-    <Box as="section" aria-labelledby="training-titel" position="relative" px={{ base: 4, md: 8, lg: 12 }} pt={{ base: 6, md: 12 }} pb={{ base: 14, md: 20 }}>
-      <FunnelHeroGlow />
-      <Grid
-        position="relative"
-        zIndex={2}
-        maxW="1180px"
-        mx="auto"
-        templateColumns={{ base: "1fr", lg: "1fr 1.05fr" }}
-        gap={{ base: 10, lg: 14 }}
-        alignItems="center"
-      >
-        <Stack spacing={{ base: 6, md: 7 }} className="cc-rise">
-          <Text fontSize="13px" fontWeight={500} letterSpacing="0.12em" textTransform="uppercase" color="var(--cc-gold-light)">
-            {h.eyebrow}
-          </Text>
-          <Box
-            as="h1"
-            id="training-titel"
-            fontSize={{ base: "30px", sm: "36px", md: "44px", lg: "48px" }}
-            fontWeight={600}
-            lineHeight={1.12}
-            letterSpacing="-0.02em"
-            color="var(--cc-text)"
-            style={{ textWrap: "balance" }}
-          >
-            {akzentGold(h.headline)}
-          </Box>
-          <Stack as="ul" listStyleType="none" spacing={3}>
-            {h.punkte.map((p) => (
-              <HStack as="li" key={p} spacing={3} align="flex-start">
-                <Box color="var(--cc-gold-light)" pt="3px" flexShrink={0}>
-                  <Check size={18} strokeWidth={2.25} aria-hidden />
-                </Box>
-                <Text fontSize={{ base: "16px", md: "17px" }} color="var(--cc-text-soft)">
-                  {p}
-                </Text>
-              </HStack>
-            ))}
-          </Stack>
-          <Box pt={2}>
-            <TrainingStartKnopf />
-          </Box>
-        </Stack>
+  const basis = STREAM_SUBDOMAIN ? `https://${STREAM_SUBDOMAIN}.cloudflarestream.com/${landingVideo.uid}` : null;
 
-        <EinfuehrungsVideo />
-      </Grid>
+  return (
+    <Box
+      as="section"
+      aria-labelledby="training-titel"
+      position="relative"
+      pt={{ base: 10, md: 16 }}
+      px={{ base: 4, md: 8, lg: 12 }}
+    >
+      <Stack maxW="1180px" mx="auto" spacing={{ base: 8, md: 10 }} align="center" textAlign="center">
+        <Box {...heroRise(0)}>
+          <HeroPill>{h.eyebrow}</HeroPill>
+        </Box>
+
+        <Heading
+          as="h1"
+          id="training-titel"
+          {...heroRise(1)}
+          maxW="980px"
+          fontSize="clamp(32px, 5.6vw, 60px)"
+          fontWeight={700}
+          lineHeight={1.08}
+          letterSpacing="-0.03em"
+          color="var(--cc-text)"
+          overflowWrap="break-word"
+          style={{ ...heroRise(1).style, textWrap: "balance" }}
+        >
+          {akzentGold(h.headline)}
+        </Heading>
+
+        {/* Das Video steht seit 06.11.2026 direkt unter der Headline (Nutzerwunsch), ohne Badge darüber. */}
+        {basis ? (
+          <Box {...heroRise(2)} w="full" maxW="960px" textAlign="left">
+            <VideoSchein>
+              <GlassVideoPlayer
+                src={`${basis}/manifest/video.m3u8`}
+                poster={`${basis}/thumbnails/thumbnail.jpg?time=${landingVideo.posterSekunde}s&width=1280`}
+              />
+            </VideoSchein>
+          </Box>
+        ) : null}
+
+        <Flex
+          {...heroRise(3)}
+          as="ul"
+          listStyleType="none"
+          wrap="wrap"
+          justify="center"
+          columnGap={{ base: 5, md: 7 }}
+          rowGap={2}
+        >
+          {h.punkte.map((p) => (
+            <HStack as="li" key={p} spacing={2}>
+              <Box color="var(--cc-gold-light)" flexShrink={0}>
+                <Check size={17} strokeWidth={2.25} aria-hidden />
+              </Box>
+              <Text fontSize={{ base: "15px", md: "17px" }} color="var(--cc-text-soft)">
+                {p}
+              </Text>
+            </HStack>
+          ))}
+        </Flex>
+
+        <Stack {...heroRise(4)} spacing={5} align="center" w={{ base: "full", sm: "auto" }}>
+          <TrainingStartKnopf />
+          <Sterne bewertungen={bewertungen} />
+        </Stack>
+      </Stack>
     </Box>
   );
 }
 
 /**
- * Rechte Seite des Hero: Emres Einführungsvideo (`landingVideo` in
- * `config/training.ts`) mit Ton — kein Autoplay, Start per Klick. Darunter die
- * Kennzahl aus dem Board („$5M+ · 5 Monate"), die vorher allein hier stand.
- *
- * Das Video ist unsigniert: Die Seite ist statisch, ein Token liefe ab.
- * Ohne Stream-Subdomain (lokal ohne .env) bleibt nur die Kennzahl stehen.
+ * Nur die Sterne, ohne Schnitt und Anzahl (Nutzerwunsch 06.11.2026). Die Zahl
+ * der Sterne kommt trotzdem aus den echten Bewertungen (gerundeter Schnitt) —
+ * ohne Bewertungen steht hier nichts.
  */
-const STREAM_SUBDOMAIN = process.env.NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_SUBDOMAIN?.trim() || null;
-
-function EinfuehrungsVideo() {
-  const h = landing.hero;
-  const basis = STREAM_SUBDOMAIN ? `https://${STREAM_SUBDOMAIN}.cloudflarestream.com/${landingVideo.uid}` : null;
+function Sterne({ bewertungen }: { bewertungen: Bewertungsspiegel }) {
+  if (!bewertungen) return null;
+  const anzahl = Math.round(Number(bewertungen.schnitt.replace(",", ".")));
+  if (!Number.isFinite(anzahl) || anzahl < 1) return null;
   return (
-    <Stack spacing={4} className="cc-rise" style={{ animationDelay: "160ms" }} minW={0}>
-      {basis ? (
-        <Box borderRadius="16px" boxShadow="0 0 60px rgba(212,176,128,0.16), 0 0 120px rgba(255,255,255,0.04)">
-          <GlassVideoPlayer
-            src={`${basis}/manifest/video.m3u8`}
-            poster={`${basis}/thumbnails/thumbnail.jpg?time=${landingVideo.posterSekunde}s&width=1280`}
-          />
+    <HStack spacing={1} role="img" aria-label={`${bewertungen.schnitt} von 5 Sternen`} color="var(--cc-gold-light)" fontSize="18px" lineHeight={1}>
+      {Array.from({ length: Math.min(anzahl, 5) }, (_, i) => (
+        <Box as="span" key={i} aria-hidden>
+          ★
         </Box>
-      ) : null}
-      <HStack
-        alignSelf={{ base: "stretch", sm: "flex-start" }}
-        spacing={4}
-        border="1px solid var(--cc-gold-line)"
-        borderRadius="12px"
-        bg="rgba(15,19,23,0.72)"
-        px={5}
-        py={3}
-        boxShadow="0 0 32px rgba(212,176,128,0.14)"
-      >
-        <Text className="cc-num" fontSize={{ base: "28px", md: "32px" }} fontWeight={700} lineHeight={1} color="var(--cc-gold-light)">
-          {h.badgeZahl}
-        </Text>
-        <Text fontSize="14px" color="var(--cc-text-soft)" lineHeight={1.4}>
-          {h.badgeText}
-        </Text>
-      </HStack>
-    </Stack>
+      ))}
+    </HStack>
   );
 }
 
-function Videos() {
-  const v = landing.videos;
-  return (
-    <CallSektion id="videos" labelledBy="videos-titel">
-      <Stack spacing={{ base: 10, md: 12 }}>
-        <CallSektionsKopf id="videos-titel" eyebrow={v.eyebrow} headline={v.headline} text={v.text} />
-        <Reveal>
-          <Grid templateColumns={{ base: "1fr", md: "repeat(2, minmax(0, 1fr))", xl: "repeat(4, minmax(0, 1fr))" }} gap={{ base: 4, md: 5 }}>
-            {videoPlatzhalter.map((video, i) => (
-              <Stack key={video.titel} className="cc-card cc-card--still" p={6} spacing={4}>
-                <HStack justify="space-between">
-                  <Text className="cc-num" fontSize="13px" fontWeight={600} color="var(--cc-gold-light)" letterSpacing="0.08em">
-                    VIDEO {i + 1}
-                  </Text>
-                  <Box color={i === 0 ? "var(--cc-gold-light)" : "var(--cc-text-3)"}>
-                    {i === 0 ? <PlayCircle size={20} strokeWidth={1.75} aria-hidden /> : <Lock size={17} strokeWidth={1.75} aria-hidden />}
-                  </Box>
-                </HStack>
-                <Text fontSize="18px" fontWeight={600} lineHeight={1.35} color="var(--cc-text)">
-                  {video.titel}
-                </Text>
-                {video.untertitel ? (
-                  <Text fontSize="14px" color="var(--cc-text-2)">
-                    {video.untertitel}
-                  </Text>
-                ) : null}
-                <Text fontSize="13px" color="var(--cc-text-3)" mt="auto">
-                  {i === 0 ? "Direkt nach der Registrierung" : `Schaltet sich nach Video ${i} frei`}
-                </Text>
-              </Stack>
-            ))}
-          </Grid>
-        </Reveal>
-        <Flex justify="center">
-          <TrainingStartKnopf />
-        </Flex>
-      </Stack>
-    </CallSektion>
-  );
-}
+/* ─────────────────────────── Ablauf ─────────────────────────── */
 
+/**
+ * Drei Schritte als Karten: Nummer mit Gold-Marke (wie der Prozess auf `/`),
+ * Titel, ein Satz, unten hinter einer Haarlinie die Kurzform mit Haken. Ab `md`
+ * verbindet eine Lichtlinie die Karten zu einem Weg. Der Knopf darunter holt
+ * den Leser dort ab, wo er gerade verstanden hat, wie wenig es braucht.
+ */
 function Ablauf() {
   const a = landing.ablauf;
   return (
-    <CallSektion id="ablauf" labelledBy="ablauf-titel">
-      <Stack spacing={{ base: 10, md: 12 }}>
-        <CallSektionsKopf id="ablauf-titel" eyebrow={a.eyebrow} headline={a.headline} />
-        <Reveal>
-          <Grid as="ol" listStyleType="none" templateColumns={{ base: "1fr", md: "repeat(3, minmax(0, 1fr))" }} gap={{ base: 4, md: 5 }}>
-            {a.schritte.map((s, i) => (
-              <Stack as="li" key={s.titel} spacing={3} p={6} borderRadius="12px" border="1px solid var(--cc-line)" bg="rgba(255,255,255,0.02)">
-                <Text className="cc-num" fontSize="28px" fontWeight={600} color="var(--cc-gold-light)" lineHeight={1}>
-                  {String(i + 1).padStart(2, "0")}
-                </Text>
-                <Text fontSize="17px" fontWeight={600} color="var(--cc-text)">
-                  {s.titel}
-                </Text>
-                <Text fontSize="14px" lineHeight={1.6} color="var(--cc-text-2)">
-                  {s.text}
-                </Text>
-              </Stack>
-            ))}
-          </Grid>
-        </Reveal>
-      </Stack>
-    </CallSektion>
-  );
-}
-
-function Ergebnisse() {
-  const e = landing.ergebnisse;
-  const hinweisTeile = ergebnisseKopf.hinweis.split(" · ");
-  return (
-    <CallSektion id="ergebnisse" labelledBy="ergebnisse-titel">
-      <Stack spacing={{ base: 10, md: 14 }}>
-        <CallSektionsKopf id="ergebnisse-titel" eyebrow={e.eyebrow} headline={e.headline} text={e.text} />
-        <NachweisGalerie bloecke={[{ ...ergebnisseKopf.blockCommunity, zeilen: COMMUNITY_AUSWAHL }]} />
-        <Text fontSize="12px" lineHeight={1.7} color="var(--cc-text-3)" textAlign="center">
-          {hinweisTeile.map((teil, i) => (
-            <Fragment key={teil}>
-              {i > 0 ? (
-                <Box as="span" aria-hidden mx={2}>
-                  ·
-                </Box>
-              ) : null}
-              <Box as="span" display="inline-block">
-                {teil}
-              </Box>
-            </Fragment>
-          ))}
-        </Text>
-      </Stack>
-    </CallSektion>
-  );
-}
-
-function Faq() {
-  const f = landing.faq;
-  return (
-    <CallSektion id="faq" labelledBy="faq-titel">
-      <Stack spacing={{ base: 8, md: 10 }} maxW="760px" mx="auto">
-        <CallSektionsKopf id="faq-titel" eyebrow={f.eyebrow} headline={f.headline} />
-        <Accordion allowToggle>
-          {f.eintraege.map((e) => (
-            <AccordionItem key={e.frage} borderColor="var(--cc-line)">
-              <h3>
-                <AccordionButton py={5} px={1} _hover={{ bg: "transparent", color: "var(--cc-text)" }}>
-                  <Box flex="1" textAlign="left" fontSize="16px" fontWeight={500} color="var(--cc-text)">
-                    {e.frage}
+    <Sektion id="ablauf" aria-labelledby="ablauf-titel">
+      <SektionsKopf id="ablauf-titel" eyebrow={a.eyebrow} headline={akzentGold(a.headline)} sublines={a.sublines} />
+      <Box position="relative" mt={{ base: 10, md: 14 }}>
+        <Box
+          aria-hidden
+          display={{ base: "none", md: "block" }}
+          position="absolute"
+          top="58px"
+          left="8%"
+          right="8%"
+          h="1px"
+          bg="linear-gradient(90deg, transparent, rgba(232, 192, 148, 0.45) 20%, rgba(232, 192, 148, 0.45) 80%, transparent)"
+        />
+        <Grid
+          as="ol"
+          listStyleType="none"
+          position="relative"
+          templateColumns={{ base: "1fr", md: "repeat(3, minmax(0, 1fr))" }}
+          gap={{ base: 4, md: 5 }}
+        >
+          {a.schritte.map((s, i) => (
+            <Reveal as="li" key={s.titel} delay={i * 80} display="flex">
+              <Stack className="cc-card" p={{ base: 6, md: 7 }} spacing={5} w="full">
+                <SchrittMarke nummer={String(i + 1).padStart(2, "0")} marke={s.marke} as="p" />
+                <Stack spacing={2} flex={1}>
+                  <Text as="h3" fontSize={{ base: "19px", md: "21px" }} fontWeight={600} lineHeight={1.3} color="var(--cc-text)">
+                    {s.titel}
+                  </Text>
+                  <Text fontSize={{ base: "15px", md: "16px" }} lineHeight={1.65} color="var(--cc-text-2)">
+                    {s.text}
+                  </Text>
+                </Stack>
+                <HStack spacing={2} pt={4} borderTop="1px solid var(--cc-line)">
+                  <Box color="var(--cc-gold-light)" flexShrink={0}>
+                    <Check size={16} strokeWidth={2.25} aria-hidden />
                   </Box>
-                  <AccordionIcon color="var(--cc-gold-light)" />
-                </AccordionButton>
-              </h3>
-              <AccordionPanel px={1} pb={5} fontSize="15px" lineHeight={1.65} color="var(--cc-text-2)">
-                {e.antwort}
-              </AccordionPanel>
-            </AccordionItem>
+                  <Text fontSize="14px" fontWeight={500} color="var(--cc-text-soft)">
+                    {s.kurz}
+                  </Text>
+                </HStack>
+              </Stack>
+            </Reveal>
           ))}
-        </Accordion>
-      </Stack>
-    </CallSektion>
+        </Grid>
+      </Box>
+      <Reveal delay={200}>
+        <Flex justify="center" mt={{ base: 10, md: 12 }}>
+          <TrainingStartKnopf />
+        </Flex>
+      </Reveal>
+    </Sektion>
+  );
+}
+
+/* ─────────────────────────── Abschluss ─────────────────────────── */
+
+function Abschluss({ bewertungen }: { bewertungen: Bewertungsspiegel }) {
+  const a = landing.abschluss;
+  return (
+    <Sektion id="abschluss" py={{ base: 20, md: 32 }}>
+      <Reveal>
+        <Stack spacing={{ base: 8, md: 10 }} align="center" textAlign="center">
+          <Heading
+            as="h2"
+            fontSize="clamp(30px, 5.2vw, 58px)"
+            fontWeight={700}
+            lineHeight={1.08}
+            letterSpacing="-0.03em"
+            color="var(--cc-text)"
+            maxW="900px"
+          >
+            {akzentGold(a.headline)}
+            <Box as="span" display="block">
+              {akzentGold(a.zeile2)}
+            </Box>
+          </Heading>
+          <Stack spacing={5} align="center" w={{ base: "full", sm: "auto" }}>
+            <TrainingStartKnopf />
+            <Sterne bewertungen={bewertungen} />
+          </Stack>
+        </Stack>
+      </Reveal>
+    </Sektion>
   );
 }

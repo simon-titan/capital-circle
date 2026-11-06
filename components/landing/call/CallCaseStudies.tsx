@@ -2,6 +2,7 @@
 
 import {
   Box,
+  Button,
   Flex,
   Modal,
   ModalBody,
@@ -11,14 +12,15 @@ import {
   Stack,
   Text,
 } from "@chakra-ui/react";
-import { Maximize2, Play, X } from "lucide-react";
+import { ArrowUpRight, Maximize2, Play, X } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
-import { caseStudies, caseStudiesKopf, type CaseStudy } from "@/config/call-funnel";
+import { caseStudies, caseStudiesKopf, ergebnisseKopf, type CaseStudy } from "@/config/call-funnel";
 import { GlassVideoPlayer } from "@/components/ui/GlassVideoPlayer";
 import { funnelModalContentProps, funnelOverlayProps } from "@/components/marketing/funnel-ui";
 import { Reveal } from "../landing-ui";
-import { akzentZahl, CallSektion, CallSektionsKopf } from "./call-ui";
+import { Sektion, SektionsKopf } from "../membership/membership-ui";
+import { akzentGold, akzentZahl } from "./call-ui";
 
 /**
  * Case Studies auf `/call`.
@@ -39,26 +41,42 @@ export function CallCaseStudies() {
   if (caseStudies.length === 0) return null;
 
   return (
-    <CallSektion id="case-studies" labelledBy="case-studies-titel">
-      <Stack spacing={{ base: 10, md: 14 }}>
-        <CallSektionsKopf
-          id="case-studies-titel"
-          eyebrow={caseStudiesKopf.eyebrow}
-          headline={caseStudiesKopf.headline}
-          text={caseStudiesKopf.text}
-        />
+    <Sektion id="case-studies" aria-labelledby="case-studies-titel">
+      <SektionsKopf
+        id="case-studies-titel"
+        eyebrow={caseStudiesKopf.eyebrow}
+        headline={akzentGold(caseStudiesKopf.headline)}
+        sublines={[caseStudiesKopf.text]}
+      />
 
-        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={{ base: 4, md: 5 }}>
-          {caseStudies.map((c, i) => (
-            <Reveal key={`${c.name ?? ""}-${c.titel}`} delay={(i % 2) * 90}>
-              <CaseKarte c={c} onOeffnen={() => setOffen(c)} />
-            </Reveal>
-          ))}
-        </SimpleGrid>
+      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={{ base: 4, md: 5 }} mt={{ base: 10, md: 14 }}>
+        {caseStudies.map((c, i) => (
+          <Reveal key={`${c.name ?? ""}-${c.titel}`} delay={(i % 2) * 90}>
+            <CaseKarte c={c} onOeffnen={() => setOffen(c)} />
+          </Reveal>
+        ))}
+      </SimpleGrid>
+
+      {/* Statt der früheren Nachweis-Wand: Einordnung und der Weg zu allen Belegen. */}
+      <Stack spacing={4} align="center" textAlign="center" mt={{ base: 8, md: 10 }}>
+        <Text fontSize="12px" lineHeight={1.7} color="var(--cc-text-3)">
+          {ergebnisseKopf.hinweis}
+        </Text>
+        <Button
+          as="a"
+          href={ergebnisseKopf.alleLink.href}
+          target="_blank"
+          rel="noopener"
+          variant="line"
+          size="sm"
+          rightIcon={<ArrowUpRight size={15} strokeWidth={1.75} />}
+        >
+          {ergebnisseKopf.alleLink.label}
+        </Button>
       </Stack>
 
       <CaseModal c={offen} onClose={() => setOffen(null)} />
-    </CallSektion>
+    </Sektion>
   );
 }
 

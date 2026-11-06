@@ -6,11 +6,13 @@
  * Layout ändert — dafür soll niemand eine Komponente anfassen müssen.
  *
  * Aufbau der Seite (Reihenfolge hier = Reihenfolge dort):
- *   1. Hero mit VSL („Schritt 1 von 2")
+ *   1. Hero mit VSL („Schritt 1 von 2") und Hauptaktion
  *   2. Strategie-Gespräch („Schritt 2 von 2"): Fragebogen und Calendly im Modal
- *   3. Case Studies
- *   4. Kundenergebnisse (belegte Auszahlungen aus `landing-membership.ts`)
- *   5. Abschluss mit demselben Knopf
+ *   3. Case Studies (+ Link auf alle Nachweise)
+ *   4. Abschluss mit demselben Knopf
+ *
+ * Seit 06.11.2026 bewusst schlank (Laufzeile und Nachweis-Wand entfallen) —
+ * jede Sektion endet beim Buchungsknopf.
  *
  * ── Schreibregeln für diese Datei ───────────────────────────────────────────
  *
@@ -38,32 +40,36 @@ export const meta = {
   shareImageAlt: "Capital Circle: kostenloses Strategie-Gespräch",
 } as const;
 
+/**
+ * Das VSL („1o1 landingpage.mp4“, Emre 06.11.2026) aus Cloudflare Stream,
+ * **unsigniert** (öffentliche, statische Seite — ein Token liefe ab). Wie
+ * `landingVideo` in `config/training.ts` fest hier statt nur als Umgebungs-
+ * variable: So läuft es in jedem Deployment, auch in Vorschauen. Wer ein
+ * anderes Video braucht, kann es mit `NEXT_PUBLIC_CALL_VIDEO_URL` /
+ * `NEXT_PUBLIC_CALL_VIDEO_POSTER` überschreiben.
+ */
+export const callVideo = {
+  uid: "801c1831f358644dade5922cda3682bd",
+  /** Standbild-Zeitpunkt für das Poster (Sekunden). */
+  posterSekunde: 10,
+} as const;
+
 /** Hauptaktion — öffnet das Buchungs-Modal; steht unter dem Video, in Schritt 2 und am Ende der Seite. */
 export const ctaLabel = "Kostenloses Strategie-Gespräch sichern";
 
 /* ─── 1 Hero ────────────────────────────────────────────────────────────── */
 
 export const hero = {
-  /**
-   * Laufzeile ganz oben. Nur Aussagen, die stimmen: Das Gespräch kostet
-   * nichts, die Termine im Kalender sind begrenzt, die Auszahlungen sind
-   * weiter unten belegt.
-   */
-  laufzeile: [
-    "Begrenzte Termine pro Woche",
-    "Kostenloses Strategie-Gespräch",
-    "Unverbindlich",
-    "1:1 per Video-Call",
-    "Belegte Auszahlungen unserer Mitglieder",
-    "Für Trader, die Konstanz statt Glückstreffer wollen",
-  ],
-  /** Knopf am Rand der Laufzeile (WCAG 2.2.2: Bewegtes muss sich anhalten lassen, auch per Touch). */
-  laufzeileAnhalten: "Laufband anhalten",
-  laufzeileFortsetzen: "Laufband fortsetzen",
+  /** Pill über der Headline. */
+  pill: "Kostenloses Strategie-Gespräch",
+  /** Kurze Zeile unter jeder Hauptaktion — nur Aussagen, die stimmen. */
+  vertrauen: ["Kostenlos", "Unverbindlich", "1:1 per Video-Call"],
+  /** Hauptaktion in der Kopfleiste (kurz, passt neben die Wortmarke). */
+  ctaKurz: "Gespräch sichern",
   headline: "Du kennst die Konzepte. Dir fehlt der {Prozess}, der dich {konstant} macht.",
   subline:
     "Im kostenlosen Strategie-Gespräch schauen wir uns an, warum auf deine guten Phasen immer wieder schlechte folgen und welcher klare Ablauf aus Analyse, Entry, Risiko und Review das bei dir ändert.",
-  /** Über dem Video. Ohne Video (`NEXT_PUBLIC_CALL_VIDEO_URL` leer) entfällt die Zeile samt Hinweis. */
+  /** Über dem Video. Ohne Video (keine Stream-Subdomain gesetzt) entfällt die Zeile samt Hinweis. */
   schritt: "Schritt 1 von 2: Video ansehen",
   /** Unter dem Video, über der Hauptaktion. */
   videoHinweis: "Am besten mit Ton und bis zum Ende. Danach weißt du genau, worum es im Gespräch geht.",
@@ -206,42 +212,14 @@ export const caseStudies: CaseStudy[] = [
  * nicht auf dieser Seite: Eine Kontogröße ist keine Auszahlung (siehe AGENTS.md,
  * Eintrag „Bestandene Challenges").
  */
+/**
+ * Unter den Case Studies: Einordnung und der Weg zu allen Nachweisen. Die große
+ * Nachweis-Wand ist seit 06.11.2026 raus (Nutzerwunsch: „deutlich simpler, der
+ * Fokus liegt auf der Buchung") — die Belege stehen vollständig auf `/ergebnisse`.
+ */
 export const ergebnisseKopf = {
-  eyebrow: "Kundenergebnisse",
-  headline: "Auszahlungen, die du {nachprüfen} kannst.",
-  text: "Jeder Nachweis zeigt Geld, das geflossen ist: Überweisung, Payout-Mail oder Payout-Zertifikat. Klick auf einen Nachweis, um ihn groß zu sehen.",
-  blockCommunity: {
-    titel: "Aus der Community",
-    hinweis: "Nachweise von Mitgliedern, geteilt im Discord. Unverändert, so wie sie dort gepostet wurden.",
-  },
-  blockEmre: {
-    titel: "Emres Auszahlungen",
-    hinweis: "Payout-Zertifikate von Apex Trader Funding und Lucid Trading, ausgestellt auf Emre Kopal.",
-  },
   hinweis: "Ergebnisse nicht typisch · Individuelle Ergebnisse variieren · Trading birgt Verlustrisiken",
   alleLink: { label: "Alle Nachweise ansehen", href: "/ergebnisse" },
-} as const;
-
-/**
- * Auswahl für die Wand auf `/call`, nach Bildpfad — alle übrigen stehen auf
- * `/ergebnisse` (Link unter der Wand). Zwanzig Kacheln hintereinander ließen
- * sich nicht mehr lesen, nur noch scrollen.
- *
- * Community: sechs Belege, möglichst verschiedene Prop-Firmen. **Nicht** dabei
- * sind die Apex-Auszahlung über 15.000 $ und die Topstep-Auszahlung über
- * 1.250 €: Sie stehen schon als Case Study von Halil bzw. Dominik eine
- * Sektion höher. Emre: dieselben drei wie auf der Verkaufsseite
- * (`auszahlungenEmreLanding`).
- */
-export const ergebnisseAuswahl = {
-  community: [
-    "/nachweise/member-tradingpit-2026-04-13.jpg",
-    "/nachweise/member-topstep-2026-08-28.jpg",
-    "/nachweise/member-lucid-2026-08-06.jpg",
-    "/nachweise/member-tradingpit-2026-09-09.jpg",
-    "/nachweise/member-iqcapital-2026-08-31.jpg",
-    "/nachweise/member-lucid-2026-08-25.jpg",
-  ],
 } as const;
 
 /* ─── 5 Abschluss ───────────────────────────────────────────────────────── */

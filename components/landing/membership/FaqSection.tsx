@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Flex, Grid, Heading, Stack, Text } from "@chakra-ui/react";
-import { useId, useState } from "react";
+import { useId, useState, type ReactNode } from "react";
 import { faq } from "@/config/landing-membership";
 import { Reveal } from "../landing-ui";
 import { Sektion, SektionsEyebrow } from "./membership-ui";
@@ -23,7 +23,12 @@ import { Sektion, SektionsEyebrow } from "./membership-ui";
  * Die Antwort bleibt im DOM und wird nur ausgeblendet (`display: none`), damit
  * die Seitensuche des Browsers sie findet.
  */
-export function FaqSection() {
+export function FaqSection({
+  inhalt = faq,
+}: {
+  /** Andere Seiten (`/training`) geben ihre eigenen Fragen mit; Standard sind die der Verkaufsseite. */
+  inhalt?: { eyebrow: string; headline: ReactNode; eintraege: readonly { frage: string; antwort: string }[] };
+} = {}) {
   const [offen, setOffen] = useState<number | null>(null);
   const idPrefix = useId();
 
@@ -32,7 +37,7 @@ export function FaqSection() {
       <Grid templateColumns={{ base: "1fr", lg: "minmax(0, 360px) 1fr" }} gap={{ base: 10, lg: 16 }}>
         <Reveal>
           <Stack spacing={4} position={{ lg: "sticky" }} top={{ lg: "120px" }}>
-            <SektionsEyebrow>{faq.eyebrow}</SektionsEyebrow>
+            <SektionsEyebrow>{inhalt.eyebrow}</SektionsEyebrow>
             <Heading
               as="h2"
               id="faq-titel"
@@ -42,7 +47,7 @@ export function FaqSection() {
               letterSpacing="-0.03em"
               color="var(--cc-text)"
             >
-              {faq.headline}
+              {inhalt.headline}
             </Heading>
           </Stack>
         </Reveal>
@@ -50,7 +55,7 @@ export function FaqSection() {
         <Reveal delay={80}>
           <Box className="cc-card cc-card--still" p={0} overflow="hidden">
             <Stack as="ul" listStyleType="none" spacing={0}>
-              {faq.eintraege.map((eintrag, i) => {
+              {inhalt.eintraege.map((eintrag, i) => {
                 const istOffen = offen === i;
                 const panelId = `${idPrefix}-antwort-${i}`;
                 const knopfId = `${idPrefix}-frage-${i}`;

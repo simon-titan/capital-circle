@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { CallFunnelClient } from "@/components/landing/call/CallFunnelClient";
+import { FunnelHimmel } from "@/components/landing/FunnelHimmel";
+import { ladeBewertungsspiegel } from "@/lib/landing-reviews";
 import { meta } from "@/config/call-funnel";
 
 const SITE_URL = (
@@ -46,6 +48,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default function CallPage() {
-  return <CallFunnelClient />;
+export default async function CallPage() {
+  // Sternezeile unter den Knöpfen — dieselbe Quelle wie auf `/` (Kategorie `global`).
+  const bewertungen = await ladeBewertungsspiegel(["global"]);
+  return (
+    <FunnelHimmel>
+      <CallFunnelClient bewertungen={bewertungen} />
+    </FunnelHimmel>
+  );
 }

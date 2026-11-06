@@ -38,7 +38,7 @@ values (
   '00000000-0000-0000-0000-000000000012',
   'Kostenloses Training',
   'kostenloses-training',
-  'In 3 Videos zeigen wir dir das komplette System.',
+  'In diesem Training zeigen wir dir das komplette System.',
   true,
   -30,
   true,
@@ -54,7 +54,7 @@ values (
   '00000000-0000-0000-0000-000000000112',
   '00000000-0000-0000-0000-000000000012',
   'Kostenloses Training',
-  'Drei Videos, die aufeinander aufbauen.',
+  'Videos, die aufeinander aufbauen.',
   1,
   true,
   'kostenloses-training'

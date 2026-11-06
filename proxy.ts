@@ -89,6 +89,8 @@ const PUBLIC_PREFIXES = [
   // Call-Funnel, Kassenseiten, Mails, Garantie-Entwurf mit Beispieldaten.
   // Wie `/vorschau` auch vom Wartungs-Gate ausgenommen (siehe unten).
   "/vorschau/mentoring",
+  // Version 2 der Training-Landingpage zum Vergleich (`app/vorschau/training-2`).
+  "/vorschau/training-2",
   "/go",
   "/auth",
 ];
@@ -238,6 +240,7 @@ export async function proxy(request: NextRequest) {
     pathname === "/vorschau" ||
     pathname === "/vorschau/mentoring" ||
     pathname.startsWith("/vorschau/mentoring/") ||
+    pathname === "/vorschau/training-2" ||
     pathname.startsWith("/admin") ||
     pathname === "/login" ||
     pathname === "/passwort-vergessen" ||

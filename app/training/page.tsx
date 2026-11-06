@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { FunnelHimmel } from "@/components/landing/FunnelHimmel";
 import { TrainingLanding } from "@/components/landing/training/TrainingLanding";
 import { landing } from "@/config/training";
+import { ladeBewertungsspiegel } from "@/lib/landing-reviews";
 
 /**
  * `/training` — öffentliche Landingpage des kostenlosen Trainings
@@ -15,6 +17,12 @@ export const metadata: Metadata = {
   description: landing.meta.description,
 };
 
-export default function TrainingPage() {
-  return <TrainingLanding />;
+export default async function TrainingPage() {
+  // Dieselbe Quelle wie die Bewertungsliste auf der Seite (Kategorie `global`), wie auf `/`.
+  const bewertungen = await ladeBewertungsspiegel(["global"]);
+  return (
+    <FunnelHimmel>
+      <TrainingLanding bewertungen={bewertungen} />
+    </FunnelHimmel>
+  );
 }

@@ -3,7 +3,7 @@
  * Simon 02.11.2026). Alles Fachliche und alle Texte an einer Stelle.
  *
  *   /training               öffentliche Landingpage + kostenlose Registrierung
- *   /kostenloses-training   die vier Videos im Mitgliederbereich (+ nächster Schritt)
+ *   /kostenloses-training   die Trainingsvideos im Mitgliederbereich (+ nächster Schritt)
  *   /programme              „Ausbildung & Mentoring": zwei Karten
  *   /admin/training         eigenes CRM-Board (Registrierungen + Analysegespräche)
  *
@@ -16,11 +16,14 @@ export const TRAINING_KURS_ID = "00000000-0000-0000-0000-000000000012";
 export const TRAINING_MODUL_ID = "00000000-0000-0000-0000-000000000112";
 
 /**
- * Anzahl der Trainingsvideos (Emres Lieferung vom 04./05.11.2026: vier Kursvideos,
- * das Einführungsvideo läuft auf der Landingpage). Fehlen welche, zeigt die Seite
- * Platzhalter. Wer die Zahl ändert, ändert auch die Texte unten („4 Videos“).
+ * Anzahl der Trainingsvideos (Emres Lieferung vom 04./05.11.2026: fünf Kursvideos,
+ * das Einführungsvideo ist Video 1; das Landingpage-Video kam am 06.11. separat).
+ * Fehlen welche, zeigt die Seite Platzhalter. Wer die Zahl ändert, ändert auch die
+ * `videoPlatzhalter`. Die sichtbaren Texte nennen seit 06.11.2026 bewusst **keine**
+ * Videoanzahl mehr (Entscheidung Simon) — die Zahl steht nur noch in Zählern und
+ * im Admin-Board.
  */
-export const TRAINING_VIDEO_ANZAHL = 4;
+export const TRAINING_VIDEO_ANZAHL = 5;
 
 export const TRAINING_PFAD = "/training";
 export const TRAINING_VIDEOS_PFAD = "/kostenloses-training";
@@ -30,11 +33,12 @@ export const PROGRAMME_PFAD = "/programme";
 export const FUNNEL_QUELLE_TRAINING = "training";
 
 /**
- * Die Videos, wie sie die Landingpage ankündigt (statisch) und wie der
- * Mitgliederbereich sie zeigt, solange im Modul noch keine hochgeladen sind.
- * Im Mitgliederbereich gelten sonst die Titel aus dem Admin — beide gleich halten.
+ * Die Videos, wie sie der Mitgliederbereich zeigt, solange im Modul noch keine
+ * hochgeladen sind (die Landingpage listet sie seit 06.11.2026 nicht mehr).
+ * Sonst gelten die Titel aus dem Admin — beide gleich halten.
  */
 export const videoPlatzhalter = [
+  { titel: "Einführung", untertitel: "Was dich im Training erwartet" },
   { titel: "Grundlagen des Tradings", untertitel: "Charts lesen, Märkte verstehen" },
   { titel: "Auction Market Theory", untertitel: "Warum der Preis dort reagiert, wo er reagiert" },
   { titel: "Dein Tradingansatz", untertitel: "Welche Strategie zu dir und deinem Alltag passt" },
@@ -48,7 +52,8 @@ export const videoPlatzhalter = [
  * Trainingsvideo-Ansicht es auf „signiert“ stellen und die Landingpage wäre schwarz.
  */
 export const landingVideo = {
-  uid: "2508eee634a58f20a3c9c62fb41027dc",
+  /** „free kurs video landingpage.mp4“ (Emre, 06.11.2026, 3:11 min). */
+  uid: "97672d9535a8d85f43e3afda3d334e29",
   /** Standbild-Zeitpunkt für das Poster (Sekunden). */
   posterSekunde: 3,
 } as const;
@@ -74,47 +79,61 @@ export const landing = {
   meta: {
     title: "Kostenloses Training · Capital Circle",
     description:
-      "Lerne in 4 kostenlosen Videos die Strategien, mit denen wir über $5.000.000+ Umsatz für einen Trading-Kunden erzielt haben.",
+      "Lerne im kostenlosen Video-Training die Trading-Strategie, mit der wir über 5.000.000 €+ Umsatz erzielt haben.",
   },
+  /** Sprungmarken der Kopfleiste (ids der Abschnitte). */
   nav: [
-    { label: "Ergebnisse", href: "#ergebnisse" },
-    { label: "Ablauf", href: "#ablauf" },
-    { label: "FAQ", href: "#faq" },
+    { id: "ergebnisse", label: "Ergebnisse" },
+    { id: "ablauf", label: "Ablauf" },
+    { id: "faq", label: "FAQ" },
   ],
+  /** Kurzform der Hauptaktion für Kopfleiste und Menü. */
+  ctaKurz: "Kostenlos starten",
+  /** Unter dem Knopf der mobilen Aktionsleiste. */
+  mobilHinweis: ["Kostenlos", "In 2 Minuten registriert"],
   hero: {
     eyebrow: "Kostenloses Training",
     /** `{…}` = Gold-Akzent. */
-    headline: "Lerne die Strategien, mit denen wir über {$5.000.000+ Umsatz} für einen Trading-Kunden erzielt haben.",
+    /** Geschützter Bindestrich in „Trading‑Strategie“ (U+2011) und Wortverbinder zwischen „€“ und „+“ (U+2060): Dort bricht die Zeile sonst um. */
+    headline: "Lerne die Trading‑Strategie, mit der wir über {5.000.000€⁠+ Umsatz} erzielt haben.",
     punkte: [
-      "Kostenloses Training (4 Videos)",
+      "Kostenloses Training",
       "Verifizierte Ergebnisse & Case Studies",
       "Praxisnahe Strategien aus der Realität",
     ],
     cta: "Jetzt kostenlos starten",
-    badgeZahl: "$5M+",
-    badgeText: "Umsatz in 5 Monaten",
   },
-  videos: {
-    eyebrow: "Das Training",
-    headline: "In {4 Videos} zeigen wir dir das komplette System.",
-    text: "Die Videos bauen aufeinander auf. Jedes schaltet das nächste frei, du lernst in deinem Tempo.",
-  },
+  /**
+   * Drei Schritte vom ersten Klick bis zur Entscheidung. `marke` steht gesperrt
+   * in Gold neben der Nummer, `kurz` unten auf der Karte. Nur Aussagen, die
+   * stimmen: Die Registrierung fragt keine Zahlungsdaten ab, und die Videos
+   * bleiben im kostenlosen Konto abrufbar (siehe FAQ).
+   */
   ablauf: {
     eyebrow: "Ablauf",
-    headline: "So einfach {startest} du.",
+    /** Geschützter Bindestrich (U+2011): „Trading-System“ bricht nicht um. */
+    headline: "In drei Schritten zu deinem {Trading‑System}.",
+    sublines: ["Kein Abo, keine Zahlungsdaten. Du brauchst nur eine E-Mail-Adresse."],
     schritte: [
-      { titel: "Kostenlos registrieren", text: "Name, E-Mail, Passwort. Danach bestätigst du kurz deine E-Mail-Adresse." },
-      { titel: "Die 4 Videos ansehen", text: "Direkt im Mitgliederbereich, in deinem Tempo. Video für Video." },
       {
-        titel: "Deinen nächsten Schritt wählen",
-        text: "Selbstständig mit der Ausbildung weiterlernen oder im Analysegespräch klären, ob persönliche Begleitung passt.",
+        marke: "Registrieren",
+        titel: "Kostenloses Konto anlegen",
+        text: "Name, E-Mail und Passwort, mehr nicht. Ein Klick auf den Link in deiner E-Mail und du bist drin.",
+        kurz: "In 2 Minuten erledigt",
+      },
+      {
+        marke: "Lernen",
+        titel: "Das Training ansehen",
+        text: "Direkt im Mitgliederbereich und in deinem Tempo. Jedes Video baut auf dem vorherigen auf und schaltet das nächste frei.",
+        kurz: "Jederzeit wieder abrufbar",
+      },
+      {
+        marke: "Umsetzen",
+        titel: "Deinen Weg wählen",
+        text: "Mit der Ausbildung selbstständig weiterlernen oder im kostenlosen Analysegespräch klären, ob persönliche Begleitung zu dir passt.",
+        kurz: "Du entscheidest",
       },
     ],
-  },
-  ergebnisse: {
-    eyebrow: "Ergebnisse",
-    headline: "Belegte {Auszahlungen} aus der Community.",
-    text: "Jeder Nachweis zeigt echtes Geld, das geflossen ist. Klick auf eine Karte für die große Ansicht.",
   },
   faq: {
     eyebrow: "FAQ",
@@ -122,7 +141,7 @@ export const landing = {
     eintraege: [
       {
         frage: "Ist das Training wirklich kostenlos?",
-        antwort: "Ja. Du registrierst dich mit Name und E-Mail und siehst alle vier Videos, ohne etwas zu bezahlen.",
+        antwort: "Ja. Du registrierst dich mit Name und E-Mail und siehst das komplette Training, ohne etwas zu bezahlen.",
       },
       {
         frage: "Für wen ist das Training gedacht?",
@@ -130,7 +149,7 @@ export const landing = {
           "Für Trader, die die Konzepte kennen, aber noch nicht konstant profitabel sind, und für Einsteiger, die von Anfang an mit einem klaren Prozess arbeiten wollen.",
       },
       {
-        frage: "Was passiert nach den vier Videos?",
+        frage: "Was passiert nach dem Training?",
         antwort:
           "Du entscheidest selbst: Mit der Ausbildung lernst du eigenständig weiter, oder du buchst ein kostenloses Analysegespräch, wenn du persönliche Begleitung möchtest.",
       },
@@ -140,9 +159,10 @@ export const landing = {
       },
     ],
   },
+  /** Zwei Zeilen; `{…}` = Gold-Akzent. */
   abschluss: {
-    headline: "Bereit? Starte jetzt mit {Video 1}.",
-    text: "Kostenlos, in zwei Minuten registriert.",
+    headline: "Bereit? Worauf wartest du noch.",
+    zeile2: "Starte jetzt {KOSTENLOS}!",
   },
 } as const;
 
@@ -151,7 +171,7 @@ export const landing = {
 export const registrierung = {
   modalTitel: "Kostenlos registrieren",
   headline: "Starte dein kostenloses Training",
-  text: "Ein Konto, vier Videos. Wir schicken dir einen Link, mit dem du deine E-Mail-Adresse bestätigst.",
+  text: "Ein Konto, das komplette Training. Wir schicken dir einen Link, mit dem du deine E-Mail-Adresse bestätigst.",
   felder: {
     name: { label: "Name", placeholder: "Vor- und Nachname", fehler: "Bitte trag deinen Namen ein." },
     email: { label: "E-Mail-Adresse", placeholder: "du@beispiel.de", fehler: "Bitte prüf deine E-Mail-Adresse." },
@@ -185,7 +205,7 @@ export const registrierung = {
 
 export const mitglied = {
   trainingTitel: "Kostenloses Training",
-  trainingText: "In 4 Videos zeigen wir dir das komplette System.",
+  trainingText: "In diesem Training zeigen wir dir das komplette System.",
   videosFolgen: "Die Videos werden gerade fertiggestellt und erscheinen hier in Kürze.",
   dashboard: {
     titel: "Willkommen bei Capital Circle",
@@ -201,7 +221,7 @@ export const mitglied = {
     gespraech: "Analysegespräch anfragen",
     oder: "Oder möchtest du erstmal selbstständig weiterlernen?",
     ausbildung: "Zur Ausbildung",
-    gesperrt: "Schau dir zuerst alle 4 Videos an. Danach wählst du hier deinen nächsten Schritt.",
+    gesperrt: "Schau dir zuerst das komplette Training an. Danach wählst du hier deinen nächsten Schritt.",
   },
   karten: {
     selbst: { titel: "Selbstständig weiterlernen", text: "Zugriff auf die komplette Ausbildung", knopf: "Mehr erfahren" },
