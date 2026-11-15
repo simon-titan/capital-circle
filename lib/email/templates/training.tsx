@@ -10,6 +10,8 @@ import { MAIL_SEQUENZ, TRAINING_VIDEO_ANZAHL } from "@/config/training";
  * - `TrainingBestaetigen` ist transaktional (Link zur Bestätigung der Adresse),
  *   also ohne Abmeldelink und ohne Log-Eintrag — sie darf bei einer erneuten
  *   Registrierung noch einmal rausgehen.
+ * - Die vier Erinnerungen sind seit 07.11.2026 abgelöst (E-Mail-Playbook,
+ *   `lib/mailsystem`, Cron `mail-free`); der Cron `training-sequence` ist aus.
  * - Die vier Erinnerungen sind Werbung (§ 7 Abs. 3 UWG): Abmeldelink über
  *   `unsubscribeUrl`, Versand genau einmal je Stufe über `email_sequence_log`
  *   (sequence `training`). Gesendet vom Cron `app/api/cron/training-sequence`.
@@ -19,14 +21,14 @@ import { MAIL_SEQUENZ, TRAINING_VIDEO_ANZAHL } from "@/config/training";
 
 function TrainingBestaetigenEmail({ vorname, link }: { vorname: string; link: string }) {
   return (
-    <BaseEmail previewText="Ein Klick, und dein kostenloses Training startet">
+    <BaseEmail previewText="Ein Klick, und deine Bewerbung kommt bei Emre an">
       <EmailHeading>Bestätige deine E-Mail-Adresse</EmailHeading>
       <EmailText>Hi {vorname},</EmailText>
       <EmailText>
-        schön, dass du dabei bist. Ein Klick auf den Knopf bestätigt deine Adresse, danach bist du direkt eingeloggt
-        und kannst mit Video 1 starten.
+        danke für deine Bewerbung für das kostenlose Capital-Circle-Training. Ein Klick auf den Knopf bestätigt deine
+        Adresse — erst dann kommt deine Bewerbung bei Emre an.
       </EmailText>
-      <EmailButton href={link}>E-Mail bestätigen und starten</EmailButton>
+      <EmailButton href={link}>E-Mail-Adresse bestätigen</EmailButton>
       <EmailText muted>Der Link funktioniert genau einmal und nur für begrenzte Zeit.</EmailText>
       <EmailDivider />
       <EmailSmall>Der Knopf funktioniert nicht? Kopiere diese Adresse in deinen Browser:</EmailSmall>
@@ -47,7 +49,7 @@ export async function sendTrainingBestaetigen({
 }): Promise<SendResult> {
   return sendEmail({
     to: an,
-    subject: "Bestätige deine E-Mail für dein kostenloses Training",
+    subject: "Bestätige deine E-Mail für deine Bewerbung",
     jsx: <TrainingBestaetigenEmail vorname={vorname} link={link} />,
   });
 }

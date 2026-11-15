@@ -152,6 +152,16 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  // Für die Playbook-Mails festhalten (Kontakte ohne Konto, Migration 110). Best effort.
+  try {
+    const { error } = await createServiceClient()
+      .from("mail_abmeldung")
+      .upsert({ email: email.trim().toLowerCase() }, { onConflict: "email", ignoreDuplicates: true });
+    if (error && !/does not exist|schema cache/i.test(error.message)) console.error("[unsubscribe/contact] mail_abmeldung:", error.message);
+  } catch (err) {
+    console.error("[unsubscribe/contact] mail_abmeldung:", err);
+  }
+
   // Konto mit derselben Adresse ebenfalls abmelden (best-effort, siehe oben).
   try {
     const service = createServiceClient();
