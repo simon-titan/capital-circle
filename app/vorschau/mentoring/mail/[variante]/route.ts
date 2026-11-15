@@ -1,6 +1,6 @@
 import { render } from "@react-email/render";
 import * as React from "react";
-import { PRODUKTE, rateCents } from "@/config/mentoring";
+import { PRODUKTE, rateCents, UPGRADE_ANRECHNUNG_CENTS } from "@/config/mentoring";
 import MentoringBestaetigungEmail from "@/lib/email/templates/mentoring-bestaetigung";
 import { findeVariante } from "../../varianten";
 
@@ -25,13 +25,15 @@ export async function GET(_req: Request, { params }: { params: Promise<{ variant
         })()
       : null;
 
+  const anrechnung = v.upgrade ? UPGRADE_ANRECHNUNG_CENTS : 0;
   const html = await render(
     React.createElement(MentoringBestaetigungEmail, {
       firstName: "Max",
       produkt: v.produkt,
       raten: v.raten,
-      rateCents: v.raten > 1 ? rateCents(produkt.preisCents, v.raten) : null,
-      gesamtCents: produkt.preisCents,
+      rateCents: v.raten > 1 ? rateCents(produkt.preisCents - anrechnung, v.raten) : null,
+      gesamtCents: produkt.preisCents - anrechnung,
+      anrechnungCents: anrechnung,
       liveBis,
       setPasswordUrl: "#vorschau",
     }),

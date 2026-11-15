@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { Box, Flex, Grid, Stack, Text } from "@chakra-ui/react";
 import { ArrowUpRight, Mail } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
-import { MENTORING_PRODUKTE, PRODUKTE, erlaubteRaten, euro, rateCents, type KassenProdukt } from "@/config/mentoring";
+import { MENTORING_PRODUKTE, PRODUKTE, erlaubteRaten, euro, ratenText as ratenTextFuer, type KassenProdukt } from "@/config/mentoring";
 
 export const metadata: Metadata = {
   title: "Mentoring-Funnel · Vorschau",
@@ -97,7 +97,6 @@ function AngebotsKarte({ produkt }: { produkt: KassenProdukt }) {
   const raten = erlaubteRaten(produkt).filter((n) => n > 1);
   const ratenText = raten.length > 1 ? `${raten.slice(0, -1).join(", ")} oder ${raten[raten.length - 1]}` : String(raten[0] ?? "");
   const maxRaten = raten[raten.length - 1] ?? 1;
-  const maxRate = rateCents(p.preisCents, maxRaten);
 
   return (
     <Stack className="cc-card" p={{ base: 5, md: 6 }} spacing={4} h="full">
@@ -116,7 +115,7 @@ function AngebotsKarte({ produkt }: { produkt: KassenProdukt }) {
         <Text fontSize="14px" lineHeight={1.55} color="var(--cc-text-2)">
           {istLive
             ? "Anschluss nach dem Programm, monatlich kündbar"
-            : `Einmal oder in ${ratenText} Raten (${maxRaten} × ${euro(maxRate)}) · ${p.liveMonate} Monate Live-Zugang`}
+            : `Einmal oder in ${ratenText} Raten (${ratenTextFuer(p.preisCents, maxRaten)}) · ${p.liveMonate} Monate Live-Zugang`}
         </Text>
       </Stack>
 

@@ -17,10 +17,13 @@ export const runtime = "nodejs";
  * Antwortet immer mit einer Weiterleitung (das Formular ist ein einfaches
  * POST ohne JavaScript): in die Stripe-Kasse oder zurück mit `?live_fehler=`.
  */
-export async function POST() {
+export async function POST(request: Request) {
   const appUrl = getAppUrl();
+  // Der Knopf auf `/live-abo` (Ziel von V01/V02) schickt `von=live-abo` mit — Fehler dorthin zurück.
+  const form = await request.formData().catch(() => null);
+  const seite = form?.get("von") === "live-abo" ? "/live-abo" : "/live-session";
   const zurueck = (grund: string) =>
-    NextResponse.redirect(new URL(`/live-session?live_fehler=${encodeURIComponent(grund)}`, appUrl), { status: 303 });
+    NextResponse.redirect(new URL(`${seite}?live_fehler=${encodeURIComponent(grund)}`, appUrl), { status: 303 });
 
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();

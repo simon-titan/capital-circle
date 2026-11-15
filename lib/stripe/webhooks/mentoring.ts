@@ -131,7 +131,7 @@ export async function handleMentoringCheckout(
 
   const { data: profilRoh, error: profilFehler } = await supabase
     .from("profiles")
-    .select("membership_tier,is_paid,stripe_customer_id,live_bis")
+    .select("membership_tier,is_paid,stripe_customer_id,live_bis,journal_bis,archiv_bis")
     .eq("id", userId)
     .maybeSingle();
   if (profilFehler || !profilRoh) {
@@ -142,6 +142,8 @@ export async function handleMentoringCheckout(
     is_paid: boolean | null;
     stripe_customer_id: string | null;
     live_bis: string | null;
+    journal_bis: string | null;
+    archiv_bis: string | null;
   };
 
   // ── 2. Kundennummer ──
@@ -167,7 +169,8 @@ export async function handleMentoringCheckout(
     zahlweise,
     raten_gesamt: art === ART_RATEN ? raten : null,
     raten_betrag_cents: rateCents,
-    soll_cents: art === ART_LIVE ? null : art === ART_RATEN && rateCents ? rateCents * raten : betragCents,
+    // Seit 07.11.2026 trägt Rate 1 den Restcent — die Summe ist immer der Preis.
+    soll_cents: art === ART_LIVE ? null : betragCents,
     stripe_customer_id: customerId,
     stripe_subscription_id: subId,
     stripe_payment_intent_id: paymentIntentId,
@@ -176,6 +179,9 @@ export async function handleMentoringCheckout(
     closer: meta.closer || null,
     email,
     gekauft_am: unixToISO(session.created),
+    // Upgrade Ausbildung → Main/Premium (Migration 113): nur die Zusatzsumme ist neuer Umsatz.
+    anrechnung_cents: Number(meta.anrechnung_cents) || 0,
+    upgrade_von_kauf_id: meta.upgrade_von_kauf_id || null,
   };
   const { error: kaufFehler } = await supabase.from("mentoring_kauf").insert(kauf);
   const neu = !kaufFehler;
@@ -185,9 +191,19 @@ export async function handleMentoringCheckout(
 
   // ── 4. Zugang ──
   let liveBis: string | null = profil.live_bis;
+  // Q01 (E-Mail-Playbook): Beginn und nächster Zahlungstermin des Live-Abos.
+  let liveStart: string | null = null;
+  let naechsteZahlung: string | null = null;
   if (art === ART_LIVE) {
     // Den Zeitraum liefert das Abo; dieselbe Rechnung wie bei jedem `updated`.
-    if (subId) liveBis = (await verlaengereLiveZugang(supabase, userId, subId)) ?? liveBis;
+    if (subId) {
+      const sub = await getStripe().subscriptions.retrieve(subId);
+      liveBis = (await verlaengereLiveZugang(supabase, userId, subId, sub)) ?? liveBis;
+      const probe = sub.status === "trialing" && sub.trial_end ? unixToISO(sub.trial_end) : null;
+      // Früh gebucht: Das Abo beginnt, wenn der enthaltene Live-Zeitraum endet (trial_end).
+      liveStart = probe ?? new Date().toISOString();
+      naechsteZahlung = probe ?? extractCurrentPeriod(sub).endISO ?? null;
+    }
   } else {
     const dauerzugang = profil.membership_tier === "lifetime" || profil.membership_tier === "ht_1on1";
     /*
@@ -196,9 +212,26 @@ export async function handleMentoringCheckout(
       verschieben. `spaeteresDatum`, damit ein laufender längerer Zugang (etwa
       aus einem früheren Programm) nicht verkürzt wird.
     */
-    const ende = plusMonate(new Date(session.created * 1000), def.liveMonate ?? 0).toISOString();
+    const kaufzeit = new Date(session.created * 1000);
+    const ende = plusMonate(kaufzeit, def.liveMonate ?? 0).toISOString();
     liveBis = spaeteresDatum(profil.live_bis, ende);
     const update: Record<string, unknown> = { is_paid: true, live_bis: liveBis };
+    /*
+      Archiv und Journal seit 08.11.2026 (Tracking-Playbook 2.2, Migration 113).
+      Archiv: nur Main/Premium, verkürzt nie. Journal: Main/Premium dauerhaft
+      (`null`); die Ausbildung befristet es nur, wenn das Konto es nicht schon
+      dauerhaft hat — ein Mentoring-Konto mit leerem `journal_bis` hat es
+      dauerhaft, ein Abo- oder Free-Konto noch gar nicht.
+    */
+    if (def.archivMonate > 0) {
+      update.archiv_bis = spaeteresDatum(profil.archiv_bis, plusMonate(kaufzeit, def.archivMonate).toISOString());
+    }
+    const journalDauerhaft = profil.membership_tier === "mentoring" && !profil.journal_bis;
+    if (def.journalMonate === null) {
+      update.journal_bis = null;
+    } else if (def.journalMonate > 0 && !journalDauerhaft && !dauerzugang) {
+      update.journal_bis = spaeteresDatum(profil.journal_bis, plusMonate(kaufzeit, def.journalMonate).toISOString());
+    }
     // Lifetime und 1:1 haben mehr als ein Programm (Live unbefristet) — Stufe bleibt.
     if (!dauerzugang) Object.assign(update, { membership_tier: "mentoring", access_until: null });
     const { error } = await supabase.from("profiles").update(update).eq("id", userId);
@@ -213,7 +246,7 @@ export async function handleMentoringCheckout(
 
   // ── 5. Raten enden von selbst ──
   if (art === ART_RATEN && subId) {
-    await richteRatenEndeEin(subId, raten, session.metadata ?? {});
+    await richteRatenEndeEin(subId, raten, session.metadata ?? {}, rateCents);
   }
 
   if (neu) {
@@ -233,7 +266,10 @@ export async function handleMentoringCheckout(
     raten: art === ART_RATEN ? raten : 1,
     rateCents,
     gesamtCents: art === ART_LIVE ? def.preisCents : betragCents,
+    anrechnungCents: kauf.anrechnung_cents,
     liveBis,
+    liveStart,
+    naechsteZahlung,
   });
 }
 
@@ -250,34 +286,80 @@ export async function handleMentoringCheckout(
  * normales Monatsabo, und jemand muss es nach der letzten Rate von Hand
  * beenden. `handleMentoringRechnung` meldet jede Rate zu viel zusätzlich.
  */
-async function richteRatenEndeEin(subId: string, raten: number, metadata: Stripe.Metadata): Promise<void> {
+async function richteRatenEndeEin(
+  subId: string,
+  raten: number,
+  metadata: Stripe.Metadata,
+  regelRateCents: number | null,
+): Promise<void> {
   try {
     const stripe = getStripe();
     const sub = await stripe.subscriptions.retrieve(subId);
-    if (sub.schedule) return; // schon eingerichtet (Wiederholung des Ereignisses)
-
-    const schedule = await stripe.subscriptionSchedules.create({ from_subscription: subId });
+    // Schon eingerichtet und endet von selbst? Dann nichts tun. Hängt ein Schedule ohne
+    // `cancel` (Update scheiterte), wird er hier repariert — jedes Abo-Ereignis versucht es erneut.
+    let schedule: Stripe.SubscriptionSchedule;
+    if (sub.schedule) {
+      const id = typeof sub.schedule === "string" ? sub.schedule : sub.schedule.id;
+      schedule = await stripe.subscriptionSchedules.retrieve(id);
+      if (schedule.end_behavior === "cancel") return;
+    } else {
+      schedule = await stripe.subscriptionSchedules.create({ from_subscription: subId });
+    }
     const phase = schedule.phases[0];
     if (!phase) throw new Error(`Schedule ${schedule.id} ohne Phase`);
 
     const zahlart = typeof sub.default_payment_method === "string" ? sub.default_payment_method : sub.default_payment_method?.id;
 
+    const gemeinsam = {
+      automatic_tax: { enabled: true },
+      proration_behavior: "none" as const,
+      metadata,
+      ...(zahlart ? { default_payment_method: zahlart } : {}),
+    };
+    const items = phase.items.map((item) => ({
+      price: typeof item.price === "string" ? item.price : item.price.id,
+      quantity: item.quantity ?? 1,
+    }));
+
+    /*
+      Restcent (seit 07.11.2026): Die erste Rate an der Kasse ist um ein paar Cent
+      höher als die übrigen (5.000 € / 6). Dann zwei Phasen — ein Monat zum
+      Kassenpreis, danach `raten − 1` Monate zum Regelbetrag. Geht der Preis
+      glatt auf, bleibt es eine Phase wie bisher.
+    */
+    const kassenPreis = sub.items.data[0]?.price;
+    const ersteCents = kassenPreis?.unit_amount ?? null;
+    const mitRest = raten > 1 && regelRateCents != null && ersteCents != null && ersteCents !== regelRateCents;
+    if (mitRest && kassenPreis) {
+      const produktId = typeof kassenPreis.product === "string" ? kassenPreis.product : kassenPreis.product.id;
+      await stripe.subscriptionSchedules.update(schedule.id, {
+        end_behavior: "cancel",
+        phases: [
+          { start_date: phase.start_date, items, duration: { interval: "month", interval_count: 1 }, ...gemeinsam },
+          {
+            items: [
+              {
+                price_data: {
+                  currency: kassenPreis.currency,
+                  product: produktId,
+                  unit_amount: regelRateCents,
+                  tax_behavior: "inclusive",
+                  recurring: { interval: "month" },
+                },
+                quantity: 1,
+              },
+            ],
+            duration: { interval: "month", interval_count: raten - 1 },
+            ...gemeinsam,
+          },
+        ],
+      });
+      return;
+    }
+
     await stripe.subscriptionSchedules.update(schedule.id, {
       end_behavior: "cancel",
-      phases: [
-        {
-          start_date: phase.start_date,
-          items: phase.items.map((item) => ({
-            price: typeof item.price === "string" ? item.price : item.price.id,
-            quantity: item.quantity ?? 1,
-          })),
-          duration: { interval: "month", interval_count: raten },
-          automatic_tax: { enabled: true },
-          proration_behavior: "none",
-          metadata,
-          ...(zahlart ? { default_payment_method: zahlart } : {}),
-        },
-      ],
+      phases: [{ start_date: phase.start_date, items, duration: { interval: "month", interval_count: raten }, ...gemeinsam }],
     });
   } catch (err) {
     console.error(
@@ -377,7 +459,10 @@ async function sendeBestaetigung(
     raten: number;
     rateCents: number | null;
     gesamtCents: number;
+    anrechnungCents?: number;
     liveBis: string | null;
+    liveStart?: string | null;
+    naechsteZahlung?: string | null;
   },
 ): Promise<void> {
   if (!d.email) return;
@@ -404,13 +489,17 @@ async function sendeBestaetigung(
       raten: d.raten,
       rateCents: d.rateCents,
       gesamtCents: d.gesamtCents,
+      anrechnungCents: d.anrechnungCents ?? 0,
       liveBis: d.liveBis,
       setPasswordUrl,
+      liveStart: d.liveStart ?? null,
+      naechsteZahlung: d.naechsteZahlung ?? null,
     });
   } catch (err) {
-    // Der Zugang steht. Ein Wurf liesse Stripe wiederholen, und die Sperre oben
-    // verhinderte die Mail trotzdem — also nur protokollieren.
+    // Der Zugang steht. Die Sperre wieder lösen, damit eine Wiederholung des
+    // Ereignisses die Bestätigung (§ 312f) nachholen kann — sonst käme sie nie.
     console.error(`[stripe-webhook] Bestätigung zu ${d.kaufId} an ${d.email} fehlgeschlagen:`, err);
+    await supabase.from("mentoring_kauf").update({ bestaetigung_gesendet_am: null }).eq("id", d.kaufId);
   }
 }
 
@@ -422,6 +511,12 @@ async function sendeBestaetigung(
  * Ende des bezahlten Zeitraums schieben, nie zurück.
  */
 export async function handleMentoringAbo(sub: Stripe.Subscription, supabase: WebhookSupabase): Promise<void> {
+  // Ratenabo: sicherstellen, dass der Ratenplan von selbst endet (Reparatur, falls die Einrichtung scheiterte).
+  if (mentoringArt(sub.metadata) === ART_RATEN && (sub.status === "active" || sub.status === "trialing")) {
+    const raten = Math.max(1, Number(sub.metadata?.raten) || 1);
+    if (raten > 1) await richteRatenEndeEin(sub.id, raten, sub.metadata ?? {}, Number(sub.metadata?.rate_cents) || null);
+    return;
+  }
   if (mentoringArt(sub.metadata) !== ART_LIVE) return;
   if (sub.status !== "active" && sub.status !== "trialing") return;
   const userId = await userZuAbo(supabase, sub);
@@ -429,6 +524,54 @@ export async function handleMentoringAbo(sub: Stripe.Subscription, supabase: Web
     throw new Error(`Live-Abo ${sub.id}: Konto noch nicht zugeordnet, Stripe soll wiederholen`);
   }
   await verlaengereLiveZugang(supabase, userId, sub.id, sub);
+  if (sub.cancel_at_period_end || sub.cancel_at) await sendeLiveKuendigung(supabase, sub, userId);
+  else await vergissLiveKuendigung(supabase, sub.id);
+}
+
+/**
+ * Kündigung zurückgenommen: den Q02-Vermerk löschen, damit eine spätere zweite
+ * Kündigung wieder bestätigt wird. Wirft nie.
+ */
+async function vergissLiveKuendigung(supabase: WebhookSupabase, subId: string): Promise<void> {
+  const { error } = await supabase.from("mail_versand").delete().eq("vorlage", "Q02").eq("bezug", `kuendigung:${subId}`);
+  if (error && !/does not exist|schema cache/i.test(error.message)) console.warn(`[stripe-webhook] Q02-Vermerk ${subId}:`, error.message);
+}
+
+/**
+ * Q02 „Live-Abo-Kündigung bestätigt" (E-Mail-Playbook 1.0), sobald Stripe die
+ * Kündigung zum Periodenende führt — genau einmal je Abo (`kuendigung:<sub>`).
+ * Kam die Kündigung über den Kündigungsbutton, hat dessen gesetzliche
+ * Eingangsbestätigung (§ 312k) das Enddatum schon bestätigt; der Button trägt
+ * Q02 vorher als übersprungen ein, damit keine zweite Mail kommt. Wirft nie.
+ */
+async function sendeLiveKuendigung(supabase: WebhookSupabase, sub: Stripe.Subscription, userId: string): Promise<void> {
+  try {
+    const ende = sub.cancel_at ?? sub.items.data[0]?.current_period_end;
+    if (!ende) return;
+    const email = await loadAuthEmail(supabase, userId);
+    if (!email) return;
+    const profil = await loadProfileByUserId(supabase, userId);
+    const { kundeMail } = await import("@/lib/email/templates/playbook/kunde");
+    const { sendeVorlage } = await import("@/lib/mailsystem/versand");
+    const app = (await import("@/lib/site-url")).getAppUrl();
+    const mail = kundeMail("Q02", {
+      vorname: pickFirstName(profil),
+      gespraechUrl: `${app}/programme`,
+      liveAboUrl: `${app}/live-abo`,
+      accountUrl: `${app}/einstellungen/abonnement`,
+      endeAm: new Date(ende * 1000),
+    });
+    await sendeVorlage(supabase, {
+      vorlage: "Q02",
+      bezug: `kuendigung:${sub.id}`,
+      email,
+      userId,
+      betreff: mail.betreff,
+      jsx: mail.jsx,
+    });
+  } catch (err) {
+    console.error(`[stripe-webhook] Q02 zu ${sub.id} nicht verschickt:`, err);
+  }
 }
 
 /** `customer.subscription.deleted`: Kauf vermerken, Zugang **nicht** anfassen. */

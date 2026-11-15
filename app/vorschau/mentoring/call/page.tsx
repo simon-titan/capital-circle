@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { CallFunnelClient } from "@/components/landing/call/CallFunnelClient";
 import { FunnelHimmel } from "@/components/landing/FunnelHimmel";
-import { ladeBewertungsspiegel } from "@/lib/landing-reviews";
+import { ladeFunnelVideos } from "@/lib/funnel-videos";
 import { VorschauStreifen } from "../VorschauStreifen";
+
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "Vorschau Call-Funnel · Capital Circle",
@@ -15,12 +17,12 @@ export const metadata: Metadata = {
  * die Seite auch im Wartungsmodus erreichbar ist.
  */
 export default async function CallVorschau() {
-  const bewertungen = await ladeBewertungsspiegel(["global"]);
+  const { videos } = await ladeFunnelVideos();
   return (
     <>
       <VorschauStreifen text="Vorschau: Das Formular schickt nichts ab, der Kalender ist ausgeblendet." />
       <FunnelHimmel>
-        <CallFunnelClient vorschau bewertungen={bewertungen} />
+        <CallFunnelClient vorschau video={videos.call} />
       </FunnelHimmel>
     </>
   );

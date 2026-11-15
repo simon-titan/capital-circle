@@ -307,8 +307,14 @@ function Angebot({
           </Flex>
           {a.istRaten ? (
             <Text fontSize="15px" color="var(--cc-text)" className="cc-num">
-              Heute fällig: {euro(a.rateCents)}, danach {a.raten - 1} {a.raten - 1 === 1 ? "weitere Rate" : "weitere Raten"}{" "}
-              im Monatsabstand. Zusammen {euro(a.sollCents)}.
+              Heute fällig: {euro(a.ersteRateCents)}, danach {a.raten - 1} {a.raten - 1 === 1 ? "weitere Rate" : "weitere Raten"}
+              {a.ersteRateCents !== a.rateCents ? ` à ${euro(a.rateCents)}` : ""} im Monatsabstand. Zusammen {euro(a.sollCents)}.
+            </Text>
+          ) : null}
+          {a.anrechnungCents > 0 ? (
+            <Text fontSize="14px" color="var(--cc-text-2)" className="cc-num">
+              Upgrade: {euro(produkt.preisCents)} abzüglich {euro(a.anrechnungCents)} Anrechnung deiner Ausbildung ={" "}
+              {euro(a.gesamtCents)}.
             </Text>
           ) : null}
           {a.istAbo ? (
@@ -355,7 +361,7 @@ function Angebot({
           >
             {a.istAbo
               ? "Läuft monatlich und ist jederzeit zum Ende des laufenden Monats kündbar."
-              : `Plattform, Kurse und Trading Journal bleiben dauerhaft offen. Der Live-Zugang läuft ${produkt.liveMonate} Monate ab Kauf; danach kannst du ihn mit dem Live-Trading-Abo für ${euro(PRODUKTE.live.preisCents)} im Monat verlängern.`}
+              : `${produkt.journalMonate === null ? "Plattform, Kurse und Trading Journal bleiben dauerhaft offen." : `Plattform und Kurse bleiben dauerhaft offen, das Trading Journal ${produkt.journalMonate === 1 ? "einen Monat" : `${produkt.journalMonate} Monate`} ab Kauf.`} Der Live-Zugang läuft ${produkt.liveMonate === 1 ? "einen Monat" : `${produkt.liveMonate} Monate`} ab Kauf; danach kannst du das Live-Trading mit dem Live-Trading-Abo für ${euro(PRODUKTE.live.preisCents)} im Monat verlängern.`}
           </Box>
 
           {zeigeGarantie ? (
