@@ -13,16 +13,11 @@ import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 const AUSSTEHEND = [
-  // Stand 17.10.2026 (laut `npm run db:check`): 104–107 sind eingespielt.
-  // 108: Mentoring-Programme und Call-Funnel — Stufe `mentoring`, `profiles.live_bis`,
-  // Tabellen `kassenlink`, `mentoring_kauf`, `mentoring_rate`, Herkunft `call_funnel`
-  // und `hat_live_zugang()` fuer Analysen und Live-Session-Videos. Additiv; die
-  // beiden Lese-Policies werden ersetzt (gleiche Wirkung fuer alle ausser der neuen Stufe).
-  "108_mentoring",
-  // 109: Free Training — `profiles.funnel_quelle`, `profiles.training_registriert_am`,
-  // Kurs/Modul „Kostenloses Training" (feste IDs) und das CRM `training_leads`.
-  // Additiv, setzt 108 nicht voraus.
-  "109_free_training",
+  // Stand 15.11.2026 (laut `npm run db:check`): 104–114 sind eingespielt.
+  // 115: Onboarding-Frage 3 mit Mehrfachauswahl (`onboarding_antworten.main_problem_alle`).
+  "115_icp_mehrfachauswahl",
+  // 116: Geheimhaltungsvereinbarung für zahlende Mitglieder (`geheimhaltung_zustimmung`).
+  "116_geheimhaltung",
 ];
 
 const DIR = path.resolve(process.cwd(), "supabase/migrations");
