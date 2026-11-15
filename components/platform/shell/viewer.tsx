@@ -34,6 +34,12 @@ import { berechneUmzugStand, type UmzugStand } from "@/lib/whop-umzug/stand";
 export type Viewer = {
   isPaid: boolean;
   isPending: boolean;
+  /**
+   * Free-Mitglied im Sinne von `hatInhaltsZugang` (weder `is_paid` noch Admin)
+   * und nicht in der alten Bewerbungsprüfung: bekommt die Free-Seitenleiste
+   * aus Emres Mockup (08.11.2026) statt der Navigation der Zahlenden.
+   */
+  isFree: boolean;
   /** Free-Mitglied mit freigeschalteter Bewerbung, Step 2 noch offen. */
   showApplyCta: boolean;
   /** Stand aus dem Whop-Umzug; `null` heisst „nichts anzuzeigen". */
@@ -46,7 +52,7 @@ export type Viewer = {
   `umzug: null` aus demselben Grund in die andere Richtung: Ein Hinweis, dass
   der Zugang endet, darf nicht aufblitzen und wieder verschwinden.
 */
-const DEFAULT_VIEWER: Viewer = { isPaid: true, isPending: false, showApplyCta: false, umzug: null };
+const DEFAULT_VIEWER: Viewer = { isPaid: true, isPending: false, isFree: false, showApplyCta: false, umzug: null };
 
 const ViewerContext = createContext<Viewer>(DEFAULT_VIEWER);
 
@@ -54,7 +60,7 @@ export function useViewer(): Viewer {
   return useContext(ViewerContext);
 }
 
-const SPALTEN_BASIS = "is_paid, application_status, step2_application_status, membership_tier";
+const SPALTEN_BASIS = "is_paid, is_admin, application_status, step2_application_status, membership_tier";
 const SPALTEN_MIT_UMZUG = `${SPALTEN_BASIS}, access_until, whop_umzug_am`;
 
 export function ViewerProvider({ children }: { children: ReactNode }) {
@@ -96,6 +102,7 @@ export function ViewerProvider({ children }: { children: ReactNode }) {
         if (!profile || cancelled) return;
 
         const isPaid = Boolean(profile.is_paid);
+        const isPending = !isPaid && profile.application_status === "pending";
         const whopUmzugAm = (profile.whop_umzug_am as string | null) ?? null;
 
         // Nur für die 29 aus dem Umzug, für alle anderen entfällt sie.
@@ -116,7 +123,9 @@ export function ViewerProvider({ children }: { children: ReactNode }) {
           isPaid,
           // Zahlende sperrt eine offene Bewerbung nicht (Regel wie in `proxy.ts`) —
           // sonst stünde ein Käufer mit Altbewerbung vor einer komplett gesperrten Navigation.
-          isPending: !isPaid && profile.application_status === "pending",
+          isPending,
+          // Dieselbe Regel wie `hatInhaltsZugang` in lib/membership.ts.
+          isFree: !isPaid && !profile.is_admin && !isPending,
           showApplyCta:
             !isPaid && profile.application_status === "approved" && profile.step2_application_status == null,
           umzug: berechneUmzugStand({

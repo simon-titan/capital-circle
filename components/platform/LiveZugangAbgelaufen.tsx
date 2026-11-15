@@ -15,7 +15,18 @@ import { PRODUKTE, euro } from "@/config/mentoring";
  *
  * `fehler` kommt als `?live_fehler=` zurück, wenn die Kasse nicht aufging.
  */
-export function LiveZugangAbgelaufen({ titel, fehler }: { titel?: string; fehler?: string | null }) {
+export function LiveZugangAbgelaufen({
+  titel,
+  fehler,
+  text,
+  von,
+}: {
+  titel?: string;
+  fehler?: string | null;
+  text?: string;
+  /** Rücksprungseite bei Fehlern (`live-abo`), sonst der Live-Bereich. */
+  von?: "live-abo";
+}) {
   const abo = PRODUKTE.live;
   return (
     <Flex
@@ -44,13 +55,14 @@ export function LiveZugangAbgelaufen({ titel, fehler }: { titel?: string; fehler
         {titel ?? "Dein Live-Zugang ist abgelaufen"}
       </Box>
       <Text fontSize="14px" lineHeight={1.7} color="var(--cc-text-2)" mt={3} maxW="440px">
-        Der Live-Zeitraum deines Programms ist vorbei. Kurse, Journal und Plattform bleiben dir dauerhaft. Live
-        Trading, Daily Bias und Trade Recaps schaltest du mit dem Live-Trading-Abo wieder frei.
+        {text ??
+          "Der Live-Zeitraum deines Programms ist vorbei. Kurse und Plattform bleiben dir dauerhaft. Live Trading, Daily Bias und Trade Recaps schaltest du mit dem Live-Trading-Abo wieder frei."}
       </Text>
       <Text className="cc-num" fontSize="16px" fontWeight={600} color="var(--cc-text)" mt={4}>
         {euro(abo.preisCents)} pro Monat · monatlich kündbar
       </Text>
       <form action="/api/live-abo" method="post">
+        {von ? <input type="hidden" name="von" value={von} /> : null}
         <Button type="submit" variant="gold" mt={6} px={8}>
           Live-Zugang verlängern
         </Button>

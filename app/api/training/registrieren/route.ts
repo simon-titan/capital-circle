@@ -1,18 +1,28 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { FUNNEL_QUELLE_TRAINING, TRAINING_VIDEOS_PFAD } from "@/config/training";
+import { FUNNEL_QUELLE_TRAINING, TRAINING_STATUS_PFAD } from "@/config/training";
 import { findeUserIdZuEmail } from "@/lib/checkout/user-lookup";
 import { sendTrainingBestaetigen } from "@/lib/email/templates/training";
 import { verifyTurnstileToken } from "@/lib/security/turnstile";
 import { getAppUrl } from "@/lib/site-url";
 import { createServiceClient } from "@/lib/supabase/service";
+import { bewerbungAnlegen } from "@/lib/training/bewerbung";
+import { pruefeBewerbung } from "@/lib/training/bewerbung-pruefen";
 import { ermittleKanal, saeubereHerkunft } from "@/lib/training/herkunft";
 
 export const runtime = "nodejs";
 
 /**
- * POST /api/training/registrieren — kostenlose Registrierung über `/training`.
+ * POST /api/training/registrieren — Bewerbung für das kostenlose Training
+ * über `/training` (seit 07.11.2026, E-Mail-Playbook 1.0: erst bewerben, Emre
+ * entscheidet). Legt das Konto an **und** die Bewerbung.
  *
- * Body: `{ name, email, password, turnstileToken? }`
+ * Body: `{ name, email, password, turnstileToken?, herkunft?, antworten,
+ *          kontaktGewuenscht, telefon? }`
+ *
+ * Kein Lernzugang durch bloßes Absenden: Das Konto bekommt erst mit Emres
+ * Annahme einen `training_zugang`. Der Link in der Mail bestätigt die Adresse
+ * und führt auf `/training/status`; erst dort geht A01 raus
+ * (`nachAdressbestaetigung` in `/auth/confirm`).
  *
  * Ablauf:
  *   1. Prüfen (Felder, Turnstile, einfache Drossel je IP).
@@ -55,7 +65,7 @@ function bestaetigungsLink(tokenHash: string, typ: "signup" | "magiclink"): stri
   const url = new URL("/auth/confirm", getAppUrl());
   url.searchParams.set("token_hash", tokenHash);
   url.searchParams.set("type", typ);
-  url.searchParams.set("next", TRAINING_VIDEOS_PFAD);
+  url.searchParams.set("next", TRAINING_STATUS_PFAD);
   return url.toString();
 }
 
@@ -83,11 +93,12 @@ export async function POST(request: NextRequest) {
     erfasst_am: new Date().toISOString(),
   };
 
-  const feldFehler: Record<string, true> = {};
+  const pruefung = pruefeBewerbung(body);
+  const feldFehler: Record<string, true> = pruefung.ok ? {} : { ...pruefung.felder };
   if (name.length < 2) feldFehler.name = true;
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) feldFehler.email = true;
   if (password.length < 8 || password.length > 72) feldFehler.passwort = true;
-  if (Object.keys(feldFehler).length > 0) {
+  if (Object.keys(feldFehler).length > 0 || !pruefung.ok) {
     return NextResponse.json({ ok: false, error: "felder", felder: feldFehler }, { status: 400 });
   }
 
@@ -165,6 +176,22 @@ export async function POST(request: NextRequest) {
   if (profilFehler) {
     console.error("[training/registrieren] Profil nicht gesetzt (Migration 109 eingespielt?):", profilFehler.message);
     await service.from("profiles").update({ full_name: name }).eq("id", userId);
+  }
+
+  // Bewerbung — gibt es schon eine (zweiter Versuch mit unbestätigter Adresse),
+  // bleibt die erste stehen; der neue Link bestätigt dieselbe.
+  const angelegt = await bewerbungAnlegen(service, {
+    userId: userId!,
+    name,
+    email,
+    antworten: pruefung.antworten,
+    kontaktGewuenscht: pruefung.kontaktGewuenscht,
+    telefon: pruefung.telefon,
+    kanal: herkunft.kanal,
+  });
+  if (!angelegt.ok && angelegt.fehler === "server") {
+    // „tabelle_fehlt" (Migration 110 fehlt) geht durch: Konto und Bestätigung wie bisher.
+    return NextResponse.json({ ok: false, error: "server" }, { status: 500 });
   }
 
   try {

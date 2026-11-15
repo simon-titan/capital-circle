@@ -28,6 +28,14 @@ export const TRAINING_VIDEO_ANZAHL = 5;
 export const TRAINING_PFAD = "/training";
 export const TRAINING_VIDEOS_PFAD = "/kostenloses-training";
 export const PROGRAMME_PFAD = "/programme";
+/**
+ * Ziel von „Ausbildung & Mentoring" für **Free-Mitglieder** (Feedback Simon
+ * 14.11.2026): Sie sehen `/programme` nicht mehr, sondern landen direkt im
+ * Call-Funnel. Zahlende behalten `/programme`.
+ */
+export const FREE_PROGRAMME_PFAD = "/call";
+/** Warte- bzw. Absageseite der Free-Kurs-Bewerbung (Mitgliederbereich). */
+export const TRAINING_STATUS_PFAD = "/training/status";
 
 /** Wert für `profiles.funnel_quelle`. */
 export const FUNNEL_QUELLE_TRAINING = "training";
@@ -38,11 +46,12 @@ export const FUNNEL_QUELLE_TRAINING = "training";
  * Sonst gelten die Titel aus dem Admin — beide gleich halten.
  */
 export const videoPlatzhalter = [
-  { titel: "Einführung", untertitel: "Was dich im Training erwartet" },
-  { titel: "Grundlagen des Tradings", untertitel: "Charts lesen, Märkte verstehen" },
-  { titel: "Auction Market Theory", untertitel: "Warum der Preis dort reagiert, wo er reagiert" },
-  { titel: "Dein Tradingansatz", untertitel: "Welche Strategie zu dir und deinem Alltag passt" },
-  { titel: "Das System in der Praxis", untertitel: "Echte Setups, echte Ergebnisse" },
+  // Titel nach dem E-Mail-Playbook 1.0 (07.11.2026), Kapitel 02 — die Mails nennen sie wörtlich.
+  { titel: "Trading ist mehr als der nächste Payout", untertitel: "Warum der Weg wichtiger ist als das schnelle Ergebnis" },
+  { titel: "So liest du einen Chart", untertitel: "Optionale Grundlagenlektion" },
+  { titel: "Auction Market Theory – So verstehe ich den Markt", untertitel: "Marktphasen und Volume Profile" },
+  { titel: "Welche Tradingstrategie passt wirklich zu dir?", untertitel: "Dein Ansatz und dein Alltag" },
+  { titel: "Warum meine Schüler nicht meine Trades kopieren", untertitel: "Einblicke in Capital Circle" },
 ] as const;
 
 /**
@@ -50,10 +59,15 @@ export const videoPlatzhalter = [
  * Bewusst **ohne** signierte Wiedergabe: Die Seite ist öffentlich und statisch,
  * ein Token liefe ab. Darum nie in ein Kursmodul hängen — dort würde die
  * Trainingsvideo-Ansicht es auf „signiert“ stellen und die Landingpage wäre schwarz.
+ * **Nur die Vorgabe:** Getauscht wird im Admin (Funnel- & Kursvideos → Funnel-Videos,
+ * `lib/funnel-videos.ts`); die Auswahl dort hat Vorrang.
  */
 export const landingVideo = {
-  /** „free kurs video landingpage.mp4“ (Emre, 06.11.2026, 3:11 min). */
-  uid: "97672d9535a8d85f43e3afda3d334e29",
+  /**
+   * „free kurs phunnel video.mp4“ (Emre, 11.11.2026, 1:51 min) — die finale Fassung.
+   * Vorgänger „free kurs video landingpage.mp4“ (`97672d95…`, 3:11 min) liegt noch in Stream.
+   */
+  uid: "5ab853dc53a70e30b224cce8d45592ae",
   /** Standbild-Zeitpunkt für das Poster (Sekunden). */
   posterSekunde: 3,
 } as const;
@@ -83,55 +97,91 @@ export const landing = {
   },
   /** Sprungmarken der Kopfleiste (ids der Abschnitte). */
   nav: [
-    { id: "ergebnisse", label: "Ergebnisse" },
-    { id: "ablauf", label: "Ablauf" },
+    { id: "community", label: "Ergebnisse" },
+    { id: "zugang", label: "Zugang" },
     { id: "faq", label: "FAQ" },
   ],
   /** Kurzform der Hauptaktion für Kopfleiste und Menü. */
-  ctaKurz: "Kostenlos starten",
+  ctaKurz: "Kostenlos bewerben",
   /** Unter dem Knopf der mobilen Aktionsleiste. */
-  mobilHinweis: ["Kostenlos", "In 2 Minuten registriert"],
+  mobilHinweis: ["100 % kostenlos. Nicht für jeden zugänglich."],
+  /**
+   * Hero nach Emres Mockup (08.11.2026): Headline, Video, Knopf, darunter klein
+   * `hinweis`. Keine Pill, keine Punkte, keine Sterne. Headline ohne
+   * Gedankenstrich (Feedback 14.11.2026).
+   */
   hero: {
-    eyebrow: "Kostenloses Training",
     /** `{…}` = Gold-Akzent. */
-    /** Geschützter Bindestrich in „Trading‑Strategie“ (U+2011) und Wortverbinder zwischen „€“ und „+“ (U+2060): Dort bricht die Zeile sonst um. */
-    headline: "Lerne die Trading‑Strategie, mit der wir über {5.000.000€⁠+ Umsatz} erzielt haben.",
-    punkte: [
-      "Kostenloses Training",
-      "Verifizierte Ergebnisse & Case Studies",
-      "Praxisnahe Strategien aus der Realität",
-    ],
-    cta: "Jetzt kostenlos starten",
+    headline: "Was gutes Trading wirklich ausmacht und warum eine {Strategie allein nicht reicht.}",
+    cta: "Jetzt kostenlos bewerben",
+    /** Klein unter jedem Bewerbungsknopf (Smaragd, wie der Knopf). */
+    hinweis: "100 % kostenlos. Nicht für jeden zugänglich.",
   },
   /**
-   * Drei Schritte vom ersten Klick bis zur Entscheidung. `marke` steht gesperrt
-   * in Gold neben der Nummer, `kurz` unten auf der Karte. Nur Aussagen, die
-   * stimmen: Die Registrierung fragt keine Zahlungsdaten ab, und die Videos
-   * bleiben im kostenlosen Konto abrufbar (siehe FAQ).
+   * „Ergebnisse aus der Capital Circle Community" — seit 14.11.2026 mit
+   * **allen** Nachweisen untereinander, ohne Filter: Discord-Beiträge (`bilder`, Kopien
+   * unter `public/community/`, Ordner steht im Matcher von `proxy.ts`),
+   * belegte Auszahlungen und bestandene Challenges (beide aus
+   * `config/landing-membership.ts`, getrennt gehalten wie auf `/ergebnisse`:
+   * Kontogröße ist keine Auszahlung). Ab einer gewissen Höhe klappt der Block
+   * ein und lässt sich ausklappen.
    */
-  ablauf: {
-    eyebrow: "Ablauf",
-    /** Geschützter Bindestrich (U+2011): „Trading-System“ bricht nicht um. */
-    headline: "In drei Schritten zu deinem {Trading‑System}.",
-    sublines: ["Kein Abo, keine Zahlungsdaten. Du brauchst nur eine E-Mail-Adresse."],
+  community: {
+    eyebrow: "Community",
+    headline: "Ergebnisse aus der {Capital Circle Community}",
+    sublines: ["Unbearbeitete Beiträge und Belege unserer Mitglieder. Klick auf ein Bild, um es groß zu sehen."],
+    /** Überschriften der vier Gruppen — bleiben auch ohne Filter, Kontogröße ≠ Auszahlung. */
+    gruppen: {
+      discord: { titel: "Aus dem Discord", hinweis: "Funded Accounts, Auszahlungen und Dank, so wie sie im Discord gepostet wurden." },
+      mitglieder: { titel: "Auszahlungen von Mitgliedern", hinweis: "Hier ist Geld geflossen: Überweisung, Payout-Mail oder Payout-Zertifikat." },
+      emre: { titel: "Auszahlungen von Emre", hinweis: "Emres eigene Payout-Zertifikate." },
+      challenges: { titel: "Bestandene Challenges", hinweis: "Bestandene Prüfungen. Der Betrag ist die Kontogröße, keine Auszahlung." },
+    },
+    mehr: "Alle {anzahl} anzeigen",
+    weniger: "Weniger anzeigen",
+    hinweis: "Ergebnisse nicht typisch · Individuelle Ergebnisse variieren · Trading birgt Verlustrisiken",
+    bilder: [
+      { src: "/community/discord-01.png", breite: 848, hoehe: 791, alt: "Discord-Beitrag: Funded Account bei Lucid Trading nach drei Tagen" },
+      { src: "/community/discord-02.png", breite: 604, hoehe: 532, alt: "Discord-Beitrag: erster Funded Account bei Apex Trader Funding" },
+      { src: "/community/discord-03.png", breite: 565, hoehe: 536, alt: "Discord-Beitrag: bestandene Challenge bei IQ Capital" },
+      { src: "/community/discord-04.png", breite: 354, hoehe: 530, alt: "Discord-Beitrag: Dank an die Community mit Auszahlungsbenachrichtigung von Topstep" },
+      { src: "/community/discord-05.png", breite: 336, hoehe: 525, alt: "Discord-Beitrag: bestandene Challenge und Auszahlung von The Trading Pit" },
+      { src: "/community/discord-06.png", breite: 336, hoehe: 534, alt: "Discord-Beitrag: Auszahlungsmail von Apex Trader Funding" },
+      { src: "/community/discord-07.png", breite: 328, hoehe: 754, alt: "Discord-Beitrag: zwei Kontostände bei Tradovate" },
+      { src: "/community/discord-08.png", breite: 378, hoehe: 353, alt: "Discord-Beitrag: erster Funded Account bei Apex Trader Funding" },
+      { src: "/community/discord-09.png", breite: 324, hoehe: 344, alt: "Discord-Beitrag: Dank an Emre für Strategie und Psychologie" },
+      { src: "/community/discord-10.png", breite: 401, hoehe: 621, alt: "Discord-Beitrag: bestandene Challenge und Auszahlung von The Trading Pit" },
+    ],
+  },
+  /**
+   * „So erhältst du Zugang" — drei Schritte als Grafik. `marke` steht gesperrt
+   * in Gold neben der Nummer. Nur Aussagen, die stimmen: Emres Team prüft jede
+   * Bewerbung, der Zugang gilt 30 Tage ab Freischaltung (E-Mail-Playbook 1.0).
+   *
+   * `titel`/`kurz` und `sublines` liest nur noch `/vorschau/training-2`.
+   */
+  zugang: {
+    eyebrow: "So erhältst du Zugang",
+    headline: "In drei Schritten zum {kostenlosen Training}.",
+    sublines: ["Kein Abo, keine Zahlungsdaten. Drei ehrliche Antworten und eine E-Mail-Adresse."],
     schritte: [
       {
-        marke: "Registrieren",
-        titel: "Kostenloses Konto anlegen",
-        text: "Name, E-Mail und Passwort, mehr nicht. Ein Klick auf den Link in deiner E-Mail und du bist drin.",
-        kurz: "In 2 Minuten erledigt",
+        marke: "Bewerben",
+        titel: "Bewerben",
+        text: "Beantworte drei kurze Fragen zu deinem Trading.",
+        kurz: "Drei kurze Fragen",
       },
       {
-        marke: "Lernen",
-        titel: "Das Training ansehen",
-        text: "Direkt im Mitgliederbereich und in deinem Tempo. Jedes Video baut auf dem vorherigen auf und schaltet das nächste frei.",
-        kurz: "Jederzeit wieder abrufbar",
+        marke: "Prüfung",
+        titel: "Prüfung",
+        text: "Emres Team prüft jede Bewerbung persönlich.",
+        kurz: "Persönlich geprüft",
       },
       {
-        marke: "Umsetzen",
-        titel: "Deinen Weg wählen",
-        text: "Mit der Ausbildung selbstständig weiterlernen oder im kostenlosen Analysegespräch klären, ob persönliche Begleitung zu dir passt.",
-        kurz: "Du entscheidest",
+        marke: "Freischaltung",
+        titel: "Freischaltung",
+        text: "Du erhältst 30 Tage Zugang zum kostenlosen Training.",
+        kurz: "30 Tage ab Freischaltung",
       },
     ],
   },
@@ -141,7 +191,12 @@ export const landing = {
     eintraege: [
       {
         frage: "Ist das Training wirklich kostenlos?",
-        antwort: "Ja. Du registrierst dich mit Name und E-Mail und siehst das komplette Training, ohne etwas zu bezahlen.",
+        antwort: "Ja. Du bewirbst dich mit drei kurzen Antworten, und wenn Emre dich aufnimmt, siehst du das komplette Training, ohne etwas zu bezahlen.",
+      },
+      {
+        frage: "Warum muss ich mich bewerben?",
+        antwort:
+          "Weil der Zugang bewusst nicht automatisch vergeben wird. Emre möchte erkennen, dass du wirklich lernen willst. Perfekte Antworten braucht es dafür nicht, ehrliche schon. Eine Absage ist endgültig.",
       },
       {
         frage: "Für wen ist das Training gedacht?",
@@ -155,15 +210,116 @@ export const landing = {
       },
       {
         frage: "Wie lange habe ich Zugriff auf die Videos?",
-        antwort: "Dein kostenloses Konto bleibt bestehen, die Videos kannst du jederzeit wieder ansehen.",
+        antwort:
+          "30 Tage ab deiner Freischaltung. Bist du dann noch nicht fertig, kannst du einmalig sieben Tage über unser Team verlängern. Dein Konto bleibt danach bestehen.",
       },
     ],
   },
-  /** Zwei Zeilen; `{…}` = Gold-Akzent. */
+  /** `{…}` = Gold-Akzent. Darunter derselbe Knopf und `hero.hinweis`. */
   abschluss: {
-    headline: "Bereit? Worauf wartest du noch.",
-    zeile2: "Starte jetzt {KOSTENLOS}!",
+    headline: "Bereit, Trading aus einer anderen {Perspektive} kennenzulernen?",
   },
+} as const;
+
+/* ─── Bewerbung für das Free Training (Emre, 07.11.2026) ────────────────── */
+
+/**
+ * Die drei Fragen der Free-Kurs-Bewerbung — Wortlaut von Emre. Die `id`s sind
+ * die Schlüssel in `training_bewerbungen.antworten` und dürfen sich nicht
+ * ändern. Frage 3 hat zwei Teile: den Freitext und die Ja/Nein-Frage nach dem
+ * Kontakt (`kontaktFrage`, Spalte `kontakt_gewuenscht`).
+ *
+ * Emre entscheidet unter `/admin/training` (Reiter Bewerbungen). Eine Absage
+ * ist endgültig — darauf verweist Mail A03, deshalb steht es im Formular.
+ */
+export const BEWERBUNG_MIN_ZEICHEN = 20;
+
+export const bewerbung = {
+  modalTitel: "Bewerbung",
+  headline: "Deine Bewerbung für Capital Circle.",
+  text: "Beantworte die drei Fragen ehrlich und konkret. Ich erwarte keine perfekten Antworten — ich möchte erkennen, dass du es ernst meinst.",
+  unterschrift: "Emre",
+  fragen: [
+    { id: "stand", frage: "Wo stehst du aktuell im Trading?", placeholder: "Erzähl kurz, wo du gerade stehst." },
+    {
+      id: "schwierigkeit",
+      frage: "Beschreibe deine aktuell größte Schwierigkeit im Trading.",
+      placeholder: "Woran hängst du gerade fest?",
+    },
+    { id: "warum", frage: "Warum möchtest du Teil von Capital Circle werden?", placeholder: "Was erhoffst du dir?" },
+  ],
+  kontaktFrage: "Und möchtest du, dass wir dich kontaktieren, um herauszufinden, ob unser Mentoring zu dir passt?",
+  kontaktJa: "Ja, gerne",
+  kontaktNein: "Nein, erstmal nicht",
+  telefon: {
+    label: "Telefonnummer",
+    placeholder: "+49 …",
+    hinweis: "Nur, damit wir dich für ein kurzes Gespräch erreichen.",
+  },
+  fehlerKurz: `Bitte schreib mindestens ${BEWERBUNG_MIN_ZEICHEN} Zeichen.`,
+  fehlerKontakt: "Bitte wähle eine Antwort.",
+  weiter: "Weiter",
+  zurueck: "← Zurück",
+  kontoHeadline: "Fast geschafft. Wohin dürfen wir dir die Entscheidung schicken?",
+  kontoText: "Mit deinem Konto meldest du dich nach der Freischaltung an. Wir schicken dir zuerst einen Link, mit dem du deine E-Mail-Adresse bestätigst.",
+  endgueltig: "Emre prüft jede Bewerbung persönlich. Wird sie abgelehnt, ist das endgültig — eine zweite Bewerbung ist nicht möglich.",
+  knopf: "Bewerbung abschicken",
+  knopfEingeloggt: "Bewerbung abschicken",
+  laeuft: "Wird gesendet …",
+  /** Nach dem Absenden (neues Konto): erst die Adresse bestätigen. */
+  bestaetigenTitel: "Fast geschafft. Bestätige deine E-Mail-Adresse.",
+  bestaetigenText:
+    "Wir haben dir gerade einen Link an {email} geschickt. Erst mit deiner Bestätigung kommt deine Bewerbung bei Emre an. Schau auch im Spam-Ordner nach.",
+  /** Eingeloggt abgeschickt: Adresse ist schon bestätigt. */
+  eingegangenTitel: "Deine Bewerbung ist eingegangen.",
+  eingegangenText: "Emre schaut sich deine Antworten persönlich an. Seine Entscheidung bekommst du per E-Mail.",
+  schonBeworben: "Mit dieser E-Mail-Adresse gibt es schon eine Bewerbung. Melde dich an, um ihren Stand zu sehen.",
+  fehler: {
+    server: "Deine Bewerbung konnte gerade nicht gesendet werden. Bitte versuch es noch einmal.",
+  },
+} as const;
+
+export type BewerbungFrageId = (typeof bewerbung.fragen)[number]["id"];
+
+/** Die Statusseite `/training/status` (wartend oder abgelehnt). */
+export const bewerbungStatus = {
+  offen: {
+    titel: "Deine Bewerbung ist bei Emre.",
+    text: "Er schaut sich deine Antworten persönlich an, bevor er über deinen Zugang entscheidet. Du musst vorerst nichts weiter tun — seine Entscheidung bekommst du per E-Mail.",
+  },
+  unbestaetigt: {
+    titel: "Bestätige zuerst deine E-Mail-Adresse.",
+    text: "Erst mit deiner Bestätigung kommt deine Bewerbung bei Emre an. Den Link haben wir dir per E-Mail geschickt.",
+  },
+  abgelehnt: {
+    titel: "Deine Bewerbung wurde geprüft.",
+    text: "Emre hat sich gegen eine Aufnahme in das kostenlose Training entschieden. Die Entscheidung hast du per E-Mail bekommen. Danke, dass du dir die Zeit für deine Bewerbung genommen hast.",
+  },
+  abmelden: "Abmelden",
+} as const;
+
+/* ─── Zugang: 30 Tage + einmalig 7 (E-Mail-Playbook 1.0) ────────────────── */
+
+export const ZUGANG_TAGE = 30;
+export const VERLAENGERUNG_TAGE = 7;
+/** Video 2 („So liest du einen Chart") ist optional — Video 3 öffnet schon nach Video 1. */
+export const OPTIONALE_VIDEOS: readonly number[] = [2];
+
+/** Vorbefüllter Text für die WhatsApp-Verlängerung (Vorlage E02, wörtlich). */
+export const WHATSAPP_VERLAENGERUNG_TEXT =
+  "Hallo Capital-Circle-Team, mein kostenloser Kurszugang ist abgelaufen. Ich möchte die einmalige Verlängerung um sieben Tage nutzen.";
+
+export const zugangTexte = {
+  restTage: (n: number) => (n <= 1 ? "Dein Zugang endet heute" : `Noch ${n} Tage Zugang`),
+  bis: (datum: string) => `Zugang bis ${datum}`,
+  beendetTitel: "Dein kostenloser Trainingszeitraum ist beendet.",
+  beendetText:
+    "Die Kursvideos sind nicht mehr freigeschaltet, dein Konto bleibt bestehen. Noch nicht fertig? Über unser Team kannst du einmalig sieben Tage verlängern.",
+  beendetVerlaengertText: "Auch deine zusätzliche Woche ist abgelaufen. Dein Konto und dein Lernfortschritt bleiben bestehen.",
+  whatsapp: "Verlängerung über WhatsApp anfragen",
+  keinZugangTitel: "Das kostenlose Training gibt es nach einer kurzen Bewerbung.",
+  keinZugangText: "Beantworte drei Fragen. Emre schaut sich deine Bewerbung persönlich an und schaltet dich frei.",
+  bewerben: "Jetzt bewerben",
 } as const;
 
 /* ─── Registrierung ─────────────────────────────────────────────────────── */
@@ -187,11 +343,11 @@ export const registrierung = {
   bestaetigenTitel: "Fast geschafft. Bestätige deine E-Mail-Adresse.",
   bestaetigenText:
     "Wir haben dir gerade einen Link an {email} geschickt. Ein Klick darauf, und du bist direkt bei Video 1. Schau auch im Spam-Ordner nach.",
-  schonRegistriert: "Diese E-Mail-Adresse hat schon ein Konto. Melde dich an, dein Training wartet dort auf dich.",
+  schonRegistriert: "Diese E-Mail-Adresse hat schon ein Konto. Melde dich an — dort kannst du dich mit deinem Konto bewerben oder siehst den Stand deiner Bewerbung.",
   /** Hinweis auf `/training?fehler=link_abgelaufen` (aus `/auth/confirm`). */
   linkAbgelaufen: {
     titel: "Dein Bestätigungslink ist abgelaufen.",
-    text: "Kein Problem: Trag dich einfach noch einmal mit derselben E-Mail-Adresse ein, wir schicken dir sofort einen neuen Link.",
+    text: "Kein Problem: Schick deine Bewerbung einfach noch einmal mit derselben E-Mail-Adresse ab, wir schicken dir sofort einen neuen Link. Deine erste Bewerbung bleibt erhalten.",
     knopf: "Neuen Link anfordern",
   },
   fehler: {
@@ -264,18 +420,19 @@ export const programme = {
     text: "Du möchtest die Ausbildung eigenständig durcharbeiten und das Wissen in deinem eigenen Tempo umsetzen.",
     punkte: [
       "Komplette Ausbildung (Kurs)",
-      "Journal & Vorlagen",
-      "3 Monate Live-Trainings",
+      "Vorlagen und 1 Monat Trading Journal",
+      "1 Monat Live-Trading (3× pro Woche)",
       "Daily Bias & Trade-Recaps",
       "Discord Community",
       "Neue Kursvideos (laufend)",
     ],
-    preis: "599 €",
+    // Aus `config/mentoring.ts` (PRODUKTE.ausbildung) — bei einer Preisänderung mitziehen.
+    preis: "799 €",
     preisZusatz: "einmalig",
     raten: "oder 2 Raten möglich",
     knopf: "Ausbildung starten",
-    einmal: "Einmal 599 € zahlen",
-    zweiRaten: "2 Raten à 299,50 €",
+    einmal: "Einmal 799 € zahlen",
+    zweiRaten: "2 Raten à 399,50 €",
     hatSchon: "Bereits freigeschaltet",
     hatSchonText: "Die Inhalte der Ausbildung sind in deinem Zugang enthalten.",
     aboHinweis:
@@ -286,17 +443,16 @@ export const programme = {
     untertitel: "(Mentoring)",
     text: "Du möchtest zusätzlich persönliche Unterstützung bei der Umsetzung erhalten und schneller Ergebnisse erzielen.",
     punkte: [
-      "Ausbildung ebenfalls enthalten",
-      "12 Monate reguläre Praxisleistungen",
+      "Ausbildung und Trading Journal dauerhaft",
+      "12 Monate Live-Trading und Live-Archiv",
       "4 Monate WhatsApp-Support",
-      "Exklusive Gruppencalls",
+      "1:1-Termine mit Emre (4 bzw. 12 × 60 Minuten)",
       "Individuelle Betreuung",
-      "Einzelstunden nur im Premium",
     ],
     preis: "Preis wird im Analysegespräch besprochen.",
     knopf: "Analysegespräch anfragen",
   },
-  fussnote: "Nach 3 Monaten sind die regulären Praxisleistungen optional für 99 €/Monat buchbar. Kein automatisches Abo.",
+  fussnote: "Nach Ablauf des Live-Zugangs ist das Live-Trading optional für 99 €/Monat buchbar. Kein automatisches Abo.",
   fehler: {
     kasse: "Die Kasse konnte gerade nicht geöffnet werden. Bitte versuch es noch einmal.",
     raten: "Diese Ratenzahl gibt es für die Ausbildung nicht.",
@@ -305,7 +461,8 @@ export const programme = {
 
 /* ─── Analysegespräch (Modal im Mitgliederbereich) ──────────────────────── */
 
-export type GespraechStelle = "nach_video_3" | "training" | "programme" | "dashboard";
+export type GespraechStelle = "nach_video_3" | "training" | "programme" | "dashboard" | "bewerbung";
+/** Stellen, an denen das Modal im Mitgliederbereich aufgeht (`bewerbung` entsteht nur aus der Free-Bewerbung). */
 export const GESPRAECH_STELLEN: readonly GespraechStelle[] = ["nach_video_3", "training", "programme", "dashboard"];
 
 export const stelleLabel: Record<GespraechStelle, string> = {
@@ -313,6 +470,7 @@ export const stelleLabel: Record<GespraechStelle, string> = {
   training: "Trainingsseite",
   programme: "Mentoring-Karte",
   dashboard: "Dashboard",
+  bewerbung: "Free-Bewerbung (Kontaktwunsch)",
 };
 
 export const gespraech = {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { FRAGEN_FELDER } from "@/config/onboarding";
+import { BASIS_FELDER, MEHRFACH_TRENNER, antwortWerte, felderFuer } from "@/config/onboarding";
 import { ladeOnboardingProfil } from "@/lib/onboarding/profil";
-import { fragenOffen, istNeukaeufer, onboardingErledigt, vereinbarungOffen } from "@/lib/onboarding/weiche";
+import { fragenOffen, icpArt, istNeukaeufer, onboardingErledigt, vereinbarungOffen } from "@/lib/onboarding/weiche";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -19,20 +19,32 @@ export async function GET() {
   const user = auth.user;
   if (!user) return NextResponse.json({ angemeldet: false });
 
-  const { profil, spalteDa } = await ladeOnboardingProfil(supabase, user.id);
+  const { profil, spalteDa, icpSpalteDa, trainingAngenommen } = await ladeOnboardingProfil(supabase, user.id);
+  const opt = { icpSpalteDa, trainingAngenommen };
+  const offen = fragenOffen(profil, spalteDa, opt);
+  const art = icpArt(profil, trainingAngenommen);
+  // Ohne Migration 113 bleiben es die fünf Fragen aus 107.
+  const felder = art && icpSpalteDa ? felderFuer(art) : BASIS_FELDER;
 
   let antworten: Record<string, string | null> = {};
   let sonstiges: string | null = null;
-  if (spalteDa && fragenOffen(profil, spalteDa)) {
+  if (spalteDa && offen) {
     try {
       const { data } = await createServiceClient()
         .from("onboarding_antworten")
-        .select(`${FRAGEN_FELDER.join(",")},discovery_source_other`)
+        // `*`: liest `main_problem_alle` mit, wenn Migration 115 da ist, ohne sonst zu scheitern.
+        .select("*")
         .eq("user_id", user.id)
         .maybeSingle();
-      const zeile = (data ?? {}) as Record<string, string | null>;
-      antworten = Object.fromEntries(FRAGEN_FELDER.map((f) => [f, zeile[f] ?? null]));
-      sonstiges = zeile.discovery_source_other ?? null;
+      const zeile = (data ?? {}) as Record<string, unknown>;
+      // Mehrfachfragen kommen kommagetrennt zum Client (`MEHRFACH_TRENNER`).
+      antworten = Object.fromEntries(
+        felder.map((f) => {
+          const w = antwortWerte(f, zeile);
+          return [f, w.length ? w.join(MEHRFACH_TRENNER) : null];
+        }),
+      );
+      sonstiges = (zeile.discovery_source_other as string | null) ?? null;
     } catch {
       antworten = {};
     }
@@ -40,8 +52,10 @@ export async function GET() {
 
   return NextResponse.json({
     angemeldet: true,
-    erledigt: onboardingErledigt(profil, spalteDa),
-    fragenOffen: fragenOffen(profil, spalteDa),
+    erledigt: onboardingErledigt(profil, spalteDa, opt),
+    fragenOffen: offen,
+    art,
+    felder,
     vereinbarungOffen: vereinbarungOffen(profil),
     neu: istNeukaeufer(profil?.created_at),
     gestartet: Boolean(profil?.onboarding_gestartet_am),

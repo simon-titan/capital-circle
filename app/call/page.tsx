@@ -1,8 +1,14 @@
 import type { Metadata } from "next";
 import { CallFunnelClient } from "@/components/landing/call/CallFunnelClient";
 import { FunnelHimmel } from "@/components/landing/FunnelHimmel";
-import { ladeBewertungsspiegel } from "@/lib/landing-reviews";
 import { meta } from "@/config/call-funnel";
+import { ladeFunnelVideos } from "@/lib/funnel-videos";
+
+/**
+ * Das Video wählt der Admin (`lib/funnel-videos.ts`). Die Seite bleibt statisch:
+ * Speichern im Admin erzeugt sie per `revalidatePath` neu, `revalidate` ist das Netz.
+ */
+export const revalidate = 3600;
 
 const SITE_URL = (
   process.env.NEXT_PUBLIC_APP_URL?.trim() ||
@@ -13,8 +19,9 @@ const SITE_URL = (
 const SHARE_IMAGE = `${SITE_URL}${meta.shareImage}`;
 
 /**
- * `/call` — Call-Funnel (Board von Emre, 17.10.2026): VSL, Fragebogen und
- * Calendly im Modal, Case Studies, belegte Auszahlungen.
+ * `/call` — Call-Funnel (Board von Emre, 17.10.2026; Aufbau seit 08.11.2026):
+ * VSL, Brief von Emre, Member Wins (Case Studies, Auszahlungen, Bewertungen),
+ * Fragebogen und Calendly im Modal.
  *
  * Öffentlich: `/call` steht in `PUBLIC_PREFIXES` von `proxy.ts`. Die Bilder
  * (`/cases/`, `/nachweise/`, `termin-og`) stehen im Matcher unter den
@@ -49,11 +56,12 @@ export const metadata: Metadata = {
 };
 
 export default async function CallPage() {
-  // Sternezeile unter den Knöpfen — dieselbe Quelle wie auf `/` (Kategorie `global`).
-  const bewertungen = await ladeBewertungsspiegel(["global"]);
+  const { videos } = await ladeFunnelVideos();
+  // Seit 08.11.2026 ohne Sternezeile unter den Knöpfen (Emres Mockup); die
+  // Bewertungsliste im Block „Member Wins" lädt `ReviewSection` im Client.
   return (
     <FunnelHimmel>
-      <CallFunnelClient bewertungen={bewertungen} />
+      <CallFunnelClient video={videos.call} />
     </FunnelHimmel>
   );
 }

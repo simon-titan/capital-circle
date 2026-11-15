@@ -3,7 +3,7 @@
 import { Box, Button, Flex, Grid, Stack, Text, type BoxProps } from "@chakra-ui/react";
 import { ArrowRight, PenLine, UserRound } from "lucide-react";
 import NextLink from "next/link";
-import { mitglied, PROGRAMME_PFAD, TRAINING_VIDEOS_PFAD } from "@/config/training";
+import { mitglied, PROGRAMME_PFAD, TRAINING_VIDEOS_PFAD, zugangTexte } from "@/config/training";
 import { ProgressBar } from "./primitives";
 import type { TrainingKachel } from "./types";
 
@@ -18,6 +18,14 @@ import type { TrainingKachel } from "./types";
 export function TrainingKarte({ training, ...rest }: BoxProps & { training: TrainingKachel }) {
   const d = mitglied.dashboard;
   const k = mitglied.karten;
+  const z = training.zugang;
+  const restTage = z?.art === "aktiv" ? z.restTage : null;
+  const knopf =
+    z?.art === "keine"
+      ? { text: zugangTexte.bewerben, href: `${TRAINING_VIDEOS_PFAD}?bewerben=1` }
+      : z?.art === "beendet"
+        ? { text: d.fertig, href: TRAINING_VIDEOS_PFAD }
+        : { text: training.abgeschlossen ? d.fertig : d.weiter(training.naechstes), href: TRAINING_VIDEOS_PFAD };
   return (
     <Box className="cc-card cc-card--still" p={{ base: 5, md: 7 }} {...rest}>
       <Stack spacing={6}>
@@ -35,16 +43,17 @@ export function TrainingKarte({ training, ...rest }: BoxProps & { training: Trai
             <ProgressBar value={(training.gesehen / training.gesamt) * 100} label="Fortschritt im kostenlosen Training" />
             <Text className="cc-num" fontSize="13px" color="var(--cc-text-2)">
               {Math.min(training.gesehen, training.gesamt)}/{training.gesamt} Videos abgeschlossen
+              {restTage ? ` · ${zugangTexte.restTage(restTage)}` : z?.art === "beendet" ? ` · ${zugangTexte.beendetTitel}` : ""}
             </Text>
           </Stack>
           <Button
             as={NextLink}
-            href={TRAINING_VIDEOS_PFAD}
+            href={knopf.href}
             variant="gold"
             rightIcon={<ArrowRight size={17} strokeWidth={2} />}
             flexShrink={0}
           >
-            {training.abgeschlossen ? d.fertig : d.weiter(training.naechstes)}
+            {knopf.text}
           </Button>
         </Flex>
 

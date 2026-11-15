@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Box,
   Button,
@@ -50,6 +50,14 @@ export type ModuleLearningClientProps = {
   nextModuleHref?: string | null;
   initialNoteContent: string;
   attachmentsByVideoId: Record<string, VideoAttachmentItem[]>;
+  /**
+   * Ohne Notizen-Reiter (kostenloser Kurs, Feedback 14.11.2026). Bleibt dann
+   * kein Reiter mit Inhalt übrig (keine Anhänge, keine Beschreibung), entfällt
+   * die ganze Karte unter dem Player.
+   */
+  ohneNotizen?: boolean;
+  /** Unter der Lektionsliste, in derselben klebenden Spalte (Blueprint im kostenlosen Kurs). */
+  unterPlaylist?: ReactNode;
 };
 
 function pickStartIndex(playlist: PlaylistVideoRow[], initialVideoId: string | null, map: Record<string, number>) {
@@ -131,6 +139,8 @@ export function ModuleLearningClient({
   nextModuleHref = null,
   initialNoteContent,
   attachmentsByVideoId,
+  ohneNotizen = false,
+  unterPlaylist = null,
 }: ModuleLearningClientProps) {
   const [quizOpen, setQuizOpen] = useState(false);
   const [moduleCompleted, setModuleCompleted] = useState(Boolean(initialModuleCompleted));
@@ -481,7 +491,9 @@ export function ModuleLearningClient({
             className="cc-card cc-card--still"
             direction="column"
             overflow="hidden"
-            maxH={{ lg: "calc(100dvh - var(--cc-strip-h) - 48px)" }}
+            // Mit Zusatz darunter dessen Höhe abziehen, damit die klebende Spalte ins Fenster passt;
+            // Untergrenze 280 px — auf niedrigen Fenstern ragt sie dann über den Rand, statt die Liste zu zerdrücken.
+            maxH={{ lg: unterPlaylist ? "max(280px, calc(100dvh - var(--cc-strip-h) - 48px - 340px))" : "calc(100dvh - var(--cc-strip-h) - 48px)" }}
           >
             <Box px={5} pt={5} pb={4} flexShrink={0}>
               <Box display={{ base: "none", lg: "block" }}>
@@ -571,21 +583,27 @@ export function ModuleLearningClient({
               </Stack>
             ) : null}
           </Flex>
+          {unterPlaylist ? <Box mt={4}>{unterPlaylist}</Box> : null}
         </GridItem>
 
         {/* Player, Abschluss-Hinweis, Notizen/Anhänge/Beschreibung */}
         <GridItem order={{ base: 1, lg: 2 }} minW={0}>
           <Stack spacing={5}>
-            <GlassVideoPlayer
-              key={current.id}
-              accent="#d4b080"
-              accentRgb="212, 176, 128"
-              storageKey={current.cloudflare_uid ?? current.storage_key}
-              startAtSeconds={startAtSeconds}
-              onProgress={onPlayerProgress}
-              onEnded={onVideoEnded}
-            />
+            {/* Play-Knopf und Zeitstrahl in Weiß (Feedback 14.11.2026): `.cc-player-neutral` biegt die
+                `--cc-gold-*`-Variablen des Players auf Weiß/Grau um, der Rahmen trägt Weiß statt Champagner. */}
+            <Box className="cc-player-neutral">
+              <GlassVideoPlayer
+                key={current.id}
+                accent="#d4b080"
+                accentRgb="255, 255, 255"
+                storageKey={current.cloudflare_uid ?? current.storage_key}
+                startAtSeconds={startAtSeconds}
+                onProgress={onPlayerProgress}
+                onEnded={onVideoEnded}
+              />
+            </Box>
             {completedBanner}
+            {ohneNotizen && currentAttachments.length === 0 && !current.description?.trim() ? null : (
             <Box className="cc-card cc-card--still" p={{ base: 4, md: 6 }}>
               <Tabs variant="unstyled">
                 <TabList
@@ -598,12 +616,14 @@ export function ModuleLearningClient({
                   border="1px solid var(--cc-line)"
                   bg="rgba(255, 255, 255, 0.03)"
                 >
-                  <Tab {...tabProps}>
-                    <HStack spacing={2}>
-                      <FileText size={15} strokeWidth={2} aria-hidden />
-                      <span>Notizen</span>
-                    </HStack>
-                  </Tab>
+                  {ohneNotizen ? null : (
+                    <Tab {...tabProps}>
+                      <HStack spacing={2}>
+                        <FileText size={15} strokeWidth={2} aria-hidden />
+                        <span>Notizen</span>
+                      </HStack>
+                    </Tab>
+                  )}
                   <Tab {...tabProps}>
                     <HStack spacing={2}>
                       <Download size={15} strokeWidth={2} aria-hidden />
@@ -625,7 +645,7 @@ export function ModuleLearningClient({
                   ) : null}
                 </TabList>
                 <TabPanels mt={5}>
-                  <TabPanel p={0}>{notes}</TabPanel>
+                  {ohneNotizen ? null : <TabPanel p={0}>{notes}</TabPanel>}
                   <TabPanel p={0}>
                     {currentAttachments.length > 0 ? (
                       <VideoAttachments attachments={currentAttachments} />
@@ -643,6 +663,7 @@ export function ModuleLearningClient({
                 </TabPanels>
               </Tabs>
             </Box>
+            )}
           </Stack>
         </GridItem>
       </Grid>

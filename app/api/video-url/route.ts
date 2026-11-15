@@ -4,6 +4,7 @@ import { getPresignedGetUrl } from "@/lib/storage";
 import { buildManifestUrl } from "@/lib/cloudflare-stream";
 import { videoIstFrei } from "@/lib/access-control/inhalt-zugang";
 import { hatInhaltsZugang } from "@/lib/membership";
+import { istTrainingVideo, ladeTrainingFreigabe, trainingOffen } from "@/lib/training/zugang";
 
 // jsonwebtoken's RS256-Signing braucht Node-crypto — Schutz gegen versehentliche Edge-Migration.
 export const runtime = "nodejs";
@@ -76,6 +77,13 @@ export async function GET(request: Request) {
     }
     if (!hatInhaltsZugang(profile) && !(await videoIstFrei(service, video))) {
       return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+    // Kostenloses Training: nur mit Freischaltung und innerhalb der 30 (+7) Tage
+    // (Migration 110). Zahlende sehen es immer.
+    if (!hatInhaltsZugang(profile) && (await istTrainingVideo(service, video))) {
+      if (!trainingOffen(await ladeTrainingFreigabe(service, authData.user.id, profile))) {
+        return NextResponse.json({ ok: false, error: "training_gesperrt" }, { status: 403 });
+      }
     }
   }
 

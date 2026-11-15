@@ -10,8 +10,20 @@
       "schedule": "0 2 * * *"
     },
     {
-      "path": "/api/cron/training-sequence",
-      "schedule": "0 5 * * *"
+      "path": "/api/cron/mail-free",
+      "schedule": "7 * * * *"
+    },
+    {
+      "path": "/api/cron/mail-termine",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/mail-kunden",
+      "schedule": "37 * * * *"
+    },
+    {
+      "path": "/api/cron/crm-sync",
+      "schedule": "2-59/5 * * * *"
     },
     {
       "path": "/api/cron/check-inactive-users",

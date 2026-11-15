@@ -242,7 +242,12 @@ export function ProgressBar({
   label,
   tone = "gold",
   ...rest
-}: Omit<BoxProps, "children"> & { value: number; label: string; tone?: "gold" | "ink" }) {
+}: Omit<BoxProps, "children"> & {
+  value: number;
+  label: string;
+  /** `smaragd` nur in der Free-Ansicht (`FreeDashboardView`). */
+  tone?: "gold" | "ink" | "smaragd";
+}) {
   const v = Math.max(0, Math.min(100, Math.round(value)));
   return (
     <Box
@@ -263,7 +268,13 @@ export function ProgressBar({
           className="cc-fill"
           h="100%"
           w={`${v}%`}
-          bg={tone === "ink" ? "var(--cc-ink)" : "var(--cc-gold-bar)"}
+          bg={
+            tone === "ink"
+              ? "var(--cc-ink)"
+              : tone === "smaragd"
+                ? "linear-gradient(90deg, var(--cc-smaragd) 0%, #2a9a73 60%, var(--cc-smaragd-hell) 100%)"
+                : "var(--cc-gold-bar)"
+          }
           borderRadius="full"
           // Kein Schein mehr: Das Dashboard laeuft auf der ruhigen Variante (.cc-neutral).
           boxShadow={undefined}

@@ -255,7 +255,7 @@ Warmneutrales Graphit mit einer einzigen Akzentfamilie: Champagner-Gold in drei 
 - **Wordmark** (400, 15px, 0.32em, versal): „CAPITAL CIRCLE“ in der Sidebar (kompakt 13px / 0.3em).
 
 ### Named Rules
-**The One-Face Rule.** Inter ist die einzige Schrift. Zahlen bekommen tabellarische Ziffern statt einer Mono-Schrift. Radley und JetBrains Mono sind entfernt und werden nicht mehr geladen.
+**The One-Face Rule.** Inter ist die einzige Schrift. Zahlen bekommen tabellarische Ziffern statt einer Mono-Schrift. Radley und JetBrains Mono sind entfernt und werden nicht mehr geladen. **Einzige Ausnahme:** der Brief „Ein persönliches Wort von Emre.“ auf `/call` (`components/landing/call/EmreBrief.tsx`) steht in Schreibmaschinen-Systemschrift (`"Courier New", Courier, monospace`), ohne Webfont — Entscheidung Simon, 08.11.2026.
 
 **The Time-Vocabulary Rule.** Jede zeitgebundene Angabe spricht dieselbe Sprache: „läuft jetzt“, „Heute · 15:00 Uhr“, „Morgen“, „Fr, 19. Sep“.
 

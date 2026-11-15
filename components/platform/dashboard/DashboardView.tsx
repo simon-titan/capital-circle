@@ -5,19 +5,17 @@ import NextLink from "next/link";
 import type { CSSProperties } from "react";
 import { AnalysisCard } from "./AnalysisCard";
 import { AppointmentCard } from "./AppointmentCard";
-import { CommunityLiveKarte } from "./CommunityLiveKarte";
 import { ContinueCard } from "./ContinueCard";
 import { DiscordCard } from "./DiscordCard";
 import { JournalCard } from "./JournalCard";
 import { LiveCard } from "./LiveCard";
 import { OnboardingCheckliste } from "./OnboardingCheckliste";
 import { ProgressCard } from "./ProgressCard";
-import { TrainingKarte } from "./TrainingKarte";
 import { UmzugCard } from "./UmzugCard";
 import { WeekTaskCard } from "./WeekTaskCard";
 import type { DashboardViewData } from "./types";
 
-function ApplyPrompt({ className, ...props }: FlexProps) {
+export function ApplyPrompt({ className, ...props }: FlexProps) {
   return (
     <Flex
       className={["cc-card cc-card--hero", className].filter(Boolean).join(" ")}
@@ -45,7 +43,7 @@ function ApplyPrompt({ className, ...props }: FlexProps) {
 }
 
 /** Karten steigen beim Laden nacheinander auf (`.cc-rise`). */
-function rise(step: number): { className: string; style: CSSProperties } {
+export function rise(step: number): { className: string; style: CSSProperties } {
   return { className: "cc-rise", style: { animationDelay: `${80 + step * 70}ms` } };
 }
 
@@ -99,10 +97,11 @@ export function DashboardView({ data }: { data: DashboardViewData }) {
 
       {data.showApplyPrompt ? <ApplyPrompt mb={5} {...rise(0)} /> : null}
 
-      {/* Free-Konten: kostenloses Training und die zwei Wege danach (Board, Spalte 6). */}
-      {data.training ? <TrainingKarte training={data.training} mb={5} {...rise(0)} /> : null}
-      {/* Free-Konten: Live-Übersicht und Community (Board, Spalte 9). */}
-      {data.training ? <CommunityLiveKarte termine={data.termine} mb={5} {...rise(1)} /> : null}
+      {/*
+        Free-Konten bekommen seit 08.11.2026 ein eigenes Dashboard
+        (`FreeDashboardView`, Emres Mockup) — Trainingskarte und
+        Community-Karte stehen deshalb nicht mehr hier.
+      */}
 
       {/* Nur für Neukäufer bis zum Abschluss des Onboardings, über „Als nächstes“. */}
       {data.onboarding ? <OnboardingCheckliste zustand={data.onboarding} mb={5} {...rise(0)} /> : null}

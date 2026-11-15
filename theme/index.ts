@@ -112,6 +112,28 @@ export const theme = extendTheme({
           },
           _active: { transform: "translateY(0)", filter: "brightness(0.96)" },
         },
+        /**
+         * Hauptaktion auf den Funnel-Seiten (`/training`, Bewerbungs-Modal):
+         * Smaragd-Verlauf mit Glow. Nur dort — sonst bleibt `gold` die Aktion.
+         */
+        smaragd: {
+          bg: "var(--cc-smaragd)",
+          bgImage: "var(--cc-smaragd-grad)",
+          color: "#f2fbf7",
+          fontWeight: 600,
+          borderRadius: "8px",
+          border: "1px solid rgba(111, 208, 166, 0.35)",
+          boxShadow: "0 6px 20px rgba(28, 122, 90, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.22)",
+          transition: "transform 180ms var(--cc-ease), box-shadow 180ms var(--cc-ease), filter 180ms var(--cc-ease)",
+          _hover: {
+            filter: "brightness(1.1)",
+            transform: "translateY(-1px)",
+            boxShadow: "0 0 28px rgba(46, 170, 120, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.28)",
+            _disabled: { filter: "none", transform: "none" },
+          },
+          _active: { transform: "translateY(0)", filter: "brightness(0.95)" },
+          _focusVisible: { boxShadow: "0 0 0 2px var(--cc-bg), 0 0 0 4px var(--cc-smaragd-hell)" },
+        },
         /** Sekundäre Aktion: Haarlinie, beim Hover mit Gold-Kante. */
         line: {
           bg: "rgba(255, 255, 255, 0.02)",

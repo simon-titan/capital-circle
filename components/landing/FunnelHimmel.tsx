@@ -11,7 +11,8 @@ import type { ReactNode } from "react";
 /** Seitengrund wie auf `/`: Graphit, Sternenfeld und Champagner-Licht. */
 export function FunnelHimmel({ children }: { children: ReactNode }) {
   return (
-    <Box position="relative" minH="100vh" w="full" bg="var(--cc-bg)" color="var(--cc-text)" overflowX="clip">
+    // `data-funnel` schaltet die dunkle Seiten-Scrollleiste (`app/globals.css`).
+    <Box data-funnel="" position="relative" minH="100vh" w="full" bg="var(--cc-bg)" color="var(--cc-text)" overflowX="clip">
       <Box className="cc-stars" aria-hidden />
       <Box className="cc-goldlight" aria-hidden />
       <Box position="relative" zIndex={1}>

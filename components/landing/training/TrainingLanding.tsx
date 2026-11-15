@@ -1,53 +1,50 @@
 "use client";
 
-import { Box, Flex, Grid, Heading, HStack, Stack, Text } from "@chakra-ui/react";
-import { Check } from "lucide-react";
+import { Box, Flex, Grid, Heading, Stack, Text } from "@chakra-ui/react";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
-import { ErgebnisseSection } from "@/components/landing/membership/ErgebnisseSection";
 import { FaqSection } from "@/components/landing/membership/FaqSection";
 import { Sektion, SektionsKopf } from "@/components/landing/membership/membership-ui";
 import { GlassVideoPlayer } from "@/components/ui/GlassVideoPlayer";
 import { fusszeile } from "@/config/call-funnel";
 import { landing, landingVideo, registrierung } from "@/config/training";
-import type { Bewertungsspiegel } from "@/lib/landing-reviews";
 import { merkeHerkunft } from "@/lib/training/herkunft";
 import { FunnelFooter } from "../DiscordFunnelChrome";
-import {
-  FunnelKopfleiste,
-  HeroPill,
-  MobilAktionsleiste,
-  SchrittMarke,
-  VideoSchein,
-} from "../funnel-rahmen";
+import { FunnelKopfleiste, MobilAktionsleiste, SchrittMarke, VideoSchein } from "../funnel-rahmen";
 import { GoldGlowDivider } from "../GoldGlowDivider";
 import { heroRise, Reveal } from "../landing-ui";
-import { ReviewSection } from "../ReviewSection";
 import { akzentGold } from "../call/call-ui";
+import { CommunityEinblicke } from "./CommunityEinblicke";
 import { TrainingRegistrierungProvider, TrainingStartKnopf } from "./TrainingRegistrierung";
 
 /**
  * `/training` — Landingpage des kostenlosen Trainings (Board, Spalte 2).
  *
- * Seit 06.11.2026 im Look der Verkaufsseite `/` (Nutzerwunsch): klebende
- * Kopfleiste, zentrierter Hero (Pill, Headline, Video, Punkte, Knopf, Sterne),
- * linksbündige Abschnittsköpfe, Gold-Lichtlinien zwischen den Abschnitten,
- * dieselben Ergebnis-, Bewertungs- und FAQ-Abschnitte und die mobile
- * Aktionsleiste. Die Sektion „Das Training" (fünf Videokacheln) ist auf
- * Nutzerwunsch raus.
+ * Im Look der Verkaufsseite `/`: klebende Kopfleiste, linksbündige
+ * Abschnittsköpfe, Gold-Lichtlinien zwischen den Abschnitten, mobile
+ * Aktionsleiste.
  *
- * Reihenfolge: Versprechen (Hero + Video) → Beweis (Auszahlungen,
- * Bewertungen) → Ablauf → Einwände (FAQ) → Abschluss.
- * Jede Hauptaktion öffnet dasselbe Registrierungs-Modal. Texte in
- * `config/training.ts`.
+ * Reihenfolge nach Emres Feedback (08.11.2026): Hero (Headline, Video, Knopf,
+ * „100 % kostenlos. Nicht für jeden zugänglich.") → Ergebnisse aus der
+ * Community (alle Nachweise, ohne Filter) → So erhältst du Zugang → FAQ. Die
+ * Bewertungen und der Schluss-CTA sind seit 14.11.2026 raus, ebenso Hero-Pill,
+ * -Punkte und Sterne. Jede Hauptaktion öffnet dasselbe
+ * Bewerbungs-Modal. Texte in `config/training.ts` → `landing`.
+ *
+ * **Smaragd** ist hier zweiter Akzent neben Gold (Feedback 14.11.2026):
+ * Bewerbungsknöpfe im Inhalt (Variante `smaragd`), Weg-Linie und
+ * Freischaltungs-Karte im Zugang, Ausklapp-Knopf der Ergebnisse,
+ * Bewerbungs-Modal. Gold bleibt in den Headlines und am Knopf der Kopfleiste
+ * (Desktop); der Hinweis unter den Knöpfen steht in Weiß. Gilt nur für den Funnel, nicht für Plattform oder `/`.
  *
  * Den Seitengrund (`FunnelHimmel`) legt `app/training/page.tsx` darum.
  */
 
-/** Die Bewertungen der Verkaufsseite (Kategorie `global`). */
-export const TRAINING_BEWERTUNGEN = "global";
-
-export function TrainingLanding({ bewertungen }: { bewertungen: Bewertungsspiegel }) {
+/**
+ * `video` kommt aus dem Admin (`ladeFunnelVideos` in `lib/funnel-videos.ts`,
+ * von der Seite geladen); ohne Angabe gilt `landingVideo` aus der Config.
+ */
+export function TrainingLanding({ video = landingVideo }: { video?: { uid: string; posterSekunde: number } }) {
   useEffect(() => {
     // Herkunft (YouTube, Instagram, …) für die Registrierung merken.
     merkeHerkunft();
@@ -58,7 +55,8 @@ export function TrainingLanding({ bewertungen }: { bewertungen: Bewertungsspiege
         <FunnelKopfleiste
           anker={landing.nav}
           aktion={
-            <TrainingStartKnopf w="auto" minH="40px" h="40px" px={5} fontSize="15px" whiteSpace="nowrap" rightIcon={undefined}>
+            // Kopfleiste (Desktop) in Gold, die Bewerbungsknöpfe im Inhalt in Smaragd (Feedback 14.11.2026).
+            <TrainingStartKnopf variant="gold" w="auto" minH="40px" h="40px" px={5} fontSize="15px" whiteSpace="nowrap" rightIcon={undefined}>
               {landing.ctaKurz}
             </TrainingStartKnopf>
           }
@@ -75,25 +73,21 @@ export function TrainingLanding({ bewertungen }: { bewertungen: Bewertungsspiege
             <LinkAbgelaufen />
           </Suspense>
 
-          <Hero bewertungen={bewertungen} />
+          <Hero video={video} />
 
           <Box pt={{ base: 16, md: 24 }}>
             <GoldGlowDivider />
           </Box>
-          <ErgebnisseSection />
+          <CommunityEinblicke />
           <GoldGlowDivider />
-          <ReviewSection landingSlug={TRAINING_BEWERTUNGEN} />
-          <GoldGlowDivider />
-          <Ablauf />
+          <Zugang />
           <GoldGlowDivider />
           <FaqSection inhalt={{ ...landing.faq, headline: akzentGold(landing.faq.headline) }} />
-          <GoldGlowDivider />
-          <Abschluss bewertungen={bewertungen} />
         </Box>
 
         <FunnelFooter>{fusszeile}</FunnelFooter>
 
-        <MobilAktionsleiste hinweis={landing.mobilHinweis} ausblendenBei={["abschluss"]}>
+        <MobilAktionsleiste hinweis={landing.mobilHinweis} hinweisFarbe="var(--cc-text)" immer>
           {(tabIndex) => (
             <TrainingStartKnopf w="full" minH="52px" fontSize="16px" tabIndex={tabIndex}>
               {landing.hero.cta}
@@ -144,124 +138,101 @@ function LinkAbgelaufen() {
  */
 const STREAM_SUBDOMAIN = process.env.NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_SUBDOMAIN?.trim() || null;
 
-function Hero({ bewertungen }: { bewertungen: Bewertungsspiegel }) {
+/** Knopf und darunter klein in Weiß „100 % kostenlos. Nicht für jeden zugänglich." */
+function Bewerbungsaktion() {
+  return (
+    <Stack spacing={3} align="center" w={{ base: "full", sm: "auto" }}>
+      <TrainingStartKnopf />
+      <Text fontSize={{ base: "13px", md: "14px" }} fontWeight={500} color="var(--cc-text)" textAlign="center">
+        {landing.hero.hinweis}
+      </Text>
+    </Stack>
+  );
+}
+
+/** Nach Emres Mockup: Headline, Video, Knopf, Hinweis — nichts dazwischen. */
+function Hero({ video }: { video: { uid: string; posterSekunde: number } }) {
   const h = landing.hero;
-  const basis = STREAM_SUBDOMAIN ? `https://${STREAM_SUBDOMAIN}.cloudflarestream.com/${landingVideo.uid}` : null;
+  const basis = STREAM_SUBDOMAIN ? `https://${STREAM_SUBDOMAIN}.cloudflarestream.com/${video.uid}` : null;
 
   return (
     <Box
       as="section"
       aria-labelledby="training-titel"
       position="relative"
-      pt={{ base: 10, md: 16 }}
+      pt={{ base: 8, md: 14 }}
       px={{ base: 4, md: 8, lg: 12 }}
     >
-      <Stack maxW="1180px" mx="auto" spacing={{ base: 8, md: 10 }} align="center" textAlign="center">
-        <Box {...heroRise(0)}>
-          <HeroPill>{h.eyebrow}</HeroPill>
-        </Box>
-
+      <Stack maxW="1180px" mx="auto" spacing={{ base: 7, md: 10 }} align="center" textAlign="center">
         <Heading
           as="h1"
           id="training-titel"
-          {...heroRise(1)}
+          {...heroRise(0)}
           maxW="980px"
-          fontSize="clamp(32px, 5.6vw, 60px)"
+          fontSize="clamp(30px, 5.4vw, 58px)"
           fontWeight={700}
-          lineHeight={1.08}
+          lineHeight={1.1}
           letterSpacing="-0.03em"
           color="var(--cc-text)"
           overflowWrap="break-word"
-          style={{ ...heroRise(1).style, textWrap: "balance" }}
+          style={{ ...heroRise(0).style, textWrap: "balance" }}
         >
           {akzentGold(h.headline)}
         </Heading>
 
-        {/* Das Video steht seit 06.11.2026 direkt unter der Headline (Nutzerwunsch), ohne Badge darüber. */}
         {basis ? (
-          <Box {...heroRise(2)} w="full" maxW="960px" textAlign="left">
-            <VideoSchein>
+          <Box {...heroRise(1)} w="full" maxW="960px" textAlign="left">
+            <VideoSchein ton="neutral">
               <GlassVideoPlayer
+                accentRgb="255, 255, 255"
                 src={`${basis}/manifest/video.m3u8`}
-                poster={`${basis}/thumbnails/thumbnail.jpg?time=${landingVideo.posterSekunde}s&width=1280`}
+                poster={`${basis}/thumbnails/thumbnail.jpg?time=${video.posterSekunde}s&width=1280`}
               />
             </VideoSchein>
           </Box>
         ) : null}
 
-        <Flex
-          {...heroRise(3)}
-          as="ul"
-          listStyleType="none"
-          wrap="wrap"
-          justify="center"
-          columnGap={{ base: 5, md: 7 }}
-          rowGap={2}
-        >
-          {h.punkte.map((p) => (
-            <HStack as="li" key={p} spacing={2}>
-              <Box color="var(--cc-gold-light)" flexShrink={0}>
-                <Check size={17} strokeWidth={2.25} aria-hidden />
-              </Box>
-              <Text fontSize={{ base: "15px", md: "17px" }} color="var(--cc-text-soft)">
-                {p}
-              </Text>
-            </HStack>
-          ))}
-        </Flex>
-
-        <Stack {...heroRise(4)} spacing={5} align="center" w={{ base: "full", sm: "auto" }}>
-          <TrainingStartKnopf />
-          <Sterne bewertungen={bewertungen} />
-        </Stack>
+        <Box {...heroRise(2)} w={{ base: "full", sm: "auto" }}>
+          <Bewerbungsaktion />
+        </Box>
       </Stack>
     </Box>
   );
 }
 
-/**
- * Nur die Sterne, ohne Schnitt und Anzahl (Nutzerwunsch 06.11.2026). Die Zahl
- * der Sterne kommt trotzdem aus den echten Bewertungen (gerundeter Schnitt) —
- * ohne Bewertungen steht hier nichts.
- */
-function Sterne({ bewertungen }: { bewertungen: Bewertungsspiegel }) {
-  if (!bewertungen) return null;
-  const anzahl = Math.round(Number(bewertungen.schnitt.replace(",", ".")));
-  if (!Number.isFinite(anzahl) || anzahl < 1) return null;
-  return (
-    <HStack spacing={1} role="img" aria-label={`${bewertungen.schnitt} von 5 Sternen`} color="var(--cc-gold-light)" fontSize="18px" lineHeight={1}>
-      {Array.from({ length: Math.min(anzahl, 5) }, (_, i) => (
-        <Box as="span" key={i} aria-hidden>
-          ★
-        </Box>
-      ))}
-    </HStack>
-  );
-}
-
-/* ─────────────────────────── Ablauf ─────────────────────────── */
+/* ─────────────────────────── So erhältst du Zugang ─────────────────────────── */
 
 /**
- * Drei Schritte als Karten: Nummer mit Gold-Marke (wie der Prozess auf `/`),
- * Titel, ein Satz, unten hinter einer Haarlinie die Kurzform mit Haken. Ab `md`
- * verbindet eine Lichtlinie die Karten zu einem Weg. Der Knopf darunter holt
- * den Leser dort ab, wo er gerade verstanden hat, wie wenig es braucht.
+ * Drei Schritte als Grafik: Bewerben → Prüfung → Freischaltung. Je Karte die
+ * Nummer mit Gold-Marke (wie der Prozess auf `/`) und ein Satz. Eine
+ * Lichtlinie verbindet die Karten zu einem Weg — waagerecht ab `md`, mobil
+ * senkrecht hinter dem Stapel.
  */
-function Ablauf() {
-  const a = landing.ablauf;
+function Zugang() {
+  const z = landing.zugang;
   return (
-    <Sektion id="ablauf" aria-labelledby="ablauf-titel">
-      <SektionsKopf id="ablauf-titel" eyebrow={a.eyebrow} headline={akzentGold(a.headline)} sublines={a.sublines} />
+    <Sektion id="zugang" aria-labelledby="zugang-titel">
+      <SektionsKopf id="zugang-titel" eyebrow={z.eyebrow} headline={akzentGold(z.headline)} />
       <Box position="relative" mt={{ base: 10, md: 14 }}>
         <Box
           aria-hidden
           display={{ base: "none", md: "block" }}
           position="absolute"
-          top="58px"
-          left="8%"
-          right="8%"
+          top="50%"
+          left="6%"
+          right="6%"
           h="1px"
-          bg="linear-gradient(90deg, transparent, rgba(232, 192, 148, 0.45) 20%, rgba(232, 192, 148, 0.45) 80%, transparent)"
+          bg="linear-gradient(90deg, transparent, rgba(111, 208, 166, 0.45) 18%, rgba(111, 208, 166, 0.45) 82%, transparent)"
+        />
+        <Box
+          aria-hidden
+          display={{ base: "block", md: "none" }}
+          position="absolute"
+          top="4%"
+          bottom="4%"
+          left="50%"
+          w="1px"
+          bg="linear-gradient(180deg, transparent, rgba(111, 208, 166, 0.4) 15%, rgba(111, 208, 166, 0.4) 85%, transparent)"
         />
         <Grid
           as="ol"
@@ -270,67 +241,26 @@ function Ablauf() {
           templateColumns={{ base: "1fr", md: "repeat(3, minmax(0, 1fr))" }}
           gap={{ base: 4, md: 5 }}
         >
-          {a.schritte.map((s, i) => (
-            <Reveal as="li" key={s.titel} delay={i * 80} display="flex">
-              <Stack className="cc-card" p={{ base: 6, md: 7 }} spacing={5} w="full">
-                <SchrittMarke nummer={String(i + 1).padStart(2, "0")} marke={s.marke} as="p" />
-                <Stack spacing={2} flex={1}>
-                  <Text as="h3" fontSize={{ base: "19px", md: "21px" }} fontWeight={600} lineHeight={1.3} color="var(--cc-text)">
-                    {s.titel}
-                  </Text>
-                  <Text fontSize={{ base: "15px", md: "16px" }} lineHeight={1.65} color="var(--cc-text-2)">
-                    {s.text}
-                  </Text>
-                </Stack>
-                <HStack spacing={2} pt={4} borderTop="1px solid var(--cc-line)">
-                  <Box color="var(--cc-gold-light)" flexShrink={0}>
-                    <Check size={16} strokeWidth={2.25} aria-hidden />
-                  </Box>
-                  <Text fontSize="14px" fontWeight={500} color="var(--cc-text-soft)">
-                    {s.kurz}
-                  </Text>
-                </HStack>
+          {z.schritte.map((s, i) => {
+            // Der letzte Schritt (Freischaltung) steht in Smaragd — das Ziel des Wegs.
+            const ziel = i === z.schritte.length - 1;
+            return (
+            <Reveal as="li" key={s.marke} delay={i * 90} display="flex">
+              <Stack className={ziel ? "cc-card cc-card--smaragd" : "cc-card"} p={{ base: 6, md: 7 }} spacing={4} w="full">
+                <SchrittMarke nummer={String(i + 1).padStart(2, "0")} marke={s.marke} ton={ziel ? "smaragd" : "gold"} />
+                <Text fontSize={{ base: "16px", md: "17px" }} lineHeight={1.6} color={ziel ? "var(--cc-text)" : "var(--cc-text-soft)"}>
+                  {s.text}
+                </Text>
               </Stack>
             </Reveal>
-          ))}
+            );
+          })}
         </Grid>
       </Box>
       <Reveal delay={200}>
         <Flex justify="center" mt={{ base: 10, md: 12 }}>
-          <TrainingStartKnopf />
+          <Bewerbungsaktion />
         </Flex>
-      </Reveal>
-    </Sektion>
-  );
-}
-
-/* ─────────────────────────── Abschluss ─────────────────────────── */
-
-function Abschluss({ bewertungen }: { bewertungen: Bewertungsspiegel }) {
-  const a = landing.abschluss;
-  return (
-    <Sektion id="abschluss" py={{ base: 20, md: 32 }}>
-      <Reveal>
-        <Stack spacing={{ base: 8, md: 10 }} align="center" textAlign="center">
-          <Heading
-            as="h2"
-            fontSize="clamp(30px, 5.2vw, 58px)"
-            fontWeight={700}
-            lineHeight={1.08}
-            letterSpacing="-0.03em"
-            color="var(--cc-text)"
-            maxW="900px"
-          >
-            {akzentGold(a.headline)}
-            <Box as="span" display="block">
-              {akzentGold(a.zeile2)}
-            </Box>
-          </Heading>
-          <Stack spacing={5} align="center" w={{ base: "full", sm: "auto" }}>
-            <TrainingStartKnopf />
-            <Sterne bewertungen={bewertungen} />
-          </Stack>
-        </Stack>
       </Reveal>
     </Sektion>
   );

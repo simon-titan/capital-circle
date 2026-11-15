@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { FRAGEN, FRAGEN_FELDER, ONBOARDING_START, antwortLabel, type FrageFeld } from "@/config/onboarding";
+import { FRAGEN, FRAGEN_FELDER, MEHRFACH_TRENNER, ONBOARDING_START, antwortText, antwortWerte, type FrageFeld } from "@/config/onboarding";
 import { requireAdmin } from "@/lib/supabase/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -60,7 +60,8 @@ async function alle<T>(
 }
 
 async function ladeAntworten(service: SupabaseClient, ids?: string[]): Promise<AntwortZeile[]> {
-  const spalten = `user_id,${FRAGEN_FELDER.join(",")},discovery_source_other,attribution,bestand,discord_verbunden_am,community_vorgestellt_am,kurs_gestartet_am`;
+  // `*` statt Spaltenliste: liest `main_problem_alle` (Migration 115) mit, ohne ohne sie zu scheitern.
+  const spalten = "*";
   if (ids) {
     const { data, error } = await service.from("onboarding_antworten").select(spalten).in("user_id", ids);
     if (error) throw new Error(error.message);
@@ -121,7 +122,7 @@ export async function GET(request: Request) {
               antwort:
                 f.feld === "discovery_source" && a.discovery_source === "sonstiges" && a.discovery_source_other
                   ? `Sonstiges: ${a.discovery_source_other}`
-                  : antwortLabel(f.feld, a[f.feld]),
+                  : antwortText(f.feld, a),
             }))
           : [],
         attribution: a?.attribution ?? null,
@@ -187,7 +188,8 @@ export async function GET(request: Request) {
           a.user_id,
           a.bestand ? "bestand" : "neu",
           p.onboarding_fragen_am,
-          ...FRAGEN_FELDER.map((f) => a[f]),
+          // Mehrfachfrage (3): alle Werte, Hauptantwort zuerst.
+          ...FRAGEN_FELDER.map((f) => antwortWerte(f, a).join(MEHRFACH_TRENNER) || null),
           a.discovery_source_other,
           p.membership_tier,
           p.is_paid,
@@ -216,9 +218,9 @@ export async function GET(request: Request) {
     // Verteilungen je Frage.
     const verteilungen = FRAGEN.map((f) => {
       const zaehler = new Map<string, number>();
+      // Bei der Mehrfachfrage zählt jede gewählte Antwort (Summe > Anzahl Mitglieder).
       for (const { a } of zeilen) {
-        const w = a[f.feld];
-        if (w) zaehler.set(w, (zaehler.get(w) ?? 0) + 1);
+        for (const w of antwortWerte(f.feld, a)) zaehler.set(w, (zaehler.get(w) ?? 0) + 1);
       }
       return {
         feld: f.feld,

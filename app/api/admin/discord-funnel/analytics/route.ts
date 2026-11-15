@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/supabase/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
-  DISCORD_FUNNEL_QUESTIONS,
+  FRUEHERE_FRAGEN,
   type DiscordFunnelQuestion,
 } from "@/config/discord-funnel-questions";
 import {
@@ -245,9 +245,10 @@ export async function GET(request: NextRequest) {
   ];
 
   // ── Content-Insights ────────────────────────────────────────────────────────
-  const blocker = DISCORD_FUNNEL_QUESTIONS.find((q) => q.id === "biggest_blocker")!;
-  const tried = DISCORD_FUNNEL_QUESTIONS.find((q) => q.id === "tried_before")!;
-  const channel = DISCORD_FUNNEL_QUESTIONS.find((q) => q.id === "channel")!;
+  // Diese drei Fragen gab es bis 07.11.2026 — die Auswertung zeigt die älteren Leads.
+  const blocker = FRUEHERE_FRAGEN.find((q) => q.id === "biggest_blocker")!;
+  const tried = FRUEHERE_FRAGEN.find((q) => q.id === "tried_before")!;
+  const channel = FRUEHERE_FRAGEN.find((q) => q.id === "channel")!;
 
   const contentInsights = {
     biggestBlocker: optionDistribution(blocker, leads),

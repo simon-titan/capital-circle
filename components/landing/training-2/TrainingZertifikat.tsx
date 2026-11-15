@@ -230,8 +230,18 @@ function AbschnittsTitel({ id, children, zeile }: { id: string; children: ReactN
  * Rosette, die sich beim Laden zeichnet. Reihenfolge wie auf `/training`:
  * Headline, Video, Punkte, Knopf, Sterne.
  */
+/**
+ * Pill-Text und Punkte des früheren `/training`-Hero. Seit dem Umbau nach
+ * Emres Feedback (08.11.2026) stehen sie nicht mehr in `config/training.ts`;
+ * diese Vorschau behält sie, damit ihr Hero unverändert bleibt.
+ */
+const VORSCHAU_HERO = {
+  eyebrow: "Kostenloses Training",
+  punkte: ["Kostenloses Training", "Verifizierte Ergebnisse & Case Studies", "Praxisnahe Strategien aus der Realität"],
+} as const;
+
 function Hero({ bewertungen }: { bewertungen: Bewertungsspiegel }) {
-  const h = landing.hero;
+  const h = { ...landing.hero, ...VORSCHAU_HERO };
   const basis = STREAM_SUBDOMAIN ? `https://${STREAM_SUBDOMAIN}.cloudflarestream.com/${landingVideo.uid}` : null;
 
   return (
@@ -615,9 +625,9 @@ const ROEMISCH = ["I", "II", "III"];
 
 /** Drei Schritte als Spalten zwischen Gold-Haarlinien, römische Ziffern in Bodoni. Keine Karten. */
 function Ablauf() {
-  const a = landing.ablauf;
+  const a = landing.zugang;
   return (
-    <Abschnitt id="ablauf" label="ablauf-titel">
+    <Abschnitt id="zugang" label="ablauf-titel">
       <AbschnittsTitel id="ablauf-titel" zeile={a.sublines[0]}>
         {akzentKursiv(a.headline)}
       </AbschnittsTitel>
@@ -781,9 +791,6 @@ function Abschluss({ bewertungen }: { bewertungen: Bewertungsspiegel }) {
           style={{ textWrap: "balance" }}
         >
           {akzentKursiv(a.headline)}
-          <Box as="span" display="block">
-            {akzentKursiv(a.zeile2)}
-          </Box>
         </Heading>
         <Stack spacing={5} align="center" w={{ base: "full", sm: "auto" }}>
           <LuxusKnopf />

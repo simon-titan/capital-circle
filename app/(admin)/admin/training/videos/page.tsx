@@ -1,15 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Box, Button } from "@chakra-ui/react";
+import { Box, Button, Stack } from "@chakra-ui/react";
 import { AdminPageHeader } from "@/components/admin/adminUi";
+import { FunnelVideosManager } from "@/components/admin/FunnelVideosManager";
 import { TrainingVideosManager } from "@/components/admin/TrainingVideosManager";
 import { requireAdmin } from "@/lib/supabase/admin-auth";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Videos des kostenlosen Trainings (`/kostenloses-training`) anordnen,
- * benennen, veröffentlichen und aus Cloudflare Stream hinzufügen.
+ * Alle Videos des Free-Funnels an einer Stelle: oben die öffentlichen
+ * Funnel-Videos (`/training`, `/call`), darunter die Kursvideos des kostenlosen
+ * Trainings (`/kostenloses-training`) — anordnen, benennen, veröffentlichen.
  */
 export default async function AdminTrainingVideosPage() {
   const { error } = await requireAdmin();
@@ -18,8 +20,8 @@ export default async function AdminTrainingVideosPage() {
   return (
     <Box maxW="1100px" mx="auto">
       <AdminPageHeader
-        title="Trainingsvideos"
-        subtitle="Die Videos des kostenlosen Trainings — Reihenfolge, Titel und Sichtbarkeit. Was hier oben steht, sieht ein neues Konto als Video 1."
+        title="Funnel- & Kursvideos"
+        subtitle="Oben die Videos der öffentlichen Seiten /training und /call, darunter die Kursvideos des kostenlosen Trainings — Reihenfolge, Titel und Sichtbarkeit."
         actions={
           <Link href="/admin/training" style={{ textDecoration: "none" }}>
             <Button as="span" size="sm" variant="line">
@@ -28,7 +30,10 @@ export default async function AdminTrainingVideosPage() {
           </Link>
         }
       />
-      <TrainingVideosManager />
+      <Stack spacing={6}>
+        <FunnelVideosManager />
+        <TrainingVideosManager />
+      </Stack>
     </Box>
   );
 }

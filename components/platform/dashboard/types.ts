@@ -161,11 +161,71 @@ export type OnboardingCheckliste = {
 };
 
 /** Stand im kostenlosen Training (Free-Dashboard). */
-export type TrainingKachel = { gesehen: number; gesamt: number; naechstes: number; abgeschlossen: boolean };
+export type TrainingKachel = {
+  gesehen: number;
+  gesamt: number;
+  naechstes: number;
+  abgeschlossen: boolean;
+  /**
+   * Freischaltung (Migration 110): `aktiv` mit Ende, `beendet` nach 30 (+7)
+   * Tagen, `keine` ohne Bewerbung/Zugang. Fehlt das Feld, gilt „offen".
+   */
+  zugang?: { art: "aktiv" | "beendet" | "keine"; endeAm: string | null; restTage: number | null };
+};
+
+/* ─── Free-Dashboard (Emres Mockup, 08.11.2026) ─────────────────────────── */
+
+/** Eine Kachel in „Dein Lernweg“. */
+export type FreeLektion = {
+  /** 1-basiert, wie im Kursplayer und in den Mails (`?video=n`). */
+  nummer: number;
+  titel: string;
+  /** Video 2 (`OPTIONALE_VIDEOS`) — sperrt die nächste Lektion nicht. */
+  optional: boolean;
+  /**
+   * `fertig` = zu 90 % gesehen, `aktuell` = die nächste Pflichtlektion,
+   * `offen` = freigeschaltet, aber nicht dran (z. B. die optionale),
+   * `gesperrt` = noch nicht freigeschaltet oder noch nicht hochgeladen.
+   */
+  status: "fertig" | "aktuell" | "offen" | "gesperrt";
+  /** Ziel beim Klick; `null` = nicht klickbar (gesperrt oder kein Zugang). */
+  href: string | null;
+};
+
+/**
+ * Zugang zum kostenlosen Training aus Sicht der Karte (`ladeTrainingFreigabe`):
+ * `offen` = ohne Ablauf (Tabellen fehlen o. Ä.), `wartet` = Bewerbung angenommen,
+ * Zugang noch nicht angelegt.
+ */
+export type FreeZugang =
+  | { art: "aktiv"; restTage: number }
+  | { art: "offen" }
+  | { art: "beendet"; whatsappUrl: string | null }
+  | { art: "keine" }
+  | { art: "wartet" };
+
+export type FreeDashboardDaten = {
+  firstName: string;
+  /** Altes Bewerbungsverfahren (Step 2) — dieselbe Karte wie im Dashboard der Zahlenden. */
+  showApplyPrompt: boolean;
+  zugang: FreeZugang;
+  training: {
+    gesehen: number;
+    gesamt: number;
+    prozent: number;
+    abgeschlossen: boolean;
+    /** Die Lektion für „Als nächstes“; `null`, wenn alles gesehen ist oder sie noch nicht hochgeladen ist. */
+    naechste: { nummer: number; titel: string } | null;
+    thumbnailUrl: string | null;
+    /** Ziel von Vorschaubild und Hauptknopf. */
+    weiterHref: string;
+    lektionen: FreeLektion[];
+  };
+  /** `frei`: kostenloser Kurs abgeschlossen (sonst gesperrt, siehe `lib/training/blueprint-freigabe.ts`). */
+  blueprint: { pdf: boolean; video: boolean; frei: boolean };
+};
 
 export type DashboardViewData = {
-  /** Nur für Konten ohne Zahlung: Karte zum kostenlosen Training. */
-  training?: TrainingKachel | null;
   firstName: string;
   isPaid: boolean;
   canUseJournal: boolean;

@@ -3,6 +3,7 @@
 import {
   Box,
   Button,
+  HStack,
   Input,
   InputGroup,
   InputLeftElement,
@@ -13,11 +14,15 @@ import {
   ModalHeader,
   ModalOverlay,
   Stack,
+  Text,
+  Textarea,
 } from "@chakra-ui/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, User, Mail, Phone } from "lucide-react";
 import {
   DISCORD_FUNNEL_QUESTIONS,
+  FREITEXT_MIN,
+  antwortGueltig,
   type DiscordFunnelQuestion,
 } from "@/config/discord-funnel-questions";
 import type { SourceOrigin } from "@/lib/discord-funnel/types";
@@ -136,7 +141,7 @@ export function DiscordQuestionsModal({
   const currentStepAnswered = useMemo(() => {
     if (inContactPhase) return contactValid;
     if (!currentQuestion) return false;
-    return currentQuestion.options.includes(currentValue);
+    return antwortGueltig(currentQuestion, currentValue);
   }, [inContactPhase, contactValid, currentQuestion, currentValue]);
 
   const handleClose = useCallback(() => {
@@ -217,7 +222,7 @@ export function DiscordQuestionsModal({
     }
 
     if (!currentStepAnswered) {
-      setStepError("Bitte wähle eine Option.");
+      setStepError(currentQuestion?.typ === "freitext" ? `Bitte schreib mindestens ${FREITEXT_MIN} Zeichen.` : "Bitte wähle eine Option.");
       return;
     }
     setStepError(null);
@@ -458,6 +463,36 @@ export function ContactStep({
   );
 }
 
+/**
+ * Zeichenzähler unter jedem Freitext (Feedback 14.11.2026): zeigt, wie viele
+ * Zeichen bis zur Mindestlänge `FREITEXT_MIN` fehlen, mit dünnem Balken;
+ * erreicht in Smaragd mit Haken. Zählt wie `antwortGueltig` ohne Leerraum am Rand.
+ */
+function FreitextZaehler({ id, laenge }: { id: string; laenge: number }) {
+  const fertig = laenge >= FREITEXT_MIN;
+  const anteil = Math.min(100, (laenge / FREITEXT_MIN) * 100);
+  return (
+    <Stack id={id} spacing={1.5} aria-live="polite">
+      <Box h="2px" borderRadius="full" bg="rgba(255, 255, 255, 0.08)" overflow="hidden" aria-hidden>
+        <Box
+          h="100%"
+          w={`${anteil}%`}
+          bg={fertig ? "var(--cc-smaragd-hell)" : "rgba(255, 255, 255, 0.35)"}
+          transition="width 160ms var(--cc-ease), background-color 160ms var(--cc-ease)"
+        />
+      </Box>
+      <HStack justify="space-between" fontSize="12px" className="cc-num">
+        <Text color={fertig ? "var(--cc-smaragd-hell)" : "var(--cc-text-3)"}>
+          {fertig ? "✓ Mindestlänge erreicht" : `Noch ${FREITEXT_MIN - laenge} Zeichen`}
+        </Text>
+        <Text color="var(--cc-text-3)">
+          {laenge} / {FREITEXT_MIN}
+        </Text>
+      </HStack>
+    </Stack>
+  );
+}
+
 /* ================================================================
    Radio Step (Single-Select Cards) — ebenfalls von `/call` genutzt
    ================================================================ */
@@ -473,8 +508,36 @@ export function RadioStep({
   onChange: (v: string) => void;
   error: string | null;
 }) {
+  if (question.typ === "freitext") {
+    return (
+      <Stack spacing={5}>
+        {question.intro ? <FunnelLead fontSize="14px">{question.intro}</FunnelLead> : null}
+        <FunnelHeadline as="h2" scale="sm" id={`frage-${question.id}`}>
+          {question.question}
+        </FunnelHeadline>
+        <Stack spacing={2}>
+          <Textarea
+            {...funnelFieldProps}
+            aria-labelledby={`frage-${question.id}`}
+            name={question.id}
+            value={value}
+            placeholder={question.placeholder}
+            onChange={(e) => onChange(e.target.value)}
+            rows={4}
+            fontSize="16px"
+            resize="vertical"
+            maxLength={2000}
+            aria-describedby={`zaehler-${question.id}`}
+          />
+          <FreitextZaehler id={`zaehler-${question.id}`} laenge={value.trim().length} />
+          {error && <FieldError>{`Bitte schreib mindestens ${FREITEXT_MIN} Zeichen.`}</FieldError>}
+        </Stack>
+      </Stack>
+    );
+  }
   return (
     <Stack spacing={5}>
+      {question.intro ? <FunnelLead fontSize="14px">{question.intro}</FunnelLead> : null}
       <FunnelHeadline as="h2" scale="sm">
         {question.question}
       </FunnelHeadline>

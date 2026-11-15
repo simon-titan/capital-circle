@@ -7,7 +7,8 @@ import { isFreeLiveSessionCategory } from "@/components/platform/live-session-fr
 import { LiveSessionDetailClient } from "@/components/platform/LiveSessionDetailClient";
 import { getCurrentUserAndProfile, getLiveSessionDetail } from "@/lib/server-data";
 import { liveSessionsNurFrei, mitgliedWerdenZiel } from "@/lib/membership";
-import { liveZugangAbgelaufen } from "@/lib/mentoring/zugang";
+import { archivZugangFehlt, liveZugangAbgelaufen } from "@/lib/mentoring/zugang";
+import { ArchivNichtEnthalten } from "@/components/platform/ArchivNichtEnthalten";
 import { LiveZugangAbgelaufen } from "@/components/platform/LiveZugangAbgelaufen";
 
 type PageProps = {
@@ -29,6 +30,15 @@ export default async function LiveSessionDetailPage({ params }: PageProps) {
 
   const freeMember = liveSessionsNurFrei(profile);
   const freeCategory = isFreeLiveSessionCategory(detail.category.title);
+
+  // Ausbildung/Live-Abo (seit 08.11.2026): Live-Bereich ja, Live-Archiv nein.
+  if (!liveZugangAbgelaufen(profile) && archivZugangFehlt(profile) && !freeCategory) {
+    return (
+      <Stack spacing={5} align="stretch">
+        <ArchivNichtEnthalten titel={detail.category.title} />
+      </Stack>
+    );
+  }
 
   // Mentoring-Programm, Live-Zeitraum vorbei: statt „Mitglied werden" das Live-Abo.
   if (liveZugangAbgelaufen(profile) && !freeCategory) {

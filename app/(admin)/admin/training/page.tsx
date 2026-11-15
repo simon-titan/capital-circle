@@ -14,7 +14,15 @@ export const dynamic = "force-dynamic";
  * `/training` registriert hat, wie weit er in den Videos ist, und wer ein
  * Analysegespräch angefragt hat — getrennt vom Discord-/Call-Funnel-Board.
  */
-export default async function AdminTrainingPage() {
+export default async function AdminTrainingPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const roh = (await searchParams).ansicht;
+  const ansicht = (Array.isArray(roh) ? roh[0] : roh) as string | undefined;
+  const startAnsicht =
+    ansicht === "bewerbungen" || ansicht === "leads" || ansicht === "termine" || ansicht === "registrierungen" || ansicht === "versand" || ansicht === "uebersicht" ? ansicht : undefined;
   const { error } = await requireAdmin();
   if (error) redirect("/dashboard");
 
@@ -30,22 +38,29 @@ export default async function AdminTrainingPage() {
     <Box>
       <AdminPageHeader
         title="Free Training"
-        subtitle="Registrierungen über /training, Fortschritt in den Trainingsvideos und die Analysegespräche aus dem Mitgliederbereich."
+        subtitle="Bewerbungen über /training (Emre entscheidet), Zugang und Fortschritt im Training, die Analysegespräche und das Versandprotokoll der Playbook-Mails."
         actions={
-          <Link href="/admin/training/videos" style={{ textDecoration: "none" }}>
-            <Button as="span" size="sm" variant="gold">
-              Videos anordnen
-            </Button>
-          </Link>
+          <>
+            <Link href="/admin/training/mails" style={{ textDecoration: "none" }}>
+              <Button as="span" size="sm" variant="line">
+                Mails ansehen
+              </Button>
+            </Link>
+            <Link href="/admin/training/videos" style={{ textDecoration: "none" }}>
+              <Button as="span" size="sm" variant="gold">
+                Videos anordnen
+              </Button>
+            </Link>
+          </>
         }
       />
       {fehler ? (
         <Alert status="error" {...adminAlertProps("error")}>
           <AlertIcon color={adminAlertIconColor("error")} />
-          <Text fontSize="sm">{fehler} — ist Migration 109 eingespielt?</Text>
+          <Text fontSize="sm">{fehler} — sind Migration 109 und 110 eingespielt?</Text>
         </Alert>
       ) : daten ? (
-        <AdminTrainingBoard {...daten} />
+        <AdminTrainingBoard {...daten} startAnsicht={startAnsicht} />
       ) : null}
     </Box>
   );

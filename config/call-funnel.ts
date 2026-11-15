@@ -5,14 +5,14 @@
  * Überschriften, Case Studies und Hinweise ändern sich, ohne dass sich das
  * Layout ändert — dafür soll niemand eine Komponente anfassen müssen.
  *
- * Aufbau der Seite (Reihenfolge hier = Reihenfolge dort):
- *   1. Hero mit VSL („Schritt 1 von 2") und Hauptaktion
- *   2. Strategie-Gespräch („Schritt 2 von 2"): Fragebogen und Calendly im Modal
- *   3. Case Studies (+ Link auf alle Nachweise)
+ * Aufbau der Seite nach Emres Feedback (08.11.2026):
+ *   1. Hero: Headline, Unterzeile, VSL, Hauptaktion, „100 % kostenlos & unverbindlich"
+ *   2. Brief „Ein persönliches Wort von Emre." (`emreBrief`)
+ *   3. Member Wins: Case Studies, Auszahlungen (`ErgebnisseSection`), Bewertungen
  *   4. Abschluss mit demselben Knopf
  *
- * Seit 06.11.2026 bewusst schlank (Laufzeile und Nachweis-Wand entfallen) —
- * jede Sektion endet beim Buchungsknopf.
+ * Die Sektion „Das Gespräch" (Schritt 2 von 2) ist raus. Jede Hauptaktion
+ * öffnet dasselbe Buchungs-Modal mit Fragebogen und Calendly.
  *
  * ── Schreibregeln für diese Datei ───────────────────────────────────────────
  *
@@ -29,73 +29,104 @@
 /* ─── Seite & Vorschau ──────────────────────────────────────────────────── */
 
 export const meta = {
-  title: "Kostenloses Strategie-Gespräch · Capital Circle",
+  title: "Kostenloses Analysegespräch · Capital Circle",
   description:
-    "Du kennst die Konzepte, aber dir fehlt ein klarer Prozess? Schau das Video und buch dein kostenloses Strategie-Gespräch mit dem Capital Circle Team.",
-  shareTitle: "Kostenloses Strategie-Gespräch · Capital Circle",
+    "Du kennst die Konzepte, aber dir fehlt ein klarer Prozess? Schau das Video und buch dein kostenloses Analysegespräch mit dem Capital Circle Team.",
+  shareTitle: "Kostenloses Analysegespräch · Capital Circle",
   shareDescription:
-    "Schau das Video und finde im kostenlosen Strategie-Gespräch heraus, was zwischen dir und konstanten Ergebnissen steht.",
+    "Schau das Video und finde im kostenlosen Analysegespräch heraus, was zwischen dir und konstanten Ergebnissen steht.",
   /** Vorschaubild für geteilte Links — dasselbe wie `/termin`; steht im Matcher von `proxy.ts` unter den Ausnahmen. */
   shareImage: "/termin-og.jpg",
-  shareImageAlt: "Capital Circle: kostenloses Strategie-Gespräch",
+  shareImageAlt: "Capital Circle: kostenloses Analysegespräch",
 } as const;
 
 /**
- * Das VSL („1o1 landingpage.mp4“, Emre 06.11.2026) aus Cloudflare Stream,
+ * Das VSL („main phunnel video .mp4“, Emre 11.11.2026, 8:29 min — die finale
+ * Fassung; Vorgänger „1o1 landingpage.mp4“ `801c1831…`) aus Cloudflare Stream,
  * **unsigniert** (öffentliche, statische Seite — ein Token liefe ab). Wie
  * `landingVideo` in `config/training.ts` fest hier statt nur als Umgebungs-
- * variable: So läuft es in jedem Deployment, auch in Vorschauen. Wer ein
- * anderes Video braucht, kann es mit `NEXT_PUBLIC_CALL_VIDEO_URL` /
- * `NEXT_PUBLIC_CALL_VIDEO_POSTER` überschreiben.
+ * variable: So läuft es in jedem Deployment, auch in Vorschauen.
+ * **Nur die Vorgabe:** Getauscht wird im Admin (Funnel- & Kursvideos → Funnel-Videos,
+ * `lib/funnel-videos.ts`); die Auswahl dort hat Vorrang.
  */
 export const callVideo = {
-  uid: "801c1831f358644dade5922cda3682bd",
+  uid: "cc9b479e8a5f632d3c57cd4f105c1e38",
   /** Standbild-Zeitpunkt für das Poster (Sekunden). */
   posterSekunde: 10,
 } as const;
 
-/** Hauptaktion — öffnet das Buchungs-Modal; steht unter dem Video, in Schritt 2 und am Ende der Seite. */
-export const ctaLabel = "Kostenloses Strategie-Gespräch sichern";
+/** Hauptaktion — öffnet das Buchungs-Modal; steht unter dem Video, unter dem Brief und am Ende der Seite. */
+export const ctaLabel = "Jetzt Analysegespräch anfragen";
 
 /* ─── 1 Hero ────────────────────────────────────────────────────────────── */
 
 export const hero = {
-  /** Pill über der Headline. */
-  pill: "Kostenloses Strategie-Gespräch",
-  /** Kurze Zeile unter jeder Hauptaktion — nur Aussagen, die stimmen. */
-  vertrauen: ["Kostenlos", "Unverbindlich", "1:1 per Video-Call"],
+  /** Zeile unter jeder Hauptaktion und in der mobilen Aktionsleiste — nur Aussagen, die stimmen. */
+  vertrauen: ["100 % kostenlos & unverbindlich"],
   /** Hauptaktion in der Kopfleiste (kurz, passt neben die Wortmarke). */
-  ctaKurz: "Gespräch sichern",
-  headline: "Du kennst die Konzepte. Dir fehlt der {Prozess}, der dich {konstant} macht.",
+  ctaKurz: "Gespräch anfragen",
+  headline: "Du investierst Zeit, Geld und Energie ins Trading. Doch die {Ergebnisse bleiben aus.}",
   subline:
-    "Im kostenlosen Strategie-Gespräch schauen wir uns an, warum auf deine guten Phasen immer wieder schlechte folgen und welcher klare Ablauf aus Analyse, Entry, Risiko und Review das bei dir ändert.",
-  /** Über dem Video. Ohne Video (keine Stream-Subdomain gesetzt) entfällt die Zeile samt Hinweis. */
-  schritt: "Schritt 1 von 2: Video ansehen",
-  /** Unter dem Video, über der Hauptaktion. */
-  videoHinweis: "Am besten mit Ton und bis zum Ende. Danach weißt du genau, worum es im Gespräch geht.",
+    "Entwickle einen Handelsansatz, bei dem du genau weißt, wann du handelst, warum du handelst und wann du draußen bleibst.",
   /** Linktext hinter `garantie.kurz` (nur sichtbar, wenn die Garantie freigegeben ist). */
   garantieLink: "Garantiebedingungen",
 } as const;
 
-/* ─── 2 Strategie-Gespräch buchen ───────────────────────────────────────── */
+/* ─── 2 Brief von Emre ──────────────────────────────────────────────────── */
+
+/**
+ * „Ein persönliches Wort von Emre." — Wortlaut aus Emres Vorlage (Papier mit
+ * Reißzwecke, 07.11.2026), als echter Text nachgebaut in
+ * `components/landing/call/EmreBrief.tsx`. Jeder Absatz ist eine Liste von
+ * Teilen; `fett: true` setzt einen Teil fett, genau an den Stellen der Vorlage.
+ */
+export type BriefTeil = { text: string; fett?: boolean };
+
+export const emreBrief = {
+  titel: "Ein persönliches Wort von Emre.",
+  absaetze: [
+    [
+      { text: "Ich habe Jahre damit verbracht, die Märkte zu verstehen und meinen eigenen Handelsansatz zu entwickeln. Dabei habe ich eines gelernt: " },
+      { text: "Eine Strategie allein bringt dich nicht weiter, wenn du nicht weißt, warum du handelst.", fett: true },
+    ],
+    [{ text: "Ich habe Capital Circle nicht gegründet, damit du meine Trades kopierst oder einfach nur weitere Videos konsumierst." }],
+    [
+      {
+        text: "Ich möchte dir zeigen, wie ich Märkte analysiere, Entscheidungen treffe und Risiken kontrolliere. Gemeinsam arbeiten wir daran, einen klaren Handelsprozess zu entwickeln, den du eigenständig und immer wieder anwenden kannst.",
+      },
+    ],
+    [
+      {
+        text: "Dabei geht es nicht darum, noch mehr Strategien zu sammeln. Es geht darum, deine Fehler zu erkennen, bessere Entscheidungen zu treffen und genau zu verstehen, was du am Markt tust.",
+      },
+    ],
+    [
+      {
+        text: "Du sollst nicht länger auf den nächsten guten Trade hoffen. Du sollst wissen, worauf du wartest, wann du handelst und wann du bewusst nichts tust.",
+      },
+    ],
+    [
+      {
+        text: "Ich werde dir keine schnellen Gewinne versprechen. Was du von mir bekommst, ist meine Erfahrung, ein klarer Ausbildungsweg und ehrliches, persönliches Feedback – auch dann, wenn es unbequem ist.",
+      },
+    ],
+    [{ text: "Mein Ziel ist nicht, dass du dauerhaft von mir abhängig bist. Mein Ziel ist, dass du lernst, eigenständig zu handeln." }],
+    [{ text: "Du entscheidest, ob du weiter ausprobierst oder anfängst, gezielt an deinem Trading zu arbeiten." }],
+    [
+      { text: "Wenn du bereit bist, " },
+      { text: "diesen Schritt zu gehen, dann nutze die Chance und bewirb dich für Capital Circle.", fett: true },
+    ],
+  ] as readonly (readonly BriefTeil[])[],
+  unterschrift: "— Emre",
+} as const;
+
+/* ─── Buchungs-Modal ────────────────────────────────────────────────────── */
 
 export const buchung = {
-  /** Nur mit Video — ohne Schritt 1 wäre „Schritt 2 von 2" eine Frage ohne Antwort. */
-  schritt: "Schritt 2 von 2: Strategie-Gespräch buchen",
-  headline: "Finde heraus, was zwischen dir und {konstanten Ergebnissen} steht.",
-  text: "Sechs kurze Fragen, dann wählst du direkt deinen Termin. Dauert keine zwei Minuten und sorgt dafür, dass wir im Gespräch sofort bei deinem Trading sind statt beim Smalltalk.",
-  /** „Im Gespräch klären wir …" — drei Punkte neben bzw. über der Karte. */
-  punkteTitel: "Im Gespräch klären wir",
-  punkte: [
-    "wo dein Trading gerade steht, ehrlich und ohne Schönreden",
-    "was dich bisher Konstanz kostet: Overtrading, Regelbrüche, Emotionen oder ein fehlender Prozess",
-    "ob Capital Circle dich weiterbringt. Und wenn nicht, sagen wir dir das.",
-  ],
-
   /** Texte im Buchungs-Modal (der Schlüssel heißt aus Gewohnheit noch `karte`). */
   karte: {
     /** Name des Dialogs für Screenreader. */
-    modalTitel: "Kostenloses Strategie-Gespräch buchen",
+    modalTitel: "Kostenloses Analysegespräch anfragen",
     /** Kopfzeile des Modals je Schritt. */
     labelKontakt: "Deine Daten",
     labelFragen: "Kurze Einordnung",
@@ -132,9 +163,8 @@ export const buchung = {
      * „kostenloses Gespräch" liest sich wie die Verkaufsfalle, die die Seite
      * gerade ausgeschlossen hat.
      */
-    fragen: {
-      budget: "Welches Budget könntest du für deine Trading-Ausbildung einplanen?",
-    } as Record<string, string>,
+    // Seit 07.11.2026 gelten Emres Fragen wörtlich (auch die Investitionsfrage mit ihrer Einleitung).
+    fragen: {} as Record<string, string>,
     fehlerAuswahl: "Bitte wähle eine Option.",
     fehlerServer: "Deine Angaben konnten nicht gespeichert werden. Bitte versuch es noch einmal.",
     fehlerVerbindung: "Verbindungsfehler. Bitte versuch es noch einmal.",
@@ -150,7 +180,7 @@ export const buchung = {
     kalenderTitel: "Fast geschafft. Wähl jetzt deinen Termin.",
     kalenderText: "Alle freien Termine stehen im Kalender. Die Bestätigung mit dem Link zum Gespräch kommt per E-Mail.",
 
-    gebuchtTitel: "Dein Strategie-Gespräch ist gebucht.",
+    gebuchtTitel: "Dein Analysegespräch ist gebucht.",
     /** Endet mit dem, was als Nächstes passiert, nicht mit einer Ermahnung. */
     gebuchtText:
       "Die Bestätigung mit dem Link zum Gespräch ist gleich in deinem Postfach. Passt der Termin doch nicht, kannst du ihn über die Mail verschieben. Wir freuen uns auf dich.",
@@ -164,7 +194,20 @@ export const buchung = {
   },
 } as const;
 
-/* ─── 3 Case Studies ────────────────────────────────────────────────────── */
+/* ─── 3 Member Wins ─────────────────────────────────────────────────────── */
+
+/**
+ * Kopf des ganzen Blocks „Member Wins": steht über den Case Studies; darunter
+ * folgen die Auszahlungen (`ErgebnisseSection`, Texte aus
+ * `config/landing-membership.ts`) und die Bewertungen (`ReviewSection`).
+ */
+export const memberWins = {
+  eyebrow: "Member Wins",
+  headline: "Ergebnisse unserer {Mitglieder}.",
+  text: "Case Studies, belegte Auszahlungen und Bewertungen von Tradern, die mit unserer Methodik arbeiten. Klick auf eine Karte, um den Nachweis groß zu sehen.",
+} as const;
+
+/* ─── Case Studies ──────────────────────────────────────────────────────── */
 
 export interface CaseStudy {
   /** Was der Fall zeigt. `{…}` hebt eine Zahl hervor, z. B. „Zahlt sich {15.000$} aus". */
@@ -183,12 +226,6 @@ export interface CaseStudy {
   bild?: string;
 }
 
-export const caseStudiesKopf = {
-  eyebrow: "Case Studies",
-  headline: "Trader, die ihren {Prozess} gefunden haben.",
-  text: "Mitglieder, die mit unserer Methodik arbeiten. Klick auf eine Karte, um den Nachweis groß zu sehen.",
-} as const;
-
 /**
  * Die Video-Testimonials kommen später (Stand 17.10.2026). Bis dahin stehen
  * hier die vier Fälle aus `components/landing/CasesSection.tsx` mit denselben
@@ -203,31 +240,16 @@ export const caseStudies: CaseStudy[] = [
   { name: "Dominik", titel: "Lässt sich {1.250$} auszahlen", bild: "/cases/dominik.png" },
 ];
 
-/* ─── 4 Kundenergebnisse ────────────────────────────────────────────────── */
-
-/**
- * Die Wand selbst kommt aus `auszahlungenCommunity` und `auszahlungenEmre` in
- * `config/landing-membership.ts` — dieselben Nachweise wie auf `/ergebnisse`.
- * Hier stehen nur die Texte drumherum. Bestandene Challenges stehen bewusst
- * nicht auf dieser Seite: Eine Kontogröße ist keine Auszahlung (siehe AGENTS.md,
- * Eintrag „Bestandene Challenges").
- */
-/**
- * Unter den Case Studies: Einordnung und der Weg zu allen Nachweisen. Die große
- * Nachweis-Wand ist seit 06.11.2026 raus (Nutzerwunsch: „deutlich simpler, der
- * Fokus liegt auf der Buchung") — die Belege stehen vollständig auf `/ergebnisse`.
- */
+/** Unter den Case Studies: Einordnung (der Weg zu allen Nachweisen steht unter den Auszahlungen). */
 export const ergebnisseKopf = {
   hinweis: "Ergebnisse nicht typisch · Individuelle Ergebnisse variieren · Trading birgt Verlustrisiken",
-  alleLink: { label: "Alle Nachweise ansehen", href: "/ergebnisse" },
 } as const;
 
-/* ─── 5 Abschluss ───────────────────────────────────────────────────────── */
+/* ─── 4 Abschluss ───────────────────────────────────────────────────────── */
 
 export const abschluss = {
-  pill: "Begrenzte Termine pro Woche",
-  headline: "Das Strategie-Gespräch ist {kostenlos}.",
-  text: "Du gehst mit einer klaren Einschätzung raus, wo dein Trading steht und was dein nächster Schritt ist. Egal, ob du danach mit uns arbeitest oder nicht.",
+  headline: "Du hast genug Zeit investiert. {Jetzt ist es Zeit, gezielt voranzukommen.}",
+  text: "Lass uns gemeinsam herausfinden, was dich im Trading zurückhält und wie wir gezielt daran arbeiten können.",
 } as const;
 
 /* ─── Fußzeile ──────────────────────────────────────────────────────────── */

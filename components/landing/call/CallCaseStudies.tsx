@@ -2,7 +2,6 @@
 
 import {
   Box,
-  Button,
   Flex,
   Modal,
   ModalBody,
@@ -12,10 +11,10 @@ import {
   Stack,
   Text,
 } from "@chakra-ui/react";
-import { ArrowUpRight, Maximize2, Play, X } from "lucide-react";
+import { Maximize2, Play, X } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
-import { caseStudies, caseStudiesKopf, ergebnisseKopf, type CaseStudy } from "@/config/call-funnel";
+import { caseStudies, ergebnisseKopf, memberWins, type CaseStudy } from "@/config/call-funnel";
 import { GlassVideoPlayer } from "@/components/ui/GlassVideoPlayer";
 import { funnelModalContentProps, funnelOverlayProps } from "@/components/marketing/funnel-ui";
 import { Reveal } from "../landing-ui";
@@ -23,7 +22,9 @@ import { Sektion, SektionsKopf } from "../membership/membership-ui";
 import { akzentGold, akzentZahl } from "./call-ui";
 
 /**
- * Case Studies auf `/call`.
+ * Case Studies auf `/call` — der Anfang des Blocks „Member Wins" (Kopf aus
+ * `memberWins`). Darunter stellt `CallFunnelClient` die Auszahlungen
+ * (`ErgebnisseSection`, mit dem Link auf alle Nachweise) und die Bewertungen.
  *
  * Zwei Kartenarten aus derselben Liste (`caseStudies` in `config/call-funnel.ts`):
  * - **Videokarte** (`videoUrl` gesetzt): Standbild mit Play-Knopf, öffnet ein
@@ -41,12 +42,12 @@ export function CallCaseStudies() {
   if (caseStudies.length === 0) return null;
 
   return (
-    <Sektion id="case-studies" aria-labelledby="case-studies-titel">
+    <Sektion id="case-studies" aria-labelledby="member-wins-titel">
       <SektionsKopf
-        id="case-studies-titel"
-        eyebrow={caseStudiesKopf.eyebrow}
-        headline={akzentGold(caseStudiesKopf.headline)}
-        sublines={[caseStudiesKopf.text]}
+        id="member-wins-titel"
+        eyebrow={memberWins.eyebrow}
+        headline={akzentGold(memberWins.headline)}
+        sublines={[memberWins.text]}
       />
 
       <SimpleGrid columns={{ base: 1, md: 2 }} spacing={{ base: 4, md: 5 }} mt={{ base: 10, md: 14 }}>
@@ -57,23 +58,10 @@ export function CallCaseStudies() {
         ))}
       </SimpleGrid>
 
-      {/* Statt der früheren Nachweis-Wand: Einordnung und der Weg zu allen Belegen. */}
-      <Stack spacing={4} align="center" textAlign="center" mt={{ base: 8, md: 10 }}>
-        <Text fontSize="12px" lineHeight={1.7} color="var(--cc-text-3)">
-          {ergebnisseKopf.hinweis}
-        </Text>
-        <Button
-          as="a"
-          href={ergebnisseKopf.alleLink.href}
-          target="_blank"
-          rel="noopener"
-          variant="line"
-          size="sm"
-          rightIcon={<ArrowUpRight size={15} strokeWidth={1.75} />}
-        >
-          {ergebnisseKopf.alleLink.label}
-        </Button>
-      </Stack>
+      {/* Einordnung; der Weg zu allen Belegen steht unter den Auszahlungen direkt darunter. */}
+      <Text fontSize="12px" lineHeight={1.7} color="var(--cc-text-3)" textAlign="center" mt={{ base: 8, md: 10 }}>
+        {ergebnisseKopf.hinweis}
+      </Text>
 
       <CaseModal c={offen} onClose={() => setOffen(null)} />
     </Sektion>

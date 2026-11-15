@@ -30,7 +30,7 @@ import {
   type ReactNode,
 } from "react";
 import { buchung, ctaLabel } from "@/config/call-funnel";
-import { DISCORD_FUNNEL_QUESTIONS } from "@/config/discord-funnel-questions";
+import { DISCORD_FUNNEL_QUESTIONS, antwortGueltig } from "@/config/discord-funnel-questions";
 import { CalendlyZweiKlick } from "@/components/marketing/CalendlyZweiKlick";
 import { EMAIL_RE, RadioStep, type ContactValue } from "@/components/marketing/DiscordQuestionsModal";
 import {
@@ -324,7 +324,7 @@ export function CallBuchungProvider({ children, vorschau = false }: { children: 
     if (phase !== "fragen") return;
 
     const frage = FRAGEN[frageIndex];
-    if (!frage || !frage.options.includes(antworten[frage.id] ?? "")) {
+    if (!frage || !antwortGueltig(frage, antworten[frage.id])) {
       setFehler(t.fehlerAuswahl);
       return;
     }
@@ -457,7 +457,8 @@ export function CallBuchungKnopf({ label, ...props }: ButtonProps & { label?: st
   return (
     <Button
       type="button"
-      variant="gold"
+      // Alle CTAs auf `/call` in Smaragd (Feedback 14.11.2026).
+      variant="smaragd"
       w={{ base: "full", sm: "auto" }}
       h="auto"
       minH={{ base: "52px", md: "56px" }}
@@ -592,7 +593,7 @@ function Formular() {
         {/* Nie gesperrt: Ein grauer Knopf sagt nicht, was fehlt — der Klick zeigt es am Feld. */}
         <Button
           type="submit"
-          variant="gold"
+          variant="smaragd"
           w="full"
           minH="52px"
           fontSize="16px"

@@ -5,6 +5,7 @@ import { isFreeMember } from "@/lib/membership";
 import { onboardingErledigt } from "@/lib/onboarding/weiche";
 import { createServiceClient } from "@/lib/supabase/service";
 import { VERKAUF_REWRITE_HEADER, VERKAUF_SCHLUESSEL } from "@/lib/verkauf/schalter";
+import { TRAINING_STATUS_PFAD } from "@/config/training";
 
 // Marketing-Pfade (öffentlich, kein Auth nötig).
 //
@@ -34,6 +35,9 @@ const PUBLIC_PATHS = [
   // Landingpage des kostenlosen Trainings (`app/training`). Nur die Adresse
   // selbst — die Videos liegen im Mitgliederbereich (`/kostenloses-training`).
   "/training",
+  // Aktivierungslink der Retargeting-Mail RT01 (`app/training/aktivieren`):
+  // Die Empfänger sind meist nicht angemeldet, der Knopf dort meldet sie an.
+  "/training/aktivieren",
   "/checkout/success",
   "/checkout/zurueck",
   "/set-password",
@@ -242,6 +246,9 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/vorschau/mentoring/") ||
     pathname === "/vorschau/training-2" ||
     pathname.startsWith("/admin") ||
+    // CRM der Closer: eigene Zugangsprüfung (`lib/crm/zugang.ts`), auch im Wartungsmodus nutzbar.
+    pathname === "/crm" ||
+    pathname.startsWith("/crm/") ||
     pathname === "/login" ||
     pathname === "/passwort-vergessen" ||
     pathname === "/auth/confirm" ||
@@ -280,7 +287,11 @@ export async function proxy(request: NextRequest) {
       return response;
     }
     if (!isPublicPath(pathname)) {
-      return NextResponse.redirect(new URL("/login", request.url));
+      // Ziel merken: Links aus Mails (`/kostenloses-training?video=3`) führen
+      // nach der Anmeldung dorthin statt aufs Dashboard (`OnboardingFlow`).
+      const login = new URL("/login", request.url);
+      if (pathname !== "/dashboard") login.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
+      return NextResponse.redirect(login);
     }
     return response;
   }
@@ -316,11 +327,21 @@ export async function proxy(request: NextRequest) {
   const PROFIL_SPALTEN =
     "usage_agreement_accepted,is_admin,is_paid,application_status,membership_tier,step2_application_status,access_until,last_login_at,churn_email_1_sent_at,churn_email_2_sent_at";
   let fragenSpalteDa = true;
+  // ICP-Stempel aus Migration 113; fehlen sie, gilt die Regel von 107 (siehe `fragenOffen`).
+  let icpSpalteDa = true;
   let { data: rawProfile, error: profilFehler } = await supabase
     .from("profiles")
-    .select(`${PROFIL_SPALTEN},onboarding_fragen_am`)
+    .select(`${PROFIL_SPALTEN},onboarding_fragen_am,icp_free_am,icp_kaeufer_am`)
     .eq("id", user.id)
     .single();
+  if (profilFehler) {
+    icpSpalteDa = false;
+    ({ data: rawProfile, error: profilFehler } = await supabase
+      .from("profiles")
+      .select(`${PROFIL_SPALTEN},onboarding_fragen_am`)
+      .eq("id", user.id)
+      .single());
+  }
   if (profilFehler) {
     fragenSpalteDa = false;
     ({ data: rawProfile, error: profilFehler } = await supabase
@@ -331,6 +352,8 @@ export async function proxy(request: NextRequest) {
   }
   const profile = rawProfile as {
     onboarding_fragen_am?: string | null;
+    icp_free_am?: string | null;
+    icp_kaeufer_am?: string | null;
     usage_agreement_accepted?: boolean;
     is_admin?: boolean;
     is_paid?: boolean;
@@ -378,6 +401,32 @@ export async function proxy(request: NextRequest) {
   }
 
   /*
+   * Free-Kurs-Bewerbung (Migration 110, E-Mail-Playbook 1.0): Solange Emre
+   * nicht angenommen hat — oder nach einer Ablehnung, die endgültig ist —, gibt
+   * es für ein Free-Konto nur die Statusseite. „Kein Lernzugang durch bloßes
+   * Absenden." Zahlende und Admins betrifft das nicht. Fehlt die Tabelle noch
+   * (Migration nicht eingespielt), passiert nichts.
+   */
+  let trainingAngenommen = false;
+  if (!profile?.is_admin && !profile?.is_paid) {
+    const { data: bew, error: bewFehler } = await supabase
+      .from("training_bewerbungen")
+      .select("status")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const status = bewFehler ? null : ((bew as { status?: string } | null)?.status ?? null);
+    const wartet = status === "offen" || status === "abgelehnt";
+    // Angenommen: ICP-Fragen 1–7 beim ersten Login (Migration 113, `fragenOffen`).
+    trainingAngenommen = status === "angenommen";
+    // Gesperrt wird der Trainingsbereich (und das Dashboard als Einstieg) — Konto,
+    // Abrechnung, Kauf und Support bleiben erreichbar („Konto bleibt bestehen").
+    const gesperrt = pathname === "/dashboard" || pathname === "/kostenloses-training" || pathname.startsWith("/kostenloses-training/");
+    if (wartet && gesperrt) {
+      return NextResponse.redirect(new URL(TRAINING_STATUS_PFAD, request.url));
+    }
+  }
+
+  /*
    * Seit 20.09.2026 ohne Codex-Schritt (Entscheidung Simon): Das Onboarding
    * besteht nur noch aus der Nutzungsvereinbarung. `codex_accepted` bleibt in
    * der Datenbank stehen — bestehende Zustimmungen sind ein Nachweis und
@@ -389,13 +438,20 @@ export async function proxy(request: NextRequest) {
    * genauso fuer `/api/onboarding/status` — sonst schickten sich Proxy und
    * `/einsteig` gegenseitig hin und her.
    */
-  const onboardingDone = onboardingErledigt(profile, fragenSpalteDa);
+  const onboardingDone = onboardingErledigt(profile, fragenSpalteDa, { icpSpalteDa, trainingAngenommen });
 
   if (onboardingDone && pathname === "/einsteig") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  if (!onboardingDone && !isPublicPath(pathname) && pathname !== "/pending-review") {
+  if (
+    !onboardingDone &&
+    !isPublicPath(pathname) &&
+    pathname !== "/pending-review" &&
+    pathname !== TRAINING_STATUS_PFAD &&
+    pathname !== "/crm" &&
+    !pathname.startsWith("/crm/")
+  ) {
     return NextResponse.redirect(new URL("/einsteig", request.url));
   }
 
@@ -435,6 +491,6 @@ export const config = {
   // Sitzung — ohne die Ausnahme bekäme er die Weiterleitung auf `/login`
   // (bzw. im Wartungsmodus auf `/wartung`) und zeigte kein Bild.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|logo/|bg/|svg/|tg-slides/|founder/|cases/|apex/|prozess/|nachweise/|hero/|untertitel/|partner/|apple-touch-icon|new-apple|opengraph-image|twitter-image|discord-og|termin-og).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|logo/|bg/|svg/|tg-slides/|founder/|cases/|apex/|prozess/|nachweise/|community/|hero/|untertitel/|partner/|apple-touch-icon|new-apple|opengraph-image|twitter-image|discord-og|termin-og).*)",
   ],
 };

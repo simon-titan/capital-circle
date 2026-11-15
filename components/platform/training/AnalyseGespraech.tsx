@@ -19,7 +19,7 @@ import {
 import { ArrowRight, CalendarDays, Check } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { buchung } from "@/config/call-funnel";
-import { DISCORD_FUNNEL_QUESTIONS } from "@/config/discord-funnel-questions";
+import { DISCORD_FUNNEL_QUESTIONS, antwortGueltig } from "@/config/discord-funnel-questions";
 import { gespraech, mitglied, type GespraechStelle } from "@/config/training";
 import { CalendlyZweiKlick } from "@/components/marketing/CalendlyZweiKlick";
 import { RadioStep } from "@/components/marketing/DiscordQuestionsModal";
@@ -100,13 +100,16 @@ export function AnalyseGespraechProvider({
   name = "",
   email = "",
   stelle: standardStelle = "dashboard",
+  sofortOffen = false,
 }: {
   children: ReactNode;
   name?: string;
   email?: string;
   stelle?: GespraechStelle;
+  /** Öffnet das Modal direkt (Link `?gespraech=1` aus den Playbook-Mails). */
+  sofortOffen?: boolean;
 }) {
-  const [offen, setOffen] = useState(false);
+  const [offen, setOffen] = useState(sofortOffen);
   const [stelle, setStelle] = useState<GespraechStelle>(standardStelle);
   const [phase, setPhase] = useState<Phase>("kontakt");
   const [kontakt, setKontakt] = useState<Kontakt>({ name, email, phone: "" });
@@ -164,7 +167,7 @@ export function AnalyseGespraechProvider({
     }
     if (phase !== "fragen") return;
     const frage = FRAGEN[frageIndex];
-    if (!frage || !frage.options.includes(antworten[frage.id] ?? "")) {
+    if (!frage || !antwortGueltig(frage, antworten[frage.id])) {
       setFehler(gespraech.fehlerAuswahl);
       return;
     }

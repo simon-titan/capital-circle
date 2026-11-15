@@ -31,6 +31,7 @@ export function FunnelKopfleiste({
   aktion,
   menueAktion,
   anmelden = true,
+  mittig = false,
 }: {
   anker?: readonly Sprungmarke[];
   /** Hauptaktion rechts, ab `sm` sichtbar. */
@@ -38,6 +39,8 @@ export function FunnelKopfleiste({
   /** Hauptaktion im Mobilmenü (volle Breite). */
   menueAktion?: ReactNode;
   anmelden?: boolean;
+  /** Nur die Wortmarke, mittig (`/call`, Feedback 14.11.2026) — ohne Menü, Anmelden und Aktion. */
+  mittig?: boolean;
 }) {
   const [gescrollt, setGescrollt] = useState(false);
   const [offen, setOffen] = useState(false);
@@ -71,7 +74,7 @@ export function FunnelKopfleiste({
         h={{ base: "64px", md: "72px" }}
         px={{ base: 4, md: 8, lg: 12 }}
         align="center"
-        justify="space-between"
+        justify={mittig ? "center" : "space-between"}
         gap={4}
       >
         <Box
@@ -86,7 +89,7 @@ export function FunnelKopfleiste({
           <Box as="img" src="/logo/cc-wortmarke-weiss.png" alt="" h={{ base: "18px", md: "21px" }} w="auto" display="block" />
         </Box>
 
-        {mitMenue ? (
+        {mitMenue && !mittig ? (
           <HStack as="nav" aria-label="Seitenabschnitte" display={{ base: "none", lg: "flex" }} spacing={8}>
             {anker.map((punkt) => (
               <Box
@@ -105,7 +108,7 @@ export function FunnelKopfleiste({
           </HStack>
         ) : null}
 
-        <HStack spacing={2}>
+        <HStack spacing={2} display={mittig ? "none" : "flex"}>
           {anmelden ? (
             <Button as={NextLink} href="/login" variant="line" h="40px" px={4} fontSize="15px" whiteSpace="nowrap">
               Anmelden
@@ -222,14 +225,28 @@ export function VideoBadge({ children }: { children: ReactNode }) {
  * Rahmen um ein Video: nur Gold-/Weiß-Schein, keine Rahmenlinie — dieselben
  * Werte wie das Plattform-Video im Hero von `/`.
  */
-export function VideoSchein({ children }: { children: ReactNode }) {
+/**
+ * `ton="neutral"` (nur `/training`, Feedback 14.11.2026): Schein in Weiß/Grau
+ * statt Gold, und über `.cc-player-neutral` trägt auch der Player selbst
+ * (Play-Knopf, Zeitstrahl, Einstellungen) Weiß/Grau statt Champagner.
+ */
+export function VideoSchein({ children, ton = "gold" }: { children: ReactNode; ton?: "gold" | "neutral" }) {
+  const neutral = ton === "neutral";
   return (
     <Box
+      className={neutral ? "cc-player-neutral" : undefined}
       borderRadius={{ base: "12px", md: "16px" }}
-      boxShadow={{
-        base: "0 0 22px rgba(212, 176, 128, 0.22), 0 0 48px rgba(255, 255, 255, 0.05), 0 14px 34px rgba(0, 0, 0, 0.5)",
-        md: "0 0 40px rgba(212, 176, 128, 0.26), 0 0 110px rgba(255, 255, 255, 0.07), 0 28px 70px rgba(0, 0, 0, 0.55)",
-      }}
+      boxShadow={
+        neutral
+          ? {
+              base: "0 0 24px rgba(255, 255, 255, 0.12), 0 0 52px rgba(200, 205, 212, 0.06), 0 14px 34px rgba(0, 0, 0, 0.5)",
+              md: "0 0 44px rgba(255, 255, 255, 0.14), 0 0 120px rgba(200, 205, 212, 0.08), 0 28px 70px rgba(0, 0, 0, 0.55)",
+            }
+          : {
+              base: "0 0 22px rgba(212, 176, 128, 0.22), 0 0 48px rgba(255, 255, 255, 0.05), 0 14px 34px rgba(0, 0, 0, 0.5)",
+              md: "0 0 40px rgba(212, 176, 128, 0.26), 0 0 110px rgba(255, 255, 255, 0.07), 0 28px 70px rgba(0, 0, 0, 0.55)",
+            }
+      }
     >
       {children}
     </Box>
@@ -237,7 +254,19 @@ export function VideoSchein({ children }: { children: ReactNode }) {
 }
 
 /** Gesperrte Nummer, Lichtstrich und Marke in Gold — der Schrittkopf aus dem Prozess-Abschnitt auf `/`. */
-export function SchrittMarke({ nummer, marke, as = "h3" }: { nummer: string; marke: string; as?: "h3" | "p" }) {
+export function SchrittMarke({
+  nummer,
+  marke,
+  as = "h3",
+  ton = "gold",
+}: {
+  nummer: string;
+  marke: string;
+  as?: "h3" | "p";
+  /** `smaragd` nur im Free-Training-Funnel (Freischaltungs-Karte auf `/training`). */
+  ton?: "gold" | "smaragd";
+}) {
+  const smaragd = ton === "smaragd";
   return (
     <HStack spacing={{ base: 3, md: 4 }} align="center">
       <Text
@@ -246,20 +275,20 @@ export function SchrittMarke({ nummer, marke, as = "h3" }: { nummer: string; mar
         fontWeight={600}
         lineHeight={1}
         letterSpacing="-0.02em"
-        color="var(--cc-text-3)"
-        opacity={0.6}
+        color={smaragd ? "var(--cc-smaragd-hell)" : "var(--cc-text-3)"}
+        opacity={smaragd ? 0.85 : 0.6}
         aria-hidden
       >
         {nummer}
       </Text>
-      <Box aria-hidden w={{ base: "28px", md: "36px" }} h="1px" flexShrink={0} bg="linear-gradient(90deg, transparent, var(--cc-gold-line))" />
+      <Box aria-hidden w={{ base: "28px", md: "36px" }} h="1px" flexShrink={0} bg={`linear-gradient(90deg, transparent, ${smaragd ? "var(--cc-smaragd-hell)" : "var(--cc-gold-line)"})`} />
       <Text
         as={as}
         fontSize={{ base: "12px", md: "13px" }}
         fontWeight={600}
         letterSpacing="0.22em"
         textTransform="uppercase"
-        color="var(--cc-gold-light)"
+        color={smaragd ? "var(--cc-smaragd-hell)" : "var(--cc-gold-light)"}
       >
         {marke}
       </Text>
@@ -271,20 +300,30 @@ export function SchrittMarke({ nummer, marke, as = "h3" }: { nummer: string; mar
  * Feste Aktionsleiste unten, nur auf schmalen Bildschirmen. Erscheint, wenn
  * der Hero durchgescrollt ist, und verschwindet über den Abschnitten in
  * `ausblendenBei` — dort steht die Aktion ohnehin schon groß im Bild.
+ *
+ * `immer` (`/training`, Feedback 14.11.2026): steht durchgehend, ohne
+ * Scroll-Logik. Das Ein- und Ausblenden flackerte mobil, weil sich
+ * `innerHeight` beim Ein-/Ausfahren der Adressleiste ständig ändert.
  */
 export function MobilAktionsleiste({
   children,
   hinweis,
   ausblendenBei = [],
+  immer = false,
+  hinweisFarbe = "var(--cc-text-3)",
 }: {
   children: (tabIndex: number) => ReactNode;
   hinweis?: readonly string[];
   ausblendenBei?: readonly string[];
+  immer?: boolean;
+  hinweisFarbe?: string;
 }) {
-  const [sichtbar, setSichtbar] = useState(false);
+  const [gescrollt, setSichtbar] = useState(false);
+  const sichtbar = immer || gescrollt;
   const schluessel = ausblendenBei.join(",");
 
   useEffect(() => {
+    if (immer) return;
     const ziele = schluessel ? schluessel.split(",").map((id) => document.getElementById(id)) : [];
     const pruefen = () => {
       const heroDurch = window.scrollY > window.innerHeight * 0.85;
@@ -302,7 +341,7 @@ export function MobilAktionsleiste({
       window.removeEventListener("scroll", pruefen);
       window.removeEventListener("resize", pruefen);
     };
-  }, [schluessel]);
+  }, [schluessel, immer]);
 
   return (
     <>
@@ -322,7 +361,9 @@ export function MobilAktionsleiste({
         px={4}
         pt={3}
         style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
-        transform={sichtbar ? "translateY(0)" : "translateY(120%)"}
+        // Eigene Ebene: hält die Leiste beim Scrollen auf iOS ruhig.
+        sx={{ WebkitBackdropFilter: "blur(18px)", backfaceVisibility: "hidden" }}
+        transform={sichtbar ? "translate3d(0, 0, 0)" : "translate3d(0, 120%, 0)"}
         opacity={sichtbar ? 1 : 0}
         pointerEvents={sichtbar ? "auto" : "none"}
         aria-hidden={!sichtbar}
@@ -344,7 +385,7 @@ export function MobilAktionsleiste({
               {hinweis.map((teil, i) => (
                 <HStack key={teil} spacing={3}>
                   {i > 0 ? <Box aria-hidden w="1px" h="10px" bg="var(--cc-line-strong)" /> : null}
-                  <Text fontSize="12px" color="var(--cc-text-3)">
+                  <Text fontSize="12px" color={hinweisFarbe}>
                     {teil}
                   </Text>
                 </HStack>

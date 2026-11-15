@@ -21,6 +21,11 @@ export type PlaylistVideoRow = {
   position: number;
   subcategoryId: string | null;
   subcategoryTitle: string | null;
+  /**
+   * Optionale Lektion: Sie sperrt die folgende nicht (Free Training, Video 2 —
+   * E-Mail-Playbook 1.0). Wird nur von der Trainingsseite gesetzt.
+   */
+  optional?: boolean;
 };
 
 /** Mindest-Sekunden bei fehlender Dauer in der DB (kein 1-Sekunden-Scrub als „fertig“). */
@@ -37,6 +42,25 @@ export function isPlaylistVideoDone(v: PlaylistVideoRow, progressMap: Record<str
   if (d <= 0) return w >= MIN_WATCHED_SECONDS_WHEN_NO_DURATION;
   // Mit Dauer: mindestens 90% gesehen (robuster als d-1 bei kurzen Videos)
   return w >= d * MIN_WATCHED_RATIO;
+}
+
+/**
+ * Index freigeschaltet: erstes Video, vorheriges vollständig gesehen — oder das
+ * Video selbst schon angeschaut. Sonst sperrt eine Umsortierung im Admin bereits
+ * gesehene Videos wieder (wie bei den Modulen, siehe `lib/progress.ts`).
+ */
+export function isPlaylistIndexUnlocked(
+  playlist: PlaylistVideoRow[],
+  progressMap: Record<string, number>,
+  idx: number,
+): boolean {
+  if (idx < 0 || idx >= playlist.length) return false;
+  if (idx === 0) return true;
+  if ((progressMap[playlist[idx]!.id] ?? 0) > 0) return true;
+  const vorher = playlist[idx - 1]!;
+  if (isPlaylistVideoDone(vorher, progressMap)) return true;
+  // Eine optionale Lektion davor sperrt nicht: offen, sobald sie selbst offen wäre.
+  return Boolean(vorher.optional) && isPlaylistIndexUnlocked(playlist, progressMap, idx - 1);
 }
 
 async function signKey(key: string | null | undefined): Promise<string | null> {

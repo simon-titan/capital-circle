@@ -3,7 +3,7 @@
 import { Box, Button, HStack, Stack, Text, Textarea } from "@chakra-ui/react";
 import { ArrowLeft, Check } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { FRAGEN, SONSTIGES_MAX, type Frage } from "@/config/onboarding";
+import { MEHRFACH_TRENNER, SONSTIGES_MAX, type Frage, type IcpArt } from "@/config/onboarding";
 import { OnboardingHeading } from "@/components/onboarding/OnboardingParts";
 import { glassPrimaryButtonProps } from "@/components/ui/glassButtonStyles";
 
@@ -49,14 +49,41 @@ const fliesstext = {
 
 /* ── Start ───────────────────────────────────────────────────────────────── */
 
-export function WillkommenStep({ bestand, onWeiter }: { bestand: boolean; onWeiter: () => void }) {
+const ZAHLWORT = ["", "eine", "zwei", "drei", "vier", "fünf", "sechs", "sieben", "acht", "neun", "zehn"];
+
+export function WillkommenStep({
+  bestand,
+  art,
+  anzahl,
+  onWeiter,
+}: {
+  bestand: boolean;
+  art?: IcpArt | null;
+  /** Wie viele Fragen noch offen sind. */
+  anzahl: number;
+  onWeiter: () => void;
+}) {
+  // Texte nach Emres „ICP-Fragen fürs Onboarding" (08.11.2026).
+  const titel =
+    art === "free"
+      ? "Bevor du startest, möchten wir dich kurz kennenlernen."
+      : art === "kaeufer"
+        ? "Lass uns deine Ziele besser kennenlernen."
+        : bestand
+          ? "Fünf kurze Fragen."
+          : "Willkommen bei Capital Circle.";
+  const zahl = ZAHLWORT[anzahl] ?? String(anzahl);
+  const text =
+    art === "free" || art === "kaeufer"
+      ? `Beantworte ${anzahl === 1 ? "diese eine kurze Frage" : `diese ${zahl} kurzen Fragen`}, damit wir besser verstehen, wo du im Trading stehst und was du erreichen möchtest.`
+      : bestand
+        ? "Damit wir dich gezielter unterstützen können, möchten wir kurz wissen, wo du aktuell stehst. Das dauert keine zwei Minuten, danach geht es direkt weiter auf die Plattform."
+        : "Bevor du startest, möchten wir kurz wissen, wo du aktuell stehst. Danach zeigen wir dir genau, wie du beginnen solltest.";
   return (
     <Buehne labelledBy="willkommen-titel">
-      <OnboardingHeading id="willkommen-titel" title={bestand ? "Fünf kurze Fragen." : "Willkommen bei Capital Circle."} />
+      <OnboardingHeading id="willkommen-titel" title={titel} />
       <Text {...fliesstext} maxW="46ch" mx="auto">
-        {bestand
-          ? "Damit wir dich gezielter unterstützen können, möchten wir kurz wissen, wo du aktuell stehst. Das dauert keine zwei Minuten, danach geht es direkt weiter auf die Plattform."
-          : "Bevor du startest, möchten wir kurz wissen, wo du aktuell stehst. Danach zeigen wir dir genau, wie du beginnen solltest."}
+        {text}
       </Text>
       <Button {...glassPrimaryButtonProps} onClick={onWeiter} autoFocus>
         Weiter
@@ -100,7 +127,10 @@ function Fortschritt({ nummer, gesamt }: { nummer: number; gesamt: number }) {
 /* ── Eine Frage ──────────────────────────────────────────────────────────── */
 
 type FrageStepProps = {
+  frage: Frage;
+  /** Position in der Menge dieses Kontos (0-basiert) und deren Größe. */
   index: number;
+  gesamt: number;
   gewaehlt: string | null;
   sonstiges: string | null;
   speichert: boolean;
@@ -112,9 +142,11 @@ type FrageStepProps = {
 /** Nach dem Tippen kurz stehen lassen, damit die Wahl sichtbar ist, dann weiter. */
 const WEITER_NACH_MS = 250;
 
-export function FrageStep({ index, gewaehlt, sonstiges, speichert, fehler, onAntwort, onZurueck }: FrageStepProps) {
-  const frage: Frage = FRAGEN[index]!;
-  const [auswahl, setAuswahl] = useState<string | null>(gewaehlt);
+export function FrageStep({ frage, index, gesamt, gewaehlt, sonstiges, speichert, fehler, onAntwort, onZurueck }: FrageStepProps) {
+  const mehrfach = Boolean(frage.mehrfach);
+  const [auswahl, setAuswahl] = useState<string | null>(mehrfach ? null : gewaehlt);
+  // Mehrfachfrage: Reihenfolge = angetippt, die erste ist die Hauptantwort.
+  const [liste, setListe] = useState<string[]>(() => (mehrfach && gewaehlt ? gewaehlt.split(MEHRFACH_TRENNER).filter(Boolean) : []));
   const [freitext, setFreitext] = useState(sonstiges ?? "");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titelId = `frage-${index + 1}-titel`;
@@ -126,6 +158,10 @@ export function FrageStep({ index, gewaehlt, sonstiges, speichert, fehler, onAnt
 
   const waehle = (wert: string) => {
     if (speichert) return;
+    if (mehrfach) {
+      setListe((alt) => (alt.includes(wert) ? alt.filter((w) => w !== wert) : [...alt, wert]));
+      return;
+    }
     setAuswahl(wert);
     if (timer.current) clearTimeout(timer.current);
     // „Sonstiges" bei Frage 5 wartet auf das optionale Textfeld und „Weiter".
@@ -135,7 +171,7 @@ export function FrageStep({ index, gewaehlt, sonstiges, speichert, fehler, onAnt
 
   return (
     <Buehne labelledBy={titelId}>
-      <Fortschritt nummer={index + 1} gesamt={FRAGEN.length} />
+      <Fortschritt nummer={index + 1} gesamt={gesamt} />
 
       <Stack spacing={2} textAlign="center">
         <Text
@@ -157,15 +193,15 @@ export function FrageStep({ index, gewaehlt, sonstiges, speichert, fehler, onAnt
         ) : null}
       </Stack>
 
-      <Stack role="radiogroup" aria-labelledby={titelId} spacing={2}>
+      <Stack role={mehrfach ? "group" : "radiogroup"} aria-labelledby={titelId} spacing={2}>
         {frage.antworten.map((a) => {
-          const aktiv = auswahl === a.wert;
+          const aktiv = mehrfach ? liste.includes(a.wert) : auswahl === a.wert;
           return (
             <Box
               key={a.wert}
               as="button"
               type="button"
-              role="radio"
+              role={mehrfach ? "checkbox" : "radio"}
               aria-checked={aktiv}
               onClick={() => waehle(a.wert)}
               display="flex"
@@ -193,7 +229,8 @@ export function FrageStep({ index, gewaehlt, sonstiges, speichert, fehler, onAnt
                 flexShrink={0}
                 w="20px"
                 h="20px"
-                borderRadius="full"
+                // Kästchen statt Kreis: zeigt, dass mehrere gehen.
+                borderRadius={mehrfach ? "5px" : "full"}
                 border="1.5px solid"
                 borderColor={aktiv ? "var(--cc-gold)" : "var(--cc-line-strong)"}
                 bg={aktiv ? "var(--cc-gold-grad)" : "transparent"}
@@ -210,6 +247,17 @@ export function FrageStep({ index, gewaehlt, sonstiges, speichert, fehler, onAnt
           );
         })}
       </Stack>
+
+      {mehrfach ? (
+        <Button
+          {...glassPrimaryButtonProps}
+          isLoading={speichert}
+          isDisabled={!liste.length}
+          onClick={() => onAntwort(liste.join(MEHRFACH_TRENNER))}
+        >
+          {liste.length ? "Weiter" : "Mindestens eine Antwort wählen"}
+        </Button>
+      ) : null}
 
       {mitFreitext ? (
         <Stack spacing={3}>
@@ -262,7 +310,7 @@ export function FrageStep({ index, gewaehlt, sonstiges, speichert, fehler, onAnt
         ) : (
           <Box />
         )}
-        {speichert && !mitFreitext ? (
+        {speichert && !mitFreitext && !mehrfach ? (
           <Text fontSize="13px" color="var(--cc-text-3)">
             Speichert …
           </Text>
