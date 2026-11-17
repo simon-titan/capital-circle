@@ -70,6 +70,9 @@ export default function AgbPage() {
           <a href="#p7">§ 7 Dauerzugang gegen Einmalzahlung</a>
         </li>
         <li>
+          <a href="#p7a">§ 7a Mentoring-Programme</a>
+        </li>
+        <li>
           <a href="#p8">§ 8 Widerrufsrecht</a>
         </li>
         <li>
@@ -260,6 +263,47 @@ export default function AgbPage() {
       </p>
       <p>(2) Ein laufendes Abo endet mit dem Kauf zum Ende des bereits bezahlten Abrechnungszeitraums.</p>
       <p>(3) § 6 Abs. 6 (Kündigung aus wichtigem Grund) gilt entsprechend.</p>
+
+      {/*
+        § 7a — Mentoring-Programme (seit 17.10.2026, `config/mentoring.ts`).
+        Gegenstück zum Text am Bezahlknopf (`mentoringLaufzeittext` in
+        `lib/stripe/kasse-recht.ts`) und zur Kaufbestätigung
+        (`lib/email/templates/mentoring-bestaetigung.tsx`). Wer eine Laufzeit oder
+        die Ratenregel ändert, zieht alle drei mit und erhöht `rechtstexteVersion`.
+        Entwurf, nicht anwaltlich geprüft.
+      */}
+      <h2 id="p7a">§ 7a Mentoring-Programme</h2>
+      <p>
+        (1) Neben der Mitgliedschaft bieten wir Mentoring-Programme an (Ausbildung, Main Mentoring, Premium Mentoring).
+        Sie werden nach einem persönlichen Gespräch über einen individuellen Bestelllink verkauft. Der Umfang des
+        gewählten Programms steht auf der Bestellseite und in der Kaufbestätigung per E-Mail.
+      </p>
+      <p>
+        (2) Mit dem Kauf erhältst du dauerhaften Zugang zur Plattform, zu den Kursinhalten einschließlich neu
+        hinzukommender Kursvideos und zum Trading Journal. Der Zugang zu Live Trading, Daily Bias und Trade Recaps
+        („Live-Bereich“) ist befristet: 3 Monate bei der Ausbildung, 12 Monate beim Main und Premium Mentoring, jeweils
+        ab dem Kauf. Gruppencall, WhatsApp-Support und Privatstunden laufen für die in der Kaufbestätigung genannten
+        Zeiträume; nicht genutzte Termine verfallen mit Ablauf des Zeitraums.
+      </p>
+      <p>
+        (3) Der Preis ist ein Endpreis inklusive Umsatzsteuer. Er ist einmalig oder, wenn auf der Bestellseite
+        angeboten, in bis zu vier gleichen Monatsraten zu zahlen. Ratenzahlung ist ein zinsloser Zahlungsaufschub ohne
+        Aufschlag. Die erste Rate ist mit dem Kauf fällig, jede weitere einen Monat nach der vorigen; die Ratenzahlung
+        endet nach der letzten Rate ohne Kündigung. Der Zugang beginnt mit der ersten Zahlung.
+      </p>
+      <p>
+        (4) Bleibt eine Rate unbezahlt, erinnern wir dich. Ist sie sieben Tage nach Fälligkeit nicht bezahlt, ruht dein
+        Zugang, bis sie beglichen ist. Die Pflicht zur Zahlung der übrigen Raten bleibt bestehen.
+      </p>
+      <p>
+        (5) Nach Ablauf des Live-Bereichs kannst du ihn mit dem Live-Trading-Abo verlängern. Es kostet 99 € im Monat,
+        verlängert sich monatlich und ist jederzeit zum Ende des laufenden Monats kündbar. Ein laufendes Mitgliedsabo
+        endet mit dem Kauf eines Programms zum Ende des bereits bezahlten Abrechnungszeitraums.
+      </p>
+      <p>
+        (6) Wird der Kaufpreis vollständig erstattet oder eine Zahlung zurückgebucht, endet der Zugang aus dem
+        Programm. § 6 Abs. 6 (Kündigung aus wichtigem Grund) gilt entsprechend.
+      </p>
 
       <h2 id="p8">§ 8 Widerrufsrecht</h2>
       <p>

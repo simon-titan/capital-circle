@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
+import { TRAINING_PFAD, TRAINING_VIDEOS_PFAD } from "@/config/training";
 import { getAppUrl } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/server";
 
@@ -42,6 +43,14 @@ export async function GET(request: Request) {
     // Häufigster Fall: Link abgelaufen oder bereits benutzt (Einmal-Token).
     // Der Nutzer landet dort, wo er sich selbst einen neuen holen kann.
     console.warn("[auth/confirm] verifyOtp fehlgeschlagen:", error.message);
+    /*
+      Bestätigungslink aus dem Free Training: Das Konto ist unbestätigt, der
+      Login hülfe nicht. Zurück auf `/training` — eine erneute Registrierung mit
+      derselben Adresse schickt einen frischen Link (`/api/training/registrieren`).
+    */
+    if (type !== "recovery" && next === TRAINING_VIDEOS_PFAD) {
+      return NextResponse.redirect(new URL(`${TRAINING_PFAD}?fehler=link_abgelaufen`, appUrl));
+    }
     return NextResponse.redirect(new URL("/login?fehler=link_abgelaufen", appUrl));
   }
 

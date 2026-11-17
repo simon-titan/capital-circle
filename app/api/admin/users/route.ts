@@ -147,6 +147,7 @@ export async function GET() {
           | "yearly"
           | "lifetime"
           | "ht_1on1"
+          | "mentoring"
           | undefined) ?? "free",
       accessUntil: (p?.access_until as string | null) ?? null,
       applicationStatus:

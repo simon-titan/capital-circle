@@ -5,6 +5,7 @@ import {
   LayoutGrid,
   LineChart,
   Package,
+  Route,
   Radio,
   Repeat,
   type LucideIcon,
@@ -28,6 +29,8 @@ export type NavGroup = {
   icon: LucideIcon;
   href: string;
   children?: NavChild[];
+  /** Kleines Label neben dem Namen, z. B. „Neu". */
+  badge?: string;
 };
 
 /**
@@ -49,6 +52,12 @@ export const NAV_GROUPS: NavGroup[] = [
    * „Institut“ jetzt als einfache Zeile da, genau wie „Dashboard“.
    */
   { key: "institut", label: "Institut", icon: GraduationCap, href: "/ausbildung" },
+  /**
+   * „Ausbildung & Mentoring" (Board Free Training, 02.11.2026): die zwei Wege
+   * nach dem kostenlosen Training. Für alle sichtbar — auch Abo-Mitglieder
+   * dürfen die Ausbildung kaufen (Entscheidung Simon).
+   */
+  { key: "programme", label: "Ausbildung & Mentoring", icon: Route, href: "/programme", badge: "Neu" },
   {
     key: "journal",
     label: "Journal",

@@ -85,7 +85,7 @@ async function linkSessionViewsToLead(
  *
  * Body: { name, email, phone, session_id?, utm_source?, utm_medium?, utm_campaign?, utm_content?, utm_term?, referrer?, skip_invite? }
  *
- * skip_invite=true: kein Discord-Invite-Versand (z. B. /termin — Cold-Traffic ohne
+ * skip_invite=true: kein Discord-Invite-Versand (z. B. /termin und /call — Cold-Traffic ohne
  * Discord-Bezug). Der Lead wird nur erfasst und bucht direkt einen Calendly-Termin.
  *
  * Idempotenz: existiert bereits ein Lead mit gleicher email + session_id,
@@ -124,12 +124,16 @@ export async function POST(request: NextRequest) {
   const utmSourceVal = str(utm_source);
 
   // Herkunft: explizit übergebener (validierter) Wert hat Vorrang, sonst Fallback
-  // utm_source === 'termin-direkt' → 'termin_direct', sonst 'discord_funnel'.
+  // über den utm_source-Fallback der Funnel-Seiten: 'termin-direkt' →
+  // 'termin_direct', 'call-funnel' → 'call_funnel' (Seite `/call`), sonst
+  // 'discord_funnel'. `call_funnel` erlaubt der DB-CHECK erst ab Migration 108.
   const sourceOrigin: SourceOrigin = SOURCE_ORIGINS.includes(source_origin as SourceOrigin)
     ? (source_origin as SourceOrigin)
     : utmSourceVal === "termin-direkt"
       ? "termin_direct"
-      : "discord_funnel";
+      : utmSourceVal === "call-funnel"
+        ? "call_funnel"
+        : "discord_funnel";
 
   const nameVal = str(name);
   const emailVal = str(email);

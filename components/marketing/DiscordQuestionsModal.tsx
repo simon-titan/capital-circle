@@ -40,7 +40,8 @@ import {
 } from "./funnel-ui";
 
 const WARNING_SECONDS = 5;
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/** Exportiert für den Inline-Buchungsbaustein auf `/call` (gleiche Prüfung wie hier). */
+export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Tracking-Payload für die Lead-Anlage (nur bei collectContact relevant). */
 export interface LeadFunnelTracking {
@@ -76,7 +77,7 @@ interface Props {
   leadSource?: string;
   /** Tracking-Daten (session_id, utm_*, referrer) für die Lead-Anlage. */
   tracking?: LeadFunnelTracking | null;
-  /** Herkunft für die Lead-Anlage (discord_funnel | termin_direct). */
+  /** Herkunft für die Lead-Anlage (discord_funnel | termin_direct | call_funnel). */
   sourceOrigin?: SourceOrigin;
 }
 
@@ -393,15 +394,19 @@ export function DiscordQuestionsModal({
 
 /* ================================================================
    Contact Step (Name / E-Mail / Telefon)
+
+   Exportiert, weil `/call` denselben Schritt inline auf der Seite zeigt
+   (`components/landing/call/CallBuchung.tsx`). Das Modal-Verhalten hier
+   bleibt davon unberührt.
    ================================================================ */
 
-interface ContactValue {
+export interface ContactValue {
   name: string;
   email: string;
   phone: string;
 }
 
-function ContactStep({
+export function ContactStep({
   value,
   onChange,
   error,
@@ -454,10 +459,10 @@ function ContactStep({
 }
 
 /* ================================================================
-   Radio Step (Single-Select Cards)
+   Radio Step (Single-Select Cards) — ebenfalls von `/call` genutzt
    ================================================================ */
 
-function RadioStep({
+export function RadioStep({
   question,
   value,
   onChange,

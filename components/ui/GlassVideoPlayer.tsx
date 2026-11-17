@@ -31,6 +31,13 @@ type GlassVideoPlayerProps = {
   src?: string;
   /** Standbild bis das Video startet (z. B. Cloudflare-Stream-Thumbnail). */
   poster?: string;
+  /**
+   * Deutsche Untertitel (WebVTT), standardmäßig eingeblendet — für alle, die
+   * ohne Ton schauen. Muss von derselben Herkunft kommen wie die Seite
+   * (z. B. `/untertitel/…vtt`): Eine fremde Spur bräuchte `crossOrigin` am
+   * Video, und das bricht jede Videoquelle ohne CORS-Freigabe.
+   */
+  captionsSrc?: string;
   /** S3-Key — Player holt Signed URL über presignApiPath (Standard: /api/video-url) */
   storageKey?: string;
   /** GET-Endpoint mit ?key=… — JSON { ok, url } wie /api/video-url */
@@ -109,6 +116,7 @@ const controlButtonProps = {
 export function GlassVideoPlayer({
   src,
   poster,
+  captionsSrc,
   storageKey,
   presignApiPath = "/api/video-url",
   startAtSeconds = 0,
@@ -828,7 +836,9 @@ export function GlassVideoPlayer({
           onError={() => {
             setLoadError("Video konnte nicht geladen werden. URL oder Netzwerk prüfen.");
           }}
-        />
+        >
+          {captionsSrc ? <track kind="subtitles" src={captionsSrc} srcLang="de" label="Deutsch" default /> : null}
+        </video>
 
         {buffering && (
           <Center

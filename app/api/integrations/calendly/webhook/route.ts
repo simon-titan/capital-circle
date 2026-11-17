@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { benachrichtigeTeamTraining } from "@/lib/email/templates/training-team";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export const runtime = "nodejs";
@@ -53,6 +54,14 @@ async function handleInviteeCreated(payload: CalendlyPayload) {
   // zurück — step2_applications/profiles bleiben unberührt.
   if (p.tracking?.utm_medium?.trim().toLowerCase() === "discord") {
     await handleDiscordBooking(p);
+    return;
+  }
+
+  // Free-Training-Branch: Analysegespräch aus dem Mitgliederbereich
+  // (`components/platform/training/AnalyseGespraech.tsx`). `utm_content` ist
+  // der `training_leads.token`; nur das eigene CRM-Board wird angefasst.
+  if (p.tracking?.utm_medium?.trim().toLowerCase() === "training") {
+    await handleTrainingBooking(p);
     return;
   }
 
@@ -174,6 +183,70 @@ async function handleDiscordBooking(p: NonNullable<CalendlyPayload["payload"]>) 
   const { error } = await service.from("discord_leads").update(update).eq("id", leadId);
   if (error) {
     console.error("[calendly/webhook] discord_leads update failed:", error);
+  }
+}
+
+async function handleTrainingBooking(p: NonNullable<CalendlyPayload["payload"]>) {
+  const token = p.tracking?.utm_content?.trim() || null;
+  const inviteeEmail = p.email?.trim().toLowerCase() || null;
+  const service = createServiceClient();
+
+  type Lead = {
+    id: string;
+    status: string;
+    name: string;
+    email: string;
+    phone: string | null;
+    stelle: string;
+    kanal: string | null;
+    videos_gesehen: number;
+    termin_am: string | null;
+  };
+  const SPALTEN = "id, status, name, email, phone, stelle, kanal, videos_gesehen, termin_am";
+  let lead = null as Lead | null;
+  if (token) {
+    const { data } = await service.from("training_leads").select(SPALTEN).eq("token", token).maybeSingle();
+    lead = (data as Lead | null) ?? null;
+  }
+  // Rückfall: jüngster Lead mit der Adresse (Buchung über einen Link ohne Token).
+  if (!lead && inviteeEmail) {
+    const { data } = await service
+      .from("training_leads")
+      .select(SPALTEN)
+      .ilike("email", inviteeEmail)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    lead = (data as Lead | null) ?? null;
+  }
+  if (!lead) {
+    console.warn("[calendly/webhook] training booking: kein passender Lead", { token, email: inviteeEmail });
+    return;
+  }
+
+  const update: Record<string, unknown> = {
+    calendly_event_uri: p.event ?? null,
+    calendly_invitee_uri: p.uri ?? null,
+    termin_am: p.scheduled_event?.start_time ?? new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  // Ein schon entschiedener Lead (gewonnen/verloren) behält seinen Status.
+  if (["neu", "nachfassen", "no_show"].includes(lead.status)) update.status = "termin";
+
+  const { error } = await service.from("training_leads").update(update).eq("id", lead.id);
+  if (error) console.error("[calendly/webhook] training_leads update failed:", error);
+
+  // Calendly wiederholt Webhooks — nur beim ersten bzw. einem geänderten Termin melden.
+  if (lead.termin_am !== update.termin_am) {
+    await benachrichtigeTeamTraining("termin", {
+      name: lead.name,
+      email: lead.email,
+      phone: lead.phone,
+      stelle: lead.stelle,
+      kanal: lead.kanal,
+      videosGesehen: lead.videos_gesehen,
+      terminAm: update.termin_am as string,
+    });
   }
 }
 

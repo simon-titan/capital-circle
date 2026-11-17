@@ -329,8 +329,9 @@ export async function GET(request: NextRequest) {
   const byOrigin = computeFunnelByOrigin(leads);
   const discordMap = new Map(byOrigin.discord_funnel.map((s) => [s.key, s.value]));
   const terminMap = new Map(byOrigin.termin_direct.map((s) => [s.key, s.value]));
+  const callMap = new Map(byOrigin.call_funnel.map((s) => [s.key, s.value]));
 
-  const header = ["stage_key", "stage_label", "total", "discord_funnel", "termin_direct"];
+  const header = ["stage_key", "stage_label", "total", "discord_funnel", "termin_direct", "call_funnel"];
   const lines: string[] = [header.map(csvField).join(",")];
   for (const stage of overall) {
     lines.push(
@@ -340,6 +341,7 @@ export async function GET(request: NextRequest) {
         stage.value,
         discordMap.get(stage.key) ?? 0,
         terminMap.get(stage.key) ?? 0,
+        callMap.get(stage.key) ?? 0,
       ]
         .map(csvField)
         .join(","),
