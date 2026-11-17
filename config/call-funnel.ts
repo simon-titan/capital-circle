@@ -41,8 +41,9 @@ export const meta = {
 } as const;
 
 /**
- * Das VSL („main phunnel video .mp4“, Emre 11.11.2026, 8:29 min — die finale
- * Fassung; Vorgänger „1o1 landingpage.mp4“ `801c1831…`) aus Cloudflare Stream,
+ * Das VSL („NEUES PHUNNEL VIDEO.mp4“, Emre 16.11.2026, 8:29 min, getauscht am
+ * 17.11.2026; Vorgänger „main phunnel video .mp4“ `cc9b479e…` und davor
+ * „1o1 landingpage.mp4“ `801c1831…`, beide noch in Stream) aus Cloudflare Stream,
  * **unsigniert** (öffentliche, statische Seite — ein Token liefe ab). Wie
  * `landingVideo` in `config/training.ts` fest hier statt nur als Umgebungs-
  * variable: So läuft es in jedem Deployment, auch in Vorschauen.
@@ -50,7 +51,7 @@ export const meta = {
  * `lib/funnel-videos.ts`); die Auswahl dort hat Vorrang.
  */
 export const callVideo = {
-  uid: "cc9b479e8a5f632d3c57cd4f105c1e38",
+  uid: "d51192dbcaa0cde21ce09f773bc020b5",
   /** Standbild-Zeitpunkt für das Poster (Sekunden). */
   posterSekunde: 10,
 } as const;
@@ -112,10 +113,7 @@ export const emreBrief = {
     ],
     [{ text: "Mein Ziel ist nicht, dass du dauerhaft von mir abhängig bist. Mein Ziel ist, dass du lernst, eigenständig zu handeln." }],
     [{ text: "Du entscheidest, ob du weiter ausprobierst oder anfängst, gezielt an deinem Trading zu arbeiten." }],
-    [
-      { text: "Wenn du bereit bist, " },
-      { text: "diesen Schritt zu gehen, dann nutze die Chance und bewirb dich für Capital Circle.", fett: true },
-    ],
+    [{ text: "Wenn du bereit bist, diesen Schritt zu gehen, dann nutze die Chance und bewirb dich für Capital Circle.", fett: true }],
   ] as readonly (readonly BriefTeil[])[],
   unterschrift: "— Emre",
 } as const;

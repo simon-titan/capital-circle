@@ -1,3 +1,4 @@
+import { discordBeitraege } from "./discord-beitraege";
 /**
  * Free-Training-Funnel (Board „Gesamtübersicht – Capital Circle", Entscheidung
  * Simon 02.11.2026). Alles Fachliche und alle Texte an einer Stelle.
@@ -140,18 +141,8 @@ export const landing = {
     mehr: "Alle {anzahl} anzeigen",
     weniger: "Weniger anzeigen",
     hinweis: "Ergebnisse nicht typisch · Individuelle Ergebnisse variieren · Trading birgt Verlustrisiken",
-    bilder: [
-      { src: "/community/discord-01.png", breite: 848, hoehe: 791, alt: "Discord-Beitrag: Funded Account bei Lucid Trading nach drei Tagen" },
-      { src: "/community/discord-02.png", breite: 604, hoehe: 532, alt: "Discord-Beitrag: erster Funded Account bei Apex Trader Funding" },
-      { src: "/community/discord-03.png", breite: 565, hoehe: 536, alt: "Discord-Beitrag: bestandene Challenge bei IQ Capital" },
-      { src: "/community/discord-04.png", breite: 354, hoehe: 530, alt: "Discord-Beitrag: Dank an die Community mit Auszahlungsbenachrichtigung von Topstep" },
-      { src: "/community/discord-05.png", breite: 336, hoehe: 525, alt: "Discord-Beitrag: bestandene Challenge und Auszahlung von The Trading Pit" },
-      { src: "/community/discord-06.png", breite: 336, hoehe: 534, alt: "Discord-Beitrag: Auszahlungsmail von Apex Trader Funding" },
-      { src: "/community/discord-07.png", breite: 328, hoehe: 754, alt: "Discord-Beitrag: zwei Kontostände bei Tradovate" },
-      { src: "/community/discord-08.png", breite: 378, hoehe: 353, alt: "Discord-Beitrag: erster Funded Account bei Apex Trader Funding" },
-      { src: "/community/discord-09.png", breite: 324, hoehe: 344, alt: "Discord-Beitrag: Dank an Emre für Strategie und Psychologie" },
-      { src: "/community/discord-10.png", breite: 401, hoehe: 621, alt: "Discord-Beitrag: bestandene Challenge und Auszahlung von The Trading Pit" },
-    ],
+    /** Reihenfolge und Herkunft: `config/discord-beitraege.ts`. */
+    bilder: discordBeitraege,
   },
   /**
    * „So erhältst du Zugang" — drei Schritte als Grafik. `marke` steht gesperrt

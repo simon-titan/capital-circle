@@ -628,3 +628,12 @@ aktiven Lektion in `VideoPlaylist` ist ebenfalls weiß. Live-Sessions und Funnel
   - **TP01 Trustpilot** an alle mit `is_paid` ohne Admins (98). Text von mir, **von Emre noch abzunehmen**. Ziel
     `NEXT_PUBLIC_TRUSTPILOT_URL`, sonst `https://de.trustpilot.com/evaluate/capitalcircletrading.com`. Ehrliche Bewertung erbitten, nie
     nur positive und nie mit Gegenleistung (Trustpilot-Richtlinien, UWG).
+
+2026-11-17 (**Discord-Wand mit 97 Beiträgen**): Die Wand „Aus dem Discord" in `CommunityEinblicke` (`/training` und `/call`)
+zeigt jetzt 95 Screenshots aus „CC-Bewertungen" plus `discord-01.png`/`discord-07.png`; acht alte PNGs waren Dubletten und sind
+gelöscht. Liste in **`config/discord-beitraege.ts`** (`landing.community.bilder` zeigt darauf). **Reihenfolge ist Absicht:**
+Beiträge mit Auszahlung (`auszahlung: true`) absteigend nach Summe zuerst, danach nach Datum. Die Wand verteilt deshalb
+**zeilenweise** auf die kürzeste Spalte (`verteileAufSpalten`) statt CSS-`column-count` — sonst stünden die größten Auszahlungen
+alle links untereinander. Brief auf `/call`: der Schlusssatz ist jetzt komplett fett.
+Das **VSL auf `/call`** ist seit 17.11. „NEUES PHUNNEL VIDEO.mp4" (`d51192db…`, 8:29, unsigniert) — Vorgabe `callVideo` in
+`config/call-funnel.ts`; im Admin ist kein Override gesetzt.

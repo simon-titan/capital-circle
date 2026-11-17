@@ -1,10 +1,11 @@
 "use client";
 
-import { Box, Button, Flex, Heading, HStack, Modal, ModalBody, ModalContent, ModalOverlay, Stack, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, Heading, HStack, Modal, ModalBody, ModalContent, ModalOverlay, Stack, Text, useBreakpointValue } from "@chakra-ui/react";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Maximize2, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { funnelModalContentProps, funnelOverlayProps } from "@/components/marketing/funnel-ui";
 import { auszahlungenCommunity, auszahlungenEmre, challenges } from "@/config/landing-membership";
+import type { DiscordBeitrag } from "@/config/discord-beitraege";
 import { landing } from "@/config/training";
 import { NachweisGalerie, type GalerieBlock } from "../membership/NachweisGalerie";
 import { akzentGold } from "../call/call-ui";
@@ -15,9 +16,9 @@ import { Sektion, SektionsKopf } from "../membership/membership-ui";
  * „Ergebnisse aus der Capital Circle Community" auf `/training` — **alle**
  * Nachweise untereinander, ohne Filter (Feedback 14.11.2026):
  *
- * 1. Discord-Beiträge von Mitgliedern als Masonry (CSS-Spalten), groß per
- *    Klick. Bilder unverändert unter `public/community/` (Kopien aus
- *    `public/Discord Funnel/`). Der Ordner steht im Matcher von `proxy.ts`.
+ * 1. Discord-Beiträge von Mitgliedern als Masonry, groß per Klick — Auszahlungen
+ *    mit der höchsten Summe zuerst (`config/discord-beitraege.ts`). Bilder
+ *    unverändert unter `public/community/`. Der Ordner steht im Matcher von `proxy.ts`.
  * 2. Belegte Auszahlungen (Mitglieder, dann Emre).
  * 3. Bestandene Challenges: Kontogrößen, **nicht** grün und unter eigener
  *    Überschrift — dieselbe Regel wie auf `/ergebnisse` (`NachweisGalerie`).
@@ -152,73 +153,98 @@ function Ausklappbar({ anzahl, children }: { anzahl: number; children: ReactNode
  * `next/image`: wie `NachweisGalerie`, und die festen Maße halten die Spalten
  * beim Nachladen ruhig. Mobil zwei Spalten; lesen lässt sich jeder Beitrag in
  * der Lupe.
+ *
+ * **Zeilenweise statt CSS-Spalten** (17.11.2026): `column-count` füllt erst
+ * Spalte 1 von oben nach unten — die größten Auszahlungen (Anfang der Liste)
+ * stünden alle links untereinander. `verteileAufSpalten` legt jeden Beitrag in
+ * die gerade kürzeste Spalte; die Höhen sind aus den Bildmaßen bekannt. Damit
+ * steht die Liste von links nach rechts, oben nach unten in ihrer Reihenfolge.
  */
+const WAND_SPALTEN = { base: 2, md: 3, lg: 4 } as const;
+const WAND_ABSTAND = { base: "12px", md: "18px" } as const;
+
+function verteileAufSpalten(bilder: readonly DiscordBeitrag[], anzahl: number): number[][] {
+  const spalten: number[][] = Array.from({ length: anzahl }, () => []);
+  const hoehen = new Array<number>(anzahl).fill(0);
+  bilder.forEach((bild, i) => {
+    const ziel = hoehen.indexOf(Math.min(...hoehen));
+    spalten[ziel].push(i);
+    // Höhe relativ zur Spaltenbreite, plus ungefähr der Abstand darunter.
+    hoehen[ziel] += bild.hoehe / bild.breite + 0.06;
+  });
+  return spalten;
+}
+
 function DiscordWand() {
   const c = landing.community;
   const [offen, setOffen] = useState<number | null>(null);
+  const anzahl = useBreakpointValue(WAND_SPALTEN) ?? WAND_SPALTEN.base;
+  const spalten = useMemo(() => verteileAufSpalten(c.bilder, anzahl), [c.bilder, anzahl]);
 
   return (
     <>
-      <Box
-        sx={{
-          columnCount: { base: 2, md: 3, lg: 4 },
-          columnGap: { base: "12px", md: "18px" },
-        }}
-      >
-        {c.bilder.map((bild, i) => (
-          <Reveal key={bild.src} delay={(i % 4) * 60} mb={{ base: "12px", md: "18px" }} sx={{ breakInside: "avoid" }}>
-            <Box
-              as="button"
-              type="button"
-              onClick={() => setOffen(i)}
-              aria-label={`${bild.alt} – groß ansehen`}
-              display="block"
-              w="full"
-              position="relative"
-              className="cc-card"
-              p={0}
-              overflow="hidden"
-              cursor="zoom-in"
-              role="group"
-              _focusVisible={{ outline: "2px solid var(--cc-gold-line)", outlineOffset: "3px" }}
-            >
-              <Box
-                as="img"
-                src={bild.src}
-                alt=""
-                width={bild.breite}
-                height={bild.hoehe}
-                loading="lazy"
-                decoding="async"
-                display="block"
-                w="100%"
-                h="auto"
-                bg="#000"
-              />
-              <Flex
-                aria-hidden
-                position="absolute"
-                top={2}
-                right={2}
-                w="28px"
-                h="28px"
-                align="center"
-                justify="center"
-                borderRadius="8px"
-                bg="rgba(15, 19, 23, 0.72)"
-                border="1px solid var(--cc-line-strong)"
-                color="var(--cc-text-soft)"
-                opacity={{ base: 1, md: 0 }}
-                transition="opacity 180ms var(--cc-ease)"
-                _groupHover={{ opacity: 1 }}
-                _groupFocusVisible={{ opacity: 1 }}
-              >
-                <Maximize2 size={13} strokeWidth={1.75} />
-              </Flex>
-            </Box>
-          </Reveal>
+      <Flex align="flex-start" gap={WAND_ABSTAND}>
+        {spalten.map((spalte, s) => (
+          <Flex key={s} direction="column" gap={WAND_ABSTAND} flex="1 1 0" minW={0}>
+            {spalte.map((i) => {
+              const bild = c.bilder[i];
+              return (
+                <Reveal key={bild.src} delay={(s % 4) * 60}>
+                  <Box
+                    as="button"
+                    type="button"
+                    onClick={() => setOffen(i)}
+                    aria-label={`${bild.alt} – groß ansehen`}
+                    display="block"
+                    w="full"
+                    position="relative"
+                    className="cc-card"
+                    p={0}
+                    overflow="hidden"
+                    cursor="zoom-in"
+                    role="group"
+                    _focusVisible={{ outline: "2px solid var(--cc-gold-line)", outlineOffset: "3px" }}
+                  >
+                    <Box
+                      as="img"
+                      src={bild.src}
+                      alt=""
+                      width={bild.breite}
+                      height={bild.hoehe}
+                      loading="lazy"
+                      decoding="async"
+                      display="block"
+                      w="100%"
+                      h="auto"
+                      bg="#000"
+                    />
+                    <Flex
+                      aria-hidden
+                      position="absolute"
+                      top={2}
+                      right={2}
+                      w="28px"
+                      h="28px"
+                      align="center"
+                      justify="center"
+                      borderRadius="8px"
+                      bg="rgba(15, 19, 23, 0.72)"
+                      border="1px solid var(--cc-line-strong)"
+                      color="var(--cc-text-soft)"
+                      opacity={{ base: 1, md: 0 }}
+                      transition="opacity 180ms var(--cc-ease)"
+                      _groupHover={{ opacity: 1 }}
+                      _groupFocusVisible={{ opacity: 1 }}
+                    >
+                      <Maximize2 size={13} strokeWidth={1.75} />
+                    </Flex>
+                  </Box>
+                </Reveal>
+              );
+            })}
+          </Flex>
         ))}
-      </Box>
+      </Flex>
 
       <EinblickLightbox index={offen} onIndex={setOffen} />
     </>
