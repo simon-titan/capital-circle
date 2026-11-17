@@ -87,7 +87,7 @@ export function TrainingLanding({ video = landingVideo }: { video?: { uid: strin
 
         <FunnelFooter>{fusszeile}</FunnelFooter>
 
-        <MobilAktionsleiste hinweis={landing.mobilHinweis} hinweisFarbe="var(--cc-text)" immer>
+        <MobilAktionsleiste hinweis={landing.mobilHinweis} hinweisFarbe="var(--cc-text)">
           {(tabIndex) => (
             <TrainingStartKnopf w="full" minH="52px" fontSize="16px" tabIndex={tabIndex}>
               {landing.hero.cta}
@@ -158,6 +158,7 @@ function Hero({ video }: { video: { uid: string; posterSekunde: number } }) {
   return (
     <Box
       as="section"
+      id="hero"
       aria-labelledby="training-titel"
       position="relative"
       pt={{ base: 8, md: 14 }}

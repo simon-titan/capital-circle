@@ -245,7 +245,7 @@ function Hero({ bewertungen }: { bewertungen: Bewertungsspiegel }) {
   const basis = STREAM_SUBDOMAIN ? `https://${STREAM_SUBDOMAIN}.cloudflarestream.com/${landingVideo.uid}` : null;
 
   return (
-    <Box as="section" aria-labelledby="zertifikat-titel" px={{ base: 3, md: 8, lg: 12 }} pt={{ base: 3, md: 6 }}>
+    <Box as="section" id="hero" aria-labelledby="zertifikat-titel" px={{ base: 3, md: 8, lg: 12 }} pt={{ base: 3, md: 6 }}>
       <Box position="relative" maxW="1240px" mx="auto" px={{ base: 4, sm: 8, md: 14 }} pt={{ base: 14, md: 20 }} pb={{ base: 12, md: 16 }}>
         <ZertifikatRahmen />
 

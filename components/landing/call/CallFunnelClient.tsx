@@ -178,7 +178,7 @@ function Hero({
   // Fensterhöhe — `HERO_REST` ist alles außer dem Video (Kopfleiste 72 px,
   // Abstände, zwei Zeilen Headline, Unterzeile, Knopf, Vertrauenszeile).
   return (
-    <Box as="section" aria-labelledby="call-titel" position="relative" pt={{ base: 8, md: 8 }} px={{ base: 4, md: 8, lg: 12 }}>
+    <Box as="section" id="hero" aria-labelledby="call-titel" position="relative" pt={{ base: 8, md: 8 }} px={{ base: 4, md: 8, lg: 12 }}>
       <Stack maxW="1180px" mx="auto" spacing={{ base: 7, md: 6 }} align="center">
         <Stack spacing={{ base: 3, md: 4 }} align="center" textAlign="center" maxW="980px">
           <Heading
