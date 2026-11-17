@@ -661,3 +661,12 @@ sichtbar bis 1 h nach Beginn): Datum, Uhrzeit, Berater, Beitreten, Kalendereintr
 Mit `?termin=neu` und noch ohne Termin wartet die Karte auf den Calendly-Webhook (Neuladen alle 3 s, höchstens 30 s) — die
 Karte hängt also am Webhook `invitee.created`. Laufen erst die ICP-Fragen, reicht der Proxy `next=/dashboard?termin=neu`
 an `/einsteig` weiter, und `OnboardingFlow` folgt ihm auch auf dem Free-Pfad.
+
+2026-11-17 (**Community-Section und Vitrine nur noch Discord**): Auf `/training`, `/call` **und** `/ergebnisse` stehen
+nur noch die Discord-Beiträge (`DiscordWand` aus `CommunityEinblicke.tsx`) — **keine** Zwischenüberschrift „Aus dem
+Discord“ samt Unterzeile, **keine** Blöcke „Auszahlungen von Mitgliedern“, „Meine Auszahlungen“, „Bestandene
+Challenges“ mehr (Feedback Simon). `/ergebnisse` heißt jetzt „Ergebnisse aus der Capital Circle Community“; die Einträge
+vom 17.09. zu den zwei Nachweis-Blöcken dort gelten nicht mehr. `NachweisGalerie` und die Daten in
+`config/landing-membership.ts` bleiben (die Verkaufsseite `/` zeigt die Auszahlungen weiter). Der Calendly-Termin für
+das Analysegespräch ist seit 17.11. `…/capital-circle-analysegesprach` (60 Min.) über `NEXT_PUBLIC_CALL_CALENDLY_URL`
+(Vercel, Team `emrecapitals-projects`); `NEXT_PUBLIC_CALENDLY_URL` liest nur der alte HT-Weg.

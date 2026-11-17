@@ -145,12 +145,6 @@ export const landing = {
   community: {
     eyebrow: "Community",
     headline: "Ergebnisse aus der {Capital Circle Community}",
-    /** Überschriften der Gruppen — bleiben auch ohne Filter, Kontogröße ≠ Auszahlung. Emres Payouts nur auf `/ergebnisse`. */
-    gruppen: {
-      discord: { titel: "Aus dem Discord", hinweis: "Funded Accounts, Auszahlungen und Dank, so wie sie im Discord gepostet wurden." },
-      mitglieder: { titel: "Auszahlungen von Mitgliedern", hinweis: "Hier ist Geld geflossen: Überweisung, Payout-Mail oder Payout-Zertifikat." },
-      challenges: { titel: "Bestandene Challenges", hinweis: "Bestandene Prüfungen. Der Betrag ist die Kontogröße, keine Auszahlung." },
-    },
     mehr: "Alle {anzahl} anzeigen",
     weniger: "Weniger anzeigen",
     /** Reihenfolge und Herkunft: `config/discord-beitraege.ts`. */

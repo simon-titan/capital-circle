@@ -2,35 +2,31 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Box, Flex, Stack, Text } from "@chakra-ui/react";
 import { ArrowLeft } from "lucide-react";
-import { auszahlungenCommunity, auszahlungenEmre, challenges } from "@/config/landing-membership";
 import { FunnelTrackerProvider } from "@/components/landing/FunnelTracker";
-import { NachweisGalerie } from "@/components/landing/membership/NachweisGalerie";
-import { DiscordBlock } from "@/components/landing/training/CommunityEinblicke";
+import { DiscordWand } from "@/components/landing/training/CommunityEinblicke";
 import { RechtsLinks } from "@/components/legal/RechtsFusszeile";
 
 export const metadata: Metadata = {
-  title: "Belegte Auszahlungen · Capital Circle",
+  title: "Ergebnisse aus der Community · Capital Circle",
   description:
-    "Alle dokumentierten Auszahlungen von Mitgliedern und von Emre Kopal, dazu die bestandenen Prop-Firm-Challenges und Beiträge aus dem Discord. Jeder Nachweis einsehbar.",
+    "Beiträge von Mitgliedern aus dem Capital-Circle-Discord: Auszahlungen, Funded Accounts und Dank, unverändert so, wie sie gepostet wurden.",
 };
 
 /**
- * Alle belegten Auszahlungen (`/ergebnisse`).
+ * Vitrine (`/ergebnisse`): die Discord-Wand aus `/training` und `/call`
+ * (`DiscordWand`, `config/discord-beitraege.ts`), sonst nichts.
  *
- * Hängt am Fusslink der Ergebnis-Section der Verkaufsseite und ist deshalb
- * öffentlich — der Eintrag steht in `PUBLIC_PATHS` in `proxy.ts`. Die Bilder
- * liegen unter `public/nachweise/`; dieser Ordner steht im Matcher desselben
- * Proxys unter den Ausnahmen, sonst käme dort Login-HTML statt Bild an.
+ * Seit 17.11.2026 (Feedback) **nur noch die Discord-Beiträge** — die Blöcke
+ * „Aus der Community", „Meine Auszahlungen" und „Bestandene Challenges"
+ * (`NachweisGalerie`, Daten in `config/landing-membership.ts`) hängen hier
+ * nicht mehr. Die Daten bleiben, die Verkaufsseite `/` zeigt die Auszahlungen weiter.
+ *
+ * Öffentlich: Eintrag in `PUBLIC_PATHS` in `proxy.ts`, der Bildordner
+ * `public/community/` steht im Matcher unter den Ausnahmen.
  *
  * Nicht zu verwechseln mit `/erfolge`: Das ist die Galerie der von Mitgliedern
  * selbst eingereichten und freigegebenen Nachweise aus der Datenbank
- * (`certificates`), hängt an echten Konten und wird im Admin freigeschaltet.
- * Hier stehen die von Emre gesammelten Belege aus dem Discord.
- *
- * Seit 17.11.2026 steht ganz unten zusätzlich die Discord-Wand aus `/training`
- * und `/call` (`DiscordBlock`, `config/discord-beitraege.ts`). Sie zeigt auch
- * Funded Accounts und Dank, also bewusst **unter** den beiden Nachweis-Blöcken
- * und mit eigener Überschrift, damit „jede Zeile oben ist Geld" wahr bleibt.
+ * (`certificates`).
  */
 export default function ErgebnissePage() {
   return (
@@ -91,57 +87,21 @@ export default function ErgebnissePage() {
               fontWeight={600}
               letterSpacing="-0.01em"
             >
-              Belegt statt behauptet.
+              Ergebnisse aus der Capital Circle Community
             </Box>
-            {/* Zwei Versprechen, zwei Sätze. Der erste galt hier immer und darf
-                nicht verwässern, seit die Challenges dazugekommen sind — also
-                steht gleich im Vorspann, dass sie ein eigener Abschnitt sind. */}
             <Text fontSize={{ base: "15px", md: "17px" }} color="var(--cc-text-2)" maxW="640px">
-              Oben die Auszahlungen: Jede Zeile dort ist Geld, das geflossen ist: Überweisung, Payout-Mail oder
-              Payout-Zertifikat. Darunter, getrennt davon, die bestandenen Prop-Firm-Challenges und ganz unten Beiträge
-              aus unserem Discord. Klick auf einen Nachweis, um ihn groß zu sehen.
+              Klick auf einen Beitrag, um ihn groß zu sehen.
             </Text>
           </Stack>
         </Stack>
 
-        <NachweisGalerie
-          bloecke={[
-            {
-              titel: "Aus der Community",
-              hinweis:
-                "Nachweise von Mitgliedern, geteilt im Discord. Unverändert, so wie sie dort gepostet wurden.",
-              zeilen: auszahlungenCommunity,
-            },
-            {
-              titel: "Meine Auszahlungen",
-              hinweis: "Payout-Zertifikate von Apex Trader Funding und Lucid Trading, ausgestellt auf Emre Kopal.",
-              zeilen: auszahlungenEmre,
-            },
-            /* Eigener Block, eigene Überschrift — und der Unterschied steht im
-               Hinweis, nicht im Kleingedruckten. Zwischen den Auszahlungen
-               stünde ein 150.000-$-Zertifikat wie eine Auszahlung über
-               150.000 $ da; genau deshalb ist es hier unten und heißt anders. */
-            {
-              titel: "Bestandene Challenges",
-              art: "challenge",
-              hinweis:
-                "Zertifikate von Mitgliedern, die die Prüfung einer Prop-Firma bestanden haben. Die genannte Summe ist die Kontogröße, die sie ab da handeln. Keine Auszahlung.",
-              zeilen: challenges,
-            },
-          ]}
-        />
+        <DiscordWand />
 
-        <DiscordBlock ebene="h2" />
-
-        {/* Der ehrliche Nachsatz: Es gibt mehr Material, aber nicht jedes Bild
-            ist ein Nachweis. Kontostände und Tagesgewinne stehen hier bewusst
-            nicht — sie sagen weder, dass Geld geflossen ist, noch, dass jemand
-            eine Prüfung bestanden hat. */}
+        {/* Ehrlicher Nachsatz: Die Beiträge sind keine geprüften Belege. */}
         <Stack gap={5} borderTop="1px solid var(--cc-line)" pt={6}>
           <Text fontSize="13px" color="var(--cc-text-3)" maxW="720px">
-            Die Abschnitte belegen Verschiedenes und bleiben deshalb getrennt: oben Geld, das ausgezahlt wurde, darunter
-            Prüfungen, die bestanden wurden. Eine Kontogröße ist kein Verdienst. Die Beiträge aus dem Discord stehen
-            unverändert, so wie Mitglieder sie gepostet haben, und zeigen auch Funded Accounts und Kontostände.
+            Die Beiträge stehen unverändert, so wie Mitglieder sie im Discord gepostet haben, und zeigen neben
+            Auszahlungen auch Funded Accounts und Kontostände. Eine Kontogröße ist kein Verdienst.
           </Text>
           {/* Impressum · Datenschutz · AGB · Widerruf · Verträge hier kündigen */}
           <RechtsLinks justify="flex-start" />

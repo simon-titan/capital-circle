@@ -1,47 +1,29 @@
 "use client";
 
-import { Box, Button, Flex, Heading, HStack, Modal, ModalBody, ModalContent, ModalOverlay, Stack, Text, useBreakpointValue } from "@chakra-ui/react";
+import { Box, Button, Flex, HStack, Modal, ModalBody, ModalContent, ModalOverlay, Text, useBreakpointValue } from "@chakra-ui/react";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Maximize2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { funnelModalContentProps, funnelOverlayProps } from "@/components/marketing/funnel-ui";
-import { auszahlungenCommunity, challenges } from "@/config/landing-membership";
 import type { DiscordBeitrag } from "@/config/discord-beitraege";
 import { landing } from "@/config/training";
-import { NachweisGalerie, type GalerieBlock } from "../membership/NachweisGalerie";
 import { akzentGold } from "../call/call-ui";
 import { Reveal } from "../landing-ui";
 import { Sektion, SektionsKopf } from "../membership/membership-ui";
 
 /**
- * „Ergebnisse aus der Capital Circle Community" auf `/training` — **alle**
- * Nachweise untereinander, ohne Filter (Feedback 14.11.2026):
+ * „Ergebnisse aus der Capital Circle Community" auf `/training` und `/call`:
+ * nur noch die Discord-Beiträge als Masonry, groß per Klick — Auszahlungen mit
+ * der höchsten Summe zuerst (`config/discord-beitraege.ts`). Bilder unverändert
+ * unter `public/community/`; der Ordner steht im Matcher von `proxy.ts`.
  *
- * 1. Discord-Beiträge von Mitgliedern als Masonry, groß per Klick — Auszahlungen
- *    mit der höchsten Summe zuerst (`config/discord-beitraege.ts`). Bilder
- *    unverändert unter `public/community/`. Der Ordner steht im Matcher von `proxy.ts`.
- * 2. Belegte Auszahlungen von Mitgliedern. Emres eigene Payouts sind seit
- *    17.11.2026 raus (Feedback) — sie stehen nur noch auf `/ergebnisse`.
- * 3. Bestandene Challenges: Kontogrößen, **nicht** grün und unter eigener
- *    Überschrift — dieselbe Regel wie auf `/ergebnisse` (`NachweisGalerie`).
- *    Die Überschriften bleiben deshalb stehen, auch ohne Filter.
+ * Seit 17.11.2026 (Feedback) ohne Unterzeile, ohne Hinweiszeile, ohne
+ * Zwischenüberschrift „Aus dem Discord" und ohne die Blöcke „Auszahlungen von
+ * Mitgliedern" / „Bestandene Challenges".
  *
  * Das Ganze klappt ab `EINGEKLAPPT` Höhe ein (Verlauf + „Alle n anzeigen",
- * Knopf in Smaragd). Seit 17.11.2026 ohne Unterzeile und ohne Hinweiszeile
- * unter dem Knopf (Feedback).
+ * Knopf in Smaragd).
  */
 const EINGEKLAPPT = { base: 900, md: 980 };
-
-const NACHWEIS_BLOECKE: GalerieBlock[] = [
-  { titel: landing.community.gruppen.mitglieder.titel, hinweis: landing.community.gruppen.mitglieder.hinweis, zeilen: auszahlungenCommunity },
-  {
-    titel: landing.community.gruppen.challenges.titel,
-    hinweis: landing.community.gruppen.challenges.hinweis,
-    art: "challenge",
-    zeilen: challenges,
-  },
-];
-
-const ANZAHL = landing.community.bilder.length + auszahlungenCommunity.length + challenges.length;
 
 export function CommunityEinblicke() {
   const c = landing.community;
@@ -51,35 +33,11 @@ export function CommunityEinblicke() {
       <SektionsKopf id="community-titel" eyebrow={c.eyebrow} headline={akzentGold(c.headline)} />
 
       <Box id="ergebnis-tafel" mt={{ base: 10, md: 14 }}>
-        <Ausklappbar anzahl={ANZAHL}>
-          <Stack spacing={{ base: 12, md: 16 }}>
-            <DiscordBlock />
-            <NachweisGalerie bloecke={NACHWEIS_BLOECKE} />
-          </Stack>
+        <Ausklappbar anzahl={c.bilder.length}>
+          <DiscordWand />
         </Ausklappbar>
       </Box>
     </Sektion>
-  );
-}
-
-/**
- * „Aus dem Discord": Überschrift + Wand. Auch auf `/ergebnisse` (Vitrine), dort
- * als `h2` und als eigener Abschnitt unter den belegten Auszahlungen.
- */
-export function DiscordBlock({ ebene = "h3" }: { ebene?: "h2" | "h3" }) {
-  const c = landing.community;
-  return (
-    <Stack spacing={5}>
-      <Stack spacing={1}>
-        <Heading as={ebene} fontSize={{ base: "22px", md: "26px" }} fontWeight={600} color="var(--cc-text)">
-          {c.gruppen.discord.titel}
-        </Heading>
-        <Text fontSize="14px" color="var(--cc-text-2)">
-          {c.gruppen.discord.hinweis}
-        </Text>
-      </Stack>
-      <DiscordWand />
-    </Stack>
   );
 }
 
@@ -183,7 +141,8 @@ function verteileAufSpalten(bilder: readonly DiscordBeitrag[], anzahl: number): 
   return spalten;
 }
 
-function DiscordWand() {
+/** Auch auf `/ergebnisse` (Vitrine), dort ohne eigene Überschrift. */
+export function DiscordWand() {
   const c = landing.community;
   const [offen, setOffen] = useState<number | null>(null);
   const anzahl = useBreakpointValue(WAND_SPALTEN) ?? WAND_SPALTEN.base;
