@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
-import { setRequireSignedUrls } from "@/lib/cloudflare-stream";
+import { buildThumbnailUrl, setRequireSignedUrls } from "@/lib/cloudflare-stream";
 import { deleteObject, getObjectSize, getPresignedPutUrl, getStorageMisconfiguration } from "@/lib/storage";
 import { funnelSperrHinweis } from "@/lib/funnel-videos";
 import { requireAdmin } from "@/lib/supabase/admin-auth";
@@ -18,7 +18,9 @@ export const runtime = "nodejs";
 /**
  * Trading Blueprint im Admin (`/admin/training/blueprint`, `lib/trading-blueprint.ts`).
  *
- * GET  → gespeicherter Stand
+ * GET  → gespeicherter Stand, dazu `vorschauBasis`: signierte Standbild-Adresse der
+ *        Videoanleitung ohne Zeitpunkt. Der Token gilt für die UID, nicht für die
+ *        Query — der Admin hängt `&time=Ns` selbst an, um Standbilder zu probieren.
  * POST { dateiname, groesse } → Presigned PUT für ein neues PDF in R2
  *      (der Browser lädt direkt hoch, kein Vercel-Body-Limit)
  * PUT  { r2_key, dateiname, groesse, video_uid, titel, beschreibung } → speichern
@@ -26,10 +28,21 @@ export const runtime = "nodejs";
  *      aus R2 gelöscht; eine neue Video-UID auf signierte Wiedergabe gestellt.
  */
 
+/** Signierte Standbild-Basis (1 h) fürs Admin — `null` ohne Video oder ohne Stream-Konfiguration. */
+function vorschauBasis(uid: string | null): string | null {
+  if (!uid) return null;
+  try {
+    return buildThumbnailUrl(uid, { signed: true, ttlSeconds: 60 * 60, width: 640 });
+  } catch {
+    return null;
+  }
+}
+
 export async function GET() {
   const { error } = await requireAdmin();
   if (error) return error;
-  return NextResponse.json({ ok: true, blueprint: await ladeBlueprint() });
+  const blueprint = await ladeBlueprint();
+  return NextResponse.json({ ok: true, blueprint, vorschauBasis: vorschauBasis(blueprint.video_uid) });
 }
 
 export async function POST(request: NextRequest) {
@@ -132,5 +145,6 @@ export async function PUT(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, blueprint: await ladeBlueprint(), hinweise });
+  const neu = await ladeBlueprint();
+  return NextResponse.json({ ok: true, blueprint: neu, vorschauBasis: vorschauBasis(neu.video_uid), hinweise });
 }

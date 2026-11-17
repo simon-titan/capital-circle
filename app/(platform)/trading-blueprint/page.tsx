@@ -39,7 +39,12 @@ export default async function TradingBlueprintPage({
     try {
       video = {
         src: buildManifestUrl(blueprint.video_uid, { signed: true, ttlSeconds: 4 * 60 * 60 }),
-        poster: buildThumbnailUrl(blueprint.video_uid, { signed: true, ttlSeconds: 4 * 60 * 60, width: 1280 }),
+        poster: buildThumbnailUrl(blueprint.video_uid, {
+          signed: true,
+          ttlSeconds: 4 * 60 * 60,
+          width: 1280,
+          timeSeconds: blueprint.poster_sekunde ?? undefined,
+        }),
       };
     } catch (err) {
       console.error("[trading-blueprint] Signatur fehlgeschlagen:", err);

@@ -24,6 +24,8 @@ export type TradingBlueprint = {
   dateiname: string | null;
   groesse: number | null;
   video_uid: string | null;
+  /** Standbild der Videoanleitung in Sekunden; `null` = Cloudflare-Standard. */
+  poster_sekunde: number | null;
   titel: string | null;
   beschreibung: string | null;
   aktualisiert_am: string | null;
@@ -34,10 +36,20 @@ const LEER: TradingBlueprint = {
   dateiname: null,
   groesse: null,
   video_uid: null,
+  poster_sekunde: null,
   titel: null,
   beschreibung: null,
   aktualisiert_am: null,
 };
+
+/** Obergrenze fürs Standbild (3 h) — nur gegen Tippfehler, die Videolänge kennt der Server hier nicht. */
+export const BLUEPRINT_POSTER_MAX = 3 * 60 * 60;
+
+function sekunde(roh: unknown): number | null {
+  if (typeof roh !== "number" || !Number.isFinite(roh)) return null;
+  const s = Math.round(roh);
+  return s >= 0 && s <= BLUEPRINT_POSTER_MAX ? s : null;
+}
 
 /** Cloudflare-Stream-UIDs sind 32 Hex-Zeichen. */
 export const STREAM_UID_RE = /^[0-9a-f]{32}$/i;
@@ -64,6 +76,7 @@ export function leseBlueprint(roh: unknown): TradingBlueprint {
     dateiname: text(v.dateiname, 200),
     groesse,
     video_uid: uid && STREAM_UID_RE.test(uid) ? uid : null,
+    poster_sekunde: uid ? sekunde(v.poster_sekunde) : null,
     titel: text(v.titel, 120),
     beschreibung: text(v.beschreibung, 1000),
     aktualisiert_am: text(v.aktualisiert_am, 40),
@@ -86,6 +99,9 @@ export function pruefeBlueprintEingabe(
   }
   const groesse =
     typeof v.groesse === "number" && Number.isFinite(v.groesse) && v.groesse > 0 ? Math.round(v.groesse) : null;
+  if (v.poster_sekunde !== null && v.poster_sekunde !== undefined && sekunde(v.poster_sekunde) === null) {
+    return { ok: false, fehler: `Das Standbild muss zwischen 0 und ${BLUEPRINT_POSTER_MAX} Sekunden liegen.` };
+  }
   return {
     ok: true,
     wert: {
@@ -93,6 +109,7 @@ export function pruefeBlueprintEingabe(
       dateiname: key ? text(v.dateiname, 200) : null,
       groesse: key ? groesse : null,
       video_uid: uid ? uid.toLowerCase() : null,
+      poster_sekunde: uid ? sekunde(v.poster_sekunde) : null,
       titel: text(v.titel, 120),
       beschreibung: text(v.beschreibung, 1000),
     },

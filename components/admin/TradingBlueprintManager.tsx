@@ -39,7 +39,23 @@ import type { TradingBlueprint } from "@/lib/trading-blueprint";
 /** Gleich `BLUEPRINT_MAX_BYTES` in `lib/trading-blueprint.ts` (dort serverseitig geprüft). */
 const MAX_MB = 50;
 
-type Antwort = { ok: boolean; blueprint?: TradingBlueprint; error?: string; hinweise?: string[] };
+type Antwort = {
+  ok: boolean;
+  blueprint?: TradingBlueprint;
+  vorschauBasis?: string | null;
+  error?: string;
+  hinweise?: string[];
+};
+
+/** Gleich `BLUEPRINT_POSTER_MAX` in `lib/trading-blueprint.ts` (dort serverseitig geprüft). */
+const POSTER_MAX = 3 * 60 * 60;
+
+/** Standbild-Adresse zu einer Sekunde — der signierte Token deckt jeden Zeitpunkt ab. */
+function standbild(basis: string | null, sekunde: number | null): string | null {
+  if (!basis) return null;
+  if (sekunde === null) return basis;
+  return `${basis}${basis.includes("?") ? "&" : "?"}time=${sekunde}s`;
+}
 
 function groesseText(bytes: number | null): string {
   if (!bytes) return "";
@@ -196,12 +212,16 @@ export function TradingBlueprintManager() {
   const [titel, setTitel] = useState("");
   const [beschreibung, setBeschreibung] = useState("");
   const [pickerSchluessel, setPickerSchluessel] = useState(0);
+  const [basis, setBasis] = useState<string | null>(null);
+  const [sekEingabe, setSekEingabe] = useState("");
 
-  const uebernimm = useCallback((b: TradingBlueprint) => {
+  const uebernimm = useCallback((b: TradingBlueprint, vorschau?: string | null) => {
     setStand(b);
     setTitel(b.titel ?? "");
     setBeschreibung(b.beschreibung ?? "");
     setUidEingabe("");
+    setSekEingabe(b.poster_sekunde === null ? "" : String(b.poster_sekunde));
+    setBasis(vorschau ?? null);
   }, []);
 
   useEffect(() => {
@@ -212,7 +232,7 @@ export function TradingBlueprintManager() {
         const json = (await res.json()) as Antwort;
         if (abbruch) return;
         if (!json.ok || !json.blueprint) throw new Error(json.error ?? "Laden fehlgeschlagen");
-        uebernimm(json.blueprint);
+        uebernimm(json.blueprint, json.vorschauBasis);
       } catch (e) {
         if (!abbruch) setMeldung({ art: "error", text: e instanceof Error ? e.message : "Laden fehlgeschlagen" });
       }
@@ -237,7 +257,7 @@ export function TradingBlueprintManager() {
         setMeldung({ art: "error", text: json.error ?? "Speichern fehlgeschlagen" });
         return false;
       }
-      uebernimm(json.blueprint);
+      uebernimm(json.blueprint, json.vorschauBasis);
       setMeldung(
         json.hinweise?.length
           ? { art: "warning", text: `${erfolg} ${json.hinweise.join(" ")}` }
@@ -273,7 +293,11 @@ export function TradingBlueprintManager() {
   };
 
   const videoSetzen = async (uid: string) => {
-    const ok = await speichere({ video_uid: uid }, "Videoanleitung hinterlegt und auf signierte Wiedergabe gestellt.");
+    // Neues Video → Standbild zurück auf den Cloudflare-Standard, die alte Sekunde passt nicht mehr.
+    const ok = await speichere(
+      { video_uid: uid, poster_sekunde: null },
+      "Videoanleitung hinterlegt und auf signierte Wiedergabe gestellt.",
+    );
     if (ok) setPickerSchluessel((k) => k + 1);
   };
 
@@ -291,6 +315,10 @@ export function TradingBlueprintManager() {
   }
 
   const beschaeftigt = speichert || upload !== null;
+  const sekRoh = sekEingabe.trim();
+  const sekZahl = sekRoh === "" ? null : Number(sekRoh);
+  const sekGueltig = sekZahl === null || (Number.isInteger(sekZahl) && sekZahl >= 0 && sekZahl <= POSTER_MAX);
+  const bild = standbild(basis, sekGueltig ? sekZahl : stand.poster_sekunde);
 
   return (
     <Stack spacing={6}>
@@ -407,6 +435,61 @@ export function TradingBlueprintManager() {
             >
               Entfernen
             </Button>
+          </Flex>
+        ) : null}
+
+        {stand.video_uid ? (
+          <Flex gap={4} direction={{ base: "column", md: "row" }} align={{ base: "stretch", md: "flex-end" }}>
+            <Box
+              w={{ base: "100%", md: "320px" }}
+              flexShrink={0}
+              aspectRatio={16 / 9}
+              borderRadius="10px"
+              overflow="hidden"
+              border="1px solid var(--cc-line)"
+              bg="#000"
+            >
+              {bild ? (
+                <Box as="img" key={bild} src={bild} alt="Standbild der Videoanleitung" w="100%" h="100%" objectFit="cover" />
+              ) : (
+                <Flex h="100%" align="center" justify="center">
+                  <Text fontSize="12px" color="var(--cc-text-3)">
+                    Keine Vorschau
+                  </Text>
+                </Flex>
+              )}
+            </Box>
+            <Stack spacing={2}>
+              <AdminLabel>Standbild bei Sekunde</AdminLabel>
+              <Text fontSize="12px" color="var(--cc-text-3)" maxW="320px">
+                Leer lassen für das Standardbild von Cloudflare. Die Vorschau zeigt den Zeitpunkt sofort, gespeichert
+                wird erst mit dem Knopf.
+              </Text>
+              <HStack spacing={2}>
+                <Input
+                  size="sm"
+                  {...adminInputProps}
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={sekEingabe}
+                  onChange={(e) => setSekEingabe(e.target.value)}
+                  placeholder="z. B. 12"
+                  maxW="120px"
+                  aria-label="Standbild-Sekunde der Videoanleitung"
+                  isInvalid={!sekGueltig}
+                />
+                <Button
+                  size="sm"
+                  variant="gold"
+                  isDisabled={beschaeftigt || !sekGueltig || sekZahl === stand.poster_sekunde}
+                  isLoading={speichert}
+                  onClick={() => void speichere({ poster_sekunde: sekZahl }, "Standbild gespeichert.")}
+                >
+                  Standbild speichern
+                </Button>
+              </HStack>
+            </Stack>
           </Flex>
         ) : null}
 
