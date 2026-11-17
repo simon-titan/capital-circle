@@ -182,7 +182,7 @@ export function terminMail(id: TerminMailId, d: TerminMailDaten): TerminMail {
   }
 
   if (id === "T02") {
-    const video = pflicht(d.video5Url, "Video-5-Link");
+    const video = pflicht(d.video5Url, "Link zum Vorbereitungsvideo");
     return {
       betreff: "Bevor du mit meinem Team sprichst, schau dir das an.",
       vorschau: "Dieser Einblick ist die Grundlage für unser Gespräch.",
@@ -193,7 +193,7 @@ export function terminMail(id: TerminMailId, d: TerminMailDaten): TerminMail {
           <EmailText>
             {b("Bevor ihr miteinander sprecht, möchte ich, dass du verstehst, worauf es mir bei Capital Circle wirklich ankommt.")}
           </EmailText>
-          <EmailText>Deshalb schau dir bitte Video 5 an: {b("„Warum meine Schüler nicht meine Trades kopieren.“")}</EmailText>
+          <EmailText>Deshalb schau dir bitte dieses Video an: {b("„Warum meine Schüler nicht meine Trades kopieren.“")}</EmailText>
           <EmailText>
             Darin zeige ich dir echte Einblicke aus unserer Community, erkläre unseren Ausbildungsansatz und die Rolle der
             persönlichen Begleitung.
@@ -213,7 +213,7 @@ export function terminMail(id: TerminMailId, d: TerminMailDaten): TerminMail {
             Im Gespräch geht es anschließend um {b("deine Situation")}: deinen bisherigen Weg, deine offenen Fragen und
             darum, ob unsere Begleitung der passende nächste Schritt ist.
           </EmailText>
-          <EmailButton href={video}>Video 5 ansehen</EmailButton>
+          <EmailButton href={video}>Video ansehen</EmailButton>
           <EmailText>
             Mir ist wichtig, dass du nicht einfach irgendeinen Termin wahrnimmst.{" "}
             {b("Du sollst wissen, wofür Capital Circle steht, und deine eigenen Fragen mitbringen.")}

@@ -64,6 +64,8 @@ export const ctaLabel = "Jetzt Analysegespräch anfragen";
 export const hero = {
   /** Zeile unter jeder Hauptaktion und in der mobilen Aktionsleiste — nur Aussagen, die stimmen. */
   vertrauen: ["100 % kostenlos & unverbindlich"],
+  /** Dezent nur im Hero, hinter der Vertrauenszeile (Feedback 17.11.2026). */
+  knapp: "Limitierte Plätze",
   /** Hauptaktion in der Kopfleiste (kurz, passt neben die Wortmarke). */
   ctaKurz: "Gespräch anfragen",
   headline: "Du investierst Zeit, Geld und Energie ins Trading. Doch die {Ergebnisse bleiben aus.}",

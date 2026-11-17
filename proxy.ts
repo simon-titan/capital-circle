@@ -452,7 +452,13 @@ export async function proxy(request: NextRequest) {
     pathname !== "/crm" &&
     !pathname.startsWith("/crm/")
   ) {
-    return NextResponse.redirect(new URL("/einsteig", request.url));
+    const einsteig = new URL("/einsteig", request.url);
+    // Direkt nach der Buchung eines Analysegesprächs (17.11.2026): nach den
+    // Onboarding-Fragen zurück ins Dashboard mit der Termin-Karte.
+    if (pathname === "/dashboard" && request.nextUrl.searchParams.get("termin") === "neu") {
+      einsteig.searchParams.set("next", "/dashboard?termin=neu");
+    }
+    return NextResponse.redirect(einsteig);
   }
 
   // /bewerbung/* (Step 2): nur für approved Free-Nutzer.

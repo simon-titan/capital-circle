@@ -72,10 +72,16 @@ export async function pruefeReaktivierung(service: SupabaseClient, userId: strin
   return standAus(profil, bewerbung, zugang, new Date());
 }
 
+/**
+ * `quelle` legt fest, woher die Freischaltung kommt (Spalte `kanal` und Notiz der
+ * Bewerbungszeile). Ohne Angabe: Retargeting-Mail. Seit 17.11.2026 nutzt auch
+ * die Buchung eines Analysegesprächs diesen Weg (`lib/training/nach-buchung.ts`).
+ */
 export async function reaktiviere(
   service: SupabaseClient,
   userId: string,
   email: string,
+  quelle?: { kanal: string; notiz: string },
 ): Promise<{ ok: true; stand: ReaktivierungStand } | { ok: false; fehler: "abgelehnt" | "abgelaufen" | "server" }> {
   const jetzt = new Date();
   const { profil, bewerbung, zugang } = await lade(service, userId);
@@ -83,7 +89,7 @@ export async function reaktiviere(
   if (stand.art === "bezahlt" || stand.art === "aktiv") return { ok: true, stand };
   if (stand.art === "abgelehnt" || stand.art === "abgelaufen") return { ok: false, fehler: stand.art };
 
-  const notiz = `Über die Retargeting-Mail freigeschaltet (${jetzt.toISOString().slice(0, 10)}), ohne Bewerbung.`;
+  const notiz = quelle?.notiz ?? `Über die Retargeting-Mail freigeschaltet (${jetzt.toISOString().slice(0, 10)}), ohne Bewerbung.`;
   let bewerbungId = bewerbung?.id ?? null;
   if (!bewerbung) {
     const { data, error } = await service
@@ -99,7 +105,7 @@ export async function reaktiviere(
         adresse_bestaetigt_am: jetzt.toISOString(),
         geprueft_am: jetzt.toISOString(),
         notiz,
-        kanal: RETARGETING_KANAL,
+        kanal: quelle?.kanal ?? RETARGETING_KANAL,
       })
       .select("id")
       .maybeSingle();

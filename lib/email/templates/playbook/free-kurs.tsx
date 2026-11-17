@@ -30,6 +30,8 @@ export type FreeMailDaten = {
   lektionUrl: (n: number) => string;
   /** resume_free_course_url */
   weiterUrl: string;
+  /** Vitrine `/ergebnisse` mit den Discord-Beiträgen (Ziel von L03 seit 17.11.2026). */
+  vitrineUrl: string;
   /** analysis_application_url bzw. analysis_entry_router_url (E05) */
   gespraechUrl: string;
   /** whatsapp_extension_url — Pflicht für E02 */
@@ -323,15 +325,18 @@ export function freeMail(id: FreeMailId, d: FreeMailDaten): FreeMail {
             </EmailText>
             <EmailText>Genau darauf möchte ich mit Capital Circle hinarbeiten.</EmailText>
             <EmailText>{b("Du sollst nicht dauerhaft darauf angewiesen sein, dass ich dir sage, wann du kaufen oder verkaufen sollst.")}</EmailText>
+            {/* Bis 17.11.2026 verwies L03 auf das letzte Kursvideo („Das System in der
+                Praxis"). Das ist aus dem Kurs raus — der Absatz zeigt jetzt auf die
+                Vitrine mit den Discord-Beiträgen (Entscheidung Simon). */}
             <EmailText>
-              Im letzten Video des kostenlosen Trainings zeige ich dir echte Einblicke aus unserer Community und erkläre, wie
-              wir Ausbildung, Anwendung und Rückmeldung miteinander verbinden.
+              In unserer Vitrine findest du echte Beiträge aus unserer Community, so wie Mitglieder sie im Discord geteilt
+              haben.
             </EmailText>
             <EmailText>
               Schau dabei nicht nur auf einzelne Ergebniszahlen. Ein erfolgreicher Trade allein sagt noch nichts über
               langfristige Profitabilität aus.
             </EmailText>
-            <EmailText>Achte darauf, {b("wie Mitglieder ihre Überlegungen formulieren und woran wir beim Lernen arbeiten.")}</EmailText>
+            <EmailText>Achte darauf, {b("wie Mitglieder über ihren Weg schreiben und woran sie gearbeitet haben.")}</EmailText>
             <EmailText>
               Das ist für mich der Unterschied zwischen dem Konsumieren fremder Tradingideen und dem Aufbau eines eigenen
               Prozesses.
@@ -339,7 +344,7 @@ export function freeMail(id: FreeMailId, d: FreeMailDaten): FreeMail {
             <EmailText>Und es ist die Richtung, in die ich Capital Circle entwickeln möchte:</EmailText>
             <EmailText>{b("Eine Ausbildung und ein Netzwerk, in dem Menschen verstehen, selbst entscheiden und voneinander lernen.")}</EmailText>
             <EmailText>Verstehen statt kopieren.</EmailText>
-            <EmailButton href={d.lektionUrl(5)}>Einblick in Capital Circle ansehen</EmailButton>
+            <EmailButton href={d.vitrineUrl}>Einblicke aus der Community ansehen</EmailButton>
             <Gruss />
           </BaseEmail>
         ),

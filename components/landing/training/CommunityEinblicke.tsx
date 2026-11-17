@@ -4,7 +4,7 @@ import { Box, Button, Flex, Heading, HStack, Modal, ModalBody, ModalContent, Mod
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Maximize2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { funnelModalContentProps, funnelOverlayProps } from "@/components/marketing/funnel-ui";
-import { auszahlungenCommunity, auszahlungenEmre, challenges } from "@/config/landing-membership";
+import { auszahlungenCommunity, challenges } from "@/config/landing-membership";
 import type { DiscordBeitrag } from "@/config/discord-beitraege";
 import { landing } from "@/config/training";
 import { NachweisGalerie, type GalerieBlock } from "../membership/NachweisGalerie";
@@ -19,19 +19,20 @@ import { Sektion, SektionsKopf } from "../membership/membership-ui";
  * 1. Discord-Beiträge von Mitgliedern als Masonry, groß per Klick — Auszahlungen
  *    mit der höchsten Summe zuerst (`config/discord-beitraege.ts`). Bilder
  *    unverändert unter `public/community/`. Der Ordner steht im Matcher von `proxy.ts`.
- * 2. Belegte Auszahlungen (Mitglieder, dann Emre).
+ * 2. Belegte Auszahlungen von Mitgliedern. Emres eigene Payouts sind seit
+ *    17.11.2026 raus (Feedback) — sie stehen nur noch auf `/ergebnisse`.
  * 3. Bestandene Challenges: Kontogrößen, **nicht** grün und unter eigener
  *    Überschrift — dieselbe Regel wie auf `/ergebnisse` (`NachweisGalerie`).
  *    Die Überschriften bleiben deshalb stehen, auch ohne Filter.
  *
  * Das Ganze klappt ab `EINGEKLAPPT` Höhe ein (Verlauf + „Alle n anzeigen",
- * Knopf in Smaragd).
+ * Knopf in Smaragd). Seit 17.11.2026 ohne Unterzeile und ohne Hinweiszeile
+ * unter dem Knopf (Feedback).
  */
 const EINGEKLAPPT = { base: 900, md: 980 };
 
 const NACHWEIS_BLOECKE: GalerieBlock[] = [
   { titel: landing.community.gruppen.mitglieder.titel, hinweis: landing.community.gruppen.mitglieder.hinweis, zeilen: auszahlungenCommunity },
-  { titel: landing.community.gruppen.emre.titel, hinweis: landing.community.gruppen.emre.hinweis, zeilen: auszahlungenEmre },
   {
     titel: landing.community.gruppen.challenges.titel,
     hinweis: landing.community.gruppen.challenges.hinweis,
@@ -40,38 +41,45 @@ const NACHWEIS_BLOECKE: GalerieBlock[] = [
   },
 ];
 
-const ANZAHL = landing.community.bilder.length + auszahlungenCommunity.length + auszahlungenEmre.length + challenges.length;
+const ANZAHL = landing.community.bilder.length + auszahlungenCommunity.length + challenges.length;
 
 export function CommunityEinblicke() {
   const c = landing.community;
 
   return (
     <Sektion id="community" aria-labelledby="community-titel">
-      <SektionsKopf id="community-titel" eyebrow={c.eyebrow} headline={akzentGold(c.headline)} sublines={c.sublines} />
+      <SektionsKopf id="community-titel" eyebrow={c.eyebrow} headline={akzentGold(c.headline)} />
 
       <Box id="ergebnis-tafel" mt={{ base: 10, md: 14 }}>
         <Ausklappbar anzahl={ANZAHL}>
           <Stack spacing={{ base: 12, md: 16 }}>
-            <Stack spacing={5}>
-              <Stack spacing={1}>
-                <Heading as="h3" fontSize={{ base: "22px", md: "26px" }} fontWeight={600} color="var(--cc-text)">
-                  {c.gruppen.discord.titel}
-                </Heading>
-                <Text fontSize="14px" color="var(--cc-text-2)">
-                  {c.gruppen.discord.hinweis}
-                </Text>
-              </Stack>
-              <DiscordWand />
-            </Stack>
+            <DiscordBlock />
             <NachweisGalerie bloecke={NACHWEIS_BLOECKE} />
           </Stack>
         </Ausklappbar>
       </Box>
-
-      <Text fontSize="12px" lineHeight={1.7} color="var(--cc-text-3)" textAlign="center" mt={{ base: 6, md: 8 }}>
-        {c.hinweis}
-      </Text>
     </Sektion>
+  );
+}
+
+/**
+ * „Aus dem Discord": Überschrift + Wand. Auch auf `/ergebnisse` (Vitrine), dort
+ * als `h2` und als eigener Abschnitt unter den belegten Auszahlungen.
+ */
+export function DiscordBlock({ ebene = "h3" }: { ebene?: "h2" | "h3" }) {
+  const c = landing.community;
+  return (
+    <Stack spacing={5}>
+      <Stack spacing={1}>
+        <Heading as={ebene} fontSize={{ base: "22px", md: "26px" }} fontWeight={600} color="var(--cc-text)">
+          {c.gruppen.discord.titel}
+        </Heading>
+        <Text fontSize="14px" color="var(--cc-text-2)">
+          {c.gruppen.discord.hinweis}
+        </Text>
+      </Stack>
+      <DiscordWand />
+    </Stack>
   );
 }
 

@@ -5,12 +5,13 @@ import { ArrowLeft } from "lucide-react";
 import { auszahlungenCommunity, auszahlungenEmre, challenges } from "@/config/landing-membership";
 import { FunnelTrackerProvider } from "@/components/landing/FunnelTracker";
 import { NachweisGalerie } from "@/components/landing/membership/NachweisGalerie";
+import { DiscordBlock } from "@/components/landing/training/CommunityEinblicke";
 import { RechtsLinks } from "@/components/legal/RechtsFusszeile";
 
 export const metadata: Metadata = {
   title: "Belegte Auszahlungen · Capital Circle",
   description:
-    "Alle dokumentierten Auszahlungen von Mitgliedern und von Emre Kopal, dazu die bestandenen Prop-Firm-Challenges. Jeder Nachweis einsehbar.",
+    "Alle dokumentierten Auszahlungen von Mitgliedern und von Emre Kopal, dazu die bestandenen Prop-Firm-Challenges und Beiträge aus dem Discord. Jeder Nachweis einsehbar.",
 };
 
 /**
@@ -25,6 +26,11 @@ export const metadata: Metadata = {
  * selbst eingereichten und freigegebenen Nachweise aus der Datenbank
  * (`certificates`), hängt an echten Konten und wird im Admin freigeschaltet.
  * Hier stehen die von Emre gesammelten Belege aus dem Discord.
+ *
+ * Seit 17.11.2026 steht ganz unten zusätzlich die Discord-Wand aus `/training`
+ * und `/call` (`DiscordBlock`, `config/discord-beitraege.ts`). Sie zeigt auch
+ * Funded Accounts und Dank, also bewusst **unter** den beiden Nachweis-Blöcken
+ * und mit eigener Überschrift, damit „jede Zeile oben ist Geld" wahr bleibt.
  */
 export default function ErgebnissePage() {
   return (
@@ -92,8 +98,8 @@ export default function ErgebnissePage() {
                 steht gleich im Vorspann, dass sie ein eigener Abschnitt sind. */}
             <Text fontSize={{ base: "15px", md: "17px" }} color="var(--cc-text-2)" maxW="640px">
               Oben die Auszahlungen: Jede Zeile dort ist Geld, das geflossen ist: Überweisung, Payout-Mail oder
-              Payout-Zertifikat. Darunter, getrennt davon, die bestandenen Prop-Firm-Challenges. Klick auf einen
-              Nachweis, um ihn groß zu sehen.
+              Payout-Zertifikat. Darunter, getrennt davon, die bestandenen Prop-Firm-Challenges und ganz unten Beiträge
+              aus unserem Discord. Klick auf einen Nachweis, um ihn groß zu sehen.
             </Text>
           </Stack>
         </Stack>
@@ -125,15 +131,17 @@ export default function ErgebnissePage() {
           ]}
         />
 
+        <DiscordBlock ebene="h2" />
+
         {/* Der ehrliche Nachsatz: Es gibt mehr Material, aber nicht jedes Bild
             ist ein Nachweis. Kontostände und Tagesgewinne stehen hier bewusst
             nicht — sie sagen weder, dass Geld geflossen ist, noch, dass jemand
             eine Prüfung bestanden hat. */}
         <Stack gap={5} borderTop="1px solid var(--cc-line)" pt={6}>
           <Text fontSize="13px" color="var(--cc-text-3)" maxW="720px">
-            Die beiden Abschnitte belegen Verschiedenes und bleiben deshalb getrennt: oben Geld, das ausgezahlt wurde,
-            unten Prüfungen, die bestanden wurden. Eine Kontogröße ist kein Verdienst. Kontostände und Tagesgewinne sind
-            gar nicht aufgeführt. Sie belegen keines von beidem.
+            Die Abschnitte belegen Verschiedenes und bleiben deshalb getrennt: oben Geld, das ausgezahlt wurde, darunter
+            Prüfungen, die bestanden wurden. Eine Kontogröße ist kein Verdienst. Die Beiträge aus dem Discord stehen
+            unverändert, so wie Mitglieder sie gepostet haben, und zeigen auch Funded Accounts und Kontostände.
           </Text>
           {/* Impressum · Datenschutz · AGB · Widerruf · Verträge hier kündigen */}
           <RechtsLinks justify="flex-start" />

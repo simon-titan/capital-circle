@@ -118,8 +118,11 @@ export function CallFunnelClient({
   );
 }
 
-/** „100 % kostenlos & unverbindlich" unter jeder Hauptaktion (`hero.vertrauen`). */
-function VertrauensZeile() {
+/**
+ * „100 % kostenlos & unverbindlich" unter jeder Hauptaktion (`hero.vertrauen`).
+ * `knapp` hängt im Hero dezent „Limitierte Plätze" an (kleiner Gold-Punkt).
+ */
+function VertrauensZeile({ knapp = false }: { knapp?: boolean }) {
   return (
     <HStack justify="center" spacing={3} flexWrap="wrap" rowGap={1}>
       {hero.vertrauen.map((teil, i) => (
@@ -130,6 +133,17 @@ function VertrauensZeile() {
           </Text>
         </HStack>
       ))}
+      {knapp ? (
+        <HStack spacing={3}>
+          <Box aria-hidden w="1px" h="11px" bg="var(--cc-line-strong)" />
+          <HStack spacing={2}>
+            <Box aria-hidden w="6px" h="6px" borderRadius="full" bg="var(--cc-gold)" boxShadow="0 0 8px rgba(212, 176, 128, 0.55)" />
+            <Text fontSize="13px" color="var(--cc-text-2)">
+              {hero.knapp}
+            </Text>
+          </HStack>
+        </HStack>
+      ) : null}
     </HStack>
   );
 }
@@ -210,7 +224,7 @@ function Hero({
 
         <Stack {...heroRise(3)} spacing={3} align="center" w={{ base: "full", sm: "auto" }} maxW="560px">
           <CallBuchungKnopf />
-          <VertrauensZeile />
+          <VertrauensZeile knapp />
 
           {/* Garantiesatz nur, wenn Emre die Bedingungen abgenommen hat
               (`garantie.freigegeben` in `config/mentoring.ts`) — vorher wäre es

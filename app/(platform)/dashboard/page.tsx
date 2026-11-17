@@ -47,6 +47,7 @@ import { ladeCheckliste, schliesseAbWennFertig } from "@/lib/onboarding/checklis
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { calculateStreak, maxPlausibleStreakDays, sanitizeStreakValue } from "@/lib/streak";
 import { ladeFreeDashboard } from "@/lib/training/free-dashboard";
+import { ladeNaechstenTermin } from "@/lib/training/nach-buchung";
 
 export const dynamic = "force-dynamic";
 
@@ -369,14 +370,19 @@ export default async function DashboardPage({
   if (!hatInhaltsZugang(profile)) {
     const supabaseFree = await createClient();
     await aktualisiereStreak(supabaseFree, userId, profile, new Date());
-    const daten = await ladeFreeDashboard({ konto: supabaseFree, service: createServiceClient() }, userId, {
-      firstName: firstName(profile.full_name || profile.username || "Mitglied"),
-      showApplyPrompt,
-    });
+    const serviceFree = createServiceClient();
+    const [daten, termin] = await Promise.all([
+      ladeFreeDashboard({ konto: supabaseFree, service: serviceFree }, userId, {
+        firstName: firstName(profile.full_name || profile.username || "Mitglied"),
+        showApplyPrompt,
+      }),
+      // Gebuchtes Analysegespräch als Karte oben (17.11.2026), `?termin=neu` direkt nach der Buchung.
+      ladeNaechstenTermin(serviceFree, userId, user.email ?? null).catch(() => null),
+    ]);
     return (
       <>
         {showBookingSuccess && <BookingSuccessToast />}
-        <FreeDashboardView daten={daten} />
+        <FreeDashboardView daten={daten} termin={termin} terminNeu={params.termin === "neu"} />
       </>
     );
   }

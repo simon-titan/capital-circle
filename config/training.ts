@@ -23,8 +23,12 @@ export const TRAINING_MODUL_ID = "00000000-0000-0000-0000-000000000112";
  * `videoPlatzhalter`. Die sichtbaren Texte nennen seit 06.11.2026 bewusst **keine**
  * Videoanzahl mehr (Entscheidung Simon) — die Zahl steht nur noch in Zählern und
  * im Admin-Board.
+ *
+ * Seit 17.11.2026 **vier**: „Das System in der Praxis" (bisher Video 5) ist auf
+ * Wunsch aus dem kostenlosen Kurs raus (in der Datenbank unveröffentlicht). Es
+ * bleibt das Vorbereitungsvideo vor dem Analysegespräch, siehe `vorbereitungsVideo`.
  */
-export const TRAINING_VIDEO_ANZAHL = 5;
+export const TRAINING_VIDEO_ANZAHL = 4;
 
 export const TRAINING_PFAD = "/training";
 export const TRAINING_VIDEOS_PFAD = "/kostenloses-training";
@@ -52,8 +56,19 @@ export const videoPlatzhalter = [
   { titel: "So liest du einen Chart", untertitel: "Optionale Grundlagenlektion" },
   { titel: "Auction Market Theory – So verstehe ich den Markt", untertitel: "Marktphasen und Volume Profile" },
   { titel: "Welche Tradingstrategie passt wirklich zu dir?", untertitel: "Dein Ansatz und dein Alltag" },
-  { titel: "Warum meine Schüler nicht meine Trades kopieren", untertitel: "Einblicke in Capital Circle" },
 ] as const;
+
+/**
+ * Vorbereitungsvideo vor dem Analysegespräch (Ziel der Termin-Mail T02,
+ * `/termin/vorbereitung/<…>`). Bis 17.11.2026 war es Video 5 des kostenlosen
+ * Kurses und wurde über die Playlist gefunden; seit es dort raus ist, hängt es
+ * fest an dieser UID. Signiert (`requireSignedURLs`), wie alle Kursvideos.
+ */
+export const vorbereitungsVideo = {
+  /** „Das System in der Praxis" in Stream (Datenbank `videos` 31b5db3c…, unveröffentlicht). */
+  uid: "044a1f5c276c0e3aa83a2f68c48e878c",
+  titel: "Warum meine Schüler nicht meine Trades kopieren",
+} as const;
 
 /**
  * Einführungsvideo auf `/training` (VSL mit Ton, Cloudflare Stream).
@@ -130,17 +145,14 @@ export const landing = {
   community: {
     eyebrow: "Community",
     headline: "Ergebnisse aus der {Capital Circle Community}",
-    sublines: ["Unbearbeitete Beiträge und Belege unserer Mitglieder. Klick auf ein Bild, um es groß zu sehen."],
-    /** Überschriften der vier Gruppen — bleiben auch ohne Filter, Kontogröße ≠ Auszahlung. */
+    /** Überschriften der Gruppen — bleiben auch ohne Filter, Kontogröße ≠ Auszahlung. Emres Payouts nur auf `/ergebnisse`. */
     gruppen: {
       discord: { titel: "Aus dem Discord", hinweis: "Funded Accounts, Auszahlungen und Dank, so wie sie im Discord gepostet wurden." },
       mitglieder: { titel: "Auszahlungen von Mitgliedern", hinweis: "Hier ist Geld geflossen: Überweisung, Payout-Mail oder Payout-Zertifikat." },
-      emre: { titel: "Auszahlungen von Emre", hinweis: "Emres eigene Payout-Zertifikate." },
       challenges: { titel: "Bestandene Challenges", hinweis: "Bestandene Prüfungen. Der Betrag ist die Kontogröße, keine Auszahlung." },
     },
     mehr: "Alle {anzahl} anzeigen",
     weniger: "Weniger anzeigen",
-    hinweis: "Ergebnisse nicht typisch · Individuelle Ergebnisse variieren · Trading birgt Verlustrisiken",
     /** Reihenfolge und Herkunft: `config/discord-beitraege.ts`. */
     bilder: discordBeitraege,
   },
@@ -237,7 +249,8 @@ export const bewerbung = {
       frage: "Beschreibe deine aktuell größte Schwierigkeit im Trading.",
       placeholder: "Woran hängst du gerade fest?",
     },
-    { id: "warum", frage: "Warum möchtest du Teil von Capital Circle werden?", placeholder: "Was erhoffst du dir?" },
+    // id bleibt „warum" (Schlüssel in `training_bewerbungen.antworten`), Wortlaut seit 17.11.2026 neu.
+    { id: "warum", frage: "Welchen Traum würdest du dir mit Trading gerne erfüllen?", placeholder: "Wofür tradest du?" },
   ],
   kontaktFrage: "Und möchtest du, dass wir dich kontaktieren, um herauszufinden, ob unser Mentoring zu dir passt?",
   kontaktJa: "Ja, gerne",

@@ -3,10 +3,9 @@ import { notFound } from "next/navigation";
 import { Box, Stack, Text } from "@chakra-ui/react";
 import { FunnelHimmel } from "@/components/landing/FunnelHimmel";
 import { GlassVideoPlayer } from "@/components/ui/GlassVideoPlayer";
-import { TRAINING_MODUL_ID, videoPlatzhalter } from "@/config/training";
+import { vorbereitungsVideo } from "@/config/training";
 import { buildManifestUrl } from "@/lib/cloudflare-stream";
 import { leadAusSchluessel } from "@/lib/mailsystem/termine";
-import { getModulePublishedPlaylist } from "@/lib/module-video";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export const metadata: Metadata = { title: "Vor deinem Gespräch · Capital Circle", robots: { index: false, follow: false } };
@@ -14,10 +13,10 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 /**
- * `/termin/vorbereitung/<t|d>-<token>` — Video 5 („Warum meine Schüler nicht
- * meine Trades kopieren") für alle mit einer Gesprächsanfrage, auch ohne
- * Free-Bewerbung (Playbook: `appointment_video_5_url`, Ziel von T02). Nur dieses
- * eine Video, nicht der ganze Kurs. Die Wiedergabe-Adresse ist signiert und
+ * `/termin/vorbereitung/<t|d>-<token>` — das Vorbereitungsvideo („Warum meine
+ * Schüler nicht meine Trades kopieren", `vorbereitungsVideo`) für alle mit einer
+ * Gesprächsanfrage, auch ohne Free-Bewerbung (Playbook: `appointment_video_5_url`,
+ * Ziel von T02). Seit 17.11.2026 nicht mehr Teil des kostenlosen Kurses. Die Wiedergabe-Adresse ist signiert und
  * gilt vier Stunden; die Seite holt bei jedem Aufruf eine frische.
  */
 export default async function TerminVorbereitungPage({ params }: { params: Promise<{ schluessel: string }> }) {
@@ -26,17 +25,15 @@ export default async function TerminVorbereitungPage({ params }: { params: Promi
   const lead = await leadAusSchluessel(service, schluessel);
   if (!lead) notFound();
 
-  const playlist = await getModulePublishedPlaylist(service, TRAINING_MODUL_ID).catch(() => []);
-  const video = playlist[4];
   let src: string | null = null;
-  if (video?.cloudflare_uid) {
+  if (vorbereitungsVideo.uid) {
     try {
-      src = buildManifestUrl(video.cloudflare_uid, { signed: true, ttlSeconds: 4 * 60 * 60 });
+      src = buildManifestUrl(vorbereitungsVideo.uid, { signed: true, ttlSeconds: 4 * 60 * 60 });
     } catch (err) {
       console.error("[termin/vorbereitung] Signatur fehlgeschlagen:", err);
     }
   }
-  const titel = video?.title || videoPlatzhalter[4].titel;
+  const titel = vorbereitungsVideo.titel;
   const vorname = (lead.name ?? "").trim().split(/\s+/)[0];
 
   return (

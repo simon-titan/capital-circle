@@ -40,6 +40,7 @@ import {
   funnelModalContentProps,
   funnelOverlayProps,
 } from "@/components/marketing/funnel-ui";
+import { weiterNachBuchung } from "@/lib/training/nach-buchung-client";
 
 /**
  * „Analysegespräch anfragen" im Mitgliederbereich (Free Training).
@@ -212,6 +213,8 @@ export function AnalyseGespraechProvider({
       if (!/^https:\/\/([a-z0-9-]+\.)?calendly\.com$/.test(e.origin)) return;
       if (typeof e.data === "object" && e.data !== null && (e.data as { event?: unknown }).event === "calendly.event_scheduled") {
         setPhase("gebucht");
+        // Ins Free-Dashboard mit Termin-Karte (17.11.2026); Zahlende bleiben bei der Bestätigung.
+        void weiterNachBuchung();
       }
     };
     window.addEventListener("message", meldung);

@@ -131,6 +131,8 @@ export function trainingLinks() {
     lektionUrl: (n: number) => `${app}${TRAINING_VIDEOS_PFAD}?video=${n}`,
     /** resume_free_course_url */
     weiterUrl: `${app}${TRAINING_VIDEOS_PFAD}`,
+    /** Vitrine mit Nachweisen und Discord-Beiträgen (L03). */
+    vitrineUrl: `${app}/ergebnisse`,
     /** analysis_application_url — öffnet das Analysegespräch direkt. */
     gespraechUrl: `${app}${TRAINING_VIDEOS_PFAD}?gespraech=1`,
     /** whatsapp_extension_url — ohne `TRAINING_WHATSAPP_NUMMER` kein E02-Versand. */

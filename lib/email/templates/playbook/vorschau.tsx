@@ -28,6 +28,7 @@ export function beispielMail(id: VorlageId): { betreff: string; vorschau: string
       endeAm: ende,
       lektionUrl: (n) => `${app}/kostenloses-training?video=${n}`,
       weiterUrl: `${app}/kostenloses-training`,
+      vitrineUrl: `${app}/ergebnisse`,
       gespraechUrl: `${app}/kostenloses-training?gespraech=1`,
       whatsappUrl: "https://wa.me/490000000000",
       unsubscribeUrl: "#abmelden",

@@ -637,3 +637,27 @@ Beiträge mit Auszahlung (`auszahlung: true`) absteigend nach Summe zuerst, dana
 alle links untereinander. Brief auf `/call`: der Schlusssatz ist jetzt komplett fett.
 Das **VSL auf `/call`** ist seit 17.11. „NEUES PHUNNEL VIDEO.mp4" (`d51192db…`, 8:29, unsigniert) — Vorgabe `callVideo` in
 `config/call-funnel.ts`; im Admin ist kein Override gesetzt.
+
+2026-11-17 (**Funnel-Feedback, Runde 1**): `/call`-Hero zeigt hinter „100 % kostenlos & unverbindlich" dezent
+**„Limitierte Plätze"** mit Gold-Punkt (`hero.knapp`, nur im Hero über `VertrauensZeile knapp`). Die Community-Section
+(`/training`, `/call`) hat **keine Unterzeile und keine Hinweiszeile** mehr und **keine Auszahlungen von Emre** — die
+stehen nur noch auf `/ergebnisse`. Die **Vitrine `/ergebnisse`** zeigt ganz unten die Discord-Wand (`DiscordBlock`),
+bewusst unter den beiden Nachweis-Blöcken, weil sie auch Funded Accounts und Kontostände enthält. Bewerbungsfrage 3
+heißt „Welchen Traum würdest du dir mit Trading gerne erfüllen?" (id bleibt `warum`).
+**Kostenloser Kurs hat vier Videos** (`TRAINING_VIDEO_ANZAHL = 4`): „Das System in der Praxis" ist in der Datenbank
+unveröffentlicht. Es bleibt das **Vorbereitungsvideo** vor dem Analysegespräch (T02, `/termin/vorbereitung`), jetzt fest
+über `vorbereitungsVideo` in `config/training.ts` statt über Platz 5 der Playlist. L04 wird nur noch durch „Kurs fertig"
+vorgezogen. **L03** verweist statt aufs letzte Kursvideo jetzt auf die Vitrine `/ergebnisse` (`vitrineUrl`, Absatz
+umformuliert, weicht damit bewusst vom Playbook-Wortlaut ab — Entscheidung Simon).
+
+2026-11-17 (**Nach der Gesprächsbuchung ins Free-Dashboard**): Wer **angemeldet** ein Analysegespräch bucht (`/call` oder
+`AnalyseGespraech` im Mitgliederbereich), wird nach `calendly.event_scheduled` über **`/api/training/nach-buchung`** nach
+**`/dashboard?termin=neu`** geleitet (`weiterNachBuchung` in `lib/training/nach-buchung-client.ts`). Besucher ohne Konto
+bleiben bei der Bestätigung im Modal (Entscheidung Simon). Free-Konten ohne laufenden Zugang bekommen dabei **30 Tage** frei
+— derselbe Weg wie die Retargeting-Freischaltung (`reaktiviere(…, { kanal: "analysegespraech" })`); Ablehnung bleibt
+endgültig, Zahlende/Admins werden nicht umgeleitet. Oben im Free-Dashboard steht dann **`TerminKarte`**
+(`components/platform/dashboard/TerminKarte.tsx`, Daten `ladeNaechstenTermin` aus `termine` über `user_id` oder Adresse,
+sichtbar bis 1 h nach Beginn): Datum, Uhrzeit, Berater, Beitreten, Kalendereintrag, Umbuchen/Absagen, Vorbereitungsvideo.
+Mit `?termin=neu` und noch ohne Termin wartet die Karte auf den Calendly-Webhook (Neuladen alle 3 s, höchstens 30 s) — die
+Karte hängt also am Webhook `invitee.created`. Laufen erst die ICP-Fragen, reicht der Proxy `next=/dashboard?termin=neu`
+an `/einsteig` weiter, und `OnboardingFlow` folgt ihm auch auf dem Free-Pfad.

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { TRAINING_MODUL_ID } from "@/config/training";
+import { vorbereitungsVideo } from "@/config/training";
 import { cronBefugt } from "@/lib/cron/auth";
 import { abgemeldeteAdressen, offenePausen } from "@/lib/mailsystem/pause";
 import { entscheideAnfrage, entscheideTermin, type Ergebnis } from "@/lib/mailsystem/termin-entscheidung";
@@ -9,7 +9,6 @@ import type { VorlageId } from "@/lib/mailsystem/vorlagen";
 import { abmeldeUrl } from "@/lib/email/abmeldung";
 import { FehlendeDaten } from "@/lib/email/templates/playbook/free-kurs";
 import { terminMail, type TerminMailId } from "@/lib/email/templates/playbook/termin";
-import { getModulePublishedPlaylist } from "@/lib/module-video";
 import { createServiceClient } from "@/lib/supabase/service";
 import { vornameAus } from "@/lib/training/zugang";
 
@@ -42,7 +41,7 @@ export async function GET(request: Request) {
   const service = createServiceClient();
   const seit = new Date(jetzt.getTime() - 5 * TAG_MS).toISOString();
 
-  const [{ data: tRoh, error: tFehler }, { data: tLeads }, { data: dLeads }, playlist] = await Promise.all([
+  const [{ data: tRoh, error: tFehler }, { data: tLeads }, { data: dLeads }] = await Promise.all([
     // Termine von gestern bis in die Zukunft (T) und No-Shows der letzten Tage (N).
     service.from("termine").select("*").gte("start_am", seit).in("status", ["gebucht", "no_show"]).limit(2000),
     service
@@ -55,11 +54,11 @@ export async function GET(request: Request) {
       .select("id, token, name, email, questions_completed_at, closed, calendly_booked_at")
       .gte("questions_completed_at", seit)
       .limit(2000),
-    getModulePublishedPlaylist(service, TRAINING_MODUL_ID).catch(() => []),
   ]);
   if (tFehler) return NextResponse.json({ ok: false, error: tFehler.message }, { status: 500 });
   const termine = (tRoh ?? []) as TerminZeile[];
-  const video5Da = playlist.length >= 5;
+  // Das Vorbereitungsvideo hängt seit 17.11.2026 fest an `vorbereitungsVideo`, nicht mehr an Video 5 der Playlist.
+  const video5Da = Boolean(vorbereitungsVideo.uid);
 
   const anfragen: Anfrage[] = [
     ...((tLeads ?? []) as { id: string; token: string; name: string; email: string; user_id: string | null; fragen_am: string; status: string }[]).map(

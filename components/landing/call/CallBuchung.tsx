@@ -51,6 +51,7 @@ import {
   funnelOverlayProps,
   noMotion,
 } from "@/components/marketing/funnel-ui";
+import { weiterNachBuchung } from "@/lib/training/nach-buchung-client";
 import { CALL_LEAD_SOURCE, readCallTracking } from "./call-ui";
 
 /**
@@ -386,11 +387,15 @@ export function CallBuchungProvider({ children, vorschau = false }: { children: 
       // Nur Calendly selbst darf die Buchung melden, nicht irgendein anderer Frame.
       if (!/^https:\/\/([a-z0-9-]+\.)?calendly\.com$/.test(e.origin)) return;
       if (typeof e.data !== "object" || e.data === null) return;
-      if ((e.data as { event?: unknown }).event === "calendly.event_scheduled") setPhase("gebucht");
+      if ((e.data as { event?: unknown }).event === "calendly.event_scheduled") {
+        setPhase("gebucht");
+        // Angemeldet → ins Free-Dashboard mit Termin-Karte (17.11.2026); ohne Konto bleibt die Bestätigung stehen.
+        if (!vorschau) void weiterNachBuchung();
+      }
     };
     window.addEventListener("message", meldung);
     return () => window.removeEventListener("message", meldung);
-  }, [phase]);
+  }, [phase, vorschau]);
 
   const calendlyUrl = useMemo(() => baueCalendlyUrl(leadToken, kontakt), [leadToken, kontakt]);
 

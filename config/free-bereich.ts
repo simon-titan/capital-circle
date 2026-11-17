@@ -29,6 +29,20 @@ export const freeNavTexte = {
 export const freeDashboard = {
   untertitel: "Dein persönlicher Lernbereich.",
   badge: "Free Member",
+  /** Karte mit dem gebuchten Analysegespräch (17.11.2026), ganz oben im Free-Dashboard. */
+  termin: {
+    label: "Dein Analysegespräch",
+    mit: (berater: string) => `mit ${berater} aus Emres Team`,
+    beitreten: "Zum Gespräch beitreten",
+    kalender: "In Kalender eintragen",
+    umbuchen: "Umbuchen",
+    absagen: "Absagen",
+    vorbereitung: "Zur Vorbereitung: Video ansehen",
+    hinweis: "Den Einwahllink und alle Details hast du auch per E-Mail bekommen.",
+    wartetTitel: "Dein Termin ist gebucht.",
+    wartetText: "Die Details erscheinen hier in wenigen Sekunden.",
+    wartetSpaet: "Die Bestätigung mit allen Details hast du per E-Mail bekommen.",
+  },
   ausbildung: {
     label: "Deine Ausbildung",
     titel: "Kostenloses Trading-Training",

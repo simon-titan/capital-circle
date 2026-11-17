@@ -7,9 +7,11 @@ import { BlueprintCover } from "@/components/platform/blueprint/BlueprintCover";
 import { BLUEPRINT_DOWNLOAD_PFAD, BLUEPRINT_PFAD, VITRINE_PFAD, freeDashboard } from "@/config/free-bereich";
 import { FREE_PROGRAMME_PFAD, TRAINING_VIDEOS_PFAD, mitglied, programme, zugangTexte } from "@/config/training";
 import { ApplyPrompt, rise } from "./DashboardView";
+import { TerminKarte } from "./TerminKarte";
 import { UmzugCard } from "./UmzugCard";
 import { DashCard, IconTile, ProgressBar, clampLines } from "./primitives";
 import type { FreeDashboardDaten, FreeLektion } from "./types";
+import type { TerminKarteDaten } from "@/lib/training/nach-buchung";
 
 const t = freeDashboard;
 
@@ -543,7 +545,16 @@ function VitrineKarte(props: BoxProps) {
  * Läuft wie das übrige Dashboard in `.cc-neutral`: keine Gold-Kanten, kein
  * Schein — Gold nur in Schrift, Icons und Knöpfen.
  */
-export function FreeDashboardView({ daten }: { daten: FreeDashboardDaten }) {
+export function FreeDashboardView({
+  daten,
+  termin = null,
+  terminNeu = false,
+}: {
+  daten: FreeDashboardDaten;
+  /** Gebuchtes Analysegespräch (17.11.2026); `terminNeu` = direkt aus der Buchung, Karte wartet auf den Webhook. */
+  termin?: TerminKarteDaten | null;
+  terminNeu?: boolean;
+}) {
   return (
     <Box className="cc-neutral">
       <Box as="header" {...rise(0)}>
@@ -591,6 +602,11 @@ export function FreeDashboardView({ daten }: { daten: FreeDashboardDaten }) {
       {/* Nur für Konten aus dem Whop-Umzug, sonst leer. */}
       <UmzugCard mb={5} {...rise(0)} />
       {daten.showApplyPrompt ? <ApplyPrompt mb={5} {...rise(0)} /> : null}
+      {termin || terminNeu ? (
+        <Box mb={5} {...rise(0)}>
+          <TerminKarte termin={termin} neu={terminNeu} />
+        </Box>
+      ) : null}
 
       <Stack spacing={5}>
         <Grid templateColumns={{ base: "minmax(0, 1fr)", xl: "minmax(0, 1.3fr) minmax(0, 1fr)" }} gap={5}>

@@ -82,7 +82,8 @@ export function entscheideFree(z: FreeZustand): FreeErgebnis {
   const erledigt = (id: VorlageId) => Boolean(protokoll[id]);
   const gesendetAm = (id: VorlageId) => (protokoll[id]?.status === "gesendet" ? protokoll[id]?.gesendetAm ?? null : null);
 
-  const v5 = Boolean(kurs.fertig[5]) || kurs.abgeschlossen;
+  // Bis 17.11.2026 „Video 5 oder Kurs fertig" — Video 5 ist raus, der Kurs endet mit Video 4.
+  const v5 = kurs.abgeschlossen;
   const verlEnde = zugang.verlaengerungStatus === "aktiv" ? zugang.verlaengerungEndeAm : null;
 
   /* ── Kandidaten mit Fälligkeit ─────────────────────────────────────────── */
@@ -97,7 +98,7 @@ export function entscheideFree(z: FreeZustand): FreeErgebnis {
       { vorlage: "L02", faellig: plus(g, 5 * TAG_MS) },
       { vorlage: "L03", faellig: plus(g, 8 * TAG_MS) },
     );
-    // Video 5 oder Kurs fertig zieht L04 auf den nächsten zulässigen Versand vor.
+    // Kurs fertig zieht L04 auf den nächsten zulässigen Versand vor.
     kandidaten.push(v5 ? { vorlage: "L04", faellig: g, ohneVerzug: true } : { vorlage: "L04", faellig: plus(g, 10 * TAG_MS) });
   }
   const l04 = gesendetAm("L04");

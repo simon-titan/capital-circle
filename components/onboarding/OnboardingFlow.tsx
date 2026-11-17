@@ -75,11 +75,11 @@ function ersteOffeneFrage(felder: FrageFeld[], antworten: Record<string, string 
  * Voller Seitenwechsel statt `router.replace`: Die Weiche hängt an `proxy.ts`,
  * und die greift nur bei einer echten Navigation.
  */
-function zumDashboard() {
+function zumDashboard(standard = "/dashboard") {
   // Kam der Besuch über einen Link aus einer Mail (`/login?next=/kostenloses-training?video=3`),
   // geht es nach der Anmeldung genau dorthin — nur interne Ziele.
   const next = new URLSearchParams(window.location.search).get("next");
-  let ziel = "/dashboard";
+  let ziel = standard;
   if (next && next.startsWith("/")) {
     try {
       const url = new URL(next, window.location.origin);
@@ -105,8 +105,9 @@ export function OnboardingFlow({ loginFooter }: OnboardingFlowProps = {}) {
   /** Nach den Fragen: Vereinbarung, falls offen, dann Startklar (neu) oder Dashboard (Bestand). */
   const nachDenFragen = useCallback((s: Status) => {
     // Free-Onboarding: „Angaben speichern & Ausbildung starten" — direkt zum Kurs.
+    // Mit `next` (z. B. direkt nach einer Terminbuchung → Dashboard mit Termin-Karte) dorthin.
     if (s.art === "free") {
-      window.location.assign("/kostenloses-training");
+      zumDashboard("/kostenloses-training");
       return;
     }
     if (s.vereinbarungOffen) {
