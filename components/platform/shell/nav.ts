@@ -11,7 +11,6 @@ import {
   LayoutTemplate,
   LineChart,
   Package,
-  Route,
   Radio,
   Repeat,
   Trophy,
@@ -63,12 +62,11 @@ export const NAV_GROUPS: NavGroup[] = [
    * „Institut“ jetzt als einfache Zeile da, genau wie „Dashboard“.
    */
   { key: "institut", label: "Institut", icon: GraduationCap, href: "/ausbildung" },
-  /**
-   * „Ausbildung & Mentoring" (Board Free Training, 02.11.2026): die zwei Wege
-   * nach dem kostenlosen Training. Für alle sichtbar — auch Abo-Mitglieder
-   * dürfen die Ausbildung kaufen (Entscheidung Simon).
+  /*
+   * „Ausbildung & Mentoring" steht seit 17.11.2026 **nicht** mehr in der Navigation
+   * der Zahlenden (Wunsch Simon) — nur Free-Mitglieder sehen den Punkt
+   * (`PREMIUM_OFFEN`, führt auf /call). Die Seite /programme bleibt per Link erreichbar.
    */
-  { key: "programme", label: "Ausbildung & Mentoring", icon: Route, href: "/programme", akzent: "smaragd" },
   {
     key: "journal",
     label: "Journal",
