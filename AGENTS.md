@@ -626,7 +626,7 @@ aktiven Lektion in `VideoPlaylist` ist ebenfalls weiß. Live-Sessions und Funnel
     leere Antworten, keine A01/A02; ICP 1–7 und Free-Mails S/L/I/E laufen wie bei einer Annahme) und meldet bis 45 Tage nach Versand per
     Magic Link an. Ablehnung bleibt endgültig, ein alter abgelaufener Bestandszugang startet einmal neu.
   - **TP01 Trustpilot** an alle mit `is_paid` ohne Admins (98). Text von mir, **von Emre noch abzunehmen**. Ziel
-    `NEXT_PUBLIC_TRUSTPILOT_URL`, sonst `https://de.trustpilot.com/evaluate/capitalcircletrading.com`. Ehrliche Bewertung erbitten, nie
+    `NEXT_PUBLIC_TRUSTPILOT_URL`, sonst `https://www.trustpilot.com/evaluate/capitalcircletrading.com` (Link von Simon, 17.11.). Ehrliche Bewertung erbitten, nie
     nur positive und nie mit Gegenleistung (Trustpilot-Richtlinien, UWG).
 
 2026-11-17 (**Discord-Wand mit 97 Beiträgen**): Die Wand „Aus dem Discord" in `CommunityEinblicke` (`/training` und `/call`)
