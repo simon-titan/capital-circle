@@ -40,7 +40,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const { count } = await createServiceClient().from("termine").select("id", { count: "exact", head: true }).eq("vorgang", t.vorgang);
   const sequenz = Math.max(0, (count ?? 1) - 1);
   const start = new Date(t.start_am);
-  const ende = t.ende_am ? new Date(t.ende_am) : new Date(start.getTime() + 45 * 60_000);
+  const ende = t.ende_am ? new Date(t.ende_am) : new Date(start.getTime() + 60 * 60_000);
   const beschreibung = [
     `Analysegespräch mit ${t.berater_name ?? "dem Capital-Circle-Team"}.`,
     t.join_url ? `Einwahl: ${t.join_url}` : null,

@@ -51,7 +51,7 @@ export function beispielMail(id: VorlageId): { betreff: string; vorschau: string
       alterStart: new Date(start.getTime() - 86_400_000),
       termin: {
         start,
-        ende: new Date(start.getTime() + 45 * 60_000),
+        ende: new Date(start.getTime() + 60 * 60_000),
         zeitzone: "Europe/Berlin",
         beraterName: "Kevin",
         joinUrl: "https://zoom.us/j/beispiel",

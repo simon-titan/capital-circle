@@ -80,7 +80,7 @@ function calendlyUrl(token: string | null, k: Kontakt): string {
     process.env.NEXT_PUBLIC_TRAINING_CALENDLY_URL?.trim() ||
     process.env.NEXT_PUBLIC_CALL_CALENDLY_URL?.trim() ||
     process.env.NEXT_PUBLIC_DISCORD_CALENDLY_URL?.trim() ||
-    "https://calendly.com/contact-capitalcircletrading/capital-circle";
+    "https://calendly.com/contact-capitalcircletrading/capital-circle-analysegesprach";
   try {
     const url = new URL(basis);
     url.searchParams.set("utm_source", "capital-circle");

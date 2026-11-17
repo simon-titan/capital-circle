@@ -150,7 +150,7 @@ function baueCalendlyUrl(token: string | null, kontakt: ContactValue): string {
   const basis =
     process.env.NEXT_PUBLIC_CALL_CALENDLY_URL?.trim() ||
     process.env.NEXT_PUBLIC_DISCORD_CALENDLY_URL?.trim() ||
-    "https://calendly.com/contact-capitalcircletrading/capital-circle";
+    "https://calendly.com/contact-capitalcircletrading/capital-circle-analysegesprach";
   try {
     const url = new URL(basis);
     url.searchParams.set("utm_source", "capital-circle");
