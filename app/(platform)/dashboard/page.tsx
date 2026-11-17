@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { BookingSuccessToast } from "@/components/platform/BookingSuccessToast";
 import { DashboardView } from "@/components/platform/dashboard/DashboardView";
+import { FreeDashboardView } from "@/components/platform/dashboard/FreeDashboardView";
 import type {
   AppointmentSummary,
   ContinueItem,
@@ -45,7 +46,8 @@ import { hatInhaltsZugang } from "@/lib/membership";
 import { ladeCheckliste, schliesseAbWennFertig } from "@/lib/onboarding/checkliste";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { calculateStreak, maxPlausibleStreakDays, sanitizeStreakValue } from "@/lib/streak";
-import { ladeTrainingsStand } from "@/lib/training/stand";
+import { ladeFreeDashboard } from "@/lib/training/free-dashboard";
+import { ladeNaechstenTermin } from "@/lib/training/nach-buchung";
 
 export const dynamic = "force-dynamic";
 
@@ -279,53 +281,18 @@ function toAppointment(
   return { state: "open", title: "Bewerbungsgespräch" };
 }
 
-export default async function DashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const params = await searchParams;
-  const showBookingSuccess = params.booking_success === "1";
-  const { user, profile } = await getCurrentUserAndProfile();
-  if (!user || !profile) {
-    redirect("/einsteig");
-  }
+type DashboardProfil = NonNullable<Awaited<ReturnType<typeof getCurrentUserAndProfile>>["profile"]>;
 
-  const userId = user.id;
-  const profileAny = profile as Record<string, unknown>;
-  const isPaid = Boolean(profileAny.is_paid);
-  const showApplyPrompt =
-    String(profileAny.application_status) === "approved" &&
-    (profileAny.membership_tier === "free" || !profileAny.is_paid) &&
-    profileAny.step2_application_status == null;
-
-  const academyRows = await getAcademyModulesOverview(userId);
-  const supabase = await createClient();
-
-  const [
-    lastWatched,
-    recommended,
-    homeworkOverview,
-    homeworkWeekTotal,
-    liveEvents,
-    kommendeEvents,
-    welcomeMetrics,
-    latestAnalysis,
-  ] = await Promise.all([
-    getLastWatchedModule(userId),
-    getRecommendedAcademyModuleFromOverview(supabase, academyRows),
-    getHomeworkOverview(),
-    getHomeworkWeekTotal(),
-    getLiveWindowEvents(3),
-    // Vier Zeilen wie im Kunden-Mockup; der laufende Termin bleibt drin, damit
-    // „Heute“ auch dann oben steht, wenn die Session schon begonnen hat.
-    getLiveWindowEvents(4),
-    getWelcomeDashboardMetricsFromOverview(userId, academyRows, supabase),
-    isPaid ? getLatestAnalysisPost() : Promise.resolve(null),
-  ]);
-
-  const now = new Date();
-  const displayName = profile.full_name || profile.username || "Mitglied";
+/**
+ * Streak beim Dashboard-Besuch fortschreiben (der Besuch zählt als Aktivität).
+ * Für Free und Zahlende gleich — angezeigt wird er nur bei den Zahlenden.
+ */
+async function aktualisiereStreak(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  profile: DashboardProfil,
+  now: Date,
+) {
   const todayKey = berlinCalendarDayKey(now);
   const nowIso = now.toISOString();
 
@@ -370,6 +337,84 @@ export default async function DashboardPage({
     }
     await supabase.from("profiles").update(updatePayload).eq("id", userId);
   }
+
+  return { streakDaysSanitized, streakActivityByDay, todayKey };
+}
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const showBookingSuccess = params.booking_success === "1";
+  const { user, profile } = await getCurrentUserAndProfile();
+  if (!user || !profile) {
+    redirect("/einsteig");
+  }
+
+  const userId = user.id;
+  const profileAny = profile as Record<string, unknown>;
+  const isPaid = Boolean(profileAny.is_paid);
+  const showApplyPrompt =
+    String(profileAny.application_status) === "approved" &&
+    (profileAny.membership_tier === "free" || !profileAny.is_paid) &&
+    profileAny.step2_application_status == null;
+
+  /*
+    Free-Mitglieder (ohne Inhaltszugang, `hatInhaltsZugang`) bekommen seit
+    08.11.2026 ein eigenes Dashboard nach Emres Mockup: Ausbildung, Trading
+    Blueprint, Lernweg, Vitrine. Die Daten der Zahlenden (Institut,
+    Wochenaufgabe, Analysen …) werden für sie gar nicht erst geladen.
+  */
+  if (!hatInhaltsZugang(profile)) {
+    const supabaseFree = await createClient();
+    await aktualisiereStreak(supabaseFree, userId, profile, new Date());
+    const serviceFree = createServiceClient();
+    const [daten, termin] = await Promise.all([
+      ladeFreeDashboard({ konto: supabaseFree, service: serviceFree }, userId, {
+        firstName: firstName(profile.full_name || profile.username || "Mitglied"),
+        showApplyPrompt,
+      }),
+      // Gebuchtes Analysegespräch als Karte oben (17.11.2026), `?termin=neu` direkt nach der Buchung.
+      ladeNaechstenTermin(serviceFree, userId, user.email ?? null).catch(() => null),
+    ]);
+    return (
+      <>
+        {showBookingSuccess && <BookingSuccessToast />}
+        <FreeDashboardView daten={daten} termin={termin} terminNeu={params.termin === "neu"} />
+      </>
+    );
+  }
+
+  const academyRows = await getAcademyModulesOverview(userId);
+  const supabase = await createClient();
+
+  const [
+    lastWatched,
+    recommended,
+    homeworkOverview,
+    homeworkWeekTotal,
+    liveEvents,
+    kommendeEvents,
+    welcomeMetrics,
+    latestAnalysis,
+  ] = await Promise.all([
+    getLastWatchedModule(userId),
+    getRecommendedAcademyModuleFromOverview(supabase, academyRows),
+    getHomeworkOverview(),
+    getHomeworkWeekTotal(),
+    getLiveWindowEvents(3),
+    // Vier Zeilen wie im Kunden-Mockup; der laufende Termin bleibt drin, damit
+    // „Heute“ auch dann oben steht, wenn die Session schon begonnen hat.
+    getLiveWindowEvents(4),
+    getWelcomeDashboardMetricsFromOverview(userId, academyRows, supabase),
+    isPaid ? getLatestAnalysisPost() : Promise.resolve(null),
+  ]);
+
+  const now = new Date();
+  const displayName = profile.full_name || profile.username || "Mitglied";
+  const { streakDaysSanitized, streakActivityByDay, todayKey } = await aktualisiereStreak(supabase, userId, profile, now);
 
   const learningWeekDays = buildLearningWeekLast7(
     resolveLearningSecondsByDay(
@@ -450,25 +495,12 @@ export default async function DashboardPage({
     console.warn("[dashboard] Start-Checkliste übersprungen:", err);
   }
 
-  /*
-    Free-Konten (ohne Zahlung, kein Admin) sehen oben die Karte zum kostenlosen
-    Training (Board „Free Training", 02.11.2026). Ein Lesefehler lässt die
-    Karte weg, statt das Dashboard zu kippen.
-  */
-  const trainingKachel =
-    !isPaid && !profileAny.is_admin
-      ? await ladeTrainingsStand(await createClient(), userId)
-          .then((s) => ({ gesehen: s.gesehen, gesamt: s.gesamt, naechstes: s.naechstes, abgeschlossen: s.abgeschlossen }))
-          .catch(() => null)
-      : null;
-
   const data: DashboardViewData = {
     firstName: firstName(displayName),
     isPaid,
     // Dieselbe Regel wie das Layout-Gate des Journals (`hatInhaltsZugang`).
     canUseJournal: hatInhaltsZugang(profile),
     showApplyPrompt,
-    training: trainingKachel,
     continueItem,
     streak: { days: streakDaysSanitized, week, weekdaysActive, weekdaysTotal: 5 },
     progress: {

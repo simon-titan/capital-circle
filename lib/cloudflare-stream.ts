@@ -184,6 +184,8 @@ export type CloudflareVideoStatus = {
   errorReasonText: string | null;
   durationSeconds: number | null;
   thumbnailUrl: string | null;
+  /** Name aus Cloudflare (`meta.name`), meist der Dateiname. */
+  name: string | null;
 };
 
 export async function getVideoStatus(uid: string): Promise<CloudflareVideoStatus> {
@@ -193,6 +195,7 @@ export async function getVideoStatus(uid: string): Promise<CloudflareVideoStatus
     status: { state: string; errReasonText?: string };
     duration?: number;
     thumbnail?: string;
+    meta?: { name?: string; filename?: string };
   }>(`/${encodeURIComponent(uid)}`);
 
   return {
@@ -203,6 +206,7 @@ export async function getVideoStatus(uid: string): Promise<CloudflareVideoStatus
     durationSeconds:
       typeof result.duration === "number" && result.duration > 0 ? Math.round(result.duration) : null,
     thumbnailUrl: result.thumbnail ?? null,
+    name: (result.meta?.name || result.meta?.filename || "").trim() || null,
   };
 }
 

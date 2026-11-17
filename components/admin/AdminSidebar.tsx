@@ -7,6 +7,7 @@ import {
   CalendarDays,
   ChartColumn,
   ChartLine,
+  ChartPie,
   ChevronRight,
   CreditCard,
   FileX,
@@ -33,8 +34,12 @@ import {
   Store,
   Video,
   Clapperboard,
+  FileText,
   Wrench,
+  Inbox,
   type LucideIcon,
+  FileLock,
+  MailPlus,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -59,6 +64,8 @@ const groups: AdminGroup[] = [
     label: "Auswertung",
     links: [
       { href: "/admin/dashboard", label: "Analytics", icon: ChartColumn },
+      // Tracking & Finanzen (Playbook 1.0, P0): KPI-Karten, Vertrieb, Ledger, Provision, Exporte.
+      { href: "/admin/auswertung", label: "Tracking & Finanzen", icon: ChartPie },
       // Der Weg zum Kauf: Besuche, Verweildauer, Scrolltiefe, Klicks, Kasse,
       // Zahlungen. Getrennt von „Analytics", weil dort das Geschaeft steht
       // (MRR, Umsatz, Churn) und hier der Weg dorthin.
@@ -91,19 +98,29 @@ const groups: AdminGroup[] = [
       { href: "/admin/reviews", label: "Bewertungen", icon: Star },
       { href: "/admin/tickets", label: "Support-Tickets", icon: LifeBuoy },
       { href: "/admin/zertifikate", label: "Zertifikate", icon: Award },
+      // Zustimmungen zur Geheimhaltungsvereinbarung (Migration 116, 15.11.2026).
+      { href: "/admin/geheimhaltung", label: "Geheimhaltung", icon: FileLock },
     ],
   },
   {
     label: "Vertrieb",
     links: [
+      // Arbeitsbereich der Closer (eigener Bereich außerhalb von /admin, Migration 112).
+      { href: "/crm", label: "CRM (Closer)", icon: Users },
       { href: "/admin/tracking", label: "Tracking Links", icon: Link2 },
       { href: "/admin/discord-funnel", label: "Discord Funnel", icon: Funnel },
       // Eigenes Board für das kostenlose Training (`/training`): Registrierungen + Analysegespräche.
+      // Free-Kurs-Bewerbungen (Emre entscheidet) — eigene Seite, damit sie nicht im Board untergehen.
+      { href: "/admin/training/bewerbungen", label: "Free-Bewerbungen", icon: Inbox },
       { href: "/admin/training", label: "Free Training", icon: GraduationCap },
       // Reihenfolge, Titel und Sichtbarkeit der Trainingsvideos (Modul aus Migration 109).
-      { href: "/admin/training/videos", label: "Trainingsvideos", icon: Clapperboard },
+      { href: "/admin/training/videos", label: "Funnel- & Kursvideos", icon: Clapperboard },
+      // PDF und Videoanleitung des Trading Blueprints (`lib/trading-blueprint.ts`, Free-Ansicht 08.11.2026).
+      { href: "/admin/training/blueprint", label: "Trading Blueprint", icon: FileText },
       // Kassenlinks nach dem Closing-Call und die Mentoring-Käufe (`config/mentoring.ts`).
       { href: "/admin/kassenlinks", label: "Kassenlinks", icon: Receipt },
+      // Einmal-Mails: Retargeting alter Free-Kurs-Mitglieder, Trustpilot-Bitte (15.11.2026).
+      { href: "/admin/kampagnen", label: "Mail-Kampagnen", icon: MailPlus },
       // Die letzten Whop-Zahler holen (`config/whop-umzug.ts`). Nur Ansicht —
       // verschickt wird über `npm run whop:umzug`.
       { href: "/admin/whop-umzug", label: "Whop-Umzug", icon: Truck },

@@ -1,15 +1,24 @@
 import {
   BookMarked,
   Building2,
+  CalendarCheck,
+  CirclePlay,
+  FileText,
   GraduationCap,
+  Landmark,
+  Layers,
   LayoutGrid,
+  LayoutTemplate,
   LineChart,
   Package,
   Route,
   Radio,
   Repeat,
+  Trophy,
   type LucideIcon,
 } from "lucide-react";
+import { BLUEPRINT_PFAD, VITRINE_PFAD } from "@/config/free-bereich";
+import { FREE_PROGRAMME_PFAD, TRAINING_VIDEOS_PFAD } from "@/config/training";
 
 /**
  * `paid` = Free-Mitglieder sehen den Punkt, aber gesperrt.
@@ -31,6 +40,8 @@ export type NavGroup = {
   children?: NavChild[];
   /** Kleines Label neben dem Namen, z. B. „Neu". */
   badge?: string;
+  /** Zeile in Smaragd hervorheben (statt Badge), z. B. „Ausbildung & Mentoring" (14.11.2026). */
+  akzent?: "smaragd";
 };
 
 /**
@@ -57,7 +68,7 @@ export const NAV_GROUPS: NavGroup[] = [
    * nach dem kostenlosen Training. Für alle sichtbar — auch Abo-Mitglieder
    * dürfen die Ausbildung kaufen (Entscheidung Simon).
    */
-  { key: "programme", label: "Ausbildung & Mentoring", icon: Route, href: "/programme", badge: "Neu" },
+  { key: "programme", label: "Ausbildung & Mentoring", icon: Route, href: "/programme", akzent: "smaragd" },
   {
     key: "journal",
     label: "Journal",
@@ -127,4 +138,52 @@ export const TOOLS_ITEMS: ToolItem[] = [
   { key: "tradingview", label: "TradingView", icon: LineChart, href: "/tools/tradingview", demnaechst: true },
   { key: "tradesyncer", label: "TradeSyncer", icon: Repeat, href: "/tools/tradesyncer" },
   { key: "propfirms", label: "Propfirms", icon: Building2, href: "/tools/propfirms" },
+];
+
+/* ─── Free-Mitglieder (Emres Mockup, 08.11.2026) ─────────────────────────── */
+
+export type FreeNavItem = {
+  key: string;
+  label: string;
+  icon: LucideIcon;
+  href: string;
+  badge?: string;
+  akzent?: "smaragd";
+};
+
+/**
+ * Seitenleiste für Konten ohne Inhaltszugang (`hatInhaltsZugang` false):
+ * Gruppe „Free“ mit allem, was offen ist. Zahlende sehen weiter `NAV_GROUPS`.
+ * Die Vitrine ist die öffentliche Nachweis-Seite `/ergebnisse` — sie öffnet
+ * außerhalb des Plattform-Rahmens, das ist so gewollt.
+ */
+export const FREE_NAV: FreeNavItem[] = [
+  { key: "dashboard", label: "Dashboard", icon: LayoutGrid, href: "/dashboard" },
+  { key: "kurs", label: "Kostenloser Kurs", icon: CirclePlay, href: TRAINING_VIDEOS_PFAD },
+  { key: "blueprint", label: "Trading Blueprint", icon: FileText, href: BLUEPRINT_PFAD },
+  { key: "vitrine", label: "Capital Circle Vitrine", icon: Trophy, href: VITRINE_PFAD },
+];
+
+/**
+ * Gruppe „Premium“: der offene Weg nach oben, darunter die gesperrten Bereiche.
+ * Free geht seit 14.11.2026 direkt in den Call-Funnel (`FREE_PROGRAMME_PFAD`).
+ */
+export const PREMIUM_OFFEN: FreeNavItem = {
+  key: "programme",
+  label: "Ausbildung & Mentoring",
+  icon: GraduationCap,
+  href: FREE_PROGRAMME_PFAD,
+  // Statt Badge „Neu" in Smaragd hervorgehoben (Feedback 14.11.2026).
+  akzent: "smaragd",
+};
+
+/** Gesperrt wie ein `paid`-Unterpunkt: sichtbar, mit Schloss, ohne Ziel. */
+export const PREMIUM_GESPERRT: FreeNavItem[] = [
+  { key: "live", label: "Live-Trading", icon: Radio, href: "/live-session" },
+  { key: "analysen", label: "Analysen", icon: LineChart, href: "/analysis" },
+  { key: "wochenaufgabe", label: "Wochenaufgabe", icon: CalendarCheck, href: "/hausaufgabe" },
+  { key: "tools", label: "Tools & Software", icon: Layers, href: "/arsenal/tools" },
+  { key: "fremdkapital", label: "Fremdkapital", icon: Landmark, href: "/arsenal/fremdkapital" },
+  { key: "templates", label: "Templates", icon: LayoutTemplate, href: "/arsenal/templates" },
+  { key: "pdfs", label: "PDFs", icon: FileText, href: "/arsenal/pdfs" },
 ];

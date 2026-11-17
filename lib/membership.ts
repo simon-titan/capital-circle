@@ -67,6 +67,17 @@ export function hatInhaltsZugang(profile: {
  * haben. Liest mit dem Client des Aufrufers — das eigene Profil ist per RLS
  * lesbar. Fehlt es, gibt es keinen Zugang.
  */
+/** Trading Journal: wie `ladeInhaltsZugang`, plus die Journal-Frist der Ausbildung (`journal_bis`). */
+export async function ladeJournalZugang(supabase: SupabaseClient, userId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("is_paid,is_admin,membership_tier,journal_bis")
+    .eq("id", userId)
+    .maybeSingle();
+  const { hatJournalZugang } = await import("@/lib/mentoring/zugang");
+  return hatJournalZugang(data as Parameters<typeof hatJournalZugang>[0]);
+}
+
 export async function ladeInhaltsZugang(supabase: SupabaseClient, userId: string): Promise<boolean> {
   const { data } = await supabase.from("profiles").select("is_paid,is_admin").eq("id", userId).maybeSingle();
   return hatInhaltsZugang(data as { is_paid: boolean | null; is_admin: boolean | null } | null);

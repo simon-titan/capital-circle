@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { DISCORD_QUESTION_IDS } from "@/config/discord-funnel-questions";
+import { DISCORD_FUNNEL_QUESTIONS, DISCORD_QUESTION_IDS, FRUEHERE_FRAGEN, antwortGueltig } from "@/config/discord-funnel-questions";
 
 export const runtime = "nodejs";
 
@@ -33,9 +33,22 @@ export async function POST(request: NextRequest) {
   }
 
   const answersObj = answers as Record<string, unknown>;
-  const missing = DISCORD_QUESTION_IDS.filter(
+  // Übergang: Ein Browser mit dem alten Formular (bis 07.11.2026) schickt die sechs
+  // früheren Fragen — vollständig gilt als Anfrage, gespeichert wie bisher.
+  const altesFormular = FRUEHERE_FRAGEN.every((q) => typeof answersObj[q.id] === "string" && answersObj[q.id] !== "");
+  const missing = altesFormular ? [] : DISCORD_QUESTION_IDS.filter(
     (id) => answersObj[id] === undefined || answersObj[id] === null || answersObj[id] === "",
   );
+  // Seit 07.11.2026 mit Freitextfrage: nur bekannte Fragen, gültige Werte, gekürzt.
+  const ungueltig = DISCORD_FUNNEL_QUESTIONS.filter(
+    (q) => answersObj[q.id] !== undefined && !antwortGueltig(q, String(answersObj[q.id])),
+  ).map((q) => q.id);
+  if (ungueltig.length > 0 && missing.length === 0) {
+    return NextResponse.json({ ok: false, error: `invalid answers: ${ungueltig.join(", ")}` }, { status: 400 });
+  }
+  const sauber: Record<string, string> = {};
+  for (const q of altesFormular ? FRUEHERE_FRAGEN : DISCORD_FUNNEL_QUESTIONS)
+    sauber[q.id] = String(answersObj[q.id] ?? "").trim().slice(0, 2000);
   if (missing.length > 0) {
     return NextResponse.json(
       { ok: false, error: `missing answers: ${missing.join(", ")}` },
@@ -58,7 +71,7 @@ export async function POST(request: NextRequest) {
   const { error: updateError } = await service
     .from("discord_leads")
     .update({
-      answers: answersObj,
+      answers: sauber,
       questions_completed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })

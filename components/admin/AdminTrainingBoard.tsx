@@ -7,6 +7,8 @@ import {
   Grid,
   HStack,
   Input,
+  InputGroup,
+  InputLeftElement,
   Select,
   Stack,
   Table,
@@ -18,21 +20,24 @@ import {
   Thead,
   Tr,
 } from "@chakra-ui/react";
-import { ChevronDown, ChevronUp, Save } from "lucide-react";
+import { ChevronDown, ChevronUp, Save, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
   ADMIN_CARD_CLASS,
   AdminCardTitle,
+  AdminCount,
   StatusPill,
   adminCardPadding,
   adminChipProps,
+  adminEmptyProps,
   adminInputProps,
   adminOptionStyle,
   adminTableSx,
   type AdminTone,
 } from "@/components/admin/adminUi";
-import { DISCORD_FUNNEL_QUESTIONS } from "@/config/discord-funnel-questions";
+import { ALLE_FRAGEN } from "@/config/discord-funnel-questions";
 import {
+  bewerbung as bewerbungTexte,
   KANAELE,
   LEAD_STATUS,
   TRAINING_VIDEO_ANZAHL,
@@ -43,7 +48,9 @@ import {
   type Kanal,
   type LeadStatus,
 } from "@/config/training";
-import type { TrainingLeadZeile, TrainingRegistrierung } from "@/lib/training/board";
+import type { BoardBewerbung, BoardTermin, BoardVersand, TrainingLeadZeile, TrainingRegistrierung } from "@/lib/training/board";
+import { TermineTabelle, VersandTabelle, ZugangAktionen } from "@/components/admin/AdminTrainingBewerbungen";
+import { TrainingBewerbungen } from "@/components/admin/TrainingBewerbungen";
 
 /**
  * CRM-Board des Free Trainings (`/admin/training`) — getrennt vom
@@ -68,14 +75,30 @@ function euro(cents: number): string {
   return (cents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
 }
 
+type Ansicht = "bewerbungen" | "leads" | "termine" | "registrierungen" | "versand" | "uebersicht";
+
 type Props = {
   registrierungen: TrainingRegistrierung[];
   leads: TrainingLeadZeile[];
   videoAnzahl: number;
+  bewerbungen: BoardBewerbung[];
+  versand: BoardVersand[];
+  termine: BoardTermin[];
+  startAnsicht?: Ansicht;
 };
 
-export function AdminTrainingBoard({ registrierungen, leads: initialLeads, videoAnzahl }: Props) {
-  const [ansicht, setAnsicht] = useState<"leads" | "registrierungen">("leads");
+export function AdminTrainingBoard({
+  registrierungen,
+  leads: initialLeads,
+  videoAnzahl,
+  bewerbungen: initialBewerbungen,
+  versand,
+  termine,
+  startAnsicht,
+}: Props) {
+  const [bewerbungen, setBewerbungen] = useState(initialBewerbungen);
+  const zuPruefen = bewerbungen.filter((b) => b.status === "offen" && b.adresse_bestaetigt_am).length;
+  const [ansicht, setAnsicht] = useState<Ansicht>(startAnsicht ?? (zuPruefen > 0 ? "bewerbungen" : "uebersicht"));
   const [leads, setLeads] = useState(initialLeads);
   const [filter, setFilter] = useState<LeadStatus | "alle">("alle");
   const [suche, setSuche] = useState("");
@@ -131,169 +154,209 @@ export function AdminTrainingBoard({ registrierungen, leads: initialLeads, video
     );
   }, [registrierungen, suche, kanal]);
 
+  const reiter: { id: Ansicht; label: string; zahl: number | null }[] = [
+    { id: "bewerbungen", label: "Bewerbungen", zahl: zuPruefen },
+    { id: "leads", label: "Analysegespräche", zahl: leads.length },
+    { id: "termine", label: "Termine", zahl: termine.filter((t) => t.status === "gebucht").length },
+    { id: "registrierungen", label: "Registrierungen", zahl: registrierungen.length },
+    { id: "versand", label: "Versandprotokoll", zahl: null },
+    { id: "uebersicht", label: "Übersicht & Herkunft", zahl: null },
+  ];
+
   return (
-    <Stack gap={5}>
-      <Grid templateColumns={{ base: "repeat(2, 1fr)", md: "repeat(4, 1fr)", xl: `repeat(${5 + TRAINING_VIDEO_ANZAHL}, 1fr)` }} gap={3}>
-        {[
-          { label: "Registriert", wert: kpi.regs },
-          { label: "Bestätigt", wert: kpi.bestaetigt },
-          ...kpi.proVideo.map((wert, i) => ({ label: `Video ${i + 1}`, wert })),
-          { label: "Anfragen", wert: kpi.anfragen },
-          { label: "Termine", wert: kpi.termine },
-          { label: "Gewonnen", wert: kpi.gewonnen, zusatz: kpi.umsatz ? euro(kpi.umsatz) : undefined },
-        ].map((k) => (
-          <Box key={k.label} className={ADMIN_CARD_CLASS} p={4}>
-            <Text fontSize="xs" color="var(--cc-text-2)">
-              {k.label}
-            </Text>
-            <Text className="cc-num" fontSize="24px" fontWeight={600} color="var(--cc-text)">
-              {k.wert}
-            </Text>
-            {k.zusatz ? (
-              <Text className="cc-num" fontSize="xs" color="var(--cc-gold-light)">
-                {k.zusatz}
-              </Text>
-            ) : null}
-          </Box>
-        ))}
-      </Grid>
-      {videoAnzahl === 0 ? (
-        <Text fontSize="xs" color="var(--cc-gold-light)">
-          Noch keine Trainingsvideos hochgeladen (Kurse & Module → „Kostenloses Training“). Bis dahin zählen die
-          Videospalten 0.
-        </Text>
-      ) : null}
-
-      <Box className={ADMIN_CARD_CLASS} p={adminCardPadding} overflowX="auto">
-        <AdminCardTitle mb={3}>Herkunft</AdminCardTitle>
-        {proKanal.length === 0 ? (
-          <Text fontSize="sm" color="var(--cc-text-2)">
-            Noch keine Registrierungen. Links in Bio und Videobeschreibung mit ?utm_source=youtube, instagram, tiktok
-            oder podcast versehen — sonst entscheidet nur der Referrer.
-          </Text>
-        ) : (
-          <Table size="sm" sx={adminTableSx}>
-            <Thead>
-              <Tr>
-                <Th>Kanal</Th>
-                <Th isNumeric>Registriert</Th>
-                <Th isNumeric>Alle {TRAINING_VIDEO_ANZAHL} Videos</Th>
-                <Th isNumeric>Anfragen</Th>
-                <Th isNumeric>Gekauft</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {proKanal.map((z) => (
-                <Tr key={z.kanal}>
-                  <Td>{kanalLabel[z.kanal]}</Td>
-                  <Td isNumeric className="cc-num">{z.registriert}</Td>
-                  <Td isNumeric className="cc-num">{z.alleVideos}</Td>
-                  <Td isNumeric className="cc-num">{z.anfragen}</Td>
-                  <Td isNumeric className="cc-num">{z.gekauft}</Td>
-                </Tr>
-              ))}
-            </Tbody>
-          </Table>
-        )}
-      </Box>
-
-      <HStack gap={2} wrap="wrap">
-        <Text fontSize="xs" color="var(--cc-text-3)" mr={1}>
-          Kanal:
-        </Text>
-        {(["alle", ...KANAELE] as const).map((k) => (
-          <Box key={k} as="button" type="button" onClick={() => setKanal(k)} {...adminChipProps(kanal === k)}>
-            {k === "alle" ? "Alle" : kanalLabel[k]}
-          </Box>
-        ))}
-      </HStack>
-
-      <Flex gap={3} wrap="wrap" align="center" justify="space-between">
-        <HStack gap={2}>
-          <Box as="button" type="button" onClick={() => setAnsicht("leads")} {...adminChipProps(ansicht === "leads")}>
-            Analysegespräche ({leads.length})
-          </Box>
-          <Box
-            as="button"
-            type="button"
-            onClick={() => setAnsicht("registrierungen")}
-            {...adminChipProps(ansicht === "registrierungen")}
-          >
-            Registrierungen ({registrierungen.length})
-          </Box>
-        </HStack>
-        <Input
-          value={suche}
-          onChange={(e) => setSuche(e.target.value)}
-          placeholder="Name, E-Mail, Telefon"
-          maxW="280px"
-          size="sm"
-          {...adminInputProps}
-        />
+    <Stack gap={6}>
+      <Flex gap={1} borderBottom="1px solid var(--cc-line)" overflowX="auto" className="hide-scrollbar">
+        {reiter.map((r) => {
+          const aktiv = ansicht === r.id;
+          return (
+            <Box
+              key={r.id}
+              as="button"
+              type="button"
+              onClick={() => setAnsicht(r.id)}
+              aria-pressed={aktiv}
+              display="inline-flex"
+              alignItems="center"
+              px={3}
+              h="44px"
+              flexShrink={0}
+              fontSize="14px"
+              fontWeight={aktiv ? 500 : 400}
+              color={aktiv ? "var(--cc-text)" : "var(--cc-text-2)"}
+              borderBottom="2px solid"
+              borderColor={aktiv ? "var(--cc-gold)" : "transparent"}
+              mb="-1px"
+              _hover={{ color: "var(--cc-text)" }}
+            >
+              {r.label}
+              {r.zahl !== null ? <AdminCount active={aktiv || (r.id === "bewerbungen" && r.zahl > 0)}>{r.zahl}</AdminCount> : null}
+            </Box>
+          );
+        })}
       </Flex>
 
-      {ansicht === "leads" ? (
-        <>
-          <HStack gap={2} wrap="wrap">
-            {(["alle", ...LEAD_STATUS] as const).map((s) => (
-              <Box key={s} as="button" type="button" onClick={() => setFilter(s)} {...adminChipProps(filter === s)}>
-                {s === "alle" ? "Alle" : leadStatusLabel[s]} ({s === "alle" ? leads.length : leads.filter((l) => l.status === s).length})
+      {ansicht === "bewerbungen" ? (
+        <TrainingBewerbungen
+          bewerbungen={bewerbungen}
+          fragen={bewerbungTexte.fragen}
+          onAenderung={(neu) => setBewerbungen((alt) => alt.map((x) => (x.id === neu.id ? neu : x)))}
+        />
+      ) : ansicht === "uebersicht" ? (
+        <Stack gap={5}>
+          <Grid templateColumns={{ base: "repeat(2, 1fr)", md: "repeat(4, 1fr)", xl: `repeat(${5 + TRAINING_VIDEO_ANZAHL}, 1fr)` }} gap={3}>
+            {[
+              { label: "Registriert", wert: kpi.regs },
+              { label: "Bestätigt", wert: kpi.bestaetigt },
+              ...kpi.proVideo.map((wert, i) => ({ label: `Video ${i + 1}`, wert })),
+              { label: "Anfragen", wert: kpi.anfragen },
+              { label: "Termine", wert: kpi.termine },
+              { label: "Gewonnen", wert: kpi.gewonnen, zusatz: kpi.umsatz ? euro(kpi.umsatz) : undefined },
+            ].map((k) => (
+              <Box key={k.label} className={ADMIN_CARD_CLASS} p={4}>
+                <Text fontSize="xs" color="var(--cc-text-2)">
+                  {k.label}
+                </Text>
+                <Text className="cc-num" fontSize="24px" fontWeight={600} color="var(--cc-text)">
+                  {k.wert}
+                </Text>
+                {k.zusatz ? (
+                  <Text className="cc-num" fontSize="xs" color="var(--cc-gold-light)">
+                    {k.zusatz}
+                  </Text>
+                ) : null}
               </Box>
             ))}
-          </HStack>
-          {sichtbareLeads.length === 0 ? (
-            <Text fontSize="sm" color="var(--cc-text-2)">
-              Keine Anfragen in dieser Ansicht.
+          </Grid>
+          {videoAnzahl === 0 ? (
+            <Text fontSize="xs" color="var(--cc-gold-light)">
+              Noch keine Trainingsvideos hochgeladen (Kurse & Module → „Kostenloses Training“). Bis dahin zählen die
+              Videospalten 0.
             </Text>
-          ) : (
-            <Stack gap={3}>
-              {sichtbareLeads.map((l) => (
-                <LeadKarte key={l.id} lead={l} onGespeichert={(neu) => setLeads((alt) => alt.map((x) => (x.id === neu.id ? neu : x)))} />
-              ))}
-            </Stack>
-          )}
-        </>
+          ) : null}
+
+          <Box className={ADMIN_CARD_CLASS} p={adminCardPadding} overflowX="auto">
+            <AdminCardTitle mb={3}>Herkunft</AdminCardTitle>
+            {proKanal.length === 0 ? (
+              <Text fontSize="sm" color="var(--cc-text-2)">
+                Noch keine Registrierungen. Links in Bio und Videobeschreibung mit ?utm_source=youtube, instagram, tiktok
+                oder podcast versehen — sonst entscheidet nur der Referrer.
+              </Text>
+            ) : (
+              <Table size="sm" sx={adminTableSx}>
+                <Thead>
+                  <Tr>
+                    <Th>Kanal</Th>
+                    <Th isNumeric>Registriert</Th>
+                    <Th isNumeric>Alle {TRAINING_VIDEO_ANZAHL} Videos</Th>
+                    <Th isNumeric>Anfragen</Th>
+                    <Th isNumeric>Gekauft</Th>
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  {proKanal.map((z) => (
+                    <Tr key={z.kanal}>
+                      <Td>{kanalLabel[z.kanal]}</Td>
+                      <Td isNumeric className="cc-num">{z.registriert}</Td>
+                      <Td isNumeric className="cc-num">{z.alleVideos}</Td>
+                      <Td isNumeric className="cc-num">{z.anfragen}</Td>
+                      <Td isNumeric className="cc-num">{z.gekauft}</Td>
+                    </Tr>
+                  ))}
+                </Tbody>
+              </Table>
+            )}
+          </Box>
+        </Stack>
       ) : (
-        <Box className={ADMIN_CARD_CLASS} p={adminCardPadding} overflowX="auto">
-          <Table size="sm" sx={adminTableSx}>
-            <Thead>
-              <Tr>
-                <Th>Name</Th>
-                <Th>E-Mail</Th>
-                <Th>Kanal</Th>
-                <Th>Registriert</Th>
-                <Th>Bestätigt</Th>
-                <Th>Videos</Th>
-                <Th>Status</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {sichtbareRegs.map((r) => (
-                <Tr key={r.id}>
-                  <Td>{r.name}</Td>
-                  <Td>{r.email ?? "—"}</Td>
-                  <Td>
-                    {kanalLabel[r.kanal as Kanal] ?? r.kanal}
-                    {r.utmCampaign ? (
-                      <Text as="span" fontSize="xs" color="var(--cc-text-3)">
-                        {" "}
-                        · {r.utmCampaign}
-                      </Text>
-                    ) : null}
-                  </Td>
-                  <Td className="cc-num">{datum(r.registriertAm)}</Td>
-                  <Td>{r.bestaetigt ? "Ja" : <Text as="span" color="var(--cc-text-3)">Offen</Text>}</Td>
-                  <Td className="cc-num">
-                    {r.gesehen}/{Math.max(3, videoAnzahl)}
-                  </Td>
-                  <Td>
-                    {r.isPaid ? <StatusPill tone="success">Zahlend · {r.tier}</StatusPill> : <StatusPill tone="neutral">Free</StatusPill>}
-                  </Td>
-                </Tr>
-              ))}
-            </Tbody>
-          </Table>
-        </Box>
+        <Stack gap={4}>
+          <Flex gap={3} wrap="wrap" align="center">
+            <InputGroup maxW="320px">
+              <InputLeftElement pointerEvents="none" color="var(--cc-text-3)">
+                <Search size={16} />
+              </InputLeftElement>
+              <Input value={suche} onChange={(e) => setSuche(e.target.value)} placeholder="Name, E-Mail, Telefon…" {...adminInputProps} />
+            </InputGroup>
+            {ansicht === "leads" || ansicht === "registrierungen" ? (
+              <HStack gap={2} wrap="wrap">
+                {(["alle", ...KANAELE] as const).map((k) => (
+                  <Button key={k} {...adminChipProps(kanal === k)} onClick={() => setKanal(k)}>
+                    {k === "alle" ? "Alle Kanäle" : kanalLabel[k]}
+                  </Button>
+                ))}
+              </HStack>
+            ) : null}
+          </Flex>
+          {ansicht === "termine" ? (
+            <TermineTabelle termine={termine} suche={suche} />
+          ) : ansicht === "versand" ? (
+            <VersandTabelle zeilen={versand} suche={suche} />
+          ) : ansicht === "leads" ? (
+            <>
+              <HStack gap={2} wrap="wrap">
+                {(["alle", ...LEAD_STATUS] as const).map((s) => (
+                  <Button key={s} {...adminChipProps(filter === s)} onClick={() => setFilter(s)}>
+                    {s === "alle" ? "Alle" : leadStatusLabel[s]}
+                    <AdminCount active={filter === s}>{s === "alle" ? leads.length : leads.filter((l) => l.status === s).length}</AdminCount>
+                  </Button>
+                ))}
+              </HStack>
+              {sichtbareLeads.length === 0 ? (
+                <Box {...adminEmptyProps}>Keine Anfragen in dieser Ansicht.</Box>
+              ) : (
+                <Stack gap={3}>
+                  {sichtbareLeads.map((l) => (
+                    <LeadKarte key={l.id} lead={l} onGespeichert={(neu) => setLeads((alt) => alt.map((x) => (x.id === neu.id ? neu : x)))} />
+                  ))}
+                </Stack>
+              )}
+            </>
+          ) : (
+            <Box className={ADMIN_CARD_CLASS} p={adminCardPadding} overflowX="auto">
+              <Table size="sm" sx={adminTableSx}>
+                <Thead>
+                  <Tr>
+                    <Th>Name</Th>
+                    <Th>E-Mail</Th>
+                    <Th>Kanal</Th>
+                    <Th>Registriert</Th>
+                    <Th>Bestätigt</Th>
+                    <Th>Videos</Th>
+                    <Th>Zugang</Th>
+                    <Th>Status</Th>
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  {sichtbareRegs.map((r) => (
+                    <Tr key={r.id}>
+                      <Td>{r.name}</Td>
+                      <Td>{r.email ?? "—"}</Td>
+                      <Td>
+                        {kanalLabel[r.kanal as Kanal] ?? r.kanal}
+                        {r.utmCampaign ? (
+                          <Text as="span" fontSize="xs" color="var(--cc-text-3)">
+                            {" "}
+                            · {r.utmCampaign}
+                          </Text>
+                        ) : null}
+                      </Td>
+                      <Td className="cc-num">{datum(r.registriertAm)}</Td>
+                      <Td>{r.bestaetigt ? "Ja" : <Text as="span" color="var(--cc-text-3)">Offen</Text>}</Td>
+                      <Td className="cc-num">
+                        {r.gesehen}/{Math.max(TRAINING_VIDEO_ANZAHL, videoAnzahl)}
+                      </Td>
+                      <Td>
+                        <ZugangAktionen userId={r.id} zugang={r.zugang} pause={r.pause} />
+                      </Td>
+                      <Td>
+                        {r.isPaid ? <StatusPill tone="success">Zahlend · {r.tier}</StatusPill> : <StatusPill tone="neutral">Free</StatusPill>}
+                      </Td>
+                    </Tr>
+                  ))}
+                </Tbody>
+              </Table>
+            </Box>
+          )}
+        </Stack>
       )}
     </Stack>
   );
@@ -377,7 +440,7 @@ function LeadKarte({ lead, onGespeichert }: { lead: TrainingLeadZeile; onGespeic
           </Text>
           {Object.keys(lead.answers ?? {}).length ? (
             <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={3}>
-              {DISCORD_FUNNEL_QUESTIONS.map((q) =>
+              {ALLE_FRAGEN.map((q) =>
                 lead.answers?.[q.id] ? (
                   <Box key={q.id}>
                     <Text fontSize="xs" color="var(--cc-text-3)">

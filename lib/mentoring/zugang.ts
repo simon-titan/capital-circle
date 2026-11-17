@@ -24,6 +24,8 @@ export interface LiveProfil {
   is_paid?: boolean | null;
   is_admin?: boolean | null;
   live_bis?: string | null;
+  journal_bis?: string | null;
+  archiv_bis?: string | null;
 }
 
 export function hatLiveZugang(profil: LiveProfil | null | undefined, jetzt: Date = new Date()): boolean {
@@ -44,6 +46,40 @@ export function liveZugangAbgelaufen(profil: LiveProfil | null | undefined, jetz
   if (!profil || profil.is_admin) return false;
   if (profil.membership_tier !== "mentoring" || !profil.is_paid) return false;
   return !liveBisInZukunft(profil.live_bis, jetzt);
+}
+
+/**
+ * Live-Archiv (Aufzeichnungen der Live-Sessions), seit 08.11.2026 getrennt vom
+ * Live-Bereich: Main/Premium 12 Monate (`archiv_bis`), Ausbildung und
+ * Live-Abo ohne Archiv. Gleiche Regel wie `public.hat_archiv_zugang()`
+ * (Migration 113) — beide zusammen ändern.
+ */
+export function hatArchivZugang(profil: LiveProfil | null | undefined, jetzt: Date = new Date()): boolean {
+  if (!profil) return false;
+  if (profil.is_admin) return true;
+  if (!hatInhaltsZugang(profil)) return false;
+  if (profil.membership_tier !== "mentoring") return true;
+  return liveBisInZukunft(profil.archiv_bis, jetzt);
+}
+
+/** Mentoring-Konto ohne (oder mit abgelaufenem) Live-Archiv. */
+export function archivZugangFehlt(profil: LiveProfil | null | undefined, jetzt: Date = new Date()): boolean {
+  if (!profil || profil.is_admin) return false;
+  if (profil.membership_tier !== "mentoring" || !profil.is_paid) return false;
+  return !liveBisInZukunft(profil.archiv_bis, jetzt);
+}
+
+/**
+ * Trading Journal: für die Stufe `mentoring` bis `journal_bis`, leer heißt
+ * dauerhaft (Main/Premium und alle Käufe vor dem 08.11.2026). Ausbildung seit
+ * 08.11.2026: 1 Monat ab Kauf. Andere Stufen wie bisher über `hatInhaltsZugang`.
+ */
+export function hatJournalZugang(profil: LiveProfil | null | undefined, jetzt: Date = new Date()): boolean {
+  if (!profil) return false;
+  if (profil.is_admin) return true;
+  if (!hatInhaltsZugang(profil)) return false;
+  if (profil.membership_tier !== "mentoring" || !profil.journal_bis) return true;
+  return liveBisInZukunft(profil.journal_bis, jetzt);
 }
 
 function liveBisInZukunft(liveBis: string | null | undefined, jetzt: Date): boolean {

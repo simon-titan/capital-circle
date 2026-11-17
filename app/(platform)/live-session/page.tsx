@@ -5,7 +5,8 @@ import { LiveSessionCategoryCards } from "@/components/platform/LiveSessionCateg
 import { getCurrentUserAndProfile } from "@/lib/server-data";
 import { getLiveSessionCategoryOverview } from "@/lib/live-session-overview";
 import { liveSessionsNurFrei } from "@/lib/membership";
-import { liveZugangAbgelaufen } from "@/lib/mentoring/zugang";
+import { archivZugangFehlt, liveZugangAbgelaufen } from "@/lib/mentoring/zugang";
+import { ArchivNichtEnthalten } from "@/components/platform/ArchivNichtEnthalten";
 import { LiveZugangAbgelaufen } from "@/components/platform/LiveZugangAbgelaufen";
 
 /**
@@ -29,6 +30,8 @@ export default async function LiveSessionPage({
     Free-Konto.
   */
   const abgelaufen = liveZugangAbgelaufen(profile);
+  // Seit 08.11.2026 ist das Archiv nur in Main/Premium (archiv_bis); Ausbildung und Live-Abo sehen die freie Kategorie.
+  const ohneArchiv = !abgelaufen && archivZugangFehlt(profile);
   const { live_fehler } = await searchParams;
 
   return (
@@ -42,7 +45,12 @@ export default async function LiveSessionPage({
           <LiveZugangAbgelaufen fehler={live_fehler ?? null} />
         </Box>
       ) : null}
-      <LiveSessionCategoryCards categories={categories} isFreeMember={liveSessionsNurFrei(profile) || abgelaufen} />
+      {ohneArchiv ? (
+        <Box mb={6}>
+          <ArchivNichtEnthalten kompakt />
+        </Box>
+      ) : null}
+      <LiveSessionCategoryCards categories={categories} isFreeMember={liveSessionsNurFrei(profile) || abgelaufen || ohneArchiv} />
     </Box>
   );
 }

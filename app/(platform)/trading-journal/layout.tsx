@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { JournalChrome } from "@/components/journal/JournalChrome";
-import { hatInhaltsZugang } from "@/lib/membership";
+import { hatJournalZugang } from "@/lib/mentoring/zugang";
 import { getCurrentUserAndProfile } from "@/lib/server-data";
 
 /**
@@ -12,11 +12,13 @@ import { getCurrentUserAndProfile } from "@/lib/server-data";
  * Institut, Discord und `public.hat_zugang()`. Nicht `evaluateAccess()`: Die
  * Whop-Konten stehen auf `membership_tier = 'free'` mit `is_paid = true` und
  * wurden damit bis 29.09.2026 ausnahmslos aufs Dashboard zurückgeschickt.
+ * Seit 08.11.2026 zusätzlich die Journal-Frist der Ausbildung (`journal_bis`,
+ * `hatJournalZugang`): danach geht es auf `/programme` (Upgrade).
  */
 export default async function TradingJournalLayout({ children }: { children: React.ReactNode }) {
   const { user, profile } = await getCurrentUserAndProfile();
   if (!user || !profile) redirect("/einsteig");
-  if (!hatInhaltsZugang(profile)) redirect("/dashboard");
+  if (!hatJournalZugang(profile)) redirect(profile.membership_tier === "mentoring" && profile.is_paid ? "/programme?journal=abgelaufen" : "/dashboard");
 
   return <JournalChrome>{children}</JournalChrome>;
 }

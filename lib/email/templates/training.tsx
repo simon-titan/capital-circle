@@ -2,7 +2,7 @@ import * as React from "react";
 import { BaseEmail } from "../layout/BaseEmail";
 import { EmailButton, EmailDivider, EmailHeading, EmailSmall, EmailText } from "../layout/components";
 import { sendEmail, type SendResult } from "../send";
-import { MAIL_SEQUENZ } from "@/config/training";
+import { MAIL_SEQUENZ, TRAINING_VIDEO_ANZAHL } from "@/config/training";
 
 /**
  * Mails des Free-Training-Funnels (`config/training.ts`).
@@ -10,6 +10,8 @@ import { MAIL_SEQUENZ } from "@/config/training";
  * - `TrainingBestaetigen` ist transaktional (Link zur Bestätigung der Adresse),
  *   also ohne Abmeldelink und ohne Log-Eintrag — sie darf bei einer erneuten
  *   Registrierung noch einmal rausgehen.
+ * - Die vier Erinnerungen sind seit 07.11.2026 abgelöst (E-Mail-Playbook,
+ *   `lib/mailsystem`, Cron `mail-free`); der Cron `training-sequence` ist aus.
  * - Die vier Erinnerungen sind Werbung (§ 7 Abs. 3 UWG): Abmeldelink über
  *   `unsubscribeUrl`, Versand genau einmal je Stufe über `email_sequence_log`
  *   (sequence `training`). Gesendet vom Cron `app/api/cron/training-sequence`.
@@ -19,14 +21,14 @@ import { MAIL_SEQUENZ } from "@/config/training";
 
 function TrainingBestaetigenEmail({ vorname, link }: { vorname: string; link: string }) {
   return (
-    <BaseEmail previewText="Ein Klick, und dein kostenloses Training startet">
+    <BaseEmail previewText="Ein Klick, und deine Bewerbung kommt bei Emre an">
       <EmailHeading>Bestätige deine E-Mail-Adresse</EmailHeading>
       <EmailText>Hi {vorname},</EmailText>
       <EmailText>
-        schön, dass du dabei bist. Ein Klick auf den Knopf bestätigt deine Adresse, danach bist du direkt eingeloggt
-        und kannst mit Video 1 starten.
+        danke für deine Bewerbung für das kostenlose Capital-Circle-Training. Ein Klick auf den Knopf bestätigt deine
+        Adresse — erst dann kommt deine Bewerbung bei Emre an.
       </EmailText>
-      <EmailButton href={link}>E-Mail bestätigen und starten</EmailButton>
+      <EmailButton href={link}>E-Mail-Adresse bestätigen</EmailButton>
       <EmailText muted>Der Link funktioniert genau einmal und nur für begrenzte Zeit.</EmailText>
       <EmailDivider />
       <EmailSmall>Der Knopf funktioniert nicht? Kopiere diese Adresse in deinen Browser:</EmailSmall>
@@ -47,7 +49,7 @@ export async function sendTrainingBestaetigen({
 }): Promise<SendResult> {
   return sendEmail({
     to: an,
-    subject: "Bestätige deine E-Mail für dein kostenloses Training",
+    subject: "Bestätige deine E-Mail für deine Bewerbung",
     jsx: <TrainingBestaetigenEmail vorname={vorname} link={link} />,
   });
 }
@@ -58,7 +60,7 @@ export type TrainingMailArt = "start" | "weiter" | "naechsterSchritt" | "letzte"
 
 type ErinnerungProps = {
   vorname: string;
-  /** Nächstes offenes Video (1–3); bei `naechsterSchritt` ohne Bedeutung. */
+  /** Nächstes offenes Video (1–TRAINING_VIDEO_ANZAHL); bei `naechsterSchritt` ohne Bedeutung. */
   naechstesVideo: number;
   trainingUrl: string;
   programmeUrl: string;
@@ -68,8 +70,11 @@ type ErinnerungProps = {
 const BETREFF: Record<TrainingMailArt, (p: ErinnerungProps) => string> = {
   start: () => "Dein kostenloses Training wartet auf dich",
   weiter: (p) => `Weiter geht's mit Video ${p.naechstesVideo}`,
-  naechsterSchritt: () => "Du hast alle 4 Videos gesehen. Und jetzt?",
-  letzte: (p) => `Noch ${4 - p.naechstesVideo === 1 ? "ein Video" : `${4 - p.naechstesVideo} Videos`} bis zu deinem System`,
+  naechsterSchritt: () => "Du hast das komplette Training gesehen. Und jetzt?",
+  letzte: (p) => {
+    const rest = TRAINING_VIDEO_ANZAHL - p.naechstesVideo + 1;
+    return `Noch ${rest === 1 ? "ein Video" : `${rest} Videos`} bis zu deinem System`;
+  },
 };
 
 function TrainingErinnerungEmail({ art, ...p }: ErinnerungProps & { art: TrainingMailArt }) {

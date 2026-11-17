@@ -138,6 +138,30 @@ export async function getPresignedGetUrlWennVorhanden(storageKey: string, expire
   return getPresignedGetUrl(storageKey, expiresIn);
 }
 
+/**
+ * Signierte GET-Adresse, die der Browser als **Download** mit festem Dateinamen
+ * öffnet (`Content-Disposition: attachment`). `null`, wenn die Datei in R2 fehlt.
+ * Nur für Dateien, die ausschließlich in R2 liegen (kein Altbestand).
+ */
+export async function getPresignedDownloadUrl(
+  storageKey: string,
+  dateiname: string,
+  opts: { expiresIn?: number; contentType?: string } = {},
+) {
+  if (!(await existiertInR2(storageKey))) return null;
+  const sicher = dateiname.replace(/["\\\r\n]/g, "_");
+  return getSignedUrl(
+    storageClient,
+    new GetObjectCommand({
+      Bucket: bucket,
+      Key: storageKey,
+      ResponseContentDisposition: `attachment; filename="${sicher}"`,
+      ...(opts.contentType ? { ResponseContentType: opts.contentType } : {}),
+    }),
+    { expiresIn: opts.expiresIn ?? 60 * 5 },
+  );
+}
+
 export async function getPresignedPutUrl(storageKey: string, contentType: string) {
   const cmd = new PutObjectCommand({
     Bucket: bucket,

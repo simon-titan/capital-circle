@@ -21,6 +21,58 @@ export type TrainingRegistrierung = {
   gesehen: number;
   isPaid: boolean;
   tier: string;
+  zugang: BoardZugang | null;
+  pause: boolean;
+};
+
+export type BoardBewerbung = {
+  id: string;
+  user_id: string;
+  name: string;
+  email: string;
+  antworten: Record<string, string>;
+  kontakt_gewuenscht: boolean;
+  telefon: string | null;
+  status: "offen" | "angenommen" | "abgelehnt";
+  eingereicht_am: string;
+  adresse_bestaetigt_am: string | null;
+  geprueft_am: string | null;
+  notiz: string | null;
+  kanal: string | null;
+};
+
+export type BoardZugang = {
+  freigeschaltetAm: string;
+  endeAm: string;
+  verlaengert: boolean;
+  gestartetAm: string | null;
+  ausBestand: boolean;
+};
+
+export type BoardVersand = {
+  id: string;
+  vorlage: string;
+  bezug: string;
+  email: string;
+  status: string;
+  grund: string | null;
+  faellig_am: string | null;
+  gesendet_am: string | null;
+  created_at: string;
+};
+
+export type BoardTermin = {
+  id: string;
+  lead_art: "training" | "discord";
+  email: string;
+  name: string | null;
+  start_am: string;
+  berater_name: string | null;
+  join_url: string | null;
+  status: string;
+  vorgaenger_id: string | null;
+  no_show_am: string | null;
+  created_at: string;
 };
 
 export type TrainingLeadZeile = {
@@ -59,10 +111,23 @@ export async function ladeAuthInfos(service: SupabaseClient, ids: Set<string>) {
   return map;
 }
 
+/** Optionaler Lesezugriff: Fehlt Migration 110, bleibt die Liste leer statt das Board zu kippen. */
+async function optional<T>(p: PromiseLike<{ data: T[] | null; error: { message: string } | null }>): Promise<T[]> {
+  const { data, error } = await p;
+  if (error) {
+    if (!/does not exist|schema cache/i.test(error.message)) console.error("[training/board]", error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
 export async function ladeTrainingBoard(service: SupabaseClient): Promise<{
   registrierungen: TrainingRegistrierung[];
   leads: TrainingLeadZeile[];
   videoAnzahl: number;
+  bewerbungen: BoardBewerbung[];
+  versand: BoardVersand[];
+  termine: BoardTermin[];
 }> {
   const [{ data: profile, error: profilFehler }, { data: leads, error: leadFehler }, playlist] = await Promise.all([
     service
@@ -75,6 +140,28 @@ export async function ladeTrainingBoard(service: SupabaseClient): Promise<{
     getModulePublishedPlaylist(service, TRAINING_MODUL_ID).catch(() => []),
   ]);
   if (profilFehler) throw new Error(`Registrierungen nicht lesbar: ${profilFehler.message}`);
+  const [bewerbungen, zugaenge, pausen, versand, termine] = await Promise.all([
+    optional<BoardBewerbung>(service.from("training_bewerbungen").select("*").order("eingereicht_am", { ascending: false }).limit(2000)),
+    optional<Record<string, unknown>>(service.from("training_zugang").select("*").limit(5000)),
+    optional<{ email: string }>(service.from("kontakt_pause").select("email").is("aufgehoben_am", null)),
+    optional<BoardVersand>(
+      service
+        .from("mail_versand")
+        .select("id, vorlage, bezug, email, status, grund, faellig_am, gesendet_am, created_at")
+        .order("created_at", { ascending: false })
+        .limit(500),
+    ),
+    optional<BoardTermin>(
+      service
+        .from("termine")
+        .select("id, lead_art, email, name, start_am, berater_name, join_url, status, vorgaenger_id, no_show_am, created_at")
+        .gte("start_am", new Date(Date.now() - 60 * 86_400_000).toISOString())
+        .order("start_am", { ascending: false })
+        .limit(1000),
+    ),
+  ]);
+  const zugangJe = new Map(zugaenge.map((z) => [z.user_id as string, z]));
+  const pausiert = new Set(pausen.map((p) => p.email));
   if (leadFehler) throw new Error(`training_leads nicht lesbar: ${leadFehler.message}`);
 
   const ids = new Set((profile ?? []).map((p) => p.id as string));
@@ -112,9 +199,25 @@ export async function ladeTrainingBoard(service: SupabaseClient): Promise<{
         gesehen: gesehenJe.get(p.id as string) ?? 0,
         isPaid: Boolean(p.is_paid),
         tier: String(p.membership_tier ?? "free"),
+        zugang: (() => {
+          const z = zugangJe.get(p.id as string);
+          if (!z) return null;
+          const verlaengert = z.verlaengerung_status === "aktiv";
+          return {
+            freigeschaltetAm: z.freigeschaltet_am as string,
+            endeAm: (verlaengert && z.verlaengerung_ende_am ? z.verlaengerung_ende_am : z.original_ende_am) as string,
+            verlaengert,
+            gestartetAm: (z.gestartet_am as string | null) ?? null,
+            ausBestand: Boolean(z.aus_bestand),
+          };
+        })(),
+        pause: Boolean(info?.email && pausiert.has(info.email.toLowerCase())),
       };
     }),
     leads: (leads ?? []) as TrainingLeadZeile[],
     videoAnzahl: playlist.length,
+    bewerbungen,
+    versand,
+    termine,
   };
 }

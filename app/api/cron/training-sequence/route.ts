@@ -35,11 +35,21 @@ export const maxDuration = 300;
  * Auth: Bearer $CRON_SECRET (fail-closed, `isAuthorizedCron`).
  */
 const MAX_JE_LAUF = 200;
+/**
+ * Seit 07.11.2026 abgelöst durch `app/api/cron/mail-free` (E-Mail-Playbook 1.0,
+ * Emre). Nicht mehr in `vercel.json`; bleibt abgeschaltet, damit ein
+ * versehentlicher Aufruf keine zweite Serie neben der neuen startet.
+ */
+const ABGESCHALTET = true;
 const TAG_MS = 86_400_000;
 
 export async function GET(request: NextRequest) {
   if (!isAuthorizedCron(request)) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
+
+  if (ABGESCHALTET) {
+    return NextResponse.json({ ok: true, sent: 0, uebersprungen: "Abgelöst durch /api/cron/mail-free." });
   }
 
   const service = createServiceClient();

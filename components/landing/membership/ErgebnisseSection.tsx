@@ -75,8 +75,9 @@ export function ErgebnisseSection() {
               </Heading>
 
               <Stack as="ul" listStyleType="none" spacing={0}>
-                {spalte.zeilen.map((zeile) => (
-                  <AuszahlungsZeile key={`${spalte.titel}-${zeile.quelle}`} zeile={zeile} onZeigen={zeige} />
+                {spalte.zeilen.map((zeile, j) => (
+                  // Mit Index: Emre hat zwei Apex-Auszahlungen, `quelle` allein ist nicht eindeutig.
+                  <AuszahlungsZeile key={`${spalte.titel}-${zeile.quelle}-${j}`} zeile={zeile} onZeigen={zeige} />
                 ))}
               </Stack>
             </Box>

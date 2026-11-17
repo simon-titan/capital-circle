@@ -15,7 +15,7 @@ import {
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
-import { Lock, LogOut, Menu as MenuIcon, MessageCircle, Settings, UserRound, X, type LucideIcon } from "lucide-react";
+import { Lock, LogOut, Menu as MenuIcon, Settings, UserRound, X, type LucideIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -24,7 +24,18 @@ import { RechtsLinks } from "@/components/legal/RechtsFusszeile";
 import { DiscordGlyph } from "@/components/platform/DiscordBanner";
 import { getDiscordAuthUrl } from "@/lib/discord";
 import { createClient } from "@/lib/supabase/client";
-import { NAV_GROUPS, TOOLS_ITEMS, type NavChild, type NavGroup } from "./nav";
+import { freeNavTexte } from "@/config/free-bereich";
+import { ZugangCountdown } from "./ZugangCountdown";
+import {
+  FREE_NAV,
+  NAV_GROUPS,
+  PREMIUM_GESPERRT,
+  PREMIUM_OFFEN,
+  TOOLS_ITEMS,
+  type FreeNavItem,
+  type NavChild,
+  type NavGroup,
+} from "./nav";
 import { useViewer, type Viewer } from "./viewer";
 
 /*
@@ -34,42 +45,6 @@ import { useViewer, type Viewer } from "./viewer";
   wären nicht nur dreimal so teuer, sondern auch drei Gelegenheiten, einander
   zu widersprechen.
 */
-
-function useUnreadNews(pathname: string): number {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const res = await fetch("/api/news/unread", { cache: "no-store" });
-        if (!res.ok) return;
-        const json = (await res.json()) as { ok: boolean; count?: number };
-        if (!cancelled && json.ok) setCount(json.count ?? 0);
-      } catch {
-        // ohne Badge weiter
-      }
-    };
-    void load();
-    const onFocus = () => void load();
-    window.addEventListener("focus", onFocus);
-    const interval = window.setInterval(load, 60_000);
-    return () => {
-      cancelled = true;
-      window.removeEventListener("focus", onFocus);
-      window.clearInterval(interval);
-    };
-  }, [pathname]);
-
-  // Beim Öffnen der News setzt der Server last_seen_at — lokal sofort ausblenden.
-  useEffect(() => {
-    if (!pathname.startsWith("/news")) return;
-    const timeout = window.setTimeout(() => setCount(0), 0);
-    return () => window.clearTimeout(timeout);
-  }, [pathname]);
-
-  return count;
-}
 
 type DiscordStatus = { eligible: boolean; connected: boolean; username: string | null };
 
@@ -81,7 +56,7 @@ type DiscordStatus = { eligible: boolean; connected: boolean; username: string |
  * `null` heißt „noch nicht bekannt“ — solange bleibt die Zeile aus, statt
  * kurz „Nicht verbunden“ zu behaupten und dann umzuspringen.
  *
- * Kein Intervall wie bei den News: der Zustand ändert sich nur durch den
+ * Kein Intervall: der Zustand ändert sich nur durch den
  * OAuth-Rundgang zu Discord (danach lädt die Seite ohnehin neu) oder auf der
  * Profilseite. Das Nachladen beim Fokus fängt beides ab.
  */
@@ -145,7 +120,26 @@ function groupTarget(group: NavGroup, viewer: Viewer): string | null {
   return group.children.find((c) => childVisible(c, viewer) && !childLocked(c, viewer))?.href ?? null;
 }
 
-function rowProps(active: boolean, height = "52px") {
+/** `smaragd`: Zeile in Smaragd statt Gold („Ausbildung & Mentoring", Feedback 14.11.2026). */
+function rowProps(active: boolean, height = "52px", smaragd = false) {
+  const basis = goldRowProps(active, height);
+  if (smaragd) {
+    return {
+      ...basis,
+      borderColor: active ? "var(--cc-smaragd-line)" : "rgba(111, 208, 166, 0.22)",
+      bg: active ? "linear-gradient(90deg, rgba(28, 122, 90, 0.26) 0%, rgba(28, 122, 90, 0.05) 100%)" : "var(--cc-smaragd-wash)",
+      boxShadow: "none",
+      // Schrift weiß, nur das Icon in Smaragd (Feedback 14.11.2026).
+      color: "var(--cc-text)",
+      fontWeight: 500,
+      sx: { "& > svg": { color: "var(--cc-smaragd-hell)" } },
+      _hover: active ? undefined : { bg: "rgba(28, 122, 90, 0.22)", borderColor: "var(--cc-smaragd-line)" },
+    };
+  }
+  return basis;
+}
+
+function goldRowProps(active: boolean, height: string) {
   return {
     display: "flex",
     alignItems: "center",
@@ -290,6 +284,28 @@ function SubList({
   );
 }
 
+/** Kleines Label neben dem Namen („Neu“), Gold-Haarlinie. */
+function NavBadge({ children }: { children: ReactNode }) {
+  return (
+    <Box
+      as="span"
+      color="var(--cc-gold-light)"
+      border="1px solid var(--cc-gold-line)"
+      borderRadius="full"
+      px={2}
+      py="2px"
+      fontSize="10px"
+      fontWeight={600}
+      letterSpacing="0.06em"
+      textTransform="uppercase"
+      lineHeight={1.2}
+      flexShrink={0}
+    >
+      {children}
+    </Box>
+  );
+}
+
 function NavList({ pathname, viewer, onNavigate }: { pathname: string; viewer: Viewer; onNavigate?: () => void }) {
   const [openKey, setOpenKey] = useState<string | null>(null);
 
@@ -309,31 +325,12 @@ function NavList({ pathname, viewer, onNavigate }: { pathname: string; viewer: V
                 href={target}
                 onClick={onNavigate}
                 aria-current={pathname === target ? "page" : undefined}
-                {...rowProps(active)}
+                {...rowProps(active, "52px", group.akzent === "smaragd")}
               >
                 <RowInner
                   icon={group.icon}
                   label={group.label}
-                  trailing={
-                    group.badge ? (
-                      <Box
-                        as="span"
-                        color="var(--cc-gold-light)"
-                        border="1px solid var(--cc-gold-line)"
-                        borderRadius="full"
-                        px={2}
-                        py="2px"
-                        fontSize="10px"
-                        fontWeight={600}
-                        letterSpacing="0.06em"
-                        textTransform="uppercase"
-                        lineHeight={1.2}
-                        flexShrink={0}
-                      >
-                        {group.badge}
-                      </Box>
-                    ) : undefined
-                  }
+                  trailing={group.badge ? <NavBadge>{group.badge}</NavBadge> : undefined}
                 />
               </Box>
             ) : (
@@ -511,55 +508,30 @@ function DiscordRow({ status, onNavigate }: { status: DiscordStatus; onNavigate?
   );
 }
 
+/**
+ * Konto-Block. „News" ist seit dem 14.11.2026 aus der Navigation raus (Free und
+ * Zahlende, Feedback Simon); die Seite `/news` selbst bleibt erreichbar.
+ */
 function AccountList({
   pathname,
-  unreadNews,
   discord,
   onNavigate,
   onLogout,
 }: {
   pathname: string;
-  unreadNews: number;
   discord: DiscordStatus | null;
   onNavigate?: () => void;
   onLogout: () => void;
 }) {
-  const newsActive = pathname.startsWith("/news");
   // `/settings` leitet seit dem 17.09.2026 auf `/einstellungen/profil` um. Wer
   // nur auf den alten Pfad prueft, sieht auf der Profilseite „Einstellungen"
   // leuchten statt „Profil" — beide Eintraege liegen jetzt unter derselben
   // Adresse, also muessen sie sich gegenseitig ausschliessen.
   const profileActive = pathname.startsWith("/einstellungen/profil") || pathname.startsWith("/settings");
   const settingsActive = pathname.startsWith("/einstellungen") && !profileActive;
-  const badge =
-    unreadNews > 0 ? (
-      <Box
-        as="span"
-        className="cc-num"
-        minW="20px"
-        h="20px"
-        px="6px"
-        borderRadius="full"
-        bg="rgba(255, 255, 255, 0.1)"
-        color="var(--cc-text)"
-        fontSize="11px"
-        fontWeight={500}
-        display="inline-flex"
-        alignItems="center"
-        justifyContent="center"
-      >
-        {unreadNews > 99 ? "99+" : unreadNews}
-        <VisuallyHidden> neue Beiträge</VisuallyHidden>
-      </Box>
-    ) : null;
 
   return (
     <Stack as="ul" spacing={1} listStyleType="none">
-      <Box as="li">
-        <Box as={Link} href="/news" onClick={onNavigate} aria-current={newsActive ? "page" : undefined} {...rowProps(newsActive, "48px")}>
-          <RowInner icon={MessageCircle} label="News" trailing={badge} />
-        </Box>
-      </Box>
       {/* Nur für zahlende Mitglieder — /api/discord/connect weist Free ab. */}
       {discord?.eligible ? (
         <Box as="li">
@@ -629,6 +601,138 @@ function ApplyCta({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
+/* ─── Free-Mitglieder (Emres Mockup, 08.11.2026) ────────────────────────────
+ *
+ * Konten ohne Inhaltszugang sehen statt der fünf Bereiche zwei Gruppen:
+ * „Free“ (alles, was offen ist) und „Premium“ (der Weg nach oben, darunter die
+ * gesperrten Bereiche mit Schloss). Gesperrte Zeilen verhalten sich wie ein
+ * `paid`-Unterpunkt heute: sichtbar, ohne Ziel, „Nur für Mitglieder“.
+ * Zahlende sehen weiter `NAV_GROUPS` und die Tools — dort ändert sich nichts.
+ */
+
+function GruppenLabel({ id, children, icon }: { id: string; children: ReactNode; icon?: ReactNode }) {
+  return (
+    <Flex
+      id={id}
+      align="center"
+      gap={2}
+      px="14px"
+      mb={2}
+      fontSize="12px"
+      lineHeight="16px"
+      fontWeight={500}
+      letterSpacing="0.12em"
+      textTransform="uppercase"
+      color="var(--cc-text-2)"
+    >
+      {children}
+      {icon}
+    </Flex>
+  );
+}
+
+function FreeKontoKachel() {
+  return (
+    <Flex
+      align="center"
+      gap={3}
+      px="14px"
+      py="12px"
+      mb={6}
+      border="1px solid var(--cc-line-strong)"
+      borderRadius="var(--cc-radius-lg)"
+      bg="rgba(255, 255, 255, 0.02)"
+      flexShrink={0}
+    >
+      <Box color="var(--cc-text-soft)" flexShrink={0}>
+        <UserRound size={22} strokeWidth={1.5} aria-hidden />
+      </Box>
+      <Box minW={0}>
+        <Text fontSize="14px" fontWeight={500} lineHeight={1.3} color="var(--cc-text)">
+          {freeNavTexte.kontoTitel}
+        </Text>
+        <Text fontSize="12px" lineHeight={1.3} color="var(--cc-text-3)" mt="2px">
+          {freeNavTexte.kontoText}
+        </Text>
+      </Box>
+    </Flex>
+  );
+}
+
+function FreeZeile({ item, pathname, onNavigate }: { item: FreeNavItem; pathname: string; onNavigate?: () => void }) {
+  const active = matches(pathname, item.href);
+  return (
+    <Box as="li">
+      <Box
+        as={Link}
+        href={item.href}
+        onClick={onNavigate}
+        aria-current={active ? "page" : undefined}
+        {...rowProps(active, "48px", item.akzent === "smaragd")}
+      >
+        <RowInner
+          icon={item.icon}
+          label={item.label}
+          trailing={item.badge ? <NavBadge>{item.badge}</NavBadge> : undefined}
+        />
+      </Box>
+    </Box>
+  );
+}
+
+function FreeNav({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+  return (
+    <>
+      <Box as="nav" aria-labelledby="cc-nav-free" flexShrink={0}>
+        <GruppenLabel id="cc-nav-free">{freeNavTexte.gruppeFree}</GruppenLabel>
+        <Stack as="ul" spacing={1} listStyleType="none">
+          {FREE_NAV.map((item) => (
+            <FreeZeile key={item.key} item={item} pathname={pathname} onNavigate={onNavigate} />
+          ))}
+        </Stack>
+      </Box>
+      <Box as="nav" aria-labelledby="cc-nav-premium" flex="1" flexShrink={0}>
+        <Box h="1px" bg="var(--cc-line)" my={5} />
+        <GruppenLabel
+          id="cc-nav-premium"
+          icon={
+            <Box as="span" color="var(--cc-gold-light)" display="inline-flex">
+              <Lock size={13} strokeWidth={1.75} aria-hidden />
+            </Box>
+          }
+        >
+          {freeNavTexte.gruppePremium}
+        </GruppenLabel>
+        <Stack as="ul" spacing="2px" listStyleType="none">
+          <FreeZeile item={PREMIUM_OFFEN} pathname={pathname} onNavigate={onNavigate} />
+          {PREMIUM_GESPERRT.map((item) => (
+            <Box as="li" key={item.key}>
+              <Box
+                aria-disabled="true"
+                title={freeNavTexte.gesperrt}
+                {...rowProps(false, "40px")}
+                gap="14px"
+                pl="16px"
+                fontSize="14px"
+                color="var(--cc-text-3)"
+                cursor="not-allowed"
+                _hover={undefined}
+              >
+                <item.icon size={20} strokeWidth={1.5} aria-hidden />
+                <Box as="span" flex="1" minW={0}>
+                  {item.label}
+                  <VisuallyHidden> (nur für Mitglieder)</VisuallyHidden>
+                </Box>
+                <Lock size={13} strokeWidth={1.75} aria-hidden />
+              </Box>
+            </Box>
+          ))}
+        </Stack>
+      </Box>
+    </>
+  );
+}
+
 /**
  * Plattform-Navigation: ab `lg` feste linke Sidebar, darunter eine schmale
  * Kopfzeile mit Menü-Button, die dieselbe Liste als Drawer öffnet.
@@ -637,7 +741,6 @@ export function PlatformSidebar() {
   const pathname = usePathname() ?? "";
   const router = useRouter();
   const viewer = useViewer();
-  const unreadNews = useUnreadNews(pathname);
   const discord = useDiscordStatus();
   const drawer = useDisclosure();
   // Fokus beim Öffnen auf „Schließen“ statt auf die Wortmarke (erster Link).
@@ -652,37 +755,47 @@ export function PlatformSidebar() {
 
   const panel = (onNavigate?: () => void) => (
     <>
-      <Box as="nav" aria-label="Hauptnavigation" flexShrink={0}>
-        <NavList pathname={pathname} viewer={viewer} onNavigate={onNavigate} />
-      </Box>
+      {viewer.isFree ? (
+        // Free-Mitglieder: Konto-Kachel, Gruppen „Free“ und „Premium“ (Mockup 08.11.2026).
+        <>
+          <FreeKontoKachel />
+          <ZugangCountdown />
+          <FreeNav pathname={pathname} onNavigate={onNavigate} />
+        </>
+      ) : (
+        <>
+          <Box as="nav" aria-label="Hauptnavigation" flexShrink={0}>
+            <NavList pathname={pathname} viewer={viewer} onNavigate={onNavigate} />
+          </Box>
       {/*
         Sektion „Tools“ zwischen Hauptnavigation und Konto-Block (Mockup
         25.09.2026). Sie trägt `flex="1"`, das bis dahin die Hauptnavigation
         hatte — so bleibt der Konto-Block unten stehen.
       */}
-      <Box as="nav" aria-labelledby="cc-nav-tools" flex="1" flexShrink={0}>
-        <Box h="1px" bg="var(--cc-line)" my={5} />
-        <Text
-          id="cc-nav-tools"
-          px="14px"
-          mb={2}
-          fontSize="12px"
-          lineHeight="16px"
-          fontWeight={500}
-          letterSpacing="0.12em"
-          textTransform="uppercase"
-          color="var(--cc-text-2)"
-        >
-          Tools
-        </Text>
-        <ToolsList pathname={pathname} viewer={viewer} onNavigate={onNavigate} />
-      </Box>
+          <Box as="nav" aria-labelledby="cc-nav-tools" flex="1" flexShrink={0}>
+            <Box h="1px" bg="var(--cc-line)" my={5} />
+            <Text
+              id="cc-nav-tools"
+              px="14px"
+              mb={2}
+              fontSize="12px"
+              lineHeight="16px"
+              fontWeight={500}
+              letterSpacing="0.12em"
+              textTransform="uppercase"
+              color="var(--cc-text-2)"
+            >
+              Tools
+            </Text>
+            <ToolsList pathname={pathname} viewer={viewer} onNavigate={onNavigate} />
+          </Box>
+        </>
+      )}
       {viewer.showApplyCta ? <ApplyCta onNavigate={onNavigate} /> : null}
       <Box h="1px" bg="var(--cc-line)" my={5} flexShrink={0} />
       <Box as="nav" aria-label="Konto" flexShrink={0}>
         <AccountList
           pathname={pathname}
-          unreadNews={unreadNews}
           discord={discord}
           onNavigate={onNavigate}
           onLogout={() => {

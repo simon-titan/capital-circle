@@ -10,7 +10,8 @@ import { kategorieHinweis } from "@/components/platform/live-session-ui";
 import { getLiveSessionCategory, getLiveSessionsWithCounts } from "@/lib/live-session-overview";
 import { getCurrentUserAndProfile } from "@/lib/server-data";
 import { liveSessionsNurFrei, mitgliedWerdenZiel } from "@/lib/membership";
-import { liveZugangAbgelaufen } from "@/lib/mentoring/zugang";
+import { archivZugangFehlt, liveZugangAbgelaufen } from "@/lib/mentoring/zugang";
+import { ArchivNichtEnthalten } from "@/components/platform/ArchivNichtEnthalten";
 import { LiveZugangAbgelaufen } from "@/components/platform/LiveZugangAbgelaufen";
 
 type PageProps = {
@@ -56,6 +57,18 @@ export default async function LiveSessionCategoryPage({ params }: PageProps) {
           <ZurueckLink />
         </Box>
         <LiveZugangAbgelaufen titel={category.title} />
+      </Stack>
+    );
+  }
+
+  // Ausbildung/Live-Abo (seit 08.11.2026): Live-Bereich ja, Live-Archiv nein.
+  if (archivZugangFehlt(profile) && !isFreeLiveSessionCategory(category.title)) {
+    return (
+      <Stack spacing={5} align="stretch">
+        <Box className="cc-rise">
+          <ZurueckLink />
+        </Box>
+        <ArchivNichtEnthalten titel={category.title} />
       </Stack>
     );
   }

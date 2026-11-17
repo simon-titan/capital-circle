@@ -11,6 +11,12 @@ interface SendOptions {
   /** Optional: Reply-To-Adresse (z. B. `support@…` für CTA-Mails). */
   replyTo?: string;
   /**
+   * Abweichender Absender, z. B. `Emre | Capital Circle <…>` für die Mails aus
+   * dem E-Mail-Playbook (`lib/mailsystem/versand.ts`). Ohne Angabe gilt
+   * `getFrom()`.
+   */
+  from?: string;
+  /**
    * Wenn gesetzt, wird VOR dem Versand `logEmailSent()` aufgerufen.
    * Gibt der Log-Insert `false` zurück (= bereits gesendet), bricht der Helper
    * idempotent ab und liefert `{ skipped: true }`.
@@ -54,7 +60,7 @@ export async function sendEmail(opts: SendOptions): Promise<SendResult> {
 
   const resend = getResend();
   const { data, error } = await resend.emails.send({
-    from: getFrom(),
+    from: opts.from ?? getFrom(),
     to: opts.to,
     subject: opts.subject,
     html,

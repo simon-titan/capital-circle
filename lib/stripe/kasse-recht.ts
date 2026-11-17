@@ -80,6 +80,7 @@ export function mentoringLaufzeittext(daten: {
   produkt: "ausbildung" | "main" | "premium" | "live";
   liveMonate: number | null;
   raten: number;
+  /** Vollständiger Ratentext aus `ratenText()` („4 Monatsraten à 750 €"). */
   rateText?: string;
 }): string {
   if (daten.produkt === "live") {
@@ -92,7 +93,7 @@ export function mentoringLaufzeittext(daten: {
     `Plattform, Kursinhalte und Journal dauerhaft, Live-Zugang ${daten.liveMonate ?? 0} Monate ab Kauf.`;
   if (daten.raten > 1) {
     return (
-      `${umfang} Zahlung in ${daten.raten} Monatsraten${daten.rateText ? ` à ${daten.rateText}` : ""} ohne Aufschlag. ` +
+      `${umfang} Zahlung in ${daten.rateText ?? `${daten.raten} Monatsraten`} ohne Aufschlag. ` +
       "Die Ratenzahlung endet nach der letzten Rate von selbst, eine Kündigung ist nicht nötig."
     );
   }

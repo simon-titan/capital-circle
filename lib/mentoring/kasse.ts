@@ -3,8 +3,9 @@ import type Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   PRODUKTE,
-  euro,
   istKassenProdukt,
+  ersteRateCents,
+  ratenText,
   rateCents,
   sollCents,
   type KassenProdukt,
@@ -17,7 +18,7 @@ import { getStripe } from "@/lib/stripe/server";
  * Kassenlink nach dem Closing-Call.
  *
  * Der Closer legt im Admin (`/admin/kassenlinks`) ein Angebot an: Produkt,
- * Zahlweise (einmal oder 2–4 Raten), E-Mail des Kunden. Der Kunde bekommt
+ * Zahlweise (einmal oder Raten bis `maxRaten`, Premium bis 6), E-Mail des Kunden. Der Kunde bekommt
  * `/kasse/<token>`, sieht dort, was er kauft, und geht von dort in Stripes
  * Kasse. Jeder Klick erzeugt eine frische Stripe-Session — der Link bleibt
  * gültig, bis bezahlt, storniert oder abgelaufen ist.
@@ -68,10 +69,14 @@ export interface Kassenlink {
   stripe_session_id: string | null;
   bezahlt_am: string | null;
   kauf_id: string | null;
+  /** Upgrade Ausbildung → Main/Premium: angerechneter Betrag (Migration 113), sonst 0. */
+  anrechnung_cents: number;
+  upgrade_von_kauf_id: string | null;
 }
 
+/** Braucht Migration 113 (`anrechnung_cents`, `upgrade_von_kauf_id`). */
 export const KASSENLINK_SPALTEN =
-  "id,token,produkt,raten,betrag_cents,email,name,closer,lead_id,notiz,erstellt_am,gueltig_bis,status,stripe_session_id,bezahlt_am,kauf_id";
+  "id,token,produkt,raten,betrag_cents,email,name,closer,lead_id,notiz,erstellt_am,gueltig_bis,status,stripe_session_id,bezahlt_am,kauf_id,anrechnung_cents,upgrade_von_kauf_id";
 
 /** 24 Zeichen, URL-sicher, 144 Bit Zufall — nicht erratbar, kurz genug für WhatsApp. */
 export function erzeugeKassenToken(): string {
@@ -104,14 +109,20 @@ export async function ladeKassenlink(service: SupabaseClient, token: string): Pr
 }
 
 /** Kurzbeschreibung des Angebots für Kassenseite, Admin und Mail. */
-export function angebotsZusammenfassung(link: Pick<Kassenlink, "produkt" | "raten" | "betrag_cents">) {
+export function angebotsZusammenfassung(
+  link: Pick<Kassenlink, "produkt" | "raten" | "betrag_cents"> & Partial<Pick<Kassenlink, "anrechnung_cents">>,
+) {
   const produkt = PRODUKTE[link.produkt];
   const rate = rateCents(link.betrag_cents, link.raten);
   return {
     produkt,
+    /** Angerechneter Betrag der Ausbildung beim Upgrade (0 = kein Upgrade). */
+    anrechnungCents: link.anrechnung_cents ?? 0,
     raten: link.raten,
     gesamtCents: link.betrag_cents,
     rateCents: rate,
+    /** Heute fällig bei Raten: die erste Rate mit dem Restcent. */
+    ersteRateCents: ersteRateCents(link.betrag_cents, link.raten),
     sollCents: sollCents(link.betrag_cents, link.raten),
     istAbo: link.produkt === "live",
     istRaten: link.produkt !== "live" && link.raten > 1,
@@ -191,6 +202,9 @@ export async function starteKasse(
     abbruchPfad?: string | null;
     /** Herkunft für die Auswertung, landet in den Metadaten (z. B. `programme`). */
     quelle?: string | null;
+    /** Upgrade Ausbildung → Main/Premium (Kassenlink, Migration 113). */
+    anrechnungCents?: number;
+    upgradeVonKaufId?: string | null;
   },
 ): Promise<KasseStart> {
   const produkt = PRODUKTE[angebot.produkt];
@@ -224,16 +238,20 @@ export async function starteKasse(
   }
 
   const rate = rateCents(angebot.betragCents, raten);
+  const ersteRate = ersteRateCents(angebot.betragCents, raten);
   const metadata: Record<string, string> = {
     art,
     produkt: angebot.produkt,
     raten: String(raten),
     betrag_cents: String(angebot.betragCents),
-    ...(istRaten ? { rate_cents: String(rate) } : {}),
+    ...(istRaten ? { rate_cents: String(rate), erste_rate_cents: String(ersteRate) } : {}),
     ...(angebot.kassenlinkId ? { kassenlink_id: angebot.kassenlinkId } : {}),
     ...(angebot.closer ? { closer: angebot.closer } : {}),
     ...(userId ? { user_id: userId } : {}),
     ...(angebot.quelle ? { quelle: angebot.quelle } : {}),
+    ...(angebot.anrechnungCents && angebot.upgradeVonKaufId
+      ? { anrechnung_cents: String(angebot.anrechnungCents), upgrade_von_kauf_id: angebot.upgradeVonKaufId }
+      : {}),
     ...kassenRechtsMetadata,
   };
 
@@ -251,7 +269,8 @@ export async function starteKasse(
     currency: "eur",
     // Alle Preise sind Endpreise inkl. MwSt. (Board: „3.000 € inkl. MwSt.").
     tax_behavior: "inclusive",
-    unit_amount: istLive ? produkt.preisCents : istRaten ? rate : angebot.betragCents,
+    // Raten: an der Kasse die erste Rate (mit Restcent), die übrigen setzt der Schedule.
+    unit_amount: istLive ? produkt.preisCents : istRaten ? ersteRate : angebot.betragCents,
     ...(istLive || istRaten ? { recurring: { interval: "month" as const } } : {}),
     ...produktAngabe,
   };
@@ -268,7 +287,7 @@ export async function starteKasse(
     produkt: angebot.produkt,
     liveMonate: produkt.liveMonate,
     raten,
-    rateText: istRaten ? euro(rate) : undefined,
+    rateText: istRaten ? ratenText(angebot.betragCents, raten) : undefined,
   });
 
   const zahlarten = process.env.STRIPE_PMC_MENTORING?.trim();

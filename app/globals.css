@@ -70,6 +70,14 @@
   --cc-gold-dark: #b8935f;
   --cc-gold-grad: linear-gradient(135deg, #ecc99c 0%, #d4b080 50%, #b8935f 100%);
   --cc-gold-bar: linear-gradient(90deg, #b8935f 0%, #d4b080 55%, #e8c094 100%);
+  /* Smaragd — zweiter Akzent, nur auf den Funnel-Seiten (/training, Bewerbungs-Modal).
+     Tief und bläulich, damit es sich vom semantischen Gewinn-Grün (--cc-success) abhebt. */
+  --cc-smaragd: #1c7a5a;
+  --cc-smaragd-tief: #0b3d2e;
+  --cc-smaragd-hell: #6fd0a6;
+  --cc-smaragd-line: rgba(111, 208, 166, 0.45);
+  --cc-smaragd-wash: rgba(28, 122, 90, 0.14);
+  --cc-smaragd-grad: linear-gradient(135deg, #2a9a73 0%, #1c7a5a 50%, #0f5640 100%);
   --cc-success: #4ade80;
   --cc-danger: #f87171;
   --cc-radius-sm: 6px;
@@ -1005,4 +1013,220 @@ html:has([data-platform]) {
   .cc-card:hover {
     transform: none;
   }
+}
+
+/* ═══ CRM (`/crm`) — Arbeitsbereich der Closer ═══ */
+
+/*
+ * Dunkles Farbschema für native Bedienelemente: Scrollleisten, Kalender-Icon im
+ * `datetime-local`, Dropdown-Listen. Ohne das zeichnet Windows weiße Scrollbalken
+ * und ein schwarzes Kalender-Icon auf Graphit.
+ */
+[data-crm] {
+  color-scheme: dark;
+}
+
+/* Schmale Scrollleisten in Graphit, Gold beim Überfahren (vererbt sich). */
+[data-crm],
+[data-crm] * {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+
+[data-crm] *:hover {
+  scrollbar-color: rgba(212, 176, 128, 0.45) transparent;
+}
+
+/* Waagrechte Laufleisten (Pipeline, Pfad): Kanten blenden aus, wenn es weitergeht. */
+.crm-lauf {
+  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
+}
+
+.crm-lauf[data-links="1"][data-rechts="1"] {
+  mask-image: linear-gradient(90deg, transparent 0, #000 40px, #000 calc(100% - 40px), transparent 100%);
+}
+
+.crm-lauf[data-links="1"][data-rechts="0"] {
+  mask-image: linear-gradient(90deg, transparent 0, #000 40px);
+}
+
+.crm-lauf[data-links="0"][data-rechts="1"] {
+  mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent 100%);
+}
+
+/* Pipeline-Karte: hebt sich beim Überfahren, wird beim Ziehen zum Schatten. */
+.crm-karte {
+  transition:
+    border-color 160ms var(--cc-ease),
+    background 160ms var(--cc-ease),
+    transform 160ms var(--cc-ease),
+    box-shadow 160ms var(--cc-ease),
+    opacity 160ms var(--cc-ease);
+}
+
+.crm-karte:hover {
+  transform: translateY(-1px);
+  border-color: rgba(212, 176, 128, 0.35);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+
+.crm-karte[data-zieht="1"] {
+  opacity: 0.4;
+  transform: none;
+}
+
+/* Ablagefelder unten beim Ziehen (Verloren/Später/Gewonnen), fahren von unten ein. */
+@keyframes crm-hoch {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.crm-ablage {
+  animation: crm-hoch 220ms var(--cc-ease);
+}
+
+/* Pfad im Kontaktkopf (Salesforce-Path): Pfeilsegmente. */
+.crm-pfad-segment {
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 12px 50%);
+}
+
+.crm-pfad-segment:first-of-type {
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%);
+}
+
+/* „Jetzt"-Linie im Tagesplan */
+@keyframes crm-jetzt {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(212, 176, 128, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(212, 176, 128, 0);
+  }
+}
+
+.crm-jetzt-punkt {
+  animation: crm-jetzt 2.4s ease-in-out infinite;
+}
+
+/* Aktualisieren-Knopf während des Abgleichs */
+@keyframes crm-dreh {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.crm-dreht {
+  animation: crm-dreh 0.9s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crm-lauf {
+    scroll-behavior: auto;
+  }
+  .crm-karte,
+  .crm-karte:hover {
+    transition: none;
+    transform: none;
+  }
+  .crm-ablage,
+  .crm-jetzt-punkt,
+  .crm-dreht {
+    animation: none;
+  }
+}
+
+/* ═══ Funnel-Scrollleisten (/training, /call) ═══
+   Seite: `data-funnel` an `FunnelHimmel`. Modal: `.cc-scroll` am ModalBody.
+   Ohne das zeichnet Windows helle, breite System-Scrollbalken auf den dunklen
+   Grund. Schmal, Graphit-Schiene, grauer Griff, heller beim Überfahren.
+   Chrome ab 121 und Firefox lesen `scrollbar-color`; die ::-webkit-Regeln
+   greifen nur noch in Safari und älteren Chromes. */
+html:has([data-funnel]) {
+  color-scheme: dark;
+  scrollbar-width: thin;
+  scrollbar-color: #3a4048 var(--cc-bg);
+  background: var(--cc-bg);
+}
+
+html:has([data-funnel])::-webkit-scrollbar {
+  width: 10px;
+  background: var(--cc-bg);
+}
+
+html:has([data-funnel])::-webkit-scrollbar-thumb {
+  background: #3a4048;
+  border-radius: 999px;
+  border: 2px solid var(--cc-bg);
+}
+
+html:has([data-funnel])::-webkit-scrollbar-thumb:hover {
+  background: #565d66;
+}
+
+.cc-scroll,
+.cc-scroll * {
+  color-scheme: dark;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.cc-scroll:hover {
+  scrollbar-color: rgba(255, 255, 255, 0.32) transparent;
+}
+
+.cc-scroll::-webkit-scrollbar,
+.cc-scroll *::-webkit-scrollbar {
+  width: 8px;
+  background: transparent;
+}
+
+.cc-scroll::-webkit-scrollbar-thumb,
+.cc-scroll *::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* Video-Player in Weiß/Grau statt Champagner (`VideoSchein ton="neutral"`, /training).
+   Der Player liest Play-Knopf, Zeitstrahl und Einstellungsmenü aus diesen Variablen. */
+.cc-player-neutral {
+  --cc-gold-grad: linear-gradient(135deg, #ffffff 0%, #e6e8eb 55%, #c4c8ce 100%);
+  --cc-gold-bar: linear-gradient(90deg, #b9bec5 0%, #e6e8eb 55%, #ffffff 100%);
+  --cc-gold-light: #f4f5f7;
+  --cc-gold-line: rgba(255, 255, 255, 0.55);
+  --cc-gold-wash: rgba(255, 255, 255, 0.08);
+  --cc-on-gold: #15181c;
+}
+
+/* Smaragd-Karte (nur Funnel: „Freischaltung" im Zugang auf /training).
+   Grauer, deckender Grund ohne Glas und ohne grünen Schein (Feedback 14.11.2026);
+   Smaragd trägt nur Kante, Lichtlinie oben und die Beschriftung. */
+.cc-card.cc-card--smaragd {
+  background: #22272d;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: var(--cc-smaragd-line);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.cc-card.cc-card--smaragd::before {
+  background: linear-gradient(90deg, transparent, rgba(111, 208, 166, 0.85), transparent);
+}
+
+.cc-card.cc-card--smaragd:hover {
+  border-color: var(--cc-smaragd-hell);
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }

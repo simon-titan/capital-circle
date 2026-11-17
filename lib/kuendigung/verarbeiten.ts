@@ -1,4 +1,5 @@
 import { createHmac } from "node:crypto";
+import { protokolliere } from "@/lib/mailsystem/versand";
 import { findeUserIdZuEmail } from "@/lib/checkout/user-lookup";
 import { ladeAboKontext, type AboZeile } from "@/lib/stripe/abo-kontext";
 import { kuendigeAboZumPeriodenende } from "@/lib/stripe/kuendigung";
@@ -315,6 +316,24 @@ async function kuendigeLiveAbo(
   }
 
   const subId = abos[0].stripe_subscription_id;
+  /*
+    E-Mail-Playbook Q02: Die gesetzliche Eingangsbestätigung dieses Buttons nennt
+    das Enddatum bereits. Damit der Webhook danach keine zweite Mail schickt,
+    steht Q02 für dieses Abo vorab als übersprungen im Protokoll.
+  */
+  if (basis.kontoEmail) {
+    await protokolliere(service, [
+      {
+        vorlage: "Q02",
+        bezug: `kuendigung:${subId}`,
+        email: basis.kontoEmail,
+        userId: basis.userId ?? null,
+        status: "uebersprungen",
+        grund: "kuendigungsbestaetigung",
+        faelligAm: new Date(),
+      },
+    ]);
+  }
   try {
     const sub = await getStripe().subscriptions.update(subId, {
       cancel_at_period_end: true,
@@ -339,6 +358,8 @@ async function kuendigeLiveAbo(
       ergebnis: { art: "ausgefuehrt", plan, wirksamZum, warBereitsGekuendigt: false },
     };
   } catch (err) {
+    // Der Q02-Vermerk von oben gilt nur, wenn die Kündigung wirklich durchging.
+    await service.from("mail_versand").delete().eq("vorlage", "Q02").eq("bezug", `kuendigung:${subId}`).eq("status", "uebersprungen");
     return { ...manuell(`Stripe-Kündigung des Live-Abos fehlgeschlagen: ${err instanceof Error ? err.message : "unbekannt"}`), stripeSubscriptionId: subId };
   }
 }

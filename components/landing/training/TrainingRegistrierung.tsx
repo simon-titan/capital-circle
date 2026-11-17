@@ -6,6 +6,7 @@ import {
   FormControl,
   FormErrorMessage,
   FormLabel,
+  HStack,
   Input,
   Modal,
   ModalBody,
@@ -13,12 +14,13 @@ import {
   ModalOverlay,
   Stack,
   Text,
+  Textarea,
   type ButtonProps,
 } from "@chakra-ui/react";
-import { ArrowRight, MailCheck } from "lucide-react";
+import { ArrowRight, MailCheck, CheckCircle2 } from "lucide-react";
 import Script from "next/script";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { landing, registrierung } from "@/config/training";
+import { BEWERBUNG_MIN_ZEICHEN, bewerbung, landing, registrierung } from "@/config/training";
 import { leseHerkunft } from "@/lib/training/herkunft";
 import {
   FunnelAlert,
@@ -34,17 +36,29 @@ import {
 } from "@/components/marketing/funnel-ui";
 
 /**
- * Registrierung für das kostenlose Training (`/training`) — als Modal.
+ * Bewerbung für das kostenlose Training (`/training`) — als Modal.
  *
- * Jede Hauptaktion der Seite ist ein `TrainingStartKnopf` und öffnet dasselbe
- * Modal; der Zustand liegt im Provider (wie `CallBuchung` auf `/call`). Nach dem
- * Absenden zeigt das Modal „Bestätige deine E-Mail" — eingeloggt wird erst über
- * den Link in der Mail (`/api/training/registrieren` → `/auth/confirm`).
+ * Seit 07.11.2026 (E-Mail-Playbook 1.0, Emre) kein Sofort-Zugang mehr: Wer das
+ * Training sehen will, beantwortet drei Fragen; Emre entscheidet. Zwei Schritte:
+ *
+ *   1. Fragen   — Emres drei Fragen, dazu „Möchtest du, dass wir dich
+ *                 kontaktieren?" (Ja/Nein, bei Ja optional Telefon)
+ *   2. Konto    — Name, E-Mail, Passwort, Turnstile, Hinweis „Absage endgültig"
+ *
+ * Danach „Bestätige deine E-Mail": Erst mit dem Link kommt die Bewerbung bei
+ * Emre an (`/auth/confirm` → `/training/status`, Mail A01).
+ *
+ * `eingeloggt`: Ein bestehendes Konto ohne Trainingszugang bewirbt sich ohne
+ * Schritt 2 (`/api/training/bewerbung`), z. B. auf `/kostenloses-training`.
+ *
+ * Exportnamen bleiben (`TrainingRegistrierungProvider`, `TrainingStartKnopf`),
+ * damit beide Landingpages unverändert funktionieren.
  */
 
-type Felder = { name: string; email: string; passwort: string };
-type FeldFehler = Partial<Record<keyof Felder, string>>;
-type Phase = "formular" | "bestaetigen";
+type FrageId = (typeof bewerbung.fragen)[number]["id"];
+type Konto = { name: string; email: string; passwort: string };
+type FeldFehler = Partial<Record<FrageId | "kontakt" | "telefon" | keyof Konto, string>>;
+type Phase = "fragen" | "konto" | "bestaetigen" | "eingegangen";
 
 type RegistrierungApi = { oeffne: () => void; phase: Phase };
 const Ctx = createContext<RegistrierungApi | null>(null);
@@ -56,21 +70,24 @@ function useRegistrierung(): RegistrierungApi {
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const leer = () => Object.fromEntries(bewerbung.fragen.map((f) => [f.id, ""])) as Record<FrageId, string>;
 
-function pruefe(f: Felder): FeldFehler {
-  const t = registrierung.felder;
-  const fehler: FeldFehler = {};
-  if (f.name.trim().length < 2) fehler.name = t.name.fehler;
-  if (!EMAIL_RE.test(f.email.trim())) fehler.email = t.email.fehler;
-  if (f.passwort.length < 8) fehler.passwort = t.passwort.fehler;
-  return fehler;
-}
-
-export function TrainingRegistrierungProvider({ children }: { children: ReactNode }) {
-  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
-  const [offen, setOffen] = useState(false);
-  const [phase, setPhase] = useState<Phase>("formular");
-  const [felder, setFelder] = useState<Felder>({ name: "", email: "", passwort: "" });
+export function TrainingRegistrierungProvider({
+  children,
+  eingeloggt = false,
+  sofortOffen = false,
+}: {
+  children: ReactNode;
+  eingeloggt?: boolean;
+  sofortOffen?: boolean;
+}) {
+  const siteKey = eingeloggt ? "" : (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "");
+  const [offen, setOffen] = useState(sofortOffen);
+  const [phase, setPhase] = useState<Phase>("fragen");
+  const [antworten, setAntworten] = useState<Record<FrageId, string>>(leer);
+  const [kontakt, setKontakt] = useState<boolean | null>(null);
+  const [telefon, setTelefon] = useState("");
+  const [konto, setKonto] = useState<Konto>({ name: "", email: "", passwort: "" });
   const [feldFehler, setFeldFehler] = useState<FeldFehler>({});
   const [serverFehler, setServerFehler] = useState<ReactNode | null>(null);
   const [laeuft, setLaeuft] = useState(false);
@@ -81,9 +98,9 @@ export function TrainingRegistrierungProvider({ children }: { children: ReactNod
   const oeffne = useCallback(() => setOffen(true), []);
   const schliesse = useCallback(() => setOffen(false), []);
 
-  // Turnstile rendern, sobald das Formular im Modal steht.
+  // Turnstile rendern, sobald der Kontoschritt im Modal steht.
   useEffect(() => {
-    if (!offen || phase !== "formular" || !siteKey) return;
+    if (!offen || phase !== "konto" || !siteKey) return;
     const versuche = () => {
       if (widgetId.current || !window.turnstile || !widgetBox.current) return Boolean(widgetId.current);
       widgetId.current = window.turnstile.render(widgetBox.current, {
@@ -103,25 +120,88 @@ export function TrainingRegistrierungProvider({ children }: { children: ReactNod
     return () => window.clearInterval(intervall);
   }, [offen, phase, siteKey]);
 
-  // Beim Schließen das Widget abbauen — das Modal-DOM verschwindet mit.
+  // Beim Schließen oder Zurückblättern das Widget abbauen — das DOM verschwindet mit.
   useEffect(() => {
-    if (offen) return;
+    if (offen && phase === "konto") return;
     if (widgetId.current && window.turnstile) window.turnstile.remove(widgetId.current);
     widgetId.current = null;
     setTurnstileToken(null);
-  }, [offen]);
+  }, [offen, phase]);
 
-  const setze = (k: keyof Felder, v: string) => {
-    setFelder((f) => ({ ...f, [k]: v }));
+  const fehlerWeg = (k: keyof FeldFehler) => {
     setFeldFehler((f) => ({ ...f, [k]: undefined }));
     setServerFehler(null);
   };
 
+  const pruefeFragen = (): boolean => {
+    const f: FeldFehler = {};
+    for (const q of bewerbung.fragen) if (antworten[q.id].trim().length < BEWERBUNG_MIN_ZEICHEN) f[q.id] = bewerbung.fehlerKurz;
+    if (kontakt === null) f.kontakt = bewerbung.fehlerKontakt;
+    if (kontakt === true && telefon.trim().length < 6) f.telefon = "Bitte trag deine Telefonnummer ein.";
+    setFeldFehler(f);
+    return Object.keys(f).length === 0;
+  };
+
+  const nutzlast = () => ({
+    antworten: Object.fromEntries(bewerbung.fragen.map((q) => [q.id, antworten[q.id].trim()])),
+    kontaktGewuenscht: kontakt === true,
+    telefon: kontakt ? telefon.trim() : "",
+  });
+
+  const fehlerAus = (code: string | undefined, felder?: Record<string, true>) => {
+    if (felder?.telefon) setFeldFehler((f) => ({ ...f, telefon: "Bitte prüf deine Telefonnummer." }));
+    if (code === "schon_registriert") {
+      setServerFehler(
+        <>
+          {registrierung.schonRegistriert}{" "}
+          <Box as="a" href="/login" color="var(--cc-gold-light)" textDecoration="underline">
+            Zum Login
+          </Box>
+        </>,
+      );
+    } else if (code === "schon_beworben") setServerFehler(bewerbung.schonBeworben);
+    else if (code === "turnstile") setServerFehler(registrierung.fehler.turnstile);
+    else if (code === "zu_oft") setServerFehler(registrierung.fehler.zuOft);
+    else setServerFehler(bewerbung.fehler.server);
+  };
+
+  const weiterNachFragen = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!pruefeFragen()) return;
+    if (!eingeloggt) {
+      setPhase("konto");
+      return;
+    }
+    setLaeuft(true);
+    setServerFehler(null);
+    try {
+      const res = await fetch("/api/training/bewerbung", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(nutzlast()),
+      });
+      const json = (await res.json().catch(() => null)) as { ok?: boolean; error?: string; felder?: Record<string, true> } | null;
+      if (res.ok && json?.ok) {
+        setPhase("eingegangen");
+        return;
+      }
+      fehlerAus(json?.error, json?.felder);
+    } catch {
+      setServerFehler(bewerbung.fehler.server);
+    } finally {
+      setLaeuft(false);
+    }
+  };
+
   const absenden = async (e: FormEvent) => {
     e.preventDefault();
-    const pruefung = pruefe(felder);
-    setFeldFehler(pruefung);
-    if (Object.values(pruefung).some(Boolean)) return;
+    const t = registrierung.felder;
+    const f: FeldFehler = {};
+    if (konto.name.trim().length < 2) f.name = t.name.fehler;
+    if (!EMAIL_RE.test(konto.email.trim())) f.email = t.email.fehler;
+    if (konto.passwort.length < 8) f.passwort = t.passwort.fehler;
+    setFeldFehler(f);
+    if (Object.keys(f).length) return;
     if (siteKey && !turnstileToken) {
       setServerFehler(registrierung.fehler.turnstile);
       return;
@@ -133,36 +213,30 @@ export function TrainingRegistrierungProvider({ children }: { children: ReactNod
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          name: felder.name.trim(),
-          email: felder.email.trim(),
-          password: felder.passwort,
+          name: konto.name.trim(),
+          email: konto.email.trim(),
+          password: konto.passwort,
           turnstileToken,
           herkunft: leseHerkunft(),
+          ...nutzlast(),
         }),
       });
-      const json = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+      const json = (await res.json().catch(() => null)) as { ok?: boolean; error?: string; felder?: Record<string, true> } | null;
       if (res.ok && json?.ok) {
         setPhase("bestaetigen");
         return;
       }
-      const code = json?.error;
-      if (code === "schon_registriert") {
-        setServerFehler(
-          <>
-            {registrierung.schonRegistriert}{" "}
-            <Box as="a" href="/login" color="var(--cc-gold-light)" textDecoration="underline">
-              Zum Login
-            </Box>
-          </>,
-        );
-      } else if (code === "turnstile") setServerFehler(registrierung.fehler.turnstile);
-      else if (code === "zu_oft") setServerFehler(registrierung.fehler.zuOft);
-      else setServerFehler(registrierung.fehler.server);
+      // Fehler in den Fragen (Server prüft dieselbe Regel) → zurück zu Schritt 1.
+      if (json?.felder && bewerbung.fragen.some((q) => json.felder?.[q.id])) {
+        pruefeFragen();
+        setPhase("fragen");
+      }
+      fehlerAus(json?.error, json?.felder);
       // Ein verbrauchtes Turnstile-Token gilt nicht noch einmal.
       if (widgetId.current && window.turnstile) window.turnstile.reset(widgetId.current);
       setTurnstileToken(null);
     } catch {
-      setServerFehler(registrierung.fehler.server);
+      setServerFehler(bewerbung.fehler.server);
     } finally {
       setLaeuft(false);
     }
@@ -177,34 +251,171 @@ export function TrainingRegistrierungProvider({ children }: { children: ReactNod
       {children}
       <Modal isOpen={offen} onClose={schliesse} size="lg" isCentered scrollBehavior="inside">
         <ModalOverlay {...funnelOverlayProps} />
-        <ModalContent {...funnelModalContentProps} aria-label={registrierung.modalTitel} maxW="520px" my={{ base: 3, md: 10 }}>
-          <Box px={{ base: 5, md: 8 }} pt={{ base: 5, md: 6 }} pb={2}>
-            <FunnelModalTopBar label={registrierung.modalTitel} onClose={schliesse} />
+        {/* Smaragd-Fassung der Funnel-Modalfläche: Schein oben rechts und
+            Lichtkante in Smaragd statt Gold (Feedback 14.11.2026). */}
+        <ModalContent
+          {...funnelModalContentProps}
+          aria-label={bewerbung.modalTitel}
+          maxW="560px"
+          my={{ base: 3, md: 10 }}
+          border="1px solid rgba(111, 208, 166, 0.26)"
+          bgImage="radial-gradient(circle at 100% 0%, rgba(28, 122, 90, 0.2), transparent 48%), radial-gradient(circle at 0% 100%, rgba(232, 192, 148, 0.04), transparent 50%)"
+          boxShadow="0 24px 60px rgba(0, 0, 0, 0.6), 0 0 44px rgba(28, 122, 90, 0.14)"
+          _before={{
+            ...funnelModalContentProps._before,
+            bgImage: "linear-gradient(90deg, transparent 0%, rgba(111, 208, 166, 0.9) 45%, rgba(28, 122, 90, 0.3) 100%)",
+          }}
+        >
+          <Box px={{ base: 5, md: 8 }} pt={{ base: 5, md: 6 }} pb={3} borderBottom="1px solid var(--cc-line)">
+            <FunnelModalTopBar label={bewerbung.modalTitel} onClose={schliesse} />
+            {!eingeloggt && (phase === "fragen" || phase === "konto") ? (
+              <SchrittLeiste schritt={phase === "fragen" ? 1 : 2} />
+            ) : null}
           </Box>
-          <ModalBody px={{ base: 5, md: 8 }} pt={3} pb={{ base: 6, md: 8 }}>
-            {phase === "bestaetigen" ? (
+          <ModalBody className="cc-scroll" px={{ base: 5, md: 8 }} pt={3} pb={{ base: 6, md: 8 }}>
+            {phase === "bestaetigen" || phase === "eingegangen" ? (
               <Stack spacing={4} align="center" textAlign="center" role="status" py={4}>
-                <Box color="var(--cc-gold-light)">
-                  <MailCheck size={44} strokeWidth={1.5} aria-hidden />
+                <Box color="var(--cc-smaragd-hell)">
+                  {phase === "bestaetigen" ? (
+                    <MailCheck size={44} strokeWidth={1.5} aria-hidden />
+                  ) : (
+                    <CheckCircle2 size={44} strokeWidth={1.5} aria-hidden />
+                  )}
                 </Box>
                 <FunnelHeadline as="h2" scale="sm">
-                  {registrierung.bestaetigenTitel}
+                  {phase === "bestaetigen" ? bewerbung.bestaetigenTitel : bewerbung.eingegangenTitel}
                 </FunnelHeadline>
                 <Text fontSize="15px" lineHeight={1.65} color="var(--cc-text-2)">
-                  {registrierung.bestaetigenText.replace("{email}", felder.email.trim())}
+                  {phase === "bestaetigen"
+                    ? bewerbung.bestaetigenText.replace("{email}", konto.email.trim())
+                    : bewerbung.eingegangenText}
                 </Text>
-                <Button variant="line" onClick={schliesse}>
+                <Button
+                  variant="line"
+                  onClick={() => {
+                    schliesse();
+                    if (phase === "eingegangen") window.location.reload();
+                  }}
+                >
                   Schließen
                 </Button>
               </Stack>
+            ) : phase === "fragen" ? (
+              <Box as="form" onSubmit={weiterNachFragen} noValidate>
+                <Stack spacing={5}>
+                  <Stack spacing={2}>
+                    <FunnelHeadline as="h2" scale="sm">
+                      {bewerbung.headline}
+                    </FunnelHeadline>
+                    <FunnelLead fontSize="14px">{bewerbung.text}</FunnelLead>
+                    <Text fontSize="13px" color="var(--cc-text-3)">
+                      — {bewerbung.unterschrift}
+                    </Text>
+                  </Stack>
+
+                  {bewerbung.fragen.map((q, i) => (
+                    <FormControl key={q.id} isInvalid={Boolean(feldFehler[q.id])} isRequired>
+                      <FormLabel {...funnelLabelProps} mb={1.5}>
+                        {i + 1}. {q.frage}
+                      </FormLabel>
+                      <Textarea
+                        {...funnelFieldProps}
+                        name={q.id}
+                        placeholder={q.placeholder}
+                        value={antworten[q.id]}
+                        onChange={(e) => {
+                          const wert = e.target.value;
+                          setAntworten((a) => ({ ...a, [q.id]: wert }));
+                          fehlerWeg(q.id);
+                        }}
+                        rows={3}
+                        fontSize="16px"
+                        resize="vertical"
+                      />
+                      {feldFehler[q.id] ? <FormErrorMessage {...funnelErrorProps}>{feldFehler[q.id]}</FormErrorMessage> : null}
+                    </FormControl>
+                  ))}
+
+                  <FormControl isInvalid={Boolean(feldFehler.kontakt)} isRequired>
+                    <FormLabel {...funnelLabelProps} mb={2}>
+                      {bewerbung.kontaktFrage}
+                    </FormLabel>
+                    <HStack spacing={3} role="radiogroup" aria-label={bewerbung.kontaktFrage}>
+                      {([true, false] as const).map((wert) => (
+                        <Button
+                          key={String(wert)}
+                          type="button"
+                          role="radio"
+                          aria-checked={kontakt === wert}
+                          variant={kontakt === wert ? "smaragd" : "line"}
+                          flex="1"
+                          minH="48px"
+                          fontSize="15px"
+                          onClick={() => {
+                            setKontakt(wert);
+                            fehlerWeg("kontakt");
+                          }}
+                        >
+                          {wert ? bewerbung.kontaktJa : bewerbung.kontaktNein}
+                        </Button>
+                      ))}
+                    </HStack>
+                    {feldFehler.kontakt ? <FormErrorMessage {...funnelErrorProps}>{feldFehler.kontakt}</FormErrorMessage> : null}
+                  </FormControl>
+
+                  {kontakt ? (
+                    <FormControl isInvalid={Boolean(feldFehler.telefon)} isRequired>
+                      <FormLabel {...funnelLabelProps} mb={1.5}>
+                        {bewerbung.telefon.label}
+                      </FormLabel>
+                      <Input
+                        {...funnelFieldProps}
+                        type="tel"
+                        autoComplete="tel"
+                        placeholder={bewerbung.telefon.placeholder}
+                        value={telefon}
+                        onChange={(e) => {
+                          setTelefon(e.target.value);
+                          fehlerWeg("telefon");
+                        }}
+                        h="52px"
+                        fontSize="16px"
+                      />
+                      {feldFehler.telefon ? (
+                        <FormErrorMessage {...funnelErrorProps}>{feldFehler.telefon}</FormErrorMessage>
+                      ) : (
+                        <Text fontSize="12px" color="var(--cc-text-3)" mt={1.5}>
+                          {bewerbung.telefon.hinweis}
+                        </Text>
+                      )}
+                    </FormControl>
+                  ) : null}
+
+                  {eingeloggt ? <FunnelFinePrint>{bewerbung.endgueltig}</FunnelFinePrint> : null}
+                  {serverFehler ? <FunnelAlert>{serverFehler}</FunnelAlert> : null}
+
+                  <Button
+                    type="submit"
+                    variant="smaragd"
+                    w="full"
+                    minH="52px"
+                    fontSize="16px"
+                    isLoading={laeuft}
+                    loadingText={bewerbung.laeuft}
+                    rightIcon={<ArrowRight size={18} strokeWidth={2} />}
+                  >
+                    {eingeloggt ? bewerbung.knopfEingeloggt : bewerbung.weiter}
+                  </Button>
+                </Stack>
+              </Box>
             ) : (
               <Box as="form" onSubmit={absenden} noValidate>
                 <Stack spacing={5}>
                   <Stack spacing={2}>
                     <FunnelHeadline as="h2" scale="sm">
-                      {registrierung.headline}
+                      {bewerbung.kontoHeadline}
                     </FunnelHeadline>
-                    <FunnelLead fontSize="14px">{registrierung.text}</FunnelLead>
+                    <FunnelLead fontSize="14px">{bewerbung.kontoText}</FunnelLead>
                   </Stack>
 
                   {(
@@ -224,8 +435,12 @@ export function TrainingRegistrierungProvider({ children }: { children: ReactNod
                         name={feld.key}
                         autoComplete={feld.autoComplete}
                         placeholder={feld.placeholder}
-                        value={felder[feld.key]}
-                        onChange={(e) => setze(feld.key, e.target.value)}
+                        value={konto[feld.key]}
+                        onChange={(e) => {
+                          const wert = e.target.value;
+                          setKonto((k) => ({ ...k, [feld.key]: wert }));
+                          fehlerWeg(feld.key);
+                        }}
                         h="52px"
                         fontSize="16px"
                       />
@@ -235,20 +450,24 @@ export function TrainingRegistrierungProvider({ children }: { children: ReactNod
                     </FormControl>
                   ))}
 
+                  <FunnelFinePrint>{bewerbung.endgueltig}</FunnelFinePrint>
                   {siteKey ? <Box ref={widgetBox} /> : null}
                   {serverFehler ? <FunnelAlert>{serverFehler}</FunnelAlert> : null}
 
                   <Button
                     type="submit"
-                    variant="gold"
+                    variant="smaragd"
                     w="full"
                     minH="52px"
                     fontSize="16px"
                     isLoading={laeuft}
-                    loadingText={registrierung.laeuft}
+                    loadingText={bewerbung.laeuft}
                     rightIcon={<ArrowRight size={18} strokeWidth={2} />}
                   >
-                    {registrierung.knopf}
+                    {bewerbung.knopf}
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" alignSelf="center" onClick={() => setPhase("fragen")}>
+                    {bewerbung.zurueck}
                   </Button>
                   <FunnelFinePrint textAlign="center">
                     {registrierung.einwilligung}{" "}
@@ -258,7 +477,7 @@ export function TrainingRegistrierungProvider({ children }: { children: ReactNod
                   </FunnelFinePrint>
                   <Text fontSize="13px" color="var(--cc-text-3)" textAlign="center">
                     Schon registriert?{" "}
-                    <Box as="a" href="/login" color="var(--cc-gold-light)">
+                    <Box as="a" href="/login" color="var(--cc-smaragd-hell)">
                       Anmelden
                     </Box>
                   </Text>
@@ -272,13 +491,37 @@ export function TrainingRegistrierungProvider({ children }: { children: ReactNod
   );
 }
 
-/** Hauptaktion der Landing: öffnet die Registrierung. */
+/** „Schritt 1 von 2" mit zwei Segmenten in Smaragd — Fragen, dann Konto. */
+function SchrittLeiste({ schritt }: { schritt: 1 | 2 }) {
+  return (
+    <HStack spacing={3} mt={3} align="center">
+      <HStack spacing={1.5} flex="1" aria-hidden>
+        {[1, 2].map((n) => (
+          <Box
+            key={n}
+            flex="1"
+            h="3px"
+            borderRadius="full"
+            bg={n <= schritt ? "var(--cc-smaragd-grad)" : "rgba(255, 255, 255, 0.08)"}
+            boxShadow={n <= schritt ? "0 0 10px rgba(46, 170, 120, 0.45)" : "none"}
+            transition="background 240ms var(--cc-ease)"
+          />
+        ))}
+      </HStack>
+      <Text className="cc-num" fontSize="12px" color="var(--cc-text-3)" flexShrink={0}>
+        Schritt {schritt} von 2
+      </Text>
+    </HStack>
+  );
+}
+
+/** Hauptaktion der Landing: öffnet die Bewerbung. */
 export function TrainingStartKnopf({ children, ...props }: ButtonProps) {
   const r = useRegistrierung();
   return (
     <Button
       type="button"
-      variant="gold"
+      variant="smaragd"
       w={{ base: "full", sm: "auto" }}
       h="auto"
       minH={{ base: "52px", md: "56px" }}

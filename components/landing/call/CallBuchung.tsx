@@ -30,7 +30,7 @@ import {
   type ReactNode,
 } from "react";
 import { buchung, ctaLabel } from "@/config/call-funnel";
-import { DISCORD_FUNNEL_QUESTIONS } from "@/config/discord-funnel-questions";
+import { DISCORD_FUNNEL_QUESTIONS, antwortGueltig } from "@/config/discord-funnel-questions";
 import { CalendlyZweiKlick } from "@/components/marketing/CalendlyZweiKlick";
 import { EMAIL_RE, RadioStep, type ContactValue } from "@/components/marketing/DiscordQuestionsModal";
 import {
@@ -51,6 +51,7 @@ import {
   funnelOverlayProps,
   noMotion,
 } from "@/components/marketing/funnel-ui";
+import { weiterNachBuchung } from "@/lib/training/nach-buchung-client";
 import { CALL_LEAD_SOURCE, readCallTracking } from "./call-ui";
 
 /**
@@ -149,7 +150,7 @@ function baueCalendlyUrl(token: string | null, kontakt: ContactValue): string {
   const basis =
     process.env.NEXT_PUBLIC_CALL_CALENDLY_URL?.trim() ||
     process.env.NEXT_PUBLIC_DISCORD_CALENDLY_URL?.trim() ||
-    "https://calendly.com/contact-capitalcircletrading/capital-circle";
+    "https://calendly.com/contact-capitalcircletrading/capital-circle-analysegesprach";
   try {
     const url = new URL(basis);
     url.searchParams.set("utm_source", "capital-circle");
@@ -195,6 +196,40 @@ export function CallBuchungProvider({ children, vorschau = false }: { children: 
   useEffect(() => {
     if (ALTE_SPRUNGMARKEN.includes(window.location.hash)) setOffen(true);
   }, []);
+
+  /*
+    Angemeldete Besucher: Name und E-Mail aus dem Konto vorausfüllen (Wunsch
+    Simon, 06.11.2026). Erst beim ersten Öffnen und nur im Browser — die Seite
+    bleibt statisch, und wer nie klickt, lädt den Supabase-Client gar nicht.
+    Gefüllt werden nur leere Felder; was schon getippt ist, bleibt. Die
+    Telefonnummer steht nicht im Konto und bleibt ein Eingabefeld.
+  */
+  const kontoGeladen = useRef(false);
+  useEffect(() => {
+    if (!offen || vorschau || kontoGeladen.current) return;
+    kontoGeladen.current = true;
+    // Bewusst ohne Abbruch beim Schließen: Wer das Modal sofort wieder zumacht,
+    // findet die Felder beim nächsten Öffnen trotzdem gefüllt.
+    (async () => {
+      try {
+        const { createClient } = await import("@/lib/supabase/client");
+        const supabase = createClient();
+        const { data } = await supabase.auth.getUser();
+        const user = data.user;
+        if (!user) return;
+        const { data: profil } = await supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
+        const name = (profil?.full_name ?? (user.user_metadata?.full_name as string | undefined) ?? "").trim();
+        const email = (user.email ?? "").trim();
+        setKontaktState((k) => ({
+          ...k,
+          name: k.name.trim() ? k.name : name,
+          email: k.email.trim() ? k.email : email,
+        }));
+      } catch {
+        // Ohne Konto oder bei Netzfehler bleibt das Formular einfach leer.
+      }
+    })();
+  }, [offen, vorschau]);
 
   // Ein Feld verliert seinen Fehler, sobald darin getippt wird — die übrigen
   // bleiben stehen, bis erneut abgeschickt wird.
@@ -290,7 +325,7 @@ export function CallBuchungProvider({ children, vorschau = false }: { children: 
     if (phase !== "fragen") return;
 
     const frage = FRAGEN[frageIndex];
-    if (!frage || !frage.options.includes(antworten[frage.id] ?? "")) {
+    if (!frage || !antwortGueltig(frage, antworten[frage.id])) {
       setFehler(t.fehlerAuswahl);
       return;
     }
@@ -352,11 +387,15 @@ export function CallBuchungProvider({ children, vorschau = false }: { children: 
       // Nur Calendly selbst darf die Buchung melden, nicht irgendein anderer Frame.
       if (!/^https:\/\/([a-z0-9-]+\.)?calendly\.com$/.test(e.origin)) return;
       if (typeof e.data !== "object" || e.data === null) return;
-      if ((e.data as { event?: unknown }).event === "calendly.event_scheduled") setPhase("gebucht");
+      if ((e.data as { event?: unknown }).event === "calendly.event_scheduled") {
+        setPhase("gebucht");
+        // Angemeldet → ins Free-Dashboard mit Termin-Karte (17.11.2026); ohne Konto bleibt die Bestätigung stehen.
+        if (!vorschau) void weiterNachBuchung();
+      }
     };
     window.addEventListener("message", meldung);
     return () => window.removeEventListener("message", meldung);
-  }, [phase]);
+  }, [phase, vorschau]);
 
   const calendlyUrl = useMemo(() => baueCalendlyUrl(leadToken, kontakt), [leadToken, kontakt]);
 
@@ -417,13 +456,14 @@ export function CallBuchungProvider({ children, vorschau = false }: { children: 
  * Hauptaktion der Seite — öffnet das Buchungs-Modal. Nach der Buchung sagt der
  * Knopf das auch und öffnet die Bestätigung, statt erneut „sichern" anzubieten.
  */
-export function CallBuchungKnopf(props: ButtonProps) {
+export function CallBuchungKnopf({ label, ...props }: ButtonProps & { label?: string }) {
   const b = useCallBuchung();
   const gebucht = b.phase === "gebucht";
   return (
     <Button
       type="button"
-      variant="gold"
+      // Alle CTAs auf `/call` in Smaragd (Feedback 14.11.2026).
+      variant="smaragd"
       w={{ base: "full", sm: "auto" }}
       h="auto"
       minH={{ base: "52px", md: "56px" }}
@@ -436,7 +476,7 @@ export function CallBuchungKnopf(props: ButtonProps) {
       onClick={b.oeffne}
       {...props}
     >
-      {gebucht ? buchung.karte.gebuchtKnopf : ctaLabel}
+      {gebucht ? buchung.karte.gebuchtKnopf : (label ?? ctaLabel)}
     </Button>
   );
 }
@@ -558,7 +598,7 @@ function Formular() {
         {/* Nie gesperrt: Ein grauer Knopf sagt nicht, was fehlt — der Klick zeigt es am Feld. */}
         <Button
           type="submit"
-          variant="gold"
+          variant="smaragd"
           w="full"
           minH="52px"
           fontSize="16px"

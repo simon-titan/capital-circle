@@ -14,7 +14,7 @@ import {
 } from "@chakra-ui/react";
 import { Check, Lock, Play } from "lucide-react";
 import { clampLines } from "@/components/platform/dashboard/primitives";
-import { isPlaylistVideoDone, type PlaylistVideoRow } from "@/lib/module-video";
+import { isPlaylistIndexUnlocked, isPlaylistVideoDone, type PlaylistVideoRow } from "@/lib/module-video";
 
 /** „11 Min.“ wie in der Kursleiste der Vorlage; unter einer Minute „1 Min.“. */
 function formatMinutes(sec: number | null | undefined) {
@@ -22,21 +22,8 @@ function formatMinutes(sec: number | null | undefined) {
   return `${Math.max(1, Math.round(sec / 60))} Min.`;
 }
 
-/**
- * Index freigeschaltet: erstes Video, vorheriges vollständig gesehen — oder das
- * Video selbst schon angeschaut. Sonst sperrt eine Umsortierung im Admin bereits
- * gesehene Videos wieder (wie bei den Modulen, siehe `lib/progress.ts`).
- */
-export function isPlaylistIndexUnlocked(
-  playlist: PlaylistVideoRow[],
-  progressMap: Record<string, number>,
-  idx: number,
-): boolean {
-  if (idx < 0 || idx >= playlist.length) return false;
-  if (idx === 0) return true;
-  if ((progressMap[playlist[idx]!.id] ?? 0) > 0) return true;
-  return isPlaylistVideoDone(playlist[idx - 1]!, progressMap);
-}
+/** Freischaltregel liegt in `lib/module-video.ts` (auch serverseitig nutzbar). */
+export { isPlaylistIndexUnlocked };
 
 type VideoPlaylistProps = {
   playlist: PlaylistVideoRow[];
@@ -169,12 +156,13 @@ function LessonThumb({
             w="24px"
             h="24px"
             borderRadius="full"
-            bg="var(--cc-gold-grad)"
-            color="var(--cc-on-gold)"
+            // Play-Knopf immer weiß (Feedback 14.11.2026), wie im Player.
+            bg="linear-gradient(135deg, #ffffff 0%, #e6e8eb 55%, #c4c8ce 100%)"
+            color="#15181c"
             display="flex"
             alignItems="center"
             justifyContent="center"
-            boxShadow="0 0 14px rgba(212, 176, 128, 0.6)"
+            boxShadow="0 0 12px rgba(255, 255, 255, 0.35)"
           >
             <Play size={11} fill="currentColor" strokeWidth={0} style={{ marginLeft: 1 }} />
           </Box>

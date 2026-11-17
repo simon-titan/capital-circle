@@ -3,7 +3,7 @@
 import { Box, Button, Center, Spinner, Stack, Text } from "@chakra-ui/react";
 import { AnimatePresence, motion, useReducedMotion, type Variants } from "framer-motion";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
-import { FRAGEN, FRAGEN_FELDER } from "@/config/onboarding";
+import { BASIS_FELDER, frageZu, type FrageFeld, type IcpArt } from "@/config/onboarding";
 import { SkyArchBackground } from "@/components/layout/SkyArchBackground";
 import { FrageStep, StartklarStep, WillkommenStep } from "@/components/onboarding/IcpSchritte";
 import { LoginStep } from "@/components/onboarding/LoginStep";
@@ -51,6 +51,9 @@ type Status = {
   gestartet?: boolean;
   antworten?: Record<string, string | null>;
   sonstiges?: string | null;
+  /** Migration 113: welche Fragen dieses Konto beantwortet (Free 1–7, Käufer 1–10, sonst die fünf aus 107). */
+  art?: IcpArt | null;
+  felder?: FrageFeld[];
 };
 
 type OnboardingFlowProps = {
@@ -63,17 +66,29 @@ async function ladeStatus(): Promise<Status> {
   return (await res.json()) as Status;
 }
 
-function ersteOffeneFrage(antworten: Record<string, string | null>): number {
-  const i = FRAGEN_FELDER.findIndex((f) => !antworten[f]);
-  return i === -1 ? FRAGEN_FELDER.length : i;
+function ersteOffeneFrage(felder: FrageFeld[], antworten: Record<string, string | null>): number {
+  const i = felder.findIndex((f) => !antworten[f]);
+  return i === -1 ? felder.length : i;
 }
 
 /**
  * Voller Seitenwechsel statt `router.replace`: Die Weiche hängt an `proxy.ts`,
  * und die greift nur bei einer echten Navigation.
  */
-function zumDashboard() {
-  window.location.assign("/dashboard");
+function zumDashboard(standard = "/dashboard") {
+  // Kam der Besuch über einen Link aus einer Mail (`/login?next=/kostenloses-training?video=3`),
+  // geht es nach der Anmeldung genau dorthin — nur interne Ziele.
+  const next = new URLSearchParams(window.location.search).get("next");
+  let ziel = standard;
+  if (next && next.startsWith("/")) {
+    try {
+      const url = new URL(next, window.location.origin);
+      if (url.origin === window.location.origin) ziel = `${url.pathname}${url.search}${url.hash}`;
+    } catch {
+      /* ungültig → Dashboard */
+    }
+  }
+  window.location.assign(ziel);
 }
 
 export function OnboardingFlow({ loginFooter }: OnboardingFlowProps = {}) {
@@ -83,11 +98,18 @@ export function OnboardingFlow({ loginFooter }: OnboardingFlowProps = {}) {
   const [antworten, setAntworten] = useState<Record<string, string | null>>({});
   const [sonstiges, setSonstiges] = useState<string | null>(null);
   const [frageIndex, setFrageIndex] = useState(0);
+  const [felder, setFelder] = useState<FrageFeld[]>(BASIS_FELDER);
   const [speichert, setSpeichert] = useState(false);
   const [fehler, setFehler] = useState<string | null>(null);
 
   /** Nach den Fragen: Vereinbarung, falls offen, dann Startklar (neu) oder Dashboard (Bestand). */
   const nachDenFragen = useCallback((s: Status) => {
+    // Free-Onboarding: „Angaben speichern & Ausbildung starten" — direkt zum Kurs.
+    // Mit `next` (z. B. direkt nach einer Terminbuchung → Dashboard mit Termin-Karte) dorthin.
+    if (s.art === "free") {
+      zumDashboard("/kostenloses-training");
+      return;
+    }
     if (s.vereinbarungOffen) {
       setPhase("vereinbarung");
       return;
@@ -138,24 +160,28 @@ export function OnboardingFlow({ loginFooter }: OnboardingFlowProps = {}) {
         return;
       }
       const a = s.antworten ?? {};
+      const liste = s.felder?.length ? s.felder : BASIS_FELDER;
+      setFelder(liste);
       setAntworten(a);
       setSonstiges(s.sonstiges ?? null);
-      const offen = ersteOffeneFrage(a);
-      if (offen >= FRAGEN.length) {
+      const offen = ersteOffeneFrage(liste, a);
+      if (offen >= liste.length) {
         // Alles beantwortet, aber der Abschluss wurde nicht gespeichert
         // (z. B. Verbindung weg nach der letzten Antwort): letzte nochmal senden.
-        const letzte = FRAGEN_FELDER[FRAGEN_FELDER.length - 1]!;
+        const letzte = liste[liste.length - 1]!;
         const ergebnis = await sendeAntwort(letzte, a[letzte]!, s.sonstiges ?? null);
         if (ergebnis.fertig) {
           nachDenFragen(s);
           return;
         }
-        setFrageIndex(FRAGEN.length - 1);
+        setFrageIndex(liste.length - 1);
         setPhase("frage");
         return;
       }
       setFrageIndex(offen);
-      setPhase(!s.gestartet && offen === 0 ? "willkommen" : "frage");
+      // Käufer, der den Käuferteil (8–10) noch nicht begonnen hat (z. B. Free → Käufer), bekommt die Einleitung.
+      const kaeuferNeu = s.art === "kaeufer" && !["kauf_grund", "kauf_bedenken", "fokus_3m"].some((f) => a[f]);
+      setPhase((!s.gestartet && offen === 0) || kaeuferNeu ? "willkommen" : "frage");
     },
     [nachDenFragen, sendeAntwort],
   );
@@ -192,7 +218,7 @@ export function OnboardingFlow({ loginFooter }: OnboardingFlowProps = {}) {
 
   const beantworte = async (wert: string, freitext?: string | null) => {
     if (!status) return;
-    const feld = FRAGEN_FELDER[frageIndex]!;
+    const feld = felder[frageIndex]!;
     setFehler(null);
     setSpeichert(true);
     const ergebnis = await sendeAntwort(feld, wert, freitext);
@@ -206,8 +232,8 @@ export function OnboardingFlow({ loginFooter }: OnboardingFlowProps = {}) {
       return;
     }
     // Zur nächsten offenen Frage (wer zurückgegangen ist, springt wieder nach vorn).
-    const naechste = FRAGEN_FELDER.findIndex((f, i) => i > frageIndex && !(f === feld ? wert : antworten[f]));
-    setFrageIndex(naechste === -1 ? Math.min(frageIndex + 1, FRAGEN.length - 1) : naechste);
+    const naechste = felder.findIndex((f, i) => i > frageIndex && !(f === feld ? wert : antworten[f]));
+    setFrageIndex(naechste === -1 ? Math.min(frageIndex + 1, felder.length - 1) : naechste);
   };
 
   const phasenSchluessel = phase === "frage" ? `frage-${frageIndex}` : phase;
@@ -237,12 +263,21 @@ export function OnboardingFlow({ loginFooter }: OnboardingFlowProps = {}) {
             style={{ minHeight: "100vh" }}
           >
             {phase === "login" && <LoginStep onAuthenticated={pruefe} footer={loginFooter} />}
-            {phase === "willkommen" && <WillkommenStep bestand={!status?.neu} onWeiter={starte} />}
+            {phase === "willkommen" && (
+              <WillkommenStep
+                bestand={!status?.neu}
+                art={status?.art ?? null}
+                anzahl={felder.filter((f) => !antworten[f]).length}
+                onWeiter={starte}
+              />
+            )}
             {phase === "frage" && (
               <FrageStep
                 key={frageIndex}
+                frage={frageZu(felder[frageIndex]!)}
                 index={frageIndex}
-                gewaehlt={antworten[FRAGEN_FELDER[frageIndex]!] ?? null}
+                gesamt={felder.length}
+                gewaehlt={antworten[felder[frageIndex]!] ?? null}
                 sonstiges={sonstiges}
                 speichert={speichert}
                 fehler={fehler}

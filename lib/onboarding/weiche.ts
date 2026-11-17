@@ -1,5 +1,5 @@
 import { isFreeMember } from "@/lib/membership";
-import { ONBOARDING_START } from "@/config/onboarding";
+import { ONBOARDING_START, type IcpArt } from "@/config/onboarding";
 
 /**
  * Die Onboarding-Weiche als reine Funktion — dieselbe Regel in `proxy.ts`
@@ -14,8 +14,24 @@ export type WeichenProfil = {
   membership_tier?: string | null;
   usage_agreement_accepted?: boolean | null;
   onboarding_fragen_am?: string | null;
+  /** Migration 113: ICP-Fragen 1–7 (Free) bzw. 1–10 (Käufer) beantwortet. */
+  icp_free_am?: string | null;
+  icp_kaeufer_am?: string | null;
   created_at?: string | null;
 } | null;
+
+/**
+ * Wer welche ICP-Fragen beantwortet (Emre, 08.11.2026):
+ * - `kaeufer`: Stufe `mentoring` (Ausbildung, Main, Premium) — Fragen 1–10.
+ * - `mitglied`: andere Zahlende (Abo, Lifetime, 1:1) — die fünf aus 107.
+ * - `free`: Free-Konto mit angenommener Free-Bewerbung — Fragen 1–7.
+ * `null`: keine Fragen (Admin, Free ohne angenommene Bewerbung).
+ */
+export function icpArt(profil: WeichenProfil, trainingAngenommen = false): IcpArt | null {
+  if (!profil || profil.is_admin) return null;
+  if (profil.is_paid) return profil.membership_tier === "mentoring" ? "kaeufer" : "mitglied";
+  return trainingAngenommen ? "free" : null;
+}
 
 /**
  * Sind die fünf Fragen noch offen? Nur für zahlende Konten (auch die aus dem
@@ -24,10 +40,21 @@ export type WeichenProfil = {
  * `spalteDa = false` heisst: Migration 107 ist noch nicht eingespielt. Dann
  * gilt die neue Bedingung als erfüllt — niemand wird ausgesperrt.
  */
-export function fragenOffen(profil: WeichenProfil, spalteDa: boolean): boolean {
+export function fragenOffen(
+  profil: WeichenProfil,
+  spalteDa: boolean,
+  opt: { icpSpalteDa?: boolean; trainingAngenommen?: boolean } = {},
+): boolean {
   if (!spalteDa || !profil) return false;
-  if (profil.is_admin) return false;
-  if (!profil.is_paid) return false;
+  const art = icpArt(profil, opt.trainingAngenommen ?? false);
+  if (!art) return false;
+  /*
+    Ohne Migration 113 gibt es die ICP-Stempel nicht: Käufer bleiben dann bei
+    den fünf Fragen aus 107, Free-Konten bekommen keine — niemand wird ausgesperrt.
+  */
+  if (!opt.icpSpalteDa) return art === "free" ? false : !profil.onboarding_fragen_am;
+  if (art === "kaeufer") return !profil.icp_kaeufer_am;
+  if (art === "free") return !profil.icp_free_am;
   return !profil.onboarding_fragen_am;
 }
 
@@ -37,8 +64,12 @@ export function vereinbarungOffen(profil: WeichenProfil): boolean {
   return !isFreeMember(profil) && !profil.usage_agreement_accepted;
 }
 
-export function onboardingErledigt(profil: WeichenProfil, spalteDa: boolean): boolean {
-  return !vereinbarungOffen(profil) && !fragenOffen(profil, spalteDa);
+export function onboardingErledigt(
+  profil: WeichenProfil,
+  spalteDa: boolean,
+  opt: { icpSpalteDa?: boolean; trainingAngenommen?: boolean } = {},
+): boolean {
+  return !vereinbarungOffen(profil) && !fragenOffen(profil, spalteDa, opt);
 }
 
 /** Konto nach dem Onboarding-Start angelegt → voller Ablauf und Checkliste. */

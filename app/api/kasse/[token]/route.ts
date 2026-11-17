@@ -40,6 +40,8 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     closer: link.closer,
     kassenlinkId: link.id,
     token: link.token,
+    anrechnungCents: link.anrechnung_cents,
+    upgradeVonKaufId: link.upgrade_von_kauf_id,
   });
 
   if (!start.ok) return zurueck(start.grund);

@@ -149,3 +149,33 @@ export function verifyContactUnsubscribeToken(token: string): string | null {
     return null;
   }
 }
+
+/**
+ * Persönlicher Aktivierungslink der Retargeting-Mail RT01
+ * (`/training/aktivieren?t=…`, `lib/training/reaktivierung.ts`). Trägt den
+ * Ausstellungszeitpunkt mit, damit die Anmeldung per Link verfallen kann —
+ * die Freischaltung selbst bleibt mit dem Token immer möglich.
+ */
+const REAKTIVIERUNG_PURPOSE = "training_reaktivierung";
+
+function signReaktivierung(userId: string, ts: number): string {
+  return createHmac("sha256", getSecret()).update(`${userId}:${ts}:${REAKTIVIERUNG_PURPOSE}`).digest("base64url");
+}
+
+export function generateReaktivierungToken(userId: string, ausgestellt = Date.now()): string {
+  const ts = Math.floor(ausgestellt / 1000);
+  return Buffer.from(JSON.stringify({ u: userId, ts, sig: signReaktivierung(userId, ts) })).toString("base64url");
+}
+
+export function verifyReaktivierungToken(token: string): { userId: string; ausgestellt: Date } | null {
+  try {
+    const d = JSON.parse(Buffer.from(token, "base64url").toString("utf8")) as { u?: unknown; ts?: unknown; sig?: unknown };
+    if (typeof d.u !== "string" || typeof d.ts !== "number" || typeof d.sig !== "string") return null;
+    const a = Buffer.from(d.sig);
+    const b = Buffer.from(signReaktivierung(d.u, d.ts));
+    if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+    return { userId: d.u, ausgestellt: new Date(d.ts * 1000) };
+  } catch {
+    return null;
+  }
+}

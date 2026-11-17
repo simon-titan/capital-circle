@@ -61,6 +61,8 @@ import {
   KASSENLINK_GUELTIG_TAGE,
   PRODUKTE,
   erlaubteRaten,
+  ersteRateCents,
+  ratenText,
   euro,
   rateCents,
   sollCents,
@@ -123,7 +125,9 @@ function closerName(id: string | null | undefined): string {
 function zahlweiseKurz(produkt: KassenProdukt, raten: number, betragCents: number): string {
   if (produkt === "live") return "Monatlich";
   if (raten <= 1) return "Einmalzahlung";
-  return `${raten} × ${euro(rateCents(betragCents, raten))}`;
+  const erste = ersteRateCents(betragCents, raten);
+  const rate = rateCents(betragCents, raten);
+  return erste === rate ? `${raten} × ${euro(rate)}` : `1 × ${euro(erste)} + ${raten - 1} × ${euro(rate)}`;
 }
 
 /** Ausführlich, wie in der Vorschau und der Nachricht an den Kunden. */
@@ -741,7 +745,7 @@ function AnlageFormular({
                     <option key={n} value={n} style={adminOptionStyle}>
                       {n === 1
                         ? `Einmalzahlung · ${euro(def.preisCents)}`
-                        : `${n} Monatsraten à ${euro(rateCents(def.preisCents, n))}`}
+                        : ratenText(def.preisCents, n)}
                     </option>
                   ))}
                 </Select>
@@ -971,7 +975,7 @@ function KaufReihe({ kauf: k }: { kauf: KaufZeile }) {
   let zahlweise: string;
   let bezahlt: string;
   if (k.zahlweise === "raten") {
-    zahlweise = `${k.ratenGesamt ?? "?"} × ${k.rateCents ? euro(k.rateCents) : "?"}`;
+    zahlweise = k.ratenGesamt && k.sollCents ? ratenText(k.sollCents, k.ratenGesamt) : `${k.ratenGesamt ?? "?"} × ${k.rateCents ? euro(k.rateCents) : "?"}`;
     bezahlt = `${k.ratenBezahlt} / ${k.ratenGesamt ?? "?"}`;
   } else if (k.zahlweise === "abo") {
     zahlweise = "Monatsabo";

@@ -54,7 +54,7 @@ export function DiscordDankeClient() {
     // Discord-Funnel nutzt einen eigenen Calendly-Event (getrennt von /bewerbung).
     const base =
       process.env.NEXT_PUBLIC_DISCORD_CALENDLY_URL?.trim() ||
-      "https://calendly.com/contact-capitalcircletrading/capital-circle";
+      "https://calendly.com/contact-capitalcircletrading/capital-circle-analysegesprach";
     const url = new URL(base);
     url.searchParams.set("utm_source", "capital-circle");
     url.searchParams.set("utm_medium", "discord");

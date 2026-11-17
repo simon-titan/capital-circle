@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
-import { TRAINING_PFAD, TRAINING_VIDEOS_PFAD } from "@/config/training";
+import { TRAINING_PFAD, TRAINING_STATUS_PFAD, TRAINING_VIDEOS_PFAD } from "@/config/training";
 import { getAppUrl } from "@/lib/site-url";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { nachAdressbestaetigung } from "@/lib/training/bewerbung";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,7 +38,7 @@ export async function GET(request: Request) {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
+  const { data: otp, error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
 
   if (error) {
     // Häufigster Fall: Link abgelaufen oder bereits benutzt (Einmal-Token).
@@ -48,10 +49,23 @@ export async function GET(request: Request) {
       Login hülfe nicht. Zurück auf `/training` — eine erneute Registrierung mit
       derselben Adresse schickt einen frischen Link (`/api/training/registrieren`).
     */
-    if (type !== "recovery" && next === TRAINING_VIDEOS_PFAD) {
+    if (type !== "recovery" && (next === TRAINING_VIDEOS_PFAD || next === TRAINING_STATUS_PFAD)) {
       return NextResponse.redirect(new URL(`${TRAINING_PFAD}?fehler=link_abgelaufen`, appUrl));
     }
     return NextResponse.redirect(new URL("/login?fehler=link_abgelaufen", appUrl));
+  }
+
+  /*
+    Bestätigungslink aus der Free-Kurs-Bewerbung: Erst jetzt ist die Adresse
+    bestätigt — die Bewerbung kommt bei Emre an (A01, Team-Mail). Idempotent;
+    ein Fehler hier darf die Anmeldung nicht kippen.
+  */
+  if (otp?.user && next === TRAINING_STATUS_PFAD) {
+    try {
+      await nachAdressbestaetigung(createServiceClient(), otp.user.id);
+    } catch (err) {
+      console.error("[auth/confirm] Bewerbung nach Bestätigung:", err);
+    }
   }
 
   // Nur interne Ziele zulassen — sonst wäre die Route eine offene Weiterleitung,

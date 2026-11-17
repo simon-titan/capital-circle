@@ -1,37 +1,34 @@
 "use client";
 
-import { Box, Button, Flex, HStack, IconButton, Stack, Text } from "@chakra-ui/react";
-import { ArrowUpRight, Pause, Play, ShieldCheck } from "lucide-react";
-import { Fragment, useEffect, useMemo, useState } from "react";
-import { Logo } from "@/components/brand/Logo";
+import { Box, Flex, Heading, HStack, Stack, Text } from "@chakra-ui/react";
+import { ShieldCheck } from "lucide-react";
+import { useEffect, useMemo } from "react";
+import { Sektion } from "@/components/landing/membership/membership-ui";
 import { GlassVideoPlayer } from "@/components/ui/GlassVideoPlayer";
-import { FunnelEyebrow as FunnelPill } from "@/components/marketing/funnel-ui";
-import { NachweisGalerie } from "@/components/landing/membership/NachweisGalerie";
-import { abschluss, buchung, ergebnisseAuswahl, ergebnisseKopf, fusszeile, hero } from "@/config/call-funnel";
-import { auszahlungenCommunity, auszahlungenEmreLanding } from "@/config/landing-membership";
+import { abschluss, callVideo, fusszeile, hero } from "@/config/call-funnel";
 import { garantie } from "@/config/mentoring";
 import { createVideoTracker } from "@/lib/discord-funnel/video-tracking";
-import {
-  FunnelEyebrow,
-  FunnelFooter,
-  FunnelGround,
-  FunnelHeroGlow,
-  FunnelPageStyles,
-  FunnelSplash,
-  FunnelVideoPlaceholder,
-} from "../DiscordFunnelChrome";
-import { Reveal } from "../landing-ui";
+import { FunnelFooter, FunnelVideoPlaceholder } from "../DiscordFunnelChrome";
+import { FunnelKopfleiste, MobilAktionsleiste, VideoSchein } from "../funnel-rahmen";
+import { GoldGlowDivider } from "../GoldGlowDivider";
+import { heroRise, Reveal } from "../landing-ui";
 import { CallBuchungKnopf, CallBuchungProvider, useCallBuchung } from "./CallBuchung";
-import { CallCaseStudies } from "./CallCaseStudies";
-import { CallSektion, CallSektionsKopf, readCallTracking } from "./call-ui";
+import { akzentGold, readCallTracking } from "./call-ui";
+import { EmreBrief } from "./EmreBrief";
+import { CommunityEinblicke } from "../training/CommunityEinblicke";
 
 /**
  * `/call` — Call-Funnel nach Emres Board vom 17.10.2026.
  *
- * Struktur: Laufzeile · Hero mit VSL (Schritt 1) · Strategie-Gespräch
- * (Schritt 2) · Case Studies · Kundenergebnisse · Abschluss · Footer. Jede
- * Hauptaktion öffnet dasselbe Buchungs-Modal mit Fragebogen und Calendly
- * (`CallBuchung.tsx`). Alle Texte in `config/call-funnel.ts`.
+ * Im Look der Verkaufsseite `/`. Aufbau seit Feedback 14.11.2026: Hero
+ * (Headline, Unterzeile, VSL, Knopf) · Brief „Ein persönliches Wort von Emre."
+ * (`EmreBrief`) · Ergebnisse aus der Community (dieselbe Section wie auf
+ * `/training`, `CommunityEinblicke`) · Abschluss-CTA. Case Studies,
+ * Auszahlungen (`ErgebnisseSection`) und Bewertungen sind raus. Kopfleiste nur
+ * mit mittiger Wortmarke. Alle CTAs in Smaragd; jede Hauptaktion — auch die
+ * mobile Aktionsleiste — öffnet dasselbe Buchungs-Modal mit Fragebogen und
+ * Calendly (`CallBuchung.tsx`).
+ * Texte in `config/call-funnel.ts`.
  *
  * Leads landen im selben System wie `/termin` (`discord_leads`, ohne
  * Discord-Invite), markiert mit `source_origin = "call_funnel"` und — ohne
@@ -39,22 +36,34 @@ import { CallSektion, CallSektionsKopf, readCallTracking } from "./call-ui";
  *
  * `vorschau` (`/vorschau/mentoring/call`): dieselbe Seite ohne Besuchs- und
  * Video-Tracking, ohne Lead und ohne Calendly — siehe `CallBuchung.tsx`.
+ *
+ * Den Seitengrund (`FunnelHimmel`) legt die Seite darum.
  */
-export function CallFunnelClient({ vorschau = false }: { vorschau?: boolean }) {
-  const [laedt, setLaedt] = useState(true);
-  /*
-    Ohne konfiguriertes VSL entfällt Schritt 1 ganz: „Schritt 1 von 2: Video
-    ansehen" über einem Platzhalter hielte bezahlten Traffic an einer Stelle
-    fest, an der es nichts zu tun gibt. Die Vorschau zeigt den Platzhalter
-    trotzdem, damit sichtbar ist, wo das Video hinkommt.
-  */
-  const videoSrc = process.env.NEXT_PUBLIC_CALL_VIDEO_URL?.trim() || null;
-  const mitVideo = Boolean(videoSrc) || vorschau;
+/** Ohne Stream-Subdomain (lokal ohne .env) kein Video. */
+const STREAM_SUBDOMAIN = process.env.NEXT_PUBLIC_CLOUDFLARE_STREAM_CUSTOMER_SUBDOMAIN?.trim() || null;
 
-  useEffect(() => {
-    const timer = setTimeout(() => setLaedt(false), 300);
-    return () => clearTimeout(timer);
-  }, []);
+/**
+ * `video` kommt aus dem Admin (`ladeFunnelVideos` in `lib/funnel-videos.ts`,
+ * von der Seite geladen); ohne Angabe gilt `callVideo` aus der Config.
+ * Die früheren Overrides `NEXT_PUBLIC_CALL_VIDEO_URL` / `_POSTER` gibt es seit
+ * 14.11.2026 nicht mehr — sie hielten lokal ein altes Video fest.
+ */
+export function CallFunnelClient({
+  vorschau = false,
+  video = callVideo,
+}: {
+  vorschau?: boolean;
+  video?: { uid: string; posterSekunde: number };
+}) {
+  /*
+    Ohne konfiguriertes VSL entfällt das Video ganz: Ein Platzhalter hielte
+    bezahlten Traffic an einer Stelle fest, an der es nichts zu tun gibt. Die
+    Vorschau zeigt ihn trotzdem, damit sichtbar ist, wo das Video hinkommt.
+  */
+  const basis = STREAM_SUBDOMAIN ? `https://${STREAM_SUBDOMAIN}.cloudflarestream.com/${video.uid}` : null;
+  const videoSrc = basis ? `${basis}/manifest/video.m3u8` : null;
+  const videoPoster = basis ? `${basis}/thumbnails/thumbnail.jpg?time=${video.posterSekunde}s&width=1280` : undefined;
+  const mitVideo = Boolean(videoSrc) || vorschau;
 
   // Visit-Tracking (einmal pro Mount) — reines Fire-and-forget wie auf `/termin`.
   useEffect(() => {
@@ -81,147 +90,79 @@ export function CallFunnelClient({ vorschau = false }: { vorschau?: boolean }) {
 
   return (
     <CallBuchungProvider vorschau={vorschau}>
-      <FunnelSplash visible={laedt} />
-      <FunnelPageStyles />
+        {/* Nur die Wortmarke, mittig — kein Knopf in der Kopfleiste (Feedback 14.11.2026). */}
+        <FunnelKopfleiste anmelden={false} aktion={null} mittig />
 
-      <FunnelGround>
-        <Laufzeile />
-        <Hero videoSrc={videoSrc} mitVideo={mitVideo} vorschau={vorschau} />
+        <Box as="main">
+          <Hero videoSrc={videoSrc} videoPoster={videoPoster} mitVideo={mitVideo} vorschau={vorschau} />
 
-        <CallSektion id="gespraech" labelledBy="gespraech-titel">
-          <Stack spacing={{ base: 8, md: 10 }}>
-            <CallSektionsKopf
-              id="gespraech-titel"
-              eyebrow={mitVideo ? buchung.schritt : undefined}
-              headline={buchung.headline}
-              text={buchung.text}
-            />
-            <GespraechsPunkte />
-            <Flex justify="center">
-              <CallBuchungKnopf />
-            </Flex>
-          </Stack>
-        </CallSektion>
-
-        <CallCaseStudies />
-
-        <Kundenergebnisse />
-
-        <CallSektion id="abschluss" labelledBy="abschluss-titel">
-          <Stack spacing={{ base: 8, md: 10 }}>
-            <CallSektionsKopf
-              id="abschluss-titel"
-              eyebrow={<FunnelPill>{abschluss.pill}</FunnelPill>}
-              headline={abschluss.headline}
-              text={abschluss.text}
-            />
-            <Flex justify="center">
-              <CallBuchungKnopf />
-            </Flex>
-          </Stack>
-        </CallSektion>
+          <Box pt={{ base: 16, md: 24 }}>
+            <GoldGlowDivider />
+          </Box>
+          <EmreBrief>
+            <CallBuchungKnopf />
+            <VertrauensZeile />
+          </EmreBrief>
+          <GoldGlowDivider />
+          <CommunityEinblicke />
+          <GoldGlowDivider />
+          <Abschluss />
+        </Box>
 
         <FunnelFooter>{fusszeile}</FunnelFooter>
-      </FunnelGround>
+
+        <MobilAktionsleiste hinweis={[...hero.vertrauen, hero.knapp]} ausblendenBei={["abschluss"]}>
+          {(tabIndex) => <CallBuchungKnopf w="full" minH="52px" fontSize="16px" tabIndex={tabIndex} />}
+        </MobilAktionsleiste>
     </CallBuchungProvider>
   );
 }
 
-/* ─────────────────────────── Laufzeile ─────────────────────────── */
-
 /**
- * Schmale Leiste ganz oben mit den Kernaussagen als Laufband.
- *
- * Zwei identische Hälften, `.cc-marquee` schiebt um −50 % — so schließt das
- * Band nahtlos. Die zweite Hälfte ist `aria-hidden`, Screenreader lesen jede
- * Aussage einmal. Bei reduzierter Bewegung steht das Band still (Liste in
- * `app/globals.css`), Hover pausiert es. Der Knopf am rechten Rand hält es
- * auch auf Touch-Geräten an (WCAG 2.2.2), dort gibt es kein Hover.
+ * „100 % kostenlos & unverbindlich" unter jeder Hauptaktion (`hero.vertrauen`),
+ * dahinter dezent „Limitierte Plätze" mit kleinem Gold-Punkt (`hero.knapp`) —
+ * seit 17.11.2026 an **jedem** CTA, auch in der mobilen Aktionsleiste.
  */
-function Laufzeile() {
-  const [angehalten, setAngehalten] = useState(false);
-  const haelfte = (versteckt: boolean) => (
-    <HStack as="ul" spacing={0} listStyleType="none" flexShrink={0} aria-hidden={versteckt || undefined}>
-      {hero.laufzeile.map((eintrag) => (
-        <HStack as="li" key={eintrag} spacing={0} flexShrink={0}>
-          <Box
-            as="span"
-            w="5px"
-            h="5px"
-            mx={{ base: 4, md: 5 }}
-            borderRadius="full"
-            bg="var(--cc-gold-light)"
-            boxShadow="0 0 8px rgba(232, 192, 148, 0.7)"
-            aria-hidden
-          />
-          <Text
-            as="span"
-            whiteSpace="nowrap"
-            fontSize="13px"
-            fontWeight={500}
-            letterSpacing="0.12em"
-            textTransform="uppercase"
-            color="var(--cc-text-soft)"
-          >
-            {eintrag}
+function VertrauensZeile() {
+  return (
+    <HStack justify="center" spacing={3} flexWrap="wrap" rowGap={1}>
+      {hero.vertrauen.map((teil, i) => (
+        <HStack key={teil} spacing={3}>
+          {i > 0 ? <Box aria-hidden w="1px" h="11px" bg="var(--cc-line-strong)" /> : null}
+          <Text fontSize="13px" color="var(--cc-text-2)">
+            {teil}
           </Text>
         </HStack>
       ))}
+      <HStack spacing={3}>
+        <Box aria-hidden w="1px" h="11px" bg="var(--cc-line-strong)" />
+        <HStack spacing={2}>
+          <Box aria-hidden w="6px" h="6px" borderRadius="full" bg="var(--cc-gold)" boxShadow="0 0 8px rgba(212, 176, 128, 0.55)" />
+          <Text fontSize="13px" color="var(--cc-text-2)">
+            {hero.knapp}
+          </Text>
+        </HStack>
+      </HStack>
     </HStack>
-  );
-
-  return (
-    <Box
-      as="aside"
-      aria-label="Auf einen Blick"
-      position="relative"
-      h="40px"
-      overflow="hidden"
-      display="flex"
-      alignItems="center"
-      bg="var(--cc-bg-raised)"
-      borderBottom="1px solid rgba(212, 176, 128, 0.18)"
-      backdropFilter="blur(16px)"
-      sx={{ WebkitBackdropFilter: "blur(16px)" }}
-    >
-      <Flex
-        className="cc-marquee"
-        w="max-content"
-        style={{ animationDuration: "48s", ...(angehalten ? { animationPlayState: "paused" } : {}) }}
-      >
-        {haelfte(false)}
-        {haelfte(true)}
-      </Flex>
-      {/* Steht über dem Band; der Verlauf links blendet die Schrift davor aus, statt sie hart abzuschneiden. */}
-      <Flex
-        position="absolute"
-        insetY={0}
-        right={0}
-        align="center"
-        pl={8}
-        pr={1}
-        bg="linear-gradient(to right, transparent, var(--cc-bg-raised) 40%)"
-      >
-        <IconButton
-          aria-label={angehalten ? hero.laufzeileFortsetzen : hero.laufzeileAnhalten}
-          aria-pressed={angehalten}
-          icon={angehalten ? <Play size={14} strokeWidth={2} /> : <Pause size={14} strokeWidth={2} />}
-          onClick={() => setAngehalten((a) => !a)}
-          variant="ghost"
-          size="sm"
-          minW="36px"
-          h="36px"
-          color="var(--cc-text-2)"
-          _hover={{ color: "var(--cc-text)", bg: "rgba(255, 255, 255, 0.06)" }}
-        />
-      </Flex>
-    </Box>
   );
 }
 
 /* ─────────────────────────── Hero ─────────────────────────── */
 
-function Hero({ videoSrc, mitVideo, vorschau }: { videoSrc: string | null; mitVideo: boolean; vorschau: boolean }) {
+/** Höhe aller Hero-Teile außer dem Video (inkl. Kopfleiste), siehe `Hero`. */
+const HERO_REST = 450;
+
+function Hero({
+  videoSrc,
+  videoPoster,
+  mitVideo,
+  vorschau,
+}: {
+  videoSrc: string | null;
+  videoPoster: string | undefined;
+  mitVideo: boolean;
+  vorschau: boolean;
+}) {
   const b = useCallBuchung();
 
   // Watches vor der Lead-Anlage zählen über die session_id und werden bei der
@@ -229,57 +170,60 @@ function Hero({ videoSrc, mitVideo, vorschau }: { videoSrc: string | null; mitVi
   // mit, damit auch spätere Fortschritte direkt am Lead landen.
   const tracker = useMemo(() => createVideoTracker({ token: b.leadToken, source: "call_funnel" }), [b.leadToken]);
 
-  const videoPoster = process.env.NEXT_PUBLIC_CALL_VIDEO_POSTER;
   // Untertitel als WebVTT unter `public/untertitel/` (gleiche Herkunft, siehe `captionsSrc` im Player).
   const videoUntertitel = process.env.NEXT_PUBLIC_CALL_VIDEO_CAPTIONS?.trim() || undefined;
 
+  // Kompakt, damit Headline, Video, Knopf und Vertrauenszeile ab `md` in 100vh
+  // passen (Feedback 14.11.2026): Das Video richtet seine Breite nach der
+  // Fensterhöhe — `HERO_REST` ist alles außer dem Video (Kopfleiste 72 px,
+  // Abstände, zwei Zeilen Headline, Unterzeile, Knopf, Vertrauenszeile).
   return (
-    <Box
-      as="section"
-      aria-labelledby="call-titel"
-      position="relative"
-      w="100%"
-      pt={{ base: 8, md: 12 }}
-      pb={{ base: 10, md: 16 }}
-      px={{ base: 4, md: 8, lg: 12 }}
-    >
-      <FunnelHeroGlow />
-
-      <Stack position="relative" zIndex={2} maxW="900px" mx="auto" spacing={{ base: 6, md: 8 }} align="center">
-        <Box className="cc-rise">
-          <Logo variant="onDark" width={168} />
-        </Box>
-
-        <CallSektionsKopf id="call-titel" as="h1" headline={hero.headline} text={hero.subline} />
+    <Box as="section" aria-labelledby="call-titel" position="relative" pt={{ base: 8, md: 8 }} px={{ base: 4, md: 8, lg: 12 }}>
+      <Stack maxW="1180px" mx="auto" spacing={{ base: 7, md: 6 }} align="center">
+        <Stack spacing={{ base: 3, md: 4 }} align="center" textAlign="center" maxW="980px">
+          <Heading
+            as="h1"
+            id="call-titel"
+            {...heroRise(0)}
+            fontSize="clamp(28px, 4.2vw, 50px)"
+            fontWeight={700}
+            lineHeight={1.1}
+            letterSpacing="-0.03em"
+            color="var(--cc-text)"
+            overflowWrap="break-word"
+            style={{ ...heroRise(0).style, textWrap: "balance" }}
+          >
+            {akzentGold(hero.headline)}
+          </Heading>
+          <Text {...heroRise(1)} fontSize={{ base: "16px", md: "17px" }} lineHeight={1.5} color="var(--cc-text-2)" maxW="760px">
+            {hero.subline}
+          </Text>
+        </Stack>
 
         {mitVideo ? (
-          <Stack w="full" spacing={4} align="center" className="cc-rise" style={{ animationDelay: "160ms" }}>
-            <FunnelEyebrow>{hero.schritt}</FunnelEyebrow>
-
+          <Box {...heroRise(2)} w="full" maxW={{ base: "960px", md: `clamp(520px, calc((100svh - ${HERO_REST}px) * 16 / 9), 960px)` }}>
             {/* VSL mit Ton und Player: kein Autoplay, denn Autoplay ist im
                 GlassVideoPlayer stumm — das Video soll per Klick mit Ton starten. */}
-            <Box w="full" maxW="820px">
-              {videoSrc ? (
+            {videoSrc ? (
+              <VideoSchein ton="neutral">
                 <GlassVideoPlayer
+                  accentRgb="255, 255, 255"
                   src={videoSrc}
                   poster={videoPoster}
                   captionsSrc={videoUntertitel}
                   onProgress={vorschau ? undefined : tracker.handleProgress}
                   onEnded={vorschau ? undefined : tracker.handleEnded}
                 />
-              ) : (
-                <FunnelVideoPlaceholder />
-              )}
-            </Box>
-
-            <Text fontSize="14px" lineHeight={1.6} color="var(--cc-text-2)" textAlign="center" maxW="560px">
-              {hero.videoHinweis}
-            </Text>
-          </Stack>
+              </VideoSchein>
+            ) : (
+              <FunnelVideoPlaceholder />
+            )}
+          </Box>
         ) : null}
 
-        <Stack w="full" maxW="560px" spacing={4} align="center">
+        <Stack {...heroRise(3)} spacing={3} align="center" w={{ base: "full", sm: "auto" }} maxW="560px">
           <CallBuchungKnopf />
+          <VertrauensZeile />
 
           {/* Garantiesatz nur, wenn Emre die Bedingungen abgenommen hat
               (`garantie.freigegeben` in `config/mentoring.ts`) — vorher wäre es
@@ -310,117 +254,34 @@ function Hero({ videoSrc, mitVideo, vorschau }: { videoSrc: string | null; mitVi
   );
 }
 
-/* ─────────────────────────── Schritt 2: Punkte ─────────────────────────── */
+/* ─────────────────────────── Abschluss ─────────────────────────── */
 
-/** „Im Gespräch klären wir …" — drei kurze Punkte über der Karte. */
-function GespraechsPunkte() {
+function Abschluss() {
   return (
-    <Reveal>
-      <Stack spacing={4} maxW="760px" mx="auto" w="full">
-        <Text
-          fontSize="13px"
-          lineHeight="18px"
-          fontWeight={500}
-          letterSpacing="0.12em"
-          textTransform="uppercase"
-          color="var(--cc-text-soft)"
-          textAlign="center"
-        >
-          {buchung.punkteTitel}
-        </Text>
-        <Box
-          as="ul"
-          listStyleType="none"
-          display="grid"
-          gridTemplateColumns={{ base: "1fr", md: "repeat(3, minmax(0, 1fr))" }}
-          gap={{ base: 3, md: 4 }}
-        >
-          {buchung.punkte.map((punkt, i) => (
-            <HStack
-              as="li"
-              key={punkt}
-              align="flex-start"
-              spacing={3}
-              p={4}
-              borderRadius="10px"
-              border="1px solid var(--cc-line)"
-              bg="rgba(255, 255, 255, 0.02)"
-            >
-              <Text as="span" className="cc-num" fontSize="13px" fontWeight={600} color="var(--cc-gold-light)" pt="1px">
-                {String(i + 1).padStart(2, "0")}
-              </Text>
-              <Text as="span" fontSize="14px" lineHeight={1.55} color="var(--cc-text-soft)">
-                {punkt}
-              </Text>
-            </HStack>
-          ))}
-        </Box>
-      </Stack>
-    </Reveal>
-  );
-}
-
-/* ─────────────────────────── Kundenergebnisse ─────────────────────────── */
-
-/**
- * Wand der belegten Auszahlungen — dieselbe Galerie wie `/ergebnisse`, aber
- * nur eine Auswahl (`ergebnisseAuswahl`) und nur Auszahlungen; der Rest steht
- * hinter „Alle Nachweise ansehen". Die Challenge-Zertifikate bleiben
- * dort: Eine Kontogröße neben einer Auszahlung wäre genau die Verwechslung,
- * gegen die `/ergebnisse` zwei Blöcke hat.
- */
-// In der Reihenfolge der Auswahl; ein Pfad, den es nicht (mehr) gibt, fällt still heraus.
-const COMMUNITY_AUSWAHL = ergebnisseAuswahl.community.flatMap((bild) =>
-  auszahlungenCommunity.filter((a) => a.bild === bild),
-);
-
-function Kundenergebnisse() {
-  const hinweisTeile = ergebnisseKopf.hinweis.split(" · ");
-  return (
-    <CallSektion id="ergebnisse" labelledBy="ergebnisse-titel">
-      <Stack spacing={{ base: 10, md: 14 }}>
-        <CallSektionsKopf
-          id="ergebnisse-titel"
-          eyebrow={ergebnisseKopf.eyebrow}
-          headline={ergebnisseKopf.headline}
-          text={ergebnisseKopf.text}
-        />
-
-        <NachweisGalerie
-          bloecke={[
-            { ...ergebnisseKopf.blockCommunity, zeilen: COMMUNITY_AUSWAHL },
-            { ...ergebnisseKopf.blockEmre, zeilen: auszahlungenEmreLanding },
-          ]}
-        />
-
-        <Stack spacing={4} align="center" textAlign="center" borderTop="1px solid var(--cc-line)" pt={6}>
-          <Text fontSize="12px" lineHeight={1.7} color="var(--cc-text-3)" letterSpacing="0.02em">
-            {hinweisTeile.map((teil, i) => (
-              <Fragment key={teil}>
-                {i > 0 ? (
-                  <Box as="span" aria-hidden mx={2}>
-                    ·
-                  </Box>
-                ) : null}
-                <Box as="span" display="inline-block">
-                  {teil}
-                </Box>
-              </Fragment>
-            ))}
-          </Text>
-          <Button
-            as="a"
-            href={ergebnisseKopf.alleLink.href}
-            target="_blank"
-            rel="noopener"
-            variant="line"
-            size="sm"
-            rightIcon={<ArrowUpRight size={15} strokeWidth={1.75} />}
+    <Sektion id="abschluss" py={{ base: 20, md: 32 }}>
+      <Reveal>
+        <Stack spacing={{ base: 6, md: 8 }} align="center" textAlign="center">
+          <Heading
+            as="h2"
+            fontSize="clamp(30px, 5.2vw, 56px)"
+            fontWeight={700}
+            lineHeight={1.1}
+            letterSpacing="-0.03em"
+            color="var(--cc-text)"
+            maxW="960px"
+            style={{ textWrap: "balance" }}
           >
-            {ergebnisseKopf.alleLink.label}
-          </Button>
+            {akzentGold(abschluss.headline)}
+          </Heading>
+          <Text fontSize={{ base: "16px", md: "18px" }} lineHeight={1.6} color="var(--cc-text-2)" maxW="680px">
+            {abschluss.text}
+          </Text>
+          <Flex direction="column" align="center" gap={4} w={{ base: "full", sm: "auto" }} mt={{ base: 2, md: 2 }}>
+            <CallBuchungKnopf />
+            <VertrauensZeile />
+          </Flex>
         </Stack>
-      </Stack>
-    </CallSektion>
+      </Reveal>
+    </Sektion>
   );
 }

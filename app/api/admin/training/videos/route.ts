@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { TRAINING_MODUL_ID } from "@/config/training";
+import { funnelSperrHinweis } from "@/lib/funnel-videos";
 import { requireAdmin } from "@/lib/supabase/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
@@ -114,6 +115,9 @@ export async function POST(request: Request) {
     if (schonDrin.has(v.uid)) continue;
     schonDrin.add(v.uid);
     try {
+      // Ein Landingpage-Video signiert wäre die öffentliche Seite schwarz.
+      const sperre = await funnelSperrHinweis(v.uid);
+      if (sperre) throw new Error(sperre);
       await setRequireSignedUrls(v.uid, true);
       const status = await getVideoStatus(v.uid);
       const { error: insErr } = await service.from("videos").insert({

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { brauchtGeheimhaltung } from "@/lib/geheimhaltung";
 import { LIFETIME_MINDESTTAGE, pruefeLifetimeAngebot } from "@/lib/access-control/lifetime-offer";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -57,6 +58,9 @@ export async function GET() {
     if (!seit || Number.isNaN(seit.getTime())) return NextResponse.json({ zeigen: false });
     const tage = (Date.now() - seit.getTime()) / 86_400_000;
     if (tage < LIFETIME_MINDESTTAGE) return NextResponse.json({ zeigen: false });
+
+    // Erst die Geheimhaltungsvereinbarung: Zwei Popups übereinander wären eins zu viel.
+    if (await brauchtGeheimhaltung(createServiceClient(), auth.user.id)) return NextResponse.json({ zeigen: false });
 
     const angebot = await pruefeLifetimeAngebot(auth.user.id);
     return NextResponse.json({ zeigen: angebot.erlaubt, ehemalig: Boolean(angebot.ehemalig) });

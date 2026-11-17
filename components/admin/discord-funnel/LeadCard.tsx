@@ -15,6 +15,7 @@ import {
 import { ChevronDown, ChevronUp, Eye } from "lucide-react";
 import { useState } from "react";
 import {
+  ALLE_FRAGEN,
   DISCORD_FUNNEL_QUESTIONS,
 } from "@/config/discord-funnel-questions";
 import {
@@ -146,7 +147,7 @@ export function LeadCard({
             {/* Antworten */}
             <Stack spacing={3}>
               <AdminLabel color="var(--cc-text-soft)">Antworten (Closer-Kontext)</AdminLabel>
-              {DISCORD_FUNNEL_QUESTIONS.map((q) => (
+              {ALLE_FRAGEN.filter((q) => DISCORD_FUNNEL_QUESTIONS.includes(q) || lead.answers?.[q.id]).map((q) => (
                 <Stack key={q.id} spacing={1}>
                   <Text fontSize="12px" color="var(--cc-text-2)">
                     {q.question}

@@ -80,7 +80,11 @@ function alsZeilen(block: GalerieBlock): Zeile[] {
   }));
 }
 
-export function NachweisGalerie({ bloecke }: { bloecke: GalerieBlock[] }) {
+/**
+ * `ohneKopf`: Blocktitel und Hinweis weglassen — für `/training`, wo ein Reiter
+ * darüber schon sagt, was der Block ist.
+ */
+export function NachweisGalerie({ bloecke, ohneKopf = false }: { bloecke: GalerieBlock[]; ohneKopf?: boolean }) {
   const [offen, setOffen] = useState<Zeile | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -94,7 +98,7 @@ export function NachweisGalerie({ bloecke }: { bloecke: GalerieBlock[] }) {
       <Stack gap={{ base: 12, md: 16 }}>
         {bloecke.map((block) => (
           <Stack key={block.titel} gap={5}>
-            <Stack gap={1}>
+            <Stack gap={1} display={ohneKopf ? "none" : undefined}>
               <Heading as="h2" fontSize={{ base: "22px", md: "26px" }} fontWeight={600} color="var(--cc-text)">
                 {block.titel}
               </Heading>

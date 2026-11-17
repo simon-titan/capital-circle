@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { benachrichtigeTeamTraining } from "@/lib/email/templates/training-team";
 import { createServiceClient } from "@/lib/supabase/service";
+import { verarbeiteCalendly, type CalendlyInvitee } from "@/lib/mailsystem/termine";
 
 export const runtime = "nodejs";
 
@@ -39,6 +40,27 @@ export async function POST(request: Request) {
 
   if (event === "invitee.created") {
     await handleInviteeCreated(payload);
+  }
+
+  /*
+    Termine fürs E-Mail-Playbook (Migration 111): Buchung, Umbuchung, Absage,
+    No-Show — samt T01/R01/R02/R03, sobald `PLAYBOOK_TERMINMAILS=1`.
+    Im Calendly-Webhook müssen dafür auch `invitee.canceled` und
+    `invitee_no_show.created/deleted` abonniert sein.
+  */
+  if (payload.payload) {
+    // Ohne Signaturschlüssel ließen sich gefälschte Buchungen einschleusen, die Mails
+    // in unserem Namen auslösen — dann keine Termine/Mails, nur der alte Lead-Abgleich.
+    if (!SIGNING_KEY) {
+      console.warn("[calendly/webhook] CALENDLY_WEBHOOK_SIGNING_KEY fehlt — Termine werden nicht verarbeitet.");
+    } else {
+      try {
+        await verarbeiteCalendly(createServiceClient(), event, payload.payload as CalendlyInvitee);
+      } catch (err) {
+        console.error(`[calendly/webhook] ${event} nicht verarbeitet:`, err);
+        return NextResponse.json({ error: "retry" }, { status: 500 });
+      }
+    }
   }
 
   return NextResponse.json({ ok: true });
@@ -154,7 +176,10 @@ async function handleDiscordBooking(p: NonNullable<CalendlyPayload["payload"]>) 
     const { data } = await service
       .from("discord_leads")
       .select("id, email")
-      .ilike("email", inviteeEmail)
+      .ilike("email", inviteeEmail.replace(/[\\%_]/g, (c) => `\\${c}`))
+      // Mehrere Leads je Adresse (Handy + Rechner): den jüngsten nehmen statt mit Fehler leer auszugehen.
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
     if (data) {
       leadId = data.id as string;

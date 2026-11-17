@@ -9,7 +9,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 export const runtime = "nodejs";
 
 /**
- * POST /api/programme/ausbildung — Ausbildung (599 €) selbst kaufen, aus
+ * POST /api/programme/ausbildung — Ausbildung (799 €) selbst kaufen, aus
  * „Ausbildung & Mentoring" (`/programme`). Formularfeld `raten` = 1 oder 2.
  *
  * Dieselbe Kasse wie Kassenlink und Live-Abo (`starteKasse`, Produkt

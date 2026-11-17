@@ -279,16 +279,20 @@ export default function AgbPage() {
         gewählten Programms steht auf der Bestellseite und in der Kaufbestätigung per E-Mail.
       </p>
       <p>
-        (2) Mit dem Kauf erhältst du dauerhaften Zugang zur Plattform, zu den Kursinhalten einschließlich neu
-        hinzukommender Kursvideos und zum Trading Journal. Der Zugang zu Live Trading, Daily Bias und Trade Recaps
-        („Live-Bereich“) ist befristet: 3 Monate bei der Ausbildung, 12 Monate beim Main und Premium Mentoring, jeweils
-        ab dem Kauf. Gruppencall, WhatsApp-Support und Privatstunden laufen für die in der Kaufbestätigung genannten
-        Zeiträume; nicht genutzte Termine verfallen mit Ablauf des Zeitraums.
+        (2) Mit dem Kauf erhältst du dauerhaften Zugang zur Plattform und zu den Kursinhalten einschließlich neu
+        hinzukommender Kursvideos. Das Trading Journal ist beim Main und Premium Mentoring dauerhaft enthalten, bei der
+        Ausbildung für einen Monat ab dem Kauf. Der Zugang zu Live Trading, Daily Bias und Trade Recaps
+        („Live-Bereich“) ist befristet: 1 Monat bei der Ausbildung, 12 Monate beim Main und Premium Mentoring, jeweils
+        ab dem Kauf; die Aufzeichnungen der Live-Sessions („Live-Archiv“) sind nur im Main und Premium Mentoring für
+        12 Monate enthalten. WhatsApp-Support und 1:1-Termine mit Emre laufen für die in der Kaufbestätigung genannten
+        Zeiträume; nicht genutzte Termine verfallen mit Ablauf des Zeitraums. Wer die Ausbildung gekauft hat und auf
+        das Main oder Premium Mentoring wechselt, bekommt 499 € auf den Preis angerechnet.
       </p>
       <p>
         (3) Der Preis ist ein Endpreis inklusive Umsatzsteuer. Er ist einmalig oder, wenn auf der Bestellseite
-        angeboten, in bis zu vier gleichen Monatsraten zu zahlen. Ratenzahlung ist ein zinsloser Zahlungsaufschub ohne
-        Aufschlag. Die erste Rate ist mit dem Kauf fällig, jede weitere einen Monat nach der vorigen; die Ratenzahlung
+        angeboten, in bis zu sechs Monatsraten zu zahlen. Die Raten sind gleich hoch; geht der Preis nicht auf den Cent
+        genau auf, ist die erste Rate um den Restbetrag von wenigen Cent höher. Ratenzahlung ist ein zinsloser
+        Zahlungsaufschub ohne Aufschlag. Die erste Rate ist mit dem Kauf fällig, jede weitere einen Monat nach der vorigen; die Ratenzahlung
         endet nach der letzten Rate ohne Kündigung. Der Zugang beginnt mit der ersten Zahlung.
       </p>
       <p>

@@ -22,7 +22,9 @@ export type ProfilFeld =
   | "onboarding_gestartet_am"
   | "onboarding_fragen_am"
   | "onboarding_abgeschlossen_am"
-  | "passwort_gesetzt_am";
+  | "passwort_gesetzt_am"
+  | "icp_free_am"
+  | "icp_kaeufer_am";
 
 /** Messpunkt schreiben; zählt pro Nutzer einmal. */
 export async function protokolliere(

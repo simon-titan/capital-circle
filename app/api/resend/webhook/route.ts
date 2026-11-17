@@ -102,9 +102,30 @@ export async function POST(request: NextRequest) {
         .update({ clicked_at: now })
         .eq("resend_message_id", messageId)
         .is("clicked_at", null);
+    } else if (event.type === "email.bounced" || event.type === "email.complained") {
+      /*
+        Zustellsperre (E-Mail-Playbook, Regel 01): Hard Bounce oder Beschwerde
+        verhindert jeden weiteren automatischen Versand an die Adresse
+        (`mail_sperre`, Migration 110). Weiche Bounces (vorübergehend) zählen
+        nicht — Resend meldet sie mit `bounce.type = "Transient"`.
+      */
+      const daten = event.data as { to?: string[] | string; bounce?: { type?: string; message?: string } };
+      const empfaenger = (Array.isArray(daten.to) ? daten.to : daten.to ? [daten.to] : []).map((e) => e.trim().toLowerCase());
+      // Nur dauerhafte Bounces sperren; „Transient" und „Undetermined" können sich erledigen.
+      const weich = event.type === "email.bounced" && Boolean(daten.bounce?.type) && !/permanent/i.test(daten.bounce?.type ?? "");
+      if (!weich && empfaenger.length) {
+        const { error: sperrFehler } = await supabase.from("mail_sperre").upsert(
+          empfaenger.map((email) => ({
+            email,
+            grund: event.type === "email.bounced" ? "bounce" : "beschwerde",
+            details: daten.bounce?.message?.slice(0, 500) ?? null,
+          })),
+          { onConflict: "email", ignoreDuplicates: true },
+        );
+        if (sperrFehler) console.error("[resend/webhook] mail_sperre:", sperrFehler.message);
+      }
     }
-    // Andere Events (delivered, bounced, complained) werden aktuell nicht
-    // separat persistiert — einfach 200 OK quittieren.
+    // Übrige Events (sent, delivered, delayed) werden nicht persistiert.
   } catch (err) {
     console.error("[resend/webhook] DB-Update fehlgeschlagen:", err);
     return NextResponse.json(

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { videoIstFrei } from "@/lib/access-control/inhalt-zugang";
 import { getLektionsKarte } from "@/lib/dashboard-lektion";
 import { hatInhaltsZugang } from "@/lib/membership";
+import { istTrainingVideo, ladeTrainingFreigabe, trainingOffen } from "@/lib/training/zugang";
 import { getAcademyModulesOverview, parseVideoProgressByVideo } from "@/lib/server-data";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 
@@ -72,6 +73,11 @@ export async function GET(request: Request) {
     }
     if (!hatInhaltsZugang(profile) && !(await videoIstFrei(service, video))) {
       return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+    if (!hatInhaltsZugang(profile) && (await istTrainingVideo(service, video))) {
+      if (!trainingOffen(await ladeTrainingFreigabe(service, userId, profile))) {
+        return NextResponse.json({ ok: false, error: "training_gesperrt" }, { status: 403 });
+      }
     }
   }
 

@@ -11,6 +11,7 @@ import {
 } from "@/lib/learning-daily";
 import { getModulePlaylistDurationsOnly } from "@/lib/module-video";
 import { calculateStreak, maxPlausibleStreakDays, sanitizeStreakValue } from "@/lib/streak";
+import { TRAINING_MODUL_ID } from "@/config/training";
 
 type ProgressBody = {
   moduleId: string;
@@ -184,6 +185,23 @@ export async function POST(request: Request) {
       }
     } catch (err) {
       console.warn("[progress] Onboarding-Kursstart nicht gestempelt:", err);
+    }
+  }
+
+  /*
+   * Kostenloses Training: erste echte Wiedergabe = Lernstart (E-Mail-Playbook,
+   * stoppt S01/S02, Zeitanker der L-Mails). Ein Seitenaufruf genügt nicht —
+   * erst ein Fortschritt über 0 Sekunden. Nur einmal (`gestartet_am is null`).
+   */
+  if (moduleId === TRAINING_MODUL_ID && Object.values(mergedMap).some((s) => s > 0)) {
+    try {
+      await createServiceClient()
+        .from("training_zugang")
+        .update({ gestartet_am: nowIso })
+        .eq("user_id", userId)
+        .is("gestartet_am", null);
+    } catch (err) {
+      console.warn("[progress] Trainingsstart nicht gestempelt:", err);
     }
   }
 

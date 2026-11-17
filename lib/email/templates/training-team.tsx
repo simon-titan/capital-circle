@@ -4,7 +4,7 @@ import { EmailButton, EmailHeading, EmailRows, EmailText } from "../layout/compo
 import { sendEmail } from "../send";
 import { getAppUrl } from "../resend";
 import { TEAM_POSTFACH } from "@/config/team";
-import { TRAINING_VIDEO_ANZAHL, kanalLabel, stelleLabel, type GespraechStelle, type Kanal } from "@/config/training";
+import { TRAINING_VIDEO_ANZAHL, bewerbung, kanalLabel, stelleLabel, type GespraechStelle, type Kanal } from "@/config/training";
 
 /**
  * Betriebspost ans Sales-Team zu Analysegesprächen aus dem Free Training
@@ -75,5 +75,83 @@ export async function benachrichtigeTeamTraining(art: "anfrage" | "termin", lead
     );
   } catch (err) {
     console.error(`[training-team] Benachrichtigung (${art}) fehlgeschlagen:`, err);
+  }
+}
+
+/* ─── Neue Free-Kurs-Bewerbung (E-Mail-Playbook 1.0) ───────────────────── */
+
+export type TrainingTeamBewerbung = {
+  name: string;
+  email: string;
+  telefon: string | null;
+  kontaktGewuenscht: boolean;
+  antworten: Record<string, string>;
+};
+
+/**
+ * Empfänger wie oben, dazu `TRAINING_BEWERBUNG_EMPFAENGER` (kommagetrennt,
+ * z. B. Emre selbst). Geht raus, sobald die Adresse bestätigt ist — erst dann
+ * liegt die Bewerbung zur Prüfung vor. Wirft nie.
+ */
+export async function benachrichtigeTeamBewerbung(b: TrainingTeamBewerbung): Promise<void> {
+  try {
+    const extra = (process.env.TRAINING_BEWERBUNG_EMPFAENGER ?? "")
+      .split(",")
+      .map((a) => a.trim())
+      .filter((a) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a));
+    const an = [...new Set([...empfaenger(), ...extra])];
+    const adminUrl = `${getAppUrl()}/admin/training?ansicht=bewerbungen`;
+    const zeilen: [string, string][] = [
+      ["Name", b.name],
+      ["E-Mail", b.email],
+      ["Kontakt gewünscht", b.kontaktGewuenscht ? `Ja${b.telefon ? ` · ${b.telefon}` : ""}` : "Nein"],
+      ...bewerbung.fragen.map((f) => [f.frage, b.antworten[f.id] ?? "—"] as [string, string]),
+    ];
+    await Promise.all(
+      an.map((ziel) =>
+        sendEmail({
+          to: ziel,
+          subject: `Neue Bewerbung für das Free Training – ${b.name}`,
+          replyTo: b.email,
+          jsx: (
+            <BaseEmail previewText={`Neue Bewerbung: ${b.name}`}>
+              <EmailHeading>Neue Bewerbung für das Free Training</EmailHeading>
+              <EmailText>Die Adresse ist bestätigt, die Bewerbung wartet auf Emres Entscheidung.</EmailText>
+              <EmailRows rows={zeilen} />
+              <EmailButton href={adminUrl}>Bewerbung prüfen</EmailButton>
+            </BaseEmail>
+          ),
+        }),
+      ),
+    );
+  } catch (err) {
+    console.error("[training-team] Bewerbungs-Benachrichtigung fehlgeschlagen:", err);
+  }
+}
+
+/**
+ * Interne Meldung, wenn eine Playbook-Mail mangels Pflichtangabe nicht raus
+ * konnte (Playbook Kapitel 10: blockieren und intern melden, nicht mit Lücken
+ * an Kunden senden). Wirft nie.
+ */
+export async function benachrichtigeTeamFehler(titel: string, text: string): Promise<void> {
+  try {
+    await Promise.all(
+      empfaenger().map((an) =>
+        sendEmail({
+          to: an,
+          subject: `Mail blockiert: ${titel}`,
+          jsx: (
+            <BaseEmail previewText={titel}>
+              <EmailHeading>Mail blockiert</EmailHeading>
+              <EmailText>{titel}</EmailText>
+              <EmailText>{text}</EmailText>
+            </BaseEmail>
+          ),
+        }),
+      ),
+    );
+  } catch (err) {
+    console.error("[training-team] Fehlermeldung nicht verschickt:", err);
   }
 }

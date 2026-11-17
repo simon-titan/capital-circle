@@ -19,7 +19,7 @@ import {
 import { ArrowRight, CalendarDays, Check } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { buchung } from "@/config/call-funnel";
-import { DISCORD_FUNNEL_QUESTIONS } from "@/config/discord-funnel-questions";
+import { DISCORD_FUNNEL_QUESTIONS, antwortGueltig } from "@/config/discord-funnel-questions";
 import { gespraech, mitglied, type GespraechStelle } from "@/config/training";
 import { CalendlyZweiKlick } from "@/components/marketing/CalendlyZweiKlick";
 import { RadioStep } from "@/components/marketing/DiscordQuestionsModal";
@@ -40,6 +40,7 @@ import {
   funnelModalContentProps,
   funnelOverlayProps,
 } from "@/components/marketing/funnel-ui";
+import { weiterNachBuchung } from "@/lib/training/nach-buchung-client";
 
 /**
  * „Analysegespräch anfragen" im Mitgliederbereich (Free Training).
@@ -79,7 +80,7 @@ function calendlyUrl(token: string | null, k: Kontakt): string {
     process.env.NEXT_PUBLIC_TRAINING_CALENDLY_URL?.trim() ||
     process.env.NEXT_PUBLIC_CALL_CALENDLY_URL?.trim() ||
     process.env.NEXT_PUBLIC_DISCORD_CALENDLY_URL?.trim() ||
-    "https://calendly.com/contact-capitalcircletrading/capital-circle";
+    "https://calendly.com/contact-capitalcircletrading/capital-circle-analysegesprach";
   try {
     const url = new URL(basis);
     url.searchParams.set("utm_source", "capital-circle");
@@ -100,13 +101,16 @@ export function AnalyseGespraechProvider({
   name = "",
   email = "",
   stelle: standardStelle = "dashboard",
+  sofortOffen = false,
 }: {
   children: ReactNode;
   name?: string;
   email?: string;
   stelle?: GespraechStelle;
+  /** Öffnet das Modal direkt (Link `?gespraech=1` aus den Playbook-Mails). */
+  sofortOffen?: boolean;
 }) {
-  const [offen, setOffen] = useState(false);
+  const [offen, setOffen] = useState(sofortOffen);
   const [stelle, setStelle] = useState<GespraechStelle>(standardStelle);
   const [phase, setPhase] = useState<Phase>("kontakt");
   const [kontakt, setKontakt] = useState<Kontakt>({ name, email, phone: "" });
@@ -164,7 +168,7 @@ export function AnalyseGespraechProvider({
     }
     if (phase !== "fragen") return;
     const frage = FRAGEN[frageIndex];
-    if (!frage || !frage.options.includes(antworten[frage.id] ?? "")) {
+    if (!frage || !antwortGueltig(frage, antworten[frage.id])) {
       setFehler(gespraech.fehlerAuswahl);
       return;
     }
@@ -209,6 +213,8 @@ export function AnalyseGespraechProvider({
       if (!/^https:\/\/([a-z0-9-]+\.)?calendly\.com$/.test(e.origin)) return;
       if (typeof e.data === "object" && e.data !== null && (e.data as { event?: unknown }).event === "calendly.event_scheduled") {
         setPhase("gebucht");
+        // Ins Free-Dashboard mit Termin-Karte (17.11.2026); Zahlende bleiben bei der Bestätigung.
+        void weiterNachBuchung();
       }
     };
     window.addEventListener("message", meldung);

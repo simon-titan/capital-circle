@@ -8,6 +8,15 @@ import { handleSubscriptionResumed } from "./subscription-resumed";
 import { handleInvoicePaid } from "./invoice-paid";
 import { handleInvoicePaymentFailed } from "./invoice-payment-failed";
 import { handleMentoringCheckout, mentoringArt } from "./mentoring";
+import {
+  bucheDispute,
+  bucheErstattung,
+  bucheErstattungenZuCharge,
+  bucheMentoringCheckout,
+  bucheMentoringRechnung,
+  ledgerSicher,
+  pflegeLiveAbo,
+} from "@/lib/finanzen/ledger";
 
 /**
  * Stripe-Event-Dispatcher.
@@ -53,11 +62,18 @@ export async function handleStripeEvent(
   }
 
   switch (event.type) {
-    case "checkout.session.completed":
-      return handleCheckoutCompleted(
-        event.data.object as Stripe.Checkout.Session,
-        supabase,
-      );
+    /*
+      Finanz-Ledger (Tracking-Playbook 10, `lib/finanzen/ledger.ts`) jeweils
+      NACH dem fachlichen Handler: Erst steht der Kauf, dann wird gebucht.
+      Idempotent über die Stripe-Objekt-ID; fehlt Migration 114, wird nur
+      gewarnt.
+    */
+    case "checkout.session.completed": {
+      const session = event.data.object as Stripe.Checkout.Session;
+      await handleCheckoutCompleted(session, supabase);
+      await ledgerSicher("checkout", () => bucheMentoringCheckout(supabase, session, event.id));
+      return;
+    }
 
     /*
       Verzögerte Zahlarten (Lastschrift): `completed` kam mit `unpaid`, das
@@ -68,7 +84,9 @@ export async function handleStripeEvent(
     case "checkout.session.async_payment_succeeded": {
       const session = event.data.object as Stripe.Checkout.Session;
       if (!mentoringArt(session.metadata)) return;
-      return handleMentoringCheckout(session, supabase);
+      await handleMentoringCheckout(session, supabase);
+      await ledgerSicher("checkout", () => bucheMentoringCheckout(supabase, session, event.id));
+      return;
     }
 
     // Läuft eine Kasse ab, ohne dass gezahlt wurde. Ohne diesen Fall bliebe
@@ -80,44 +98,68 @@ export async function handleStripeEvent(
       );
 
     case "customer.subscription.created":
-    case "customer.subscription.updated":
-      return handleSubscriptionUpdated(
-        event.data.object as Stripe.Subscription,
-        supabase,
-      );
+    case "customer.subscription.updated": {
+      const sub = event.data.object as Stripe.Subscription;
+      await handleSubscriptionUpdated(sub, supabase);
+      await ledgerSicher("live-abo", () => pflegeLiveAbo(supabase, sub));
+      return;
+    }
 
-    case "customer.subscription.deleted":
-      return handleSubscriptionDeleted(
-        event.data.object as Stripe.Subscription,
-        supabase,
-      );
+    case "customer.subscription.deleted": {
+      const sub = event.data.object as Stripe.Subscription;
+      await handleSubscriptionDeleted(sub, supabase);
+      await ledgerSicher("live-abo", () => pflegeLiveAbo(supabase, sub));
+      return;
+    }
 
-    case "customer.subscription.paused":
-      return handleSubscriptionPaused(
-        event.data.object as Stripe.Subscription,
-        supabase,
-      );
+    case "customer.subscription.paused": {
+      const sub = event.data.object as Stripe.Subscription;
+      await handleSubscriptionPaused(sub, supabase);
+      await ledgerSicher("live-abo", () => pflegeLiveAbo(supabase, sub));
+      return;
+    }
 
     // Ohne diesen Fall blieb ein Mitglied nach der Pause auf `free` haengen:
     // Stripe schickt beim Fortsetzen zuerst `resumed`, und der landete bis
     // 17.09.2026 im Default-Zweig, der Ereignisse still verwirft.
-    case "customer.subscription.resumed":
-      return handleSubscriptionResumed(
-        event.data.object as Stripe.Subscription,
-        supabase,
-      );
+    case "customer.subscription.resumed": {
+      const sub = event.data.object as Stripe.Subscription;
+      await handleSubscriptionResumed(sub, supabase);
+      await ledgerSicher("live-abo", () => pflegeLiveAbo(supabase, sub));
+      return;
+    }
 
-    case "invoice.paid":
-      return handleInvoicePaid(
-        event.data.object as Stripe.Invoice,
-        supabase,
-      );
+    case "invoice.paid": {
+      const invoice = event.data.object as Stripe.Invoice;
+      await handleInvoicePaid(invoice, supabase);
+      await ledgerSicher("rechnung", () => bucheMentoringRechnung(supabase, invoice, event.id));
+      return;
+    }
 
     case "invoice.payment_failed":
       return handleInvoicePaymentFailed(
         event.data.object as Stripe.Invoice,
         supabase,
       );
+
+    /*
+      Erstattungen und Chargebacks (Migration 114). Nur Zahlungen aus dem
+      Ledger (Mentoring, Raten, Live-Abo) — Mitgliedsabos laufen hier durch,
+      ohne dass etwas passiert. Im Stripe-Dashboard abonnieren:
+      charge.refunded, refund.created, refund.updated, charge.dispute.created,
+      charge.dispute.updated, charge.dispute.closed.
+    */
+    case "charge.refunded":
+      return ledgerSicher("erstattung", () => bucheErstattungenZuCharge(supabase, event.data.object as Stripe.Charge, event.id));
+
+    case "refund.created":
+    case "refund.updated":
+      return ledgerSicher("erstattung", () => bucheErstattung(supabase, event.data.object as Stripe.Refund, event.id));
+
+    case "charge.dispute.created":
+    case "charge.dispute.updated":
+    case "charge.dispute.closed":
+      return ledgerSicher("chargeback", () => bucheDispute(supabase, event.data.object as Stripe.Dispute, event.id));
 
     default:
       // Unbekannte Events: kein Throw, kein Handling — Stripe markiert als

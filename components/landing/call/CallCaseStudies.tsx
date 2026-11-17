@@ -14,14 +14,17 @@ import {
 import { Maximize2, Play, X } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
-import { caseStudies, caseStudiesKopf, type CaseStudy } from "@/config/call-funnel";
+import { caseStudies, ergebnisseKopf, memberWins, type CaseStudy } from "@/config/call-funnel";
 import { GlassVideoPlayer } from "@/components/ui/GlassVideoPlayer";
 import { funnelModalContentProps, funnelOverlayProps } from "@/components/marketing/funnel-ui";
 import { Reveal } from "../landing-ui";
-import { akzentZahl, CallSektion, CallSektionsKopf } from "./call-ui";
+import { Sektion, SektionsKopf } from "../membership/membership-ui";
+import { akzentGold, akzentZahl } from "./call-ui";
 
 /**
- * Case Studies auf `/call`.
+ * Case Studies auf `/call` — der Anfang des Blocks „Member Wins" (Kopf aus
+ * `memberWins`). Darunter stellt `CallFunnelClient` die Auszahlungen
+ * (`ErgebnisseSection`, mit dem Link auf alle Nachweise) und die Bewertungen.
  *
  * Zwei Kartenarten aus derselben Liste (`caseStudies` in `config/call-funnel.ts`):
  * - **Videokarte** (`videoUrl` gesetzt): Standbild mit Play-Knopf, öffnet ein
@@ -39,26 +42,29 @@ export function CallCaseStudies() {
   if (caseStudies.length === 0) return null;
 
   return (
-    <CallSektion id="case-studies" labelledBy="case-studies-titel">
-      <Stack spacing={{ base: 10, md: 14 }}>
-        <CallSektionsKopf
-          id="case-studies-titel"
-          eyebrow={caseStudiesKopf.eyebrow}
-          headline={caseStudiesKopf.headline}
-          text={caseStudiesKopf.text}
-        />
+    <Sektion id="case-studies" aria-labelledby="member-wins-titel">
+      <SektionsKopf
+        id="member-wins-titel"
+        eyebrow={memberWins.eyebrow}
+        headline={akzentGold(memberWins.headline)}
+        sublines={[memberWins.text]}
+      />
 
-        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={{ base: 4, md: 5 }}>
-          {caseStudies.map((c, i) => (
-            <Reveal key={`${c.name ?? ""}-${c.titel}`} delay={(i % 2) * 90}>
-              <CaseKarte c={c} onOeffnen={() => setOffen(c)} />
-            </Reveal>
-          ))}
-        </SimpleGrid>
-      </Stack>
+      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={{ base: 4, md: 5 }} mt={{ base: 10, md: 14 }}>
+        {caseStudies.map((c, i) => (
+          <Reveal key={`${c.name ?? ""}-${c.titel}`} delay={(i % 2) * 90}>
+            <CaseKarte c={c} onOeffnen={() => setOffen(c)} />
+          </Reveal>
+        ))}
+      </SimpleGrid>
+
+      {/* Einordnung; der Weg zu allen Belegen steht unter den Auszahlungen direkt darunter. */}
+      <Text fontSize="12px" lineHeight={1.7} color="var(--cc-text-3)" textAlign="center" mt={{ base: 8, md: 10 }}>
+        {ergebnisseKopf.hinweis}
+      </Text>
 
       <CaseModal c={offen} onClose={() => setOffen(null)} />
-    </CallSektion>
+    </Sektion>
   );
 }
 

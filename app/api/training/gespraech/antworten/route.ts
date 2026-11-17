@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { DISCORD_FUNNEL_QUESTIONS } from "@/config/discord-funnel-questions";
+import { DISCORD_FUNNEL_QUESTIONS, FRUEHERE_FRAGEN, antwortGueltig } from "@/config/discord-funnel-questions";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -22,21 +22,37 @@ export async function POST(request: Request) {
   const roh = (body.answers && typeof body.answers === "object" ? body.answers : {}) as Record<string, unknown>;
 
   const answers: Record<string, string> = {};
-  for (const q of DISCORD_FUNNEL_QUESTIONS) {
+  // Übergang: altes Formular aus dem Browser-Cache (sechs frühere Fragen) gilt weiter.
+  const fragen = FRUEHERE_FRAGEN.every((q) => typeof roh[q.id] === "string") ? FRUEHERE_FRAGEN : DISCORD_FUNNEL_QUESTIONS;
+  for (const q of fragen) {
     const a = roh[q.id];
-    if (typeof a !== "string" || !q.options.includes(a)) {
+    if (typeof a !== "string" || !antwortGueltig(q, a)) {
       return NextResponse.json({ ok: false, error: "antworten" }, { status: 400 });
     }
-    answers[q.id] = a;
+    answers[q.id] = a.trim();
   }
 
-  const { data, error } = await createServiceClient()
+  // `fragen_am` (Migration 110): ab hier gilt die Gesprächsanfrage als gestellt —
+  // sie stoppt die Lern- und Einladungsmails S/L/I (E-Mail-Playbook, Regel 05).
+  const jetzt = new Date().toISOString();
+  const service = createServiceClient();
+  let { data, error } = await service
     .from("training_leads")
-    .update({ answers, updated_at: new Date().toISOString() })
+    .update({ answers, updated_at: jetzt, fragen_am: jetzt })
     .eq("token", token)
     .eq("user_id", user.id)
     .select("id")
     .maybeSingle();
+  if (error && /fragen_am/.test(error.message)) {
+    // Migration 110 noch nicht eingespielt — ohne die Spalte speichern.
+    ({ data, error } = await service
+      .from("training_leads")
+      .update({ answers, updated_at: jetzt })
+      .eq("token", token)
+      .eq("user_id", user.id)
+      .select("id")
+      .maybeSingle());
+  }
   if (error || !data) return NextResponse.json({ ok: false, error: "nicht_gefunden" }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

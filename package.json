@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:frisch": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\" && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -37,6 +38,8 @@
     "kaufweg:reset": "node scripts/kaufweg-zuruecksetzen.mjs",
     "pruefe:kaufweg": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/pruefe-kaufweg-analytics.mjs",
     "db:check": "node scripts/check-migrations-applied.mjs",
+    "test:mails": "npx --yes tsx --test lib/mailsystem/*.test.ts lib/crm/*.test.ts lib/finanzen/*.test.ts lib/funnel-videos.test.ts",
+    "test:finanzen": "npx --yes tsx --test lib/finanzen/*.test.ts lib/crm/ergebnis.test.ts",
     "db:check-rls": "node scripts/check-rls.mjs",
     "check:upload-route": "node scripts/check-upload-route.mjs"
   },
@@ -48,6 +51,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@fullcalendar/daygrid": "^6.1.20",

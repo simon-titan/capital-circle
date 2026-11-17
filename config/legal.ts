@@ -20,6 +20,10 @@
  * Versionskennung der Rechtstexte (ISO-Datum des Stands, bei mehreren Ständen
  * am selben Tag mit laufender Nummer).
  *
+ * `2026-11-08.1`: AGB § 7a(2) Leistungen nach Tracking-Playbook (Ausbildung 1 Monat
+ * Live und Journal, Live-Archiv nur Main/Premium, 1:1-Termine statt Gruppencall,
+ * 499 € Anrechnung beim Upgrade).
+ *
  * `2026-10-17.1`: AGB § 7a Mentoring-Programme (Programme mit befristetem
  * Live-Bereich, Ratenzahlung, Live-Trading-Abo). Datenschutz: Calendly auf
  * `/call` lädt nach „Weiter zum Kalender" im letzten Frageschritt.
@@ -30,10 +34,10 @@
  * Belehrung, AGB § 8), Datenschutz ohne Google Fonts, mit Calendly erst nach
  * Klick, mit Kündigungs- und Widerrufsfunktion und dem Zustimmungsnachweis.
  */
-export const rechtstexteVersion = "2026-10-17.1";
+export const rechtstexteVersion = "2026-11-08.1";
 
 /** Derselbe Stand als Lesedatum für die Seiten. */
-export const rechtstexteStand = "17. Oktober 2026";
+export const rechtstexteStand = "8. November 2026";
 
 export interface Anbieter {
   /** Vollständiger Name der natürlichen Person (Einzelunternehmen). */

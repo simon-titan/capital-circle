@@ -1,7 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/supabase/admin-auth";
 import { createServiceClient } from "@/lib/supabase/service";
-import { DISCORD_QUESTION_IDS } from "@/config/discord-funnel-questions";
+import { ALLE_FRAGEN } from "@/config/discord-funnel-questions";
+
+// Neue und frühere Fragen — ältere Leads tragen die Antworten von vor dem 07.11.2026.
+const DISCORD_QUESTION_IDS = ALLE_FRAGEN.map((q) => q.id);
 import {
   computeFunnelByOrigin,
   computeFunnel,
@@ -67,7 +70,9 @@ function resolveRange(
 /** RFC-4180-konformes Escaping eines einzelnen Feldes. */
 function csvField(value: unknown): string {
   if (value === null || value === undefined) return "";
-  const s = String(value);
+  let s = String(value);
+  // Freitext aus öffentlichen Formularen: Excel würde `=`, `+`, `-`, `@` als Formel ausführen.
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   if (/[",\r\n]/.test(s)) {
     return `"${s.replace(/"/g, '""')}"`;
   }
