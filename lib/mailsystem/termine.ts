@@ -206,7 +206,10 @@ async function gebucht(service: SupabaseClient, p: CalendlyInvitee) {
       lead_token: lead.token,
       vorgang: vorgaenger?.vorgang ?? `${lead.art}:${lead.id}`,
       user_id: lead.userId,
-      email: normEmail(p.email),
+      // Adresse der Anfrage, nicht die aus Calendly: Daran hängen CRM-Kontakt, Lead, Konto und die
+      // Stoppregeln der Mails. Wer in Calendly eine andere Adresse tippt (17.11.2026: Test über /call),
+      // fiele sonst aus dem CRM. Ohne Lead-Adresse bleibt die aus Calendly.
+      email: normEmail(lead.email || p.email),
       name: p.name ?? lead.name,
       invitee_uri: p.uri,
       event_uri: ev.uri ?? null,
