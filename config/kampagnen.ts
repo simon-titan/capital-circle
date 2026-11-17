@@ -11,7 +11,7 @@ export type KampagneId = "retargeting" | "trustpilot";
  * richtige Adresse über `NEXT_PUBLIC_TRUSTPILOT_URL` setzen.
  */
 export const TRUSTPILOT_URL =
-  process.env.NEXT_PUBLIC_TRUSTPILOT_URL?.trim() || "https://de.trustpilot.com/evaluate/capitalcircletrading.com";
+  process.env.NEXT_PUBLIC_TRUSTPILOT_URL?.trim() || "https://www.trustpilot.com/evaluate/capitalcircletrading.com";
 
 export const KAMPAGNEN = {
   retargeting: {
