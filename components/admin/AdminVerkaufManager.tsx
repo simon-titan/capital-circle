@@ -37,6 +37,8 @@ export type AdminVerkaufFelder = {
   nachricht: string;
   zielUrl: string;
   zielLabel: string;
+  weiterleiten: boolean;
+  weiterleitungZiel: string;
 };
 
 type Props = {
@@ -49,7 +51,7 @@ type Props = {
   updatedAt: string | null;
 };
 
-const TEXTFELDER = ["ueberschrift", "nachricht", "zielUrl", "zielLabel"] as const;
+const TEXTFELDER = ["ueberschrift", "nachricht", "zielUrl", "zielLabel", "weiterleitungZiel"] as const;
 
 export function AdminVerkaufManager({ initial, standard, vorlagen, updatedAt: initialUpdatedAt }: Props) {
   const [gespeichert, setGespeichert] = useState(initial);
@@ -62,6 +64,7 @@ export function AdminVerkaufManager({ initial, standard, vorlagen, updatedAt: in
     () =>
       felder.geschlossen !== gespeichert.geschlossen ||
       felder.knopf !== gespeichert.knopf ||
+      felder.weiterleiten !== gespeichert.weiterleiten ||
       TEXTFELDER.some((k) => felder[k].trim() !== gespeichert[k].trim()),
     [felder, gespeichert],
   );
@@ -99,9 +102,11 @@ export function AdminVerkaufManager({ initial, standard, vorlagen, updatedAt: in
       setUpdatedAt(new Date().toISOString());
       setFeedback({
         kind: "success",
-        msg: json.gespeichert.geschlossen
-          ? "Gespeichert. Der Verkauf ist geschlossen (Startseite nach spätestens 15 Sekunden)."
-          : "Gespeichert. Der Verkauf ist offen.",
+        msg: !json.gespeichert.geschlossen
+          ? "Gespeichert. Der Verkauf ist offen."
+          : json.gespeichert.weiterleiten
+            ? `Gespeichert. Die Startseite leitet auf ${json.gespeichert.weiterleitungZiel || "/training"} weiter (nach spätestens 15 Sekunden).`
+            : "Gespeichert. Der Verkauf ist geschlossen (Startseite nach spätestens 15 Sekunden).",
       });
     } catch (e) {
       setFeedback({ kind: "error", msg: e instanceof Error ? e.message : "Unbekannter Fehler" });
@@ -117,7 +122,9 @@ export function AdminVerkaufManager({ initial, standard, vorlagen, updatedAt: in
           <Flex justify="space-between" align="center" flexWrap="wrap" gap={3}>
             <HStack gap={3}>
               <AdminCardTitle>Aktueller Status</AdminCardTitle>
-              {gespeichert.geschlossen ? (
+              {gespeichert.geschlossen && gespeichert.weiterleiten ? (
+                <StatusPill tone="attention">Weiterleitung auf {gespeichert.weiterleitungZiel || "/training"}</StatusPill>
+              ) : gespeichert.geschlossen ? (
                 <StatusPill tone="attention">Geschlossen · nur über Funnel</StatusPill>
               ) : (
                 <StatusPill tone="success">Offen</StatusPill>
@@ -167,6 +174,43 @@ export function AdminVerkaufManager({ initial, standard, vorlagen, updatedAt: in
               onChange={(e) => setze("geschlossen", e.target.checked)}
             />
           </FormControl>
+
+          <Stack gap={3} opacity={felder.geschlossen ? 1 : 0.5}>
+            <FormControl display="flex" alignItems="center" justifyContent="space-between" gap={4}>
+              <Box>
+                <FormLabel htmlFor="verkauf-weiterleiten" mb={1} fontWeight={600} color="var(--cc-text)">
+                  Startseite direkt weiterleiten
+                </FormLabel>
+                <Text fontSize="xs" color="var(--cc-text-2)">
+                  Wer capitalcircletrading.com aufruft, landet sofort auf dem Ziel, ohne Hinweisseite. Wirkt nur bei
+                  geschlossenem Zugang; angemeldete Mitglieder betrifft es nicht.
+                </Text>
+              </Box>
+              <Switch
+                id="verkauf-weiterleiten"
+                sx={adminSwitchSx}
+                isDisabled={!felder.geschlossen}
+                isChecked={felder.weiterleiten}
+                onChange={(e) => setze("weiterleiten", e.target.checked)}
+              />
+            </FormControl>
+            <FormControl opacity={felder.weiterleiten ? 1 : 0.5}>
+              <FormLabel fontWeight={600} color="var(--cc-text)">
+                Weiterleitungsziel
+              </FormLabel>
+              <Input
+                value={felder.weiterleitungZiel}
+                onChange={(e) => setze("weiterleitungZiel", e.target.value)}
+                placeholder="/training"
+                maxLength={300}
+                isDisabled={!felder.geschlossen}
+                {...adminInputProps}
+              />
+              <FormHelperText color="var(--cc-text-2)" fontSize="xs">
+                Leer = /training. Pfad wie /call oder eine https://-Adresse.
+              </FormHelperText>
+            </FormControl>
+          </Stack>
 
           <Box borderTop="1px solid var(--cc-line)" pt={4}>
             <Text fontSize="xs" fontWeight={600} color="var(--cc-text)" mb={2}>

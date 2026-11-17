@@ -4,7 +4,7 @@ import { updateLastLoginIfNeeded } from "@/lib/auth/middleware-last-login";
 import { isFreeMember } from "@/lib/membership";
 import { onboardingErledigt } from "@/lib/onboarding/weiche";
 import { createServiceClient } from "@/lib/supabase/service";
-import { VERKAUF_REWRITE_HEADER, VERKAUF_SCHLUESSEL } from "@/lib/verkauf/schalter";
+import { VERKAUF_REWRITE_HEADER, VERKAUF_SCHLUESSEL, weiterleitungFuer } from "@/lib/verkauf/schalter";
 import { TRAINING_STATUS_PFAD } from "@/config/training";
 
 // Marketing-Pfade (öffentlich, kein Auth nötig).
@@ -160,12 +160,14 @@ async function getMaintenanceState(): Promise<MaintenanceState> {
 // Verkaufsseite. Gleiches Caching wie beim Wartungsmodus; bei einem Lesefehler
 // gilt „offen". Die Kassen prüfen den Schalter selbst und ungecacht — hier
 // geht es nur darum, was der Besucher auf `/` sieht.
-let verkaufCache: { geschlossen: boolean; fetchedAt: number } | null = null;
+// Mit „Direkt weiterleiten" leitet `/` statt der Hinweisseite auf das Ziel um.
+type VerkaufStand = { geschlossen: boolean; weiterleitung: string | null };
+let verkaufCache: (VerkaufStand & { fetchedAt: number }) | null = null;
 
-async function istVerkaufGeschlossenGecacht(): Promise<boolean> {
+async function verkaufStandGecacht(): Promise<VerkaufStand> {
   const now = Date.now();
   if (verkaufCache && now - verkaufCache.fetchedAt < MAINTENANCE_CACHE_TTL_MS) {
-    return verkaufCache.geschlossen;
+    return verkaufCache;
   }
   try {
     const { data } = await createServiceClient()
@@ -174,11 +176,11 @@ async function istVerkaufGeschlossenGecacht(): Promise<boolean> {
       .eq("key", VERKAUF_SCHLUESSEL)
       .maybeSingle();
     const value = (data?.value ?? {}) as { geschlossen?: unknown };
-    const geschlossen = value.geschlossen === true;
-    verkaufCache = { geschlossen, fetchedAt: now };
-    return geschlossen;
+    const stand: VerkaufStand = { geschlossen: value.geschlossen === true, weiterleitung: weiterleitungFuer(value) };
+    verkaufCache = { ...stand, fetchedAt: now };
+    return stand;
   } catch {
-    return false;
+    return { geschlossen: false, weiterleitung: null };
   }
 }
 
@@ -277,7 +279,18 @@ export async function proxy(request: NextRequest) {
     // Ist der Verkauf geschlossen, an derselben Adresse die Hinweisseite: als
     // Rewrite, damit `/` selbst statisch bleibt (siehe AGENTS.md, „Kaufweg").
     if (pathname === "/") {
-      if (await istVerkaufGeschlossenGecacht()) {
+      const verkauf = await verkaufStandGecacht();
+      if (verkauf.weiterleitung) {
+        // 307 (vorübergehend): Browser merken sich das nicht dauerhaft, der Schalter
+        // bleibt umkehrbar. UTM-Parameter und Co. reisen mit, damit /training die
+        // Herkunft sieht (`lib/training/herkunft.ts`).
+        const ziel = new URL(verkauf.weiterleitung, request.url);
+        request.nextUrl.searchParams.forEach((wert, name) => {
+          if (!ziel.searchParams.has(name)) ziel.searchParams.set(name, wert);
+        });
+        return NextResponse.redirect(ziel, 307);
+      }
+      if (verkauf.geschlossen) {
         // Der Header sagt der Seite, dass sie über den Rewrite kam — siehe
         // `app/geschlossen/page.tsx`, sonst droht nach dem Öffnen eine Schleife.
         const kopf = new Headers(request.headers);

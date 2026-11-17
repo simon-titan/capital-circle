@@ -48,6 +48,14 @@ export type VerkaufsSchalter = {
   zielLabel: string;
   /** Knopf überhaupt zeigen? In der Übergangsphase nicht — es gibt noch kein Ziel. */
   knopf: boolean;
+  /**
+   * Statt der Hinweisseite direkt weiterleiten (nur wenn `geschlossen`): `/`
+   * antwortet mit 307 auf `weiterleitungZiel`, UTM-Parameter reisen mit.
+   * Seit 17.11.2026, Wunsch Simon: capitalcircletrading.com → /training.
+   */
+  weiterleiten: boolean;
+  /** Ziel der Weiterleitung: interner Pfad oder `https://…`; leer = `/training`. */
+  weiterleitungZiel: string;
 };
 
 /**
@@ -66,6 +74,8 @@ export const VERKAUF_VORLAGEN: Record<"uebergang" | "funnel", Omit<VerkaufsSchal
     zielUrl: "/tg",
     zielLabel: "Telegram-Kanal folgen",
     knopf: false,
+    weiterleiten: false,
+    weiterleitungZiel: "",
   },
   funnel: {
     ueberschrift: "Die Aufnahme läuft ab sofort über unser kostenloses Training.",
@@ -74,10 +84,29 @@ export const VERKAUF_VORLAGEN: Record<"uebergang" | "funnel", Omit<VerkaufsSchal
     zielUrl: "/training",
     zielLabel: "Jetzt kostenlos starten",
     knopf: true,
+    weiterleiten: false,
+    weiterleitungZiel: "",
   },
 };
 
 export const VERKAUF_STANDARD = VERKAUF_VORLAGEN.uebergang;
+
+/** Ziel der Weiterleitung, wenn das Feld leer ist. */
+export const WEITERLEITUNG_STANDARD = "/training";
+
+/**
+ * Wohin `/` gerade weiterleitet — `null` = keine Weiterleitung (Verkauf offen,
+ * Schalter aus oder Ziel ungültig). Gemeinsam für Proxy und Admin.
+ */
+export function weiterleitungFuer(roh: unknown): string | null {
+  const v = (roh && typeof roh === "object" ? roh : {}) as Record<string, unknown>;
+  if (v.geschlossen !== true || v.weiterleiten !== true) return null;
+  const ziel = typeof v.weiterleitungZiel === "string" ? v.weiterleitungZiel.trim() : "";
+  if (!ziel) return WEITERLEITUNG_STANDARD;
+  // Eine Weiterleitung auf "/" selbst wäre eine Schleife.
+  if (ziel === "/" || ziel.startsWith("/?") || ziel.startsWith("/#")) return null;
+  return istGueltigesZiel(ziel) ? ziel : null;
+}
 
 const GRENZEN = { ueberschrift: 160, nachricht: 1000, zielUrl: 300, zielLabel: 60 } as const;
 
@@ -111,6 +140,8 @@ export function leseVerkaufsSchalter(roh: unknown): VerkaufsSchalter {
     nachricht: text(v.nachricht, GRENZEN.nachricht) || VERKAUF_STANDARD.nachricht,
     zielUrl: ziel && istGueltigesZiel(ziel) ? ziel : VERKAUF_STANDARD.zielUrl,
     zielLabel: text(v.zielLabel, GRENZEN.zielLabel) || VERKAUF_STANDARD.zielLabel,
+    weiterleiten: v.weiterleiten === true,
+    weiterleitungZiel: weiterleitungFuer({ ...v, geschlossen: true, weiterleiten: true }) ?? WEITERLEITUNG_STANDARD,
   };
 }
 
@@ -129,6 +160,13 @@ export function pruefeEingabe(
   if (ziel && !istGueltigesZiel(ziel)) {
     return { ok: false, fehler: "Ziel muss ein Pfad wie /training oder eine https://-Adresse sein." };
   }
+  if (v.weiterleiten !== undefined && typeof v.weiterleiten !== "boolean") {
+    return { ok: false, fehler: "weiterleiten_muss_boolean_sein" };
+  }
+  const weiterZiel = text(v.weiterleitungZiel, GRENZEN.zielUrl);
+  if (weiterZiel && weiterleitungFuer({ geschlossen: true, weiterleiten: true, weiterleitungZiel: weiterZiel }) === null) {
+    return { ok: false, fehler: "Weiterleitungsziel muss ein Pfad wie /training (nicht /) oder eine https://-Adresse sein." };
+  }
   return {
     ok: true,
     wert: {
@@ -138,6 +176,8 @@ export function pruefeEingabe(
       nachricht: text(v.nachricht, GRENZEN.nachricht),
       zielUrl: ziel,
       zielLabel: text(v.zielLabel, GRENZEN.zielLabel),
+      weiterleiten: v.weiterleiten === true,
+      weiterleitungZiel: weiterZiel,
     },
   };
 }

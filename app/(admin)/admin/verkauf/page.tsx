@@ -33,6 +33,8 @@ export default async function AdminVerkaufPage() {
     nachricht: text(v.nachricht),
     zielUrl: text(v.zielUrl),
     zielLabel: text(v.zielLabel),
+    weiterleiten: v.weiterleiten === true,
+    weiterleitungZiel: text(v.weiterleitungZiel),
   };
 
   return (

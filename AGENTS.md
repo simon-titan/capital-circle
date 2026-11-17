@@ -678,3 +678,8 @@ Ausstehend (Free: laufender `training_zugang` ohne Antworten; Käufer: Stufe `me
 Frage (Frage 3 Mehrfachauswahl: Anteil an Personen), Freitexte zu Herkunft „Sonstiges“, Antworten je Person mit Suche und
 Link zum CRM-Kontakt, CSV. `/admin/icp` bleibt die ältere Auswertung der Abo-Mitglieder (fünf Fragen, Aktivierung);
 `Balken`, `Karte`, `prozent` sind dafür aus `IcpAuswertung.tsx` exportiert.
+
+2026-11-17 (**Startseite leitet auf /training**): Der Verkaufsschalter (`/admin/verkauf`) hat den Schalter **„Startseite
+direkt weiterleiten“** (`weiterleiten`, `weiterleitungZiel` in `app_settings.verkauf_geschlossen`, leer = `/training`). Wirkt nur
+bei geschlossenem Zugang: `proxy.ts` antwortet auf `/` (nicht angemeldet) mit **307** aufs Ziel und hängt die Query (UTM) an,
+statt die Hinweisseite zu zeigen. Ziel `/` wird abgelehnt (Schleife). Regel zentral in `weiterleitungFuer` (`lib/verkauf/schalter.ts`).
