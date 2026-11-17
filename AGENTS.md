@@ -523,8 +523,10 @@ Filter** (Discord, Auszahlungen Mitglieder, Auszahlungen Emre, Challenges über 
 bleiben, weil Kontogröße ≠ Auszahlung), eingeklappt ab ~950 px („Alle n anzeigen").
 Der **Video-Player auf `/training` ist Weiß/Grau** (`VideoSchein ton="neutral"` setzt `.cc-player-neutral`, das die
 `--cc-gold-*`-Variablen für Play-Knopf, Zeitstrahl und Einstellungsmenü umbiegt; Schein weiß statt gold). Seit 14.11. auch auf `/call`.
-Die **mobile Aktionsleiste steht auf `/training` durchgehend** (`MobilAktionsleiste immer`) — das scrollabhängige Ein-/Ausblenden
-flackerte, weil sich `innerHeight` mit der Adressleiste ändert. **Seiten-Scrollleiste** auf `/training` und `/call`: `FunnelHimmel`
+Die **mobile Aktionsleiste erscheint erst, wenn der Hero vollständig aus dem Bild ist** (seit 17.11., auf `/training` und `/call`):
+`MobilAktionsleiste` beobachtet das Element mit `id="hero"` per `IntersectionObserver` — **nicht** über `scrollY`/`innerHeight`,
+das flackerte mit der Adressleiste (deshalb stand sie vom 14. bis 17.11. auf `/training` durchgehend; `immer` ist entfernt).
+Wer einen Funnel-Hero baut, gibt ihm `id="hero"`, sonst steht die Leiste sofort. **Seiten-Scrollleiste** auf `/training` und `/call`: `FunnelHimmel`
 setzt `data-funnel`, `html:has([data-funnel])` zeichnet sie schmal in Graphit. Der Modal-Body trägt **`.cc-scroll`** (schmale dunkle Scrollleiste, grauer Griff, gilt auch für Textfelder darin) —
 ohne das zeichnet Windows einen hellen System-Scrollbalken ins Modal.
 

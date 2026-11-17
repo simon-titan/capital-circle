@@ -297,51 +297,67 @@ export function SchrittMarke({
 }
 
 /**
- * Feste Aktionsleiste unten, nur auf schmalen Bildschirmen. Erscheint, wenn
- * der Hero durchgescrollt ist, und verschwindet über den Abschnitten in
+ * Feste Aktionsleiste unten, nur auf schmalen Bildschirmen. Erscheint erst,
+ * wenn der Hero (Element mit `id={heroId}`) **vollständig** aus dem Bild ist
+ * (Feedback 17.11.2026), und verschwindet über den Abschnitten in
  * `ausblendenBei` — dort steht die Aktion ohnehin schon groß im Bild.
  *
- * `immer` (`/training`, Feedback 14.11.2026): steht durchgehend, ohne
- * Scroll-Logik. Das Ein- und Ausblenden flackerte mobil, weil sich
+ * Gemessen per `IntersectionObserver` am Element selbst, nicht über
+ * `scrollY`/`innerHeight`: Die alte Schätzung flackerte mobil, weil sich
  * `innerHeight` beim Ein-/Ausfahren der Adressleiste ständig ändert.
+ * Fehlt das Hero-Element, steht die Leiste (bis auf `ausblendenBei`).
  */
 export function MobilAktionsleiste({
   children,
   hinweis,
+  heroId = "hero",
   ausblendenBei = [],
-  immer = false,
   hinweisFarbe = "var(--cc-text-3)",
 }: {
   children: (tabIndex: number) => ReactNode;
   hinweis?: readonly string[];
+  heroId?: string;
   ausblendenBei?: readonly string[];
-  immer?: boolean;
   hinweisFarbe?: string;
 }) {
-  const [gescrollt, setSichtbar] = useState(false);
-  const sichtbar = immer || gescrollt;
+  const [heroImBild, setHeroImBild] = useState(true);
+  const [zielImBild, setZielImBild] = useState(false);
+  const sichtbar = !heroImBild && !zielImBild;
   const schluessel = ausblendenBei.join(",");
 
   useEffect(() => {
-    if (immer) return;
-    const ziele = schluessel ? schluessel.split(",").map((id) => document.getElementById(id)) : [];
-    const pruefen = () => {
-      const heroDurch = window.scrollY > window.innerHeight * 0.85;
-      const zielSichtbar = ziele.some((el) => {
-        if (!el) return false;
-        const r = el.getBoundingClientRect();
-        return r.top < window.innerHeight && r.bottom > 0;
-      });
-      setSichtbar(heroDurch && !zielSichtbar);
-    };
-    pruefen();
-    window.addEventListener("scroll", pruefen, { passive: true });
-    window.addEventListener("resize", pruefen);
-    return () => {
-      window.removeEventListener("scroll", pruefen);
-      window.removeEventListener("resize", pruefen);
-    };
-  }, [schluessel, immer]);
+    const hero = document.getElementById(heroId);
+    if (!hero) {
+      setHeroImBild(false);
+      return;
+    }
+    const beobachter = new IntersectionObserver(([eintrag]) => setHeroImBild(eintrag.isIntersecting), { threshold: 0 });
+    beobachter.observe(hero);
+    return () => beobachter.disconnect();
+  }, [heroId]);
+
+  useEffect(() => {
+    const ziele = schluessel
+      ? schluessel
+          .split(",")
+          .map((id) => document.getElementById(id))
+          .filter((el): el is HTMLElement => Boolean(el))
+      : [];
+    if (!ziele.length) return;
+    const imBild = new Set<Element>();
+    const beobachter = new IntersectionObserver(
+      (eintraege) => {
+        for (const e of eintraege) {
+          if (e.isIntersecting) imBild.add(e.target);
+          else imBild.delete(e.target);
+        }
+        setZielImBild(imBild.size > 0);
+      },
+      { threshold: 0 },
+    );
+    ziele.forEach((el) => beobachter.observe(el));
+    return () => beobachter.disconnect();
+  }, [schluessel]);
 
   return (
     <>
