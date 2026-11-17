@@ -670,3 +670,11 @@ vom 17.09. zu den zwei Nachweis-Blöcken dort gelten nicht mehr. `NachweisGaleri
 `config/landing-membership.ts` bleiben (die Verkaufsseite `/` zeigt die Auszahlungen weiter). Der Calendly-Termin für
 das Analysegespräch ist seit 17.11. `…/capital-circle-analysegesprach` (60 Min.) über `NEXT_PUBLIC_CALL_CALENDLY_URL`
 (Vercel, Team `emrecapitals-projects`); `NEXT_PUBLIC_CALENDLY_URL` liest nur der alte HT-Weg.
+
+2026-11-17 (**Admin-Ansicht ICP-Fragen**): **`/admin/icp/fragen`** (Sidebar Analytics → „ICP-Fragen“,
+`components/admin/IcpFragen.tsx`, Daten `/api/admin/icp/fragen`) wertet die ICP-Fragen aus Migration 113 getrennt aus:
+**Free-Mitglieder** (Fragen 1–7, `icp_free_am`) und **Mentoring-Käufer** (1–10, `icp_kaeufer_am`). Kennzahlen Beantwortet /
+Ausstehend (Free: laufender `training_zugang` ohne Antworten; Käufer: Stufe `mentoring` ohne Antworten) / Quote, Verteilung je
+Frage (Frage 3 Mehrfachauswahl: Anteil an Personen), Freitexte zu Herkunft „Sonstiges“, Antworten je Person mit Suche und
+Link zum CRM-Kontakt, CSV. `/admin/icp` bleibt die ältere Auswertung der Abo-Mitglieder (fünf Fragen, Aktivierung);
+`Balken`, `Karte`, `prozent` sind dafür aus `IcpAuswertung.tsx` exportiert.

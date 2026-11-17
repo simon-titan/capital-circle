@@ -30,6 +30,7 @@ import {
   Truck,
   Undo2,
   UserSearch,
+  ClipboardList,
   Users,
   Store,
   Video,
@@ -72,6 +73,8 @@ const groups: AdminGroup[] = [
       { href: "/admin/kaufweg", label: "Kaufweg", icon: Route },
       // Antworten aus dem Onboarding-Fragebogen und Aktivierung der Neukäufer.
       { href: "/admin/icp", label: "Kunden & ICP", icon: UserSearch },
+      // ICP-Fragen nach Emre (113): Free 1–7, Mentoring-Käufer 1–10, Antworten je Person.
+      { href: "/admin/icp/fragen", label: "ICP-Fragen", icon: ClipboardList },
     ],
   },
   {

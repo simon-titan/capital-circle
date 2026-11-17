@@ -59,7 +59,7 @@ const PLAN_LABEL: Record<string, string> = {
   inaktiv: "Nicht mehr zahlend",
 };
 
-function prozent(teil: number, ganz: number): string {
+export function prozent(teil: number, ganz: number): string {
   if (!ganz) return "—";
   return `${Math.round((teil / ganz) * 100)} %`;
 }
@@ -71,7 +71,7 @@ function stunden(h: number | null): string {
   return `${Math.round(h / 24)} Tage`;
 }
 
-function Balken({ label, anzahl, max, gesamt }: { label: string; anzahl: number; max: number; gesamt: number }) {
+export function Balken({ label, anzahl, max, gesamt }: { label: string; anzahl: number; max: number; gesamt: number }) {
   const anteil = max > 0 ? anzahl / max : 0;
   return (
     <Stack spacing={1.5}>
@@ -99,7 +99,7 @@ function Balken({ label, anzahl, max, gesamt }: { label: string; anzahl: number;
   );
 }
 
-function Karte({ titel, children, untertitel }: { titel: string; untertitel?: string; children: ReactNode }) {
+export function Karte({ titel, children, untertitel }: { titel: string; untertitel?: string; children: ReactNode }) {
   return (
     <Box className={ADMIN_CARD_CLASS} p={adminCardPadding} minW={0}>
       <AdminCardTitle>{titel}</AdminCardTitle>
