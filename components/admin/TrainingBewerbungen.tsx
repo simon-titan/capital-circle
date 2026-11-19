@@ -166,8 +166,17 @@ export function TrainingBewerbungen({
   };
 
   return (
-    <Stack spacing={6}>
-      <HStack spacing={2} flexWrap="wrap">
+    <Stack spacing={{ base: 4, md: 6 }}>
+      <HStack
+        spacing={2}
+        flexWrap={{ base: "nowrap", md: "wrap" }}
+        overflowX={{ base: "auto", md: "visible" }}
+        mx={{ base: -3, sm: 0 }}
+        px={{ base: 3, sm: 0 }}
+        pb={{ base: 1, md: 0 }}
+        className="hide-scrollbar"
+        sx={{ "& > button": { flexShrink: 0 } }}
+      >
         {TABS.map((t) => {
           const aktiv = tab === t.id;
           return (
@@ -179,11 +188,11 @@ export function TrainingBewerbungen({
         })}
       </HStack>
 
-      <InputGroup maxW="360px">
+      <InputGroup maxW={{ base: "full", md: "360px" }}>
         <InputLeftElement pointerEvents="none" color="var(--cc-text-3)">
           <Search size={16} />
         </InputLeftElement>
-        <Input value={suche} onChange={(e) => setSuche(e.target.value)} placeholder="Nach Name, E-Mail oder Telefon suchen…" {...adminInputProps} />
+        <Input value={suche} onChange={(e) => setSuche(e.target.value)} placeholder="Name, E-Mail oder Telefon…" {...adminInputProps} fontSize="16px" />
       </InputGroup>
 
       {fehler ? (
@@ -279,9 +288,9 @@ function Karte({
         onClick={onUmschalten}
         aria-expanded={istOffen}
         w="full"
-        px={4}
+        px={{ base: 3.5, md: 4 }}
         py={3.5}
-        spacing={4}
+        spacing={{ base: 2, md: 4 }}
         align="center"
         justifyContent="space-between"
         textAlign="left"
@@ -301,9 +310,13 @@ function Karte({
                 · {vorWann(b.eingereicht_am)}
               </Text>
             </HStack>
-            <Text fontSize="xs" color="var(--cc-text-2)" noOfLines={1}>
+            <Text fontSize="xs" color="var(--cc-text-2)" noOfLines={1} wordBreak="break-all">
               {b.email}
             </Text>
+            <HStack spacing={1.5} pt={1.5} display={{ base: "flex", md: "none" }} flexWrap="wrap">
+              <StatusPill tone={ton(b)}>{statusLabel(b)}</StatusPill>
+              {b.kontakt_gewuenscht ? <StatusPill tone="attention">Kontakt gewünscht</StatusPill> : null}
+            </HStack>
           </Stack>
         </HStack>
         <HStack spacing={2} flexShrink={0}>
@@ -312,15 +325,17 @@ function Karte({
               <StatusPill tone="attention">Kontakt gewünscht</StatusPill>
             </Box>
           ) : null}
-          <StatusPill tone={ton(b)}>{statusLabel(b)}</StatusPill>
+          <Box display={{ base: "none", md: "block" }}>
+            <StatusPill tone={ton(b)}>{statusLabel(b)}</StatusPill>
+          </Box>
           <Box color="var(--cc-text-2)">{istOffen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</Box>
         </HStack>
       </HStack>
 
       <Collapse in={istOffen} animateOpacity>
-        <Box px={5} pb={5} pt={4} borderTop="1px solid var(--cc-line)">
+        <Box px={{ base: 3.5, md: 5 }} pb={{ base: 4, md: 5 }} pt={4} borderTop="1px solid var(--cc-line)">
           <Stack spacing={5}>
-            <Flex gap={{ base: 3, md: 6 }} wrap="wrap" fontSize="xs" color="var(--cc-text-2)">
+            <Flex gap={{ base: 1.5, md: 6 }} direction={{ base: "column", md: "row" }} wrap="wrap" fontSize="xs" color="var(--cc-text-2)">
               <Text>
                 Eingereicht{" "}
                 <Box as="span" className="cc-num" color="var(--cc-text)">
@@ -359,7 +374,7 @@ function Karte({
                 wrap="wrap"
               >
                 <Phone size={15} color="var(--cc-gold-light)" />
-                <Text fontSize="sm" color="var(--cc-text)" flex="1" minW="200px">
+                <Text fontSize="sm" color="var(--cc-text)" flex="1" minW={{ base: "full", sm: "200px" }}>
                   Möchte kontaktiert werden{b.telefon ? ":" : " — keine Nummer angegeben."}{" "}
                   {b.telefon ? (
                     <Box as="a" href={`tel:${b.telefon.replace(/[^\d+]/g, "")}`} className="cc-num" color="var(--cc-gold-light)" fontWeight={500}>
@@ -388,25 +403,33 @@ function Karte({
             {fragen.map((f) => (
               <Stack key={f.id} spacing={1}>
                 <AdminLabel>{f.frage}</AdminLabel>
-                <Text fontSize="sm" color="var(--cc-text)" whiteSpace="pre-wrap" lineHeight="1.6">
+                <Text fontSize="sm" color="var(--cc-text)" whiteSpace="pre-wrap" lineHeight="1.6" overflowWrap="anywhere">
                   {b.antworten?.[f.id] || "—"}
                 </Text>
               </Stack>
             ))}
 
             {b.status === "offen" ? (
-              <Flex justify="flex-end" align="center" pt={2} gap={2} wrap="wrap">
+              <Flex
+                justify="flex-end"
+                align={{ base: "stretch", md: "center" }}
+                direction={{ base: "column-reverse", md: "row" }}
+                pt={2}
+                gap={2}
+                wrap={{ base: "nowrap", md: "wrap" }}
+              >
                 {!b.adresse_bestaetigt_am ? (
-                  <HStack spacing={1.5} mr="auto" color="var(--cc-text-2)">
+                  <HStack spacing={1.5} mr={{ md: "auto" }} color="var(--cc-text-2)" order={{ base: 3, md: 0 }}>
                     <MailWarning size={14} />
                     <Text fontSize="xs">Annehmen geht erst, wenn die E-Mail-Adresse bestätigt ist.</Text>
                   </HStack>
                 ) : null}
-                <Button {...adminDangerButtonProps} onClick={onAblehnen} isDisabled={beschaeftigt} leftIcon={<X size={16} />}>
+                <Button {...adminDangerButtonProps} w={{ base: "full", md: "auto" }} onClick={onAblehnen} isDisabled={beschaeftigt} leftIcon={<X size={16} />}>
                   Ablehnen
                 </Button>
                 <Button
                   variant="gold"
+                  w={{ base: "full", md: "auto" }}
                   onClick={onAnnehmen}
                   isDisabled={!b.adresse_bestaetigt_am || (beschaeftigt && laeuft !== b.id + "annehmen")}
                   isLoading={laeuft === b.id + "annehmen"}
