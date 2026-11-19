@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Collapse, Flex, Stack, Text } from "@chakra-ui/react";
+import { Box, Collapse, Drawer, DrawerBody, DrawerCloseButton, DrawerContent, DrawerOverlay, Flex, IconButton, Stack, Text, useDisclosure } from "@chakra-ui/react";
 import {
   Award,
   BookOpen,
@@ -41,11 +41,12 @@ import {
   type LucideIcon,
   FileLock,
   MailPlus,
+  Menu,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useMemo, useSyncExternalStore, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useSyncExternalStore, type ReactNode } from "react";
 
 type AdminLink = { href: string; label: string; icon: LucideIcon };
 type AdminGroup = { label: string | null; links: AdminLink[] };
@@ -212,7 +213,8 @@ function leseServerStand(): string {
   return LEER;
 }
 
-export function AdminSidebar() {
+/** Inhalt der Seitenleiste: Wortmarke und Navigation. Desktop als Aside, mobil in der Schublade. */
+function AdminNavInhalt({ onNavigiert }: { onNavigiert?: () => void }) {
   const pathname = usePathname() ?? "";
 
   const stand = useSyncExternalStore(abonniere, leseStand, leseServerStand);
@@ -253,23 +255,7 @@ export function AdminSidebar() {
   );
 
   return (
-    <Flex
-      as="aside"
-      direction="column"
-      w="248px"
-      flexShrink={0}
-      position="sticky"
-      top={0}
-      h="100dvh"
-      overflowY="auto"
-      className="hide-scrollbar"
-      bg="var(--cc-bg-raised)"
-      borderRight="1px solid var(--cc-line)"
-      px={3}
-      pt={7}
-      pb={6}
-      zIndex={2}
-    >
+    <>
       <Box px="12px" mb={7}>
         {/*
           Wortmarke als freigestelltes Bild (seit 20.09.2026). Feste Hoehe,
@@ -333,6 +319,7 @@ export function AdminSidebar() {
                       as={Link}
                       href={item.href}
                       aria-current={active ? "page" : undefined}
+                      onClick={onNavigiert}
                       {...rowProps(active)}
                     >
                       <Icon size={18} strokeWidth={1.5} aria-hidden />
@@ -347,7 +334,90 @@ export function AdminSidebar() {
           ))}
         </Stack>
       </Box>
+    </>
+  );
+}
+
+/** Desktop (ab `lg`): feste Seitenleiste links. */
+export function AdminSidebar() {
+  return (
+    <Flex
+      as="aside"
+      display={{ base: "none", lg: "flex" }}
+      direction="column"
+      w="248px"
+      flexShrink={0}
+      position="sticky"
+      top={0}
+      h="100dvh"
+      overflowY="auto"
+      className="hide-scrollbar"
+      bg="var(--cc-bg-raised)"
+      borderRight="1px solid var(--cc-line)"
+      px={3}
+      pt={7}
+      pb={6}
+      zIndex={2}
+    >
+      <AdminNavInhalt />
     </Flex>
+  );
+}
+
+/**
+ * Mobil und Tablet (unter `lg`): Kopfleiste mit Menü-Knopf, die Navigation geht
+ * als Schublade von links auf und schließt beim Klick auf einen Eintrag und bei
+ * jedem Seitenwechsel. Vorher stand die 248 px breite Leiste auch auf dem Handy
+ * fest daneben und ließ dem Inhalt kaum Platz.
+ */
+function AdminMobilLeiste() {
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const pathname = usePathname();
+  useEffect(() => {
+    onClose();
+  }, [pathname, onClose]);
+
+  return (
+    <>
+      <Flex
+        display={{ base: "flex", lg: "none" }}
+        position="sticky"
+        top={0}
+        zIndex={20}
+        align="center"
+        gap={3}
+        h="56px"
+        px={3}
+        bg="rgba(15, 19, 23, 0.92)"
+        backdropFilter="blur(10px)"
+        borderBottom="1px solid var(--cc-line)"
+      >
+        <IconButton
+          aria-label="Navigation öffnen"
+          icon={<Menu size={20} strokeWidth={1.6} />}
+          variant="ghost"
+          size="sm"
+          color="var(--cc-text)"
+          _hover={{ bg: "rgba(255, 255, 255, 0.06)" }}
+          onClick={onOpen}
+        />
+        <Box as={Link} href="/admin" aria-label="Capital Circle Admin, zur Übersicht" display="inline-flex" alignItems="center">
+          <Image src="/logo/cc-wortmarke-weiss.png" alt="" width={1585} height={199} style={{ height: "15px", width: "auto" }} />
+        </Box>
+        <Text ml="auto" fontSize="10px" fontWeight={500} letterSpacing="0.12em" textTransform="uppercase" color="var(--cc-text-2)">
+          Admin
+        </Text>
+      </Flex>
+      <Drawer isOpen={isOpen} placement="left" onClose={onClose} size="xs">
+        <DrawerOverlay bg="rgba(0, 0, 0, 0.6)" />
+        <DrawerContent bg="var(--cc-bg-raised)" borderRight="1px solid var(--cc-line)" maxW="280px" data-platform>
+          <DrawerCloseButton color="var(--cc-text-2)" top={5} />
+          <DrawerBody px={3} pt={7} pb={6} className="hide-scrollbar">
+            <AdminNavInhalt onNavigiert={onClose} />
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
+    </>
   );
 }
 
@@ -462,17 +532,11 @@ export function AdminFrame({ children }: { children: ReactNode }) {
     <Box data-platform position="relative" display="flex" minH="100vh" bg="var(--cc-bg)" overflowX="clip">
       <Box className="cc-goldlight" aria-hidden />
       <AdminSidebar />
-      <Box
-        as="main"
-        position="relative"
-        zIndex={1}
-        flex="1"
-        minW={0}
-        px={{ base: 4, md: 6, xl: 8 }}
-        pt={{ base: 6, md: 8 }}
-        pb={16}
-      >
-        {children}
+      <Box flex="1" minW={0} position="relative" zIndex={1}>
+        <AdminMobilLeiste />
+        <Box as="main" px={{ base: 3, sm: 4, md: 6, xl: 8 }} pt={{ base: 4, md: 8 }} pb={16}>
+          {children}
+        </Box>
       </Box>
     </Box>
   );
