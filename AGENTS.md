@@ -685,3 +685,13 @@ Link zum CRM-Kontakt, CSV. `/admin/icp` bleibt die ältere Auswertung der Abo-Mi
 direkt weiterleiten“** (`weiterleiten`, `weiterleitungZiel` in `app_settings.verkauf_geschlossen`, leer = `/training`). Wirkt nur
 bei geschlossenem Zugang: `proxy.ts` antwortet auf `/` (nicht angemeldet) mit **307** aufs Ziel und hängt die Query (UTM) an,
 statt die Hinweisseite zu zeigen. Ziel `/` wird abgelehnt (Schleife). Regel zentral in `weiterleitungFuer` (`lib/verkauf/schalter.ts`).
+
+2026-11-22 (**Geheimhaltung abgeschaltet**, Entscheidung Simon): Die Geheimhaltungsvereinbarung fragt vorerst niemanden mehr
+— `GEHEIMHALTUNG_AKTIV = false` in `config/geheimhaltung.ts`, `brauchtGeheimhaltung` antwortet dann immer „nein", das Popup
+erscheint nicht und blockiert auch das Lifetime-Popup nicht mehr. Code, Tabelle, gegebene Zustimmungen und `/admin/geheimhaltung`
+bleiben. Der Text geht zur Prüfung; wird er danach geändert, `GEHEIMHALTUNG_FASSUNG` erhöhen und den Schalter wieder auf `true`.
+
+2026-11-22 (**Free-Bewerbung annehmen ohne bestätigte Adresse**, Entscheidung Simon): `bewerbungAnnehmen` verlangt keine
+bestätigte E-Mail-Adresse mehr. Ist sie unbestätigt, bestätigt das Annehmen das Konto mit (`auth.admin.updateUserById`,
+`email_confirm: true`) und setzt `adresse_bestaetigt_am`, sonst könnte sich das Konto nicht anmelden. Ablehnen schickt A03 immer.
+Im Admin fällt der Reiter „Adresse unbestätigt" weg, alle offenen Bewerbungen stehen unter „Zu prüfen".

@@ -97,7 +97,7 @@ export function AdminTrainingBoard({
   startAnsicht,
 }: Props) {
   const [bewerbungen, setBewerbungen] = useState(initialBewerbungen);
-  const zuPruefen = bewerbungen.filter((b) => b.status === "offen" && b.adresse_bestaetigt_am).length;
+  const zuPruefen = bewerbungen.filter((b) => b.status === "offen").length;
   const [ansicht, setAnsicht] = useState<Ansicht>(startAnsicht ?? (zuPruefen > 0 ? "bewerbungen" : "uebersicht"));
   const [leads, setLeads] = useState(initialLeads);
   const [filter, setFilter] = useState<LeadStatus | "alle">("alle");

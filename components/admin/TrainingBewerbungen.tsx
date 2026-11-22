@@ -23,7 +23,7 @@ import {
   Textarea,
   useToast,
 } from "@chakra-ui/react";
-import { Check, ChevronDown, ChevronUp, Copy, MailWarning, Phone, Search, X } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, Copy, Phone, Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
   ADMIN_CARD_CLASS,
@@ -49,15 +49,15 @@ import type { BoardBewerbung } from "@/lib/training/board";
  * Free-Kurs-Bewerbungen (`/training`) — aufgebaut wie `/admin/applications`:
  * Status-Reiter mit Zähler, Suche, je Bewerbung eine aufklappbare Karte mit den
  * Antworten und den beiden Entscheidungen. Annehmen = 30 Kalendertage Zugang +
- * A02, Ablehnen = A03, **endgültig** (eine Bewerbung je Konto). Annehmen geht erst
- * nach bestätigter E-Mail-Adresse.
+ * A02, Ablehnen = A03, **endgültig** (eine Bewerbung je Konto). Eine E-Mail-
+ * Bestätigung gibt es seit 20.11.2026 nicht mehr; alte unbestätigte Konten
+ * bestätigt das Annehmen mit.
  */
 
-type Tab = "pruefen" | "unbestaetigt" | "angenommen" | "abgelehnt" | "alle";
+type Tab = "pruefen" | "angenommen" | "abgelehnt" | "alle";
 
 const TABS: { id: Tab; label: string; passt: (b: BoardBewerbung) => boolean }[] = [
-  { id: "pruefen", label: "Zu prüfen", passt: (b) => b.status === "offen" && Boolean(b.adresse_bestaetigt_am) },
-  { id: "unbestaetigt", label: "Adresse unbestätigt", passt: (b) => b.status === "offen" && !b.adresse_bestaetigt_am },
+  { id: "pruefen", label: "Zu prüfen", passt: (b) => b.status === "offen" },
   { id: "angenommen", label: "Angenommen", passt: (b) => b.status === "angenommen" },
   { id: "abgelehnt", label: "Abgelehnt", passt: (b) => b.status === "abgelehnt" },
   { id: "alle", label: "Alle", passt: () => true },
@@ -65,20 +65,19 @@ const TABS: { id: Tab; label: string; passt: (b: BoardBewerbung) => boolean }[] 
 
 const FEHLER: Record<string, string> = {
   schon_entschieden: "Darüber wurde schon entschieden.",
-  adresse_unbestaetigt: "Die E-Mail-Adresse ist noch nicht bestätigt.",
   zugang_fehlgeschlagen: "Der Zugang konnte nicht angelegt werden. Bitte noch einmal versuchen.",
 };
 
 function ton(b: BoardBewerbung): AdminTone {
   if (b.status === "angenommen") return "success";
   if (b.status === "abgelehnt") return "danger";
-  return b.adresse_bestaetigt_am ? "attention" : "neutral";
+  return "attention";
 }
 
 function statusLabel(b: BoardBewerbung): string {
   if (b.status === "angenommen") return "Angenommen";
   if (b.status === "abgelehnt") return "Abgelehnt";
-  return b.adresse_bestaetigt_am ? "Zu prüfen" : "Adresse unbestätigt";
+  return "Zu prüfen";
 }
 
 const datumFormat = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Berlin" });
@@ -343,18 +342,6 @@ function Karte({
                 </Box>
               </Text>
               <Text>
-                Adresse{" "}
-                {b.adresse_bestaetigt_am ? (
-                  <Box as="span" className="cc-num" color="var(--cc-text)">
-                    bestätigt {datum(b.adresse_bestaetigt_am)}
-                  </Box>
-                ) : (
-                  <Box as="span" color="var(--cc-gold-light)">
-                    noch nicht bestätigt
-                  </Box>
-                )}
-              </Text>
-              <Text>
                 Herkunft{" "}
                 <Box as="span" color="var(--cc-text)">
                   {kanalLabel[(b.kanal ?? "direkt") as Kanal] ?? b.kanal}
@@ -418,12 +405,6 @@ function Karte({
                 gap={2}
                 wrap={{ base: "nowrap", md: "wrap" }}
               >
-                {!b.adresse_bestaetigt_am ? (
-                  <HStack spacing={1.5} mr={{ md: "auto" }} color="var(--cc-text-2)" order={{ base: 3, md: 0 }}>
-                    <MailWarning size={14} />
-                    <Text fontSize="xs">Annehmen geht erst, wenn die E-Mail-Adresse bestätigt ist.</Text>
-                  </HStack>
-                ) : null}
                 <Button {...adminDangerButtonProps} w={{ base: "full", md: "auto" }} onClick={onAblehnen} isDisabled={beschaeftigt} leftIcon={<X size={16} />}>
                   Ablehnen
                 </Button>
@@ -431,7 +412,7 @@ function Karte({
                   variant="gold"
                   w={{ base: "full", md: "auto" }}
                   onClick={onAnnehmen}
-                  isDisabled={!b.adresse_bestaetigt_am || (beschaeftigt && laeuft !== b.id + "annehmen")}
+                  isDisabled={beschaeftigt && laeuft !== b.id + "annehmen"}
                   isLoading={laeuft === b.id + "annehmen"}
                   loadingText="Annehmen…"
                   leftIcon={<Check size={16} />}
