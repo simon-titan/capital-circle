@@ -139,7 +139,19 @@ export async function bewerbungAnnehmen(
   const bew = data as BewerbungZeile | null;
   if (!bew) return { ok: false, fehler: "nicht_gefunden" };
   if (bew.status !== "offen") return { ok: false, fehler: "schon_entschieden" };
-  if (!bew.adresse_bestaetigt_am) return { ok: false, fehler: "adresse_unbestaetigt" };
+  // Altbestand mit unbestätigter Adresse: beim Annehmen bestätigen, sonst kann sich das Konto nicht anmelden.
+  if (!bew.adresse_bestaetigt_am) {
+    const { error } = await service.auth.admin.updateUserById(bew.user_id, { email_confirm: true });
+    if (error) {
+      console.error("[training/bewerbung] Adresse beim Annehmen nicht bestätigt:", error.message);
+      return { ok: false, fehler: "zugang_fehlgeschlagen" };
+    }
+    await service
+      .from("training_bewerbungen")
+      .update({ adresse_bestaetigt_am: new Date().toISOString() })
+      .eq("id", bew.id)
+      .is("adresse_bestaetigt_am", null);
+  }
 
   const jetzt = new Date();
   const { data: gesetzt } = await service
@@ -209,13 +221,10 @@ export async function bewerbungAblehnen(
     .eq("stelle", "bewerbung")
     .eq("status", "neu");
 
-  // Ohne bestätigte Adresse keine Mail — dorthin hat nie jemand geschrieben.
-  if (bew.adresse_bestaetigt_am) {
-    try {
-      await sende(service, "A03", `bewerbung:${bew.id}`, bew.email, bew.user_id, vornameAus(bew.name), null);
-    } catch (err) {
-      console.error("[training/bewerbung] A03 fehlgeschlagen:", err);
-    }
+  try {
+    await sende(service, "A03", `bewerbung:${bew.id}`, bew.email, bew.user_id, vornameAus(bew.name), null);
+  } catch (err) {
+    console.error("[training/bewerbung] A03 fehlgeschlagen:", err);
   }
   return { ok: true };
 }

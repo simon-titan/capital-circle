@@ -15,6 +15,13 @@ import { anbieter, anbieterAnschriftEinzeilig } from "@/config/legal";
 
 export const GEHEIMHALTUNG_FASSUNG = "2026-11-15.1";
 
+/**
+ * Hauptschalter. `false` = niemand wird gefragt, das Popup erscheint nicht
+ * (Entscheidung Simon, 22.11.2026: abgeschaltet, bis der Text geprüft ist).
+ * Gegebene Zustimmungen bleiben gespeichert; `/admin/geheimhaltung` zeigt sie weiter.
+ */
+export const GEHEIMHALTUNG_AKTIV = false;
+
 /** Hier erscheint das Popup nicht: Kündigen und Abrechnen müssen immer gehen. */
 export const OHNE_SPERRE = ["/einstellungen/abonnement", "/einstellungen/rechnungen", "/billing", "/checkout"];
 

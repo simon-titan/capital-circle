@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { GEHEIMHALTUNG_FASSUNG } from "@/config/geheimhaltung";
+import { GEHEIMHALTUNG_AKTIV, GEHEIMHALTUNG_FASSUNG } from "@/config/geheimhaltung";
 
 /**
  * Muss dieses Konto der Geheimhaltungsvereinbarung (aktuelle Fassung) noch
@@ -10,6 +10,7 @@ import { GEHEIMHALTUNG_FASSUNG } from "@/config/geheimhaltung";
  * Tabelle darf nicht alle zahlenden Mitglieder aussperren.
  */
 export async function brauchtGeheimhaltung(service: SupabaseClient, userId: string): Promise<boolean> {
+  if (!GEHEIMHALTUNG_AKTIV) return false;
   const { data: p } = await service.from("profiles").select("is_paid,is_admin").eq("id", userId).maybeSingle();
   const profil = p as { is_paid: boolean | null; is_admin: boolean | null } | null;
   if (!profil?.is_paid || profil.is_admin) return false;
