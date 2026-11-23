@@ -5,7 +5,7 @@ import { FunnelHimmel } from "@/components/landing/FunnelHimmel";
 import { AbmeldenKnopf } from "@/components/landing/training/AbmeldenKnopf";
 import { TRAINING_VIDEOS_PFAD, bewerbungStatus } from "@/config/training";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { nachAdressbestaetigung } from "@/lib/training/bewerbung";
+import { bewerbungEingegangen } from "@/lib/training/bewerbung";
 import { ladeTrainingFreigabe } from "@/lib/training/zugang";
 
 export const metadata: Metadata = { title: "Deine Bewerbung · Capital Circle", robots: { index: false } };
@@ -31,17 +31,16 @@ export default async function TrainingStatusPage() {
   const service = createServiceClient();
   let freigabe = await ladeTrainingFreigabe(service, user.id);
 
-  // Schon bestätigtes Konto, aber A01 noch nicht raus (z. B. Login statt Link) — nachholen.
-  if (freigabe.art === "bewerbung" && freigabe.bewerbung.status === "offen" && user.email_confirmed_at) {
-    await nachAdressbestaetigung(service, user.id);
+  // Offene Bewerbung, die noch nicht bei Emre eingegangen ist (Altbestand) — nachholen.
+  if (freigabe.art === "bewerbung" && freigabe.bewerbung.status === "offen" && !freigabe.bewerbung.adresse_bestaetigt_am) {
+    await bewerbungEingegangen(service, user.id);
     freigabe = await ladeTrainingFreigabe(service, user.id);
   }
 
   if (freigabe.art !== "bewerbung" || freigabe.bewerbung.status === "angenommen") redirect(TRAINING_VIDEOS_PFAD);
 
   const b = freigabe.bewerbung;
-  const text =
-    b.status === "abgelehnt" ? bewerbungStatus.abgelehnt : b.adresse_bestaetigt_am ? bewerbungStatus.offen : bewerbungStatus.unbestaetigt;
+  const text = b.status === "abgelehnt" ? bewerbungStatus.abgelehnt : bewerbungStatus.offen;
 
   return (
     <FunnelHimmel>

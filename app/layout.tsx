@@ -9,7 +9,8 @@ export const metadata: Metadata = {
   description: "Exklusive Trading-Lernplattform",
   /*
    * Vorschaubild beim Teilen eines Links (WhatsApp, Telegram, LinkedIn, X …):
-   * `app/opengraph-image.png` im Look des Hero, Alt-Text daneben in
+   * `app/opengraph-image.png` im Look des `/training`-Hero (seit 20.11.2026,
+   * weil `/` dorthin weiterleitet; `/call` hat ein eigenes), Alt-Text daneben in
    * `opengraph-image.alt.txt`. Next hängt es an jede Seite, die kein eigenes
    * `openGraph` setzt; Titel und Beschreibung kommen dann aus der Seite.
    * Seiten mit eigenem `openGraph` (`/discord`, `/termin`) müssen ihr Bild

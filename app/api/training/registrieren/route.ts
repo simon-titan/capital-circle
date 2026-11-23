@@ -1,11 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { FUNNEL_QUELLE_TRAINING, TRAINING_STATUS_PFAD } from "@/config/training";
 import { findeUserIdZuEmail } from "@/lib/checkout/user-lookup";
-import { sendTrainingBestaetigen } from "@/lib/email/templates/training";
 import { verifyTurnstileToken } from "@/lib/security/turnstile";
-import { getAppUrl } from "@/lib/site-url";
+import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { bewerbungAnlegen } from "@/lib/training/bewerbung";
+import { bewerbungAnlegen, bewerbungEingegangen } from "@/lib/training/bewerbung";
 import { pruefeBewerbung } from "@/lib/training/bewerbung-pruefen";
 import { ermittleKanal, saeubereHerkunft } from "@/lib/training/herkunft";
 
@@ -20,22 +19,16 @@ export const runtime = "nodejs";
  *          kontaktGewuenscht, telefon? }`
  *
  * Kein Lernzugang durch bloßes Absenden: Das Konto bekommt erst mit Emres
- * Annahme einen `training_zugang`. Der Link in der Mail bestätigt die Adresse
- * und führt auf `/training/status`; erst dort geht A01 raus
- * (`nachAdressbestaetigung` in `/auth/confirm`).
+ * Annahme einen `training_zugang`.
  *
- * Ablauf:
- *   1. Prüfen (Felder, Turnstile, einfache Drossel je IP).
- *   2. `generateLink({ type: "signup" })` legt das Konto **unbestätigt** an
- *      und liefert den `hashed_token`. Supabase verschickt dabei selbst nichts.
- *   3. Profil: Herkunft `training`, Zeitpunkt, Name (Service-Client — die
- *      Spalten setzt nie der Browser).
- *   4. Bestätigungsmail über Resend. Der Link geht über `/auth/confirm`
- *      (`verifyOtp`, Sitzung in den Cookies) direkt zu den Videos.
+ * **Keine E-Mail-Bestätigung** (Entscheidung Simon, 20.11.2026): Das Konto
+ * wird direkt bestätigt angelegt (`email_confirm: true`), die Bewerbung geht
+ * sofort an Emre (`bewerbungEingegangen`: A01, Team-Mail, Kontakt-Lead), und
+ * der Bewerber ist danach angemeldet (Sitzung in den Cookies).
  *
  * Gibt es die Adresse schon:
- *   - unbestätigt → neuer Link (Magic Link) und dieselbe Mail. Wer die erste
- *     Mail verloren hat, registriert sich einfach noch einmal.
+ *   - unbestätigt (Altbestand aus der Zeit mit Bestätigungslink) → Passwort
+ *     und Name neu setzen, Adresse bestätigen, weiter wie oben.
  *   - bestätigt → `schon_registriert`; die Seite verweist auf den Login.
  *
  * `application_status` bleibt **null**: Mit `pending` schickte der Proxy das
@@ -59,14 +52,6 @@ function clientIp(request: NextRequest): string | null {
   const fwd = request.headers.get("x-forwarded-for");
   if (fwd) return fwd.split(",")[0]?.trim() || null;
   return request.headers.get("x-real-ip");
-}
-
-function bestaetigungsLink(tokenHash: string, typ: "signup" | "magiclink"): string {
-  const url = new URL("/auth/confirm", getAppUrl());
-  url.searchParams.set("token_hash", tokenHash);
-  url.searchParams.set("type", typ);
-  url.searchParams.set("next", TRAINING_STATUS_PFAD);
-  return url.toString();
 }
 
 export async function POST(request: NextRequest) {
@@ -109,22 +94,18 @@ export async function POST(request: NextRequest) {
   if (!turnstile.ok) return NextResponse.json({ ok: false, error: "turnstile" }, { status: 403 });
 
   const service = createServiceClient();
-  const vorname = name.split(/\s+/)[0] || name;
-  const redirectTo = `${getAppUrl()}/auth/confirm`;
 
   let userId: string | null = null;
-  let link: string;
 
-  const { data: signup, error: signupFehler } = await service.auth.admin.generateLink({
-    type: "signup",
+  const { data: neu, error: neuFehler } = await service.auth.admin.createUser({
     email,
     password,
-    options: { data: { full_name: name }, redirectTo },
+    email_confirm: true,
+    user_metadata: { full_name: name },
   });
 
-  if (!signupFehler && signup?.properties?.hashed_token && signup.user) {
-    userId = signup.user.id;
-    link = bestaetigungsLink(signup.properties.hashed_token, "signup");
+  if (!neuFehler && neu?.user) {
+    userId = neu.user.id;
   } else {
     // Adresse vergeben? Dann bestätigt oder nicht?
     let vorhandenId: string | null = null;
@@ -134,27 +115,25 @@ export async function POST(request: NextRequest) {
       console.error("[training/registrieren] Konto-Suche fehlgeschlagen:", err);
     }
     if (!vorhandenId) {
-      console.error("[training/registrieren] generateLink(signup) fehlgeschlagen:", signupFehler?.message);
+      console.error("[training/registrieren] createUser fehlgeschlagen:", neuFehler?.message);
       return NextResponse.json({ ok: false, error: "server" }, { status: 500 });
     }
     const { data: vorhanden } = await service.auth.admin.getUserById(vorhandenId);
     if (vorhanden?.user?.email_confirmed_at) {
       return NextResponse.json({ ok: false, error: "schon_registriert" }, { status: 409 });
     }
-    // Unbestätigt: Passwort auf das neue setzen (sonst gälte das der ersten
-    // Registrierung, das der Nutzer vielleicht nicht mehr weiß) und neu verlinken.
-    await service.auth.admin.updateUserById(vorhandenId, { password, user_metadata: { full_name: name } });
-    const { data: magic, error: magicFehler } = await service.auth.admin.generateLink({
-      type: "magiclink",
-      email,
-      options: { redirectTo },
+    // Unbestätigt (Altbestand): Passwort auf das neue setzen (sonst gälte das der
+    // ersten Registrierung, das der Nutzer vielleicht nicht mehr weiß) und bestätigen.
+    const { error: updFehler } = await service.auth.admin.updateUserById(vorhandenId, {
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: name },
     });
-    if (magicFehler || !magic?.properties?.hashed_token) {
-      console.error("[training/registrieren] generateLink(magiclink) fehlgeschlagen:", magicFehler?.message);
+    if (updFehler) {
+      console.error("[training/registrieren] Altkonto nicht bestätigt:", updFehler.message);
       return NextResponse.json({ ok: false, error: "server" }, { status: 500 });
     }
     userId = vorhandenId;
-    link = bestaetigungsLink(magic.properties.hashed_token, "magiclink");
   }
 
   /*
@@ -178,8 +157,7 @@ export async function POST(request: NextRequest) {
     await service.from("profiles").update({ full_name: name }).eq("id", userId);
   }
 
-  // Bewerbung — gibt es schon eine (zweiter Versuch mit unbestätigter Adresse),
-  // bleibt die erste stehen; der neue Link bestätigt dieselbe.
+  // Bewerbung — gibt es schon eine (Altkonto mit unbestätigter Adresse), bleibt die erste stehen.
   const angelegt = await bewerbungAnlegen(service, {
     userId: userId!,
     name,
@@ -190,16 +168,29 @@ export async function POST(request: NextRequest) {
     kanal: herkunft.kanal,
   });
   if (!angelegt.ok && angelegt.fehler === "server") {
-    // „tabelle_fehlt" (Migration 110 fehlt) geht durch: Konto und Bestätigung wie bisher.
+    // „tabelle_fehlt" (Migration 110 fehlt) geht durch: Konto wie bisher.
     return NextResponse.json({ ok: false, error: "server" }, { status: 500 });
   }
 
+  // Bewerbung kommt sofort bei Emre an (A01, Team-Mail, Kontakt-Lead). Wirft nicht.
+  if (angelegt.ok || angelegt.fehler === "schon_beworben") {
+    try {
+      await bewerbungEingegangen(service, userId!);
+    } catch (err) {
+      console.error("[training/registrieren] Eingang der Bewerbung fehlgeschlagen:", err);
+    }
+  }
+
+  // Direkt anmelden: Die Sitzung landet in den Cookies, die Seite leitet auf die Statusseite.
+  let angemeldet = false;
   try {
-    await sendTrainingBestaetigen({ an: email, vorname, link });
+    const supabase = await createClient();
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    angemeldet = !error;
+    if (error) console.error("[training/registrieren] Anmeldung fehlgeschlagen:", error.message);
   } catch (err) {
-    console.error("[training/registrieren] Bestätigungsmail fehlgeschlagen:", err);
-    return NextResponse.json({ ok: false, error: "server" }, { status: 500 });
+    console.error("[training/registrieren] Anmeldung fehlgeschlagen:", err);
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, angemeldet, weiter: TRAINING_STATUS_PFAD });
 }

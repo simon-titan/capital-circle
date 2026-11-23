@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { bewerbungAnlegen, nachAdressbestaetigung } from "@/lib/training/bewerbung";
+import { bewerbungAnlegen, bewerbungEingegangen } from "@/lib/training/bewerbung";
 import { pruefeBewerbung } from "@/lib/training/bewerbung-pruefen";
 import { ladeTrainingFreigabe } from "@/lib/training/zugang";
 
@@ -43,6 +43,6 @@ export async function POST(request: Request) {
   });
   if (!r.ok) return NextResponse.json({ ok: false, error: r.fehler === "tabelle_fehlt" ? "server" : r.fehler }, { status: r.fehler === "schon_beworben" ? 409 : 500 });
 
-  if (user.email_confirmed_at) await nachAdressbestaetigung(service, user.id);
+  await bewerbungEingegangen(service, user.id);
   return NextResponse.json({ ok: true });
 }

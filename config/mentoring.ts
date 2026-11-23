@@ -9,12 +9,25 @@
  * Live-Trading-Abo für 99 €/Monat.
  *
  * Leistungen seit 08.11.2026 nach Emres „Tracking & Finanzen Playbook 1.0"
- * (Kapitel 2.2, verbindlich, Entscheidung Simon): Ausbildung 1 Monat Live und
- * 1 Monat Journal, kein Live-Archiv; Main/Premium Kurs und Journal dauerhaft,
- * Live-Trading und Live-Archiv 12 Monate, WhatsApp 4 Monate, 4 bzw. 12 × 60 Min
- * 1:1 mit Emre in den ersten 4 Monaten (ungenutzte verfallen). **Es gibt keine
- * exklusiven Gruppencalls mehr.** Wer vorher gekauft hat, behält, was in seiner
+ * (Kapitel 2.2): Ausbildung 1 Monat Live und 1 Monat Journal, kein Live-Archiv.
+ * **Main/Premium seit 20.11.2026 (Entscheidung Simon, Mentoringvertrag):
+ * Laufzeit regulär 3 Monate** — Live-Trading, Live-Archiv und WhatsApp je 3 Monate
+ * (vorher 12/12/4), Kurs und Journal dauerhaft. 1:1 mit Emre in den 3 Monaten:
+ * Main 4 × 60 Min, Premium nach Bedarf ohne Obergrenze, mindestens 12 × 60 Min
+ * (Takt legen Kunde und Emre gemeinsam fest). Ungenutzte Termine verfallen.
+ * **Es gibt keine exklusiven Gruppencalls mehr.** Wer vorher gekauft hat, behält, was in seiner
  * Kaufbestätigung steht (Migration 113 setzt `archiv_bis` für Bestandskonten).
+ *
+ * ── Plattform als kostenlose Zugabe (seit 19.11.2026, Vorgabe des Anwalts) ──
+ *
+ * Wegen des Fernunterrichtsschutzgesetzes (BGH, 12.06.2025, III ZR 109/24)
+ * verkaufen Main und Premium **die persönliche Betreuung** (Live-Trading,
+ * Live-Archiv, WhatsApp, 1:1 mit Emre). Plattform, Kurse und Trading Journal
+ * gibt es **kostenlos dazu** — sie sind nicht Gegenstand des Preises. So steht
+ * es in `enthalten` (`zugabe: true`, Betreuung zuerst), auf der Kassenseite
+ * („Kostenlos dazu") und im Mentoringvertrag. Wer hier Texte ändert, hält
+ * diese Einordnung: Kurse nie als das Gekaufte darstellen. Die Ausbildung ist
+ * (noch) nicht umgestellt.
  *
  * ── Was davon die Plattform durchsetzt ──────────────────────────────────────
  *
@@ -56,6 +69,11 @@ export interface Leistung {
    * Liste sah man nicht, was nach Ablauf der Betreuung bleibt.
    */
   dauerhaft?: boolean;
+  /**
+   * Kostenlose Zugabe, nicht Gegenstand des Preises (Main/Premium: Plattform, Kurse,
+   * Journal). Die Kassenseite zeigt sie unter „Kostenlos dazu" nach der Betreuung.
+   */
+  zugabe?: boolean;
 }
 
 export interface ProduktDefinition {
@@ -79,11 +97,22 @@ const PLATTFORM_DAUERHAFT: Leistung[] = [
   { text: "Dauerhafter Zugang zur Plattform", dauerhaft: true },
   { text: "Dauerhafter Zugang zu allen Kursinhalten", detail: "Auch neue Kursvideos sind dauerhaft enthalten.", dauerhaft: true },
 ];
-const JOURNAL_DAUERHAFT: Leistung = { text: "Dauerhafter Zugang zum Trading Journal", dauerhaft: true };
+/** Main/Premium: Plattform, Kurse und Journal als kostenlose Zugabe (siehe Kopf der Datei). */
+const ZUGABE_PLATTFORM: Leistung[] = [
+  {
+    text: "Kostenlos dazu: dauerhafter Zugang zur Plattform und zu allen Kursinhalten",
+    detail: "Auch neue Kursvideos sind enthalten. Nicht Teil des Preises.",
+    dauerhaft: true,
+    zugabe: true,
+  },
+  { text: "Kostenlos dazu: dauerhafter Zugang zum Trading Journal", dauerhaft: true, zugabe: true },
+];
 
 const LIVE_DETAIL = "Live-Trading 3× pro Woche, Daily Bias und Trade Recaps";
 const WHATSAPP_ZEIT = "Montag bis Sonntag, 20:00–21:00 Uhr, Feiertage ausgenommen";
-const EINS_ZU_EINS_DETAIL = "je 60 Minuten, innerhalb der ersten 4 Monate; nicht genutzte Termine verfallen";
+const EINS_ZU_EINS_DETAIL = "je 60 Minuten, innerhalb der 3 Monate; nicht genutzte Termine verfallen";
+const EINS_ZU_EINS_PREMIUM =
+  "Anzahl und Takt legst du mit Emre gemeinsam fest, keine Obergrenze; mindestens 12 × 60 Minuten in den 3 Monaten";
 
 /** Anrechnung der Ausbildung beim Upgrade auf Main oder Premium (Tracking-Playbook 2.3). */
 export const UPGRADE_ANRECHNUNG_CENTS = 49_900;
@@ -116,15 +145,15 @@ export const PRODUKTE: Record<KassenProdukt, ProduktDefinition> = {
     preisCents: 300_000,
     // Bis sechs Raten seit 08.11.2026 (Tracking-Playbook 2.2), vorher vier.
     maxRaten: 6,
-    liveMonate: 12,
-    archivMonate: 12,
+    // 3 Monate seit 20.11.2026 (Mentoringvertrag), vorher 12.
+    liveMonate: 3,
+    archivMonate: 3,
     journalMonate: null,
     enthalten: [
-      ...PLATTFORM_DAUERHAFT,
-      JOURNAL_DAUERHAFT,
-      { text: "12 Monate Live-Zugang und Live-Archiv", detail: LIVE_DETAIL },
-      { text: "4 Monate WhatsApp-Support", detail: WHATSAPP_ZEIT },
       { text: "4 × 60 Minuten 1:1 mit Emre", detail: EINS_ZU_EINS_DETAIL },
+      { text: "3 Monate Live-Zugang und Live-Archiv", detail: LIVE_DETAIL },
+      { text: "3 Monate WhatsApp-Support", detail: WHATSAPP_ZEIT },
+      ...ZUGABE_PLATTFORM,
     ],
     nichtEnthalten: [],
   },
@@ -134,15 +163,15 @@ export const PRODUKTE: Record<KassenProdukt, ProduktDefinition> = {
     preisCents: 500_000,
     // Bis sechs Raten seit 07.11.2026 (E-Mail-Playbook 1.0); Restcent auf Rate 1.
     maxRaten: 6,
-    liveMonate: 12,
-    archivMonate: 12,
+    // 3 Monate seit 20.11.2026 (Mentoringvertrag), vorher 12.
+    liveMonate: 3,
+    archivMonate: 3,
     journalMonate: null,
     enthalten: [
-      ...PLATTFORM_DAUERHAFT,
-      JOURNAL_DAUERHAFT,
-      { text: "12 Monate Live-Zugang und Live-Archiv", detail: LIVE_DETAIL },
-      { text: "4 Monate WhatsApp-Support", detail: WHATSAPP_ZEIT },
-      { text: "12 × 60 Minuten 1:1 mit Emre", detail: EINS_ZU_EINS_DETAIL },
+      { text: "1:1 mit Emre nach Bedarf", detail: EINS_ZU_EINS_PREMIUM },
+      { text: "3 Monate Live-Zugang und Live-Archiv", detail: LIVE_DETAIL },
+      { text: "3 Monate WhatsApp-Support", detail: WHATSAPP_ZEIT },
+      ...ZUGABE_PLATTFORM,
     ],
     nichtEnthalten: [],
   },
@@ -220,37 +249,46 @@ export const CLOSER_AUSWAHL = [
 /* ─── Garantie ──────────────────────────────────────────────────────────── */
 
 /**
- * Auszahlungs-Garantie nach Vorbild des Funnel-Boards („Keine Auszahlung →
- * volle Erstattung gemäß schriftlicher Erstattungsrichtlinie").
+ * Auszahlungs-Garantie — Stand 20.11.2026, deckungsgleich mit Abschnitt 7 des
+ * Mentoringvertrags (`D:\CAPITAL-CIRCLE\VERTRAEGE\quelle\mentoringvertrag.html`,
+ * außerhalb des Repos). Entscheidung Simon: strenge Bedingungen, alle zusammen;
+ * **Rechtsfolge ist nur kostenlose Weiterbetreuung: keine Auszahlung nach den 3 Monaten
+ * → jeweils weitere 3 Monate im selben Umfang, ohne Höchstzahl, bis zur ersten
+ * Auszahlung — nie eine Erstattung.** Die Verlängerung setzt das Team von Hand
+ * (`live_bis`, `archiv_bis`); der Webhook kennt sie nicht.
+ * Das Funnel-Board vom 17.10. („volle Erstattung") gilt damit nicht mehr.
  *
- * **`freigegeben` steht auf `false`, bis Emre die Bedingungen abgenommen hat.**
+ * **`freigegeben` steht auf `false`, bis Emre und der Anwalt abgenommen haben.**
  * Solange zeigen weder die Funnel-Seite noch die Kassenseite den Garantiesatz,
- * und `/garantie` antwortet mit 404. Eine Garantie ohne veröffentlichte
- * Bedingungen wäre ein Versprechen ohne Grenzen — und Werbung mit einem
- * Erfolgsversprechen, das sich nicht einlösen lässt (§ 5 UWG).
+ * und `/garantie` antwortet mit 404. Werbung darf nie „Geld zurück" sagen — der
+ * Vertrag schließt das aus, und eine Garantie, die mehr verspricht als der
+ * Vertrag hält, ist irreführend (§ 5 UWG).
  *
- * Die Bedingungen unten sind ein **Entwurf** (Vorschlag Claude, 17.10.2026),
- * nicht anwaltlich geprüft. Wer sie ändert, ändert den Text der Seite.
+ * Wer hier etwas ändert, ändert den Vertrag mit (und umgekehrt).
  */
 export const garantie = {
   freigegeben: false,
   /** Für welche Programme sie gilt. */
   produkte: ["main", "premium"] as MentoringProdukt[],
-  kurz: "Keine Auszahlung? Dann bekommst du dein Geld zurück, nach unseren schriftlichen Garantiebedingungen.",
+  kurz: "Keine Auszahlung trotz voller Umsetzung? Dann betreuen wir dich kostenlos weiter, bis deine erste Auszahlung da ist, nach unseren schriftlichen Garantiebedingungen.",
   titel: "Auszahlungs-Garantie",
   einleitung:
-    "Wenn du das Programm so umsetzt, wie wir es dir zeigen, und trotzdem innerhalb von 12 Monaten keine einzige Auszahlung von einer Prop-Firma erhältst, erstatten wir dir den vollen Kaufpreis.",
+    "Wenn du das Programm genau so umsetzt, wie wir es mit dir festlegen, und nach den 3 Monaten noch keine Auszahlung von einer Prop-Firma erhalten hast, arbeiten wir kostenlos weiter: jeweils 3 weitere Monate mit 1:1-Terminen, Live-Zugang, Live-Archiv und WhatsApp-Support im selben Umfang wie beim Kauf, so lange, bis deine erste Auszahlung da ist. Eine Erstattung des Preises gibt es nicht.",
   bedingungen: [
-    "Die Garantie gilt für das Main Mentoring und das Premium Mentoring, nicht für die Ausbildung und nicht für das Live-Trading-Abo.",
-    "Du hast alle Module des Kursbereichs innerhalb von 60 Tagen nach dem Kauf abgeschlossen.",
-    "Du hast an mindestens 80 % der Live-Trading-Sessions in deinem Betreuungszeitraum teilgenommen.",
-    "Du hast jeden Trade im Trading Journal der Plattform dokumentiert, mit Screenshot und Begründung.",
-    "Du hast im Garantiezeitraum mindestens drei Prop-Firm-Challenges nach unserem Risiko-Plan gehandelt und keine Regel der jeweiligen Prop-Firma verletzt.",
-    "Der Kaufpreis ist vollständig bezahlt (bei Ratenzahlung: alle Raten).",
-    "Du stellst den Antrag spätestens 30 Tage nach Ablauf der 12 Monate schriftlich über das Kontaktformular.",
+    "Die Garantie gilt für das Main Mentoring und das Premium Mentoring, nicht für die Ausbildung und nicht für das Live-Trading-Abo. Alle folgenden Bedingungen müssen zusammen erfüllt sein, in den ersten 3 Monaten und in jeder Verlängerung.",
+    "Du hast alle Module des Kursbereichs innerhalb von 60 Tagen ab Zugangsbeginn abgeschlossen.",
+    "Du hast live an mindestens 80 % der Live-Trading-Sessions teilgenommen, die im jeweiligen Zeitraum mindestens 24 Stunden vorher im Kalender angekündigt wurden. Maßgeblich ist der Teilnehmerbericht, Aufzeichnungen zählen nicht.",
+    "Du hast den ersten 1:1-Termin innerhalb von 30 Tagen und alle 1:1-Termine wahrgenommen, die dir zustehen oder mit dir vereinbart sind.",
+    "Du hast jeden Trade auf jedem Konto spätestens am Folgetag im Trading Journal erfasst, mit Screenshot von Einstieg und Ausstieg, Setup und Begründung.",
+    "Du hast in den ersten 3 Monaten mindestens drei, in jeder Verlängerung mindestens eine Challenge bei Prop-Firmen aus dem Reiter „Propfirms“ im Mitgliederbereich gehandelt, ausschließlich nach deinem schriftlichen Risiko-Plan und ohne Regelverstoß. Solange du ein bestandenes Konto nach Plan handelst, brauchst du keine neue Challenge.",
+    "Du hast ab dem zweiten Monat in jedem Kalendermonat an mindestens 8 Tagen nach dem Risiko-Plan gehandelt.",
+    "Du legst die vollständige Kontohistorie aller Trading-Konten im jeweiligen Zeitraum offen, mit allen Mitteilungen der Prop-Firmen.",
+    "Du hast alle fälligen Raten pünktlich bezahlt (nie mehr als 7 Tage Verzug) und keine Zahlung zurückgebucht.",
+    "Du hast die Geheimhaltungsvereinbarung eingehalten.",
+    "Du stellst den Antrag spätestens 14 Tage nach Ablauf der 3 Monate bzw. der Verlängerung schriftlich an contact@capitalcircletrading.com.",
   ],
   ablauf:
-    "Wir prüfen den Antrag anhand deines Journals, der Teilnahmelisten und der Unterlagen deiner Prop-Firmen. Ist alles erfüllt, überweisen wir den Kaufpreis innerhalb von 14 Tagen zurück. Mit der Erstattung endet dein Zugang zur Plattform.",
+    "Als erreicht gilt das Ziel schon, wenn du eine Auszahlung in beliebiger Höhe erhalten hast, ein Konto auszahlungsberechtigt war oder ein Konto wegen eines Regelverstoßes gekündigt wurde. Wir prüfen den Antrag anhand der Plattform, der Teilnehmerlisten und der Unterlagen deiner Prop-Firmen und melden uns innerhalb von 14 Tagen. Ist alles erfüllt, verlängern wir deine Betreuung ab unserer Mitteilung kostenlos um 3 Monate, und das so oft, bis deine erste Auszahlung da ist. Eine Erstattung des Preises, von Challenge-Gebühren oder Trading-Verlusten ist ausgeschlossen. Verbindlich ist der Wortlaut in Abschnitt 7 deines Mentoringvertrags.",
   hinweis:
-    "Trading ist mit erheblichen Verlustrisiken verbunden. Die Garantie ist kein Gewinnversprechen; sie begrenzt dein Risiko auf den Kaufpreis des Programms, nicht auf deine Trading-Verluste oder Challenge-Gebühren.",
+    "Trading ist mit erheblichen Verlustrisiken verbunden. Die Garantie ist kein Gewinnversprechen; sie gibt dir einen Anspruch auf weitere Betreuung, nicht auf ein bestimmtes Ergebnis.",
 } as const;

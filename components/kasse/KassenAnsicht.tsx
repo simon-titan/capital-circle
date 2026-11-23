@@ -257,8 +257,11 @@ function Angebot({
   const produkt = a.produkt;
   const ersteAbbuchung = a.istAbo ? ersteLiveAbbuchung(liveBis) : null;
   // Gemischt in einer Liste sah man nicht, was nach Ablauf der Betreuung bleibt.
-  const dauerhaft = produkt.enthalten.filter((l) => l.dauerhaft);
+  const dauerhaft = produkt.enthalten.filter((l) => l.dauerhaft && !l.zugabe);
   const befristet = produkt.enthalten.filter((l) => !l.dauerhaft);
+  // Main/Premium: Plattform, Kurse und Journal sind kostenlose Zugabe, nicht das Gekaufte
+  // (Fernunterrichtsschutzgesetz, Kopf von config/mentoring.ts) — deshalb nach der Betreuung.
+  const zugabe = produkt.enthalten.filter((l) => l.zugabe);
   // Solange `garantie.freigegeben` false ist, steht hier nichts (siehe config/mentoring.ts).
   const zeigeGarantie = garantie.freigegeben && (garantie.produkte as readonly string[]).includes(link.produkt);
 
@@ -337,7 +340,12 @@ function Angebot({
 
         {/* ── Leistungen ─────────────────────────────────────────────── */}
         <Stack spacing={5}>
-          {dauerhaft.length && befristet.length ? (
+          {zugabe.length ? (
+            <>
+              <LeistungsListe titel="Deine Betreuung" eintraege={[...befristet, ...dauerhaft]} />
+              <LeistungsListe titel="Kostenlos dazu" eintraege={zugabe} />
+            </>
+          ) : dauerhaft.length && befristet.length ? (
             <>
               <LeistungsListe titel="Dauerhaft enthalten" eintraege={dauerhaft} />
               <LeistungsListe titel="Live und Betreuung" eintraege={befristet} />
@@ -361,7 +369,7 @@ function Angebot({
           >
             {a.istAbo
               ? "Läuft monatlich und ist jederzeit zum Ende des laufenden Monats kündbar."
-              : `${produkt.journalMonate === null ? "Plattform, Kurse und Trading Journal bleiben dauerhaft offen." : `Plattform und Kurse bleiben dauerhaft offen, das Trading Journal ${produkt.journalMonate === 1 ? "einen Monat" : `${produkt.journalMonate} Monate`} ab Kauf.`} Der Live-Zugang läuft ${produkt.liveMonate === 1 ? "einen Monat" : `${produkt.liveMonate} Monate`} ab Kauf; danach kannst du das Live-Trading mit dem Live-Trading-Abo für ${euro(PRODUKTE.live.preisCents)} im Monat verlängern.`}
+              : `${zugabe.length ? "Plattform, Kurse und Trading Journal gibt es kostenlos dazu, dauerhaft." : produkt.journalMonate === null ? "Plattform, Kurse und Trading Journal bleiben dauerhaft offen." : `Plattform und Kurse bleiben dauerhaft offen, das Trading Journal ${produkt.journalMonate === 1 ? "einen Monat" : `${produkt.journalMonate} Monate`} ab Kauf.`} Der Live-Zugang läuft ${produkt.liveMonate === 1 ? "einen Monat" : `${produkt.liveMonate} Monate`} ab Kauf; danach kannst du das Live-Trading mit dem Live-Trading-Abo für ${euro(PRODUKTE.live.preisCents)} im Monat verlängern.`}
           </Box>
 
           {zeigeGarantie ? (

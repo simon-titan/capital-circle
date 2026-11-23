@@ -506,10 +506,12 @@ export async function proxy(request: NextRequest) {
 export const config = {
   // Statische Icons: Safari/WebKit u. a. holen apple-touch-icon / favicon ohne HTML — nicht zur Login-HTML umleiten.
   // Vorschaubilder für geteilte Links (`opengraph-image`, `twitter-image`,
+  // `rechtstexte/`: AGB-Fassungen als PDF (`npm run rechtstexte:pdf`), auf die der
+  // Mentoringvertrag verweist — ohne Ausnahme bekäme der Kunde Login-HTML.
   // `discord-og.png`, `termin-og.jpg`) holt der Crawler des Portals ohne
   // Sitzung — ohne die Ausnahme bekäme er die Weiterleitung auf `/login`
   // (bzw. im Wartungsmodus auf `/wartung`) und zeigte kein Bild.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|logo/|bg/|svg/|tg-slides/|founder/|cases/|apex/|prozess/|nachweise/|community/|hero/|untertitel/|partner/|apple-touch-icon|new-apple|opengraph-image|twitter-image|discord-og|termin-og).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|logo/|bg/|svg/|tg-slides/|founder/|cases/|apex/|prozess/|nachweise/|community/|hero/|untertitel/|partner/|rechtstexte/|apple-touch-icon|new-apple|opengraph-image|twitter-image|discord-og|termin-og).*)",
   ],
 };

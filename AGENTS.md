@@ -686,6 +686,43 @@ direkt weiterleiten“** (`weiterleiten`, `weiterleitungZiel` in `app_settings.v
 bei geschlossenem Zugang: `proxy.ts` antwortet auf `/` (nicht angemeldet) mit **307** aufs Ziel und hängt die Query (UTM) an,
 statt die Hinweisseite zu zeigen. Ziel `/` wird abgelehnt (Schleife). Regel zentral in `weiterleitungFuer` (`lib/verkauf/schalter.ts`).
 
+2026-11-19 (**Mentoringvertrag, Plattform als Zugabe, Garantie ohne Erstattung**): Main und Premium werden nach dem
+Call per **SignWell-Vertrag** abgeschlossen, danach kommt der Kassenlink (Vertrag und Quelle liegen **außerhalb des Repos**
+unter `D:\CAPITAL-CIRCLE\VERTRAEGE`, Bau mit `quelle/build.py`). **Vorgabe des Anwalts (Fernunterrichtsschutzgesetz):**
+Verkauft wird die **persönliche Betreuung** (1:1, Live, Archiv, WhatsApp); Plattform, Kurse und Journal sind eine
+**kostenlose Zugabe**, nicht Teil des Preises. `config/mentoring.ts` trägt das über `Leistung.zugabe` (Betreuung zuerst),
+die Kassenseite zeigt „Deine Betreuung“ und „Kostenlos dazu“. Kurse nie als das Gekaufte darstellen. Die Ausbildung ist
+noch nicht umgestellt. **Garantie:** strenge Bedingungen, alle zusammen; Rechtsfolge **nur kostenlose Weiterbetreuung**
+(die gesamte Betreuung ein zweites Mal), **keine Erstattung**, Werbung nie „Geld zurück“. `garantie` in `config/mentoring.ts` und Abschnitt 7 des
+Vertrags gehören zusammen; `freigegeben` bleibt `false` bis zur Abnahme durch Emre und den Anwalt. AGB § 7a Abs. 2 ist
+noch nicht auf die Zugabe umgestellt.
+Nachtrag 19.11.: **Feste Kassenlinks** `/kasse/main` und `/kasse/premium` (Entscheidung Simon): nach der SignWell-Unterschrift
+öffnet der Kunde den festen Link (`?closer=kevin|simon|daniel` für die Provision), trägt Name, E-Mail und Raten ein und bestätigt
+den Vertrag; `/api/kasse/fest` legt daraus einen **normalen Kassenlink** an (`lib/mentoring/fester-link.ts`, 2 Tage gültig,
+**ohne** Anrechnung der Ausbildung (der Vertrag kennt keine Verrechnung), offener Link derselben Adresse wird wiederverwendet) und leitet auf `/kasse/<token>`. Kein
+eigener Kaufweg. Achtung: Wer den Link hat, kann ohne Vertrag zahlen — bewusst so entschieden. **AGB-Fassungen als PDF** unter
+`public/rechtstexte/agb-<rechtstexteVersion>.pdf` (`npm run rechtstexte:pdf`, startet keinen Dev-Server; Ordner im Matcher von
+`proxy.ts`): nach **jeder** Erhöhung von `rechtstexteVersion` neu erzeugen und committen, alte PDFs liegen lassen — der Vertrag
+verweist auf die Fassung, die beim Unterschreiben galt. Live-Sessions haben keine festen Zeiten; für die Garantie zählen nur
+Sessions, die mindestens 24 Stunden vorher im Kalender (`events`) stehen, Nachweis ist der Teilnehmerbericht der Videokonferenz.
+
+2026-11-20 (**Vertrag Runde 2**, Entscheidung Simon): Main/Premium laufen **regulär 3 Monate** (Live, Archiv, WhatsApp; vorher
+12/12/4) — `liveMonate`/`archivMonate` = 3 in `config/mentoring.ts`, der Webhook setzt damit `live_bis`/`archiv_bis`. 1:1 mit
+Emre: Main 4 × 60 Min, **Premium ohne Obergrenze, gemeinsam nach Situation festgelegt, mindestens 12**. **Garantie neu:** keine
+Auszahlung nach den 3 Monaten → jeweils weitere 3 Monate Betreuung im selben Umfang, ohne Höchstzahl, bis zur ersten Auszahlung
+(Bedingungen gelten je Zeitraum, keine Erstattung). Die Verlängerung trägt das Team **von Hand** ein (`live_bis`, `archiv_bis`).
+**Widerruf:** gesetzlich nicht abdingbar; der Vertrag macht den sofortigen Start zur Pflichtangabe (Abschnitt 10.2) und regelt den
+anteiligen Wertersatz (10.3). Neue Formulare **Anlage 3 „Aktueller Stand“** (Kunde) und **Anlage 4 „Zukunftsplan“** (Teil A
+Kunde, Teil B im ersten 1:1), keine Vertragsbestandteile, gehen mit dem Vertrag raus. AGB § 7a Abs. 2 nennt noch 12 Monate.
+
+2026-11-20 (**Free-Bewerbung ohne E-Mail-Bestätigung**, Entscheidung Simon): `/api/training/registrieren` legt das Konto
+**bestätigt** an (`admin.createUser` mit `email_confirm: true`, kein Bestätigungslink, keine Bestätigungsmail), die Bewerbung
+geht sofort an Emre (`bewerbungEingegangen` in `lib/training/bewerbung.ts`, früher `nachAdressbestaetigung`: A01, Team-Mail,
+Kontakt-Lead) und der Bewerber ist angemeldet (`signInWithPassword` im Route-Handler) und landet auf `/training/status`.
+`adresse_bestaetigt_am` heißt weiter so, markiert aber nur noch den Eingang bei Emre. Im Admin gibt es den Reiter „Adresse
+unbestätigt" nicht mehr; Annehmen geht immer und bestätigt ein altes unbestätigtes Konto mit, Ablehnen schickt A03 immer.
+Der Eintrag vom 07.11. („erst dann geht A01 raus") gilt insoweit nicht mehr.
+
 2026-11-22 (**Geheimhaltung abgeschaltet**, Entscheidung Simon): Die Geheimhaltungsvereinbarung fragt vorerst niemanden mehr
 — `GEHEIMHALTUNG_AKTIV = false` in `config/geheimhaltung.ts`, `brauchtGeheimhaltung` antwortet dann immer „nein", das Popup
 erscheint nicht und blockiert auch das Lifetime-Popup nicht mehr. Code, Tabelle, gegebene Zustimmungen und `/admin/geheimhaltung`
