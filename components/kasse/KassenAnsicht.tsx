@@ -261,7 +261,14 @@ function Angebot({
   const befristet = produkt.enthalten.filter((l) => !l.dauerhaft);
   // Main/Premium: Plattform, Kurse und Journal sind kostenlose Zugabe, nicht das Gekaufte
   // (Fernunterrichtsschutzgesetz, Kopf von config/mentoring.ts) — deshalb nach der Betreuung.
-  const zugabe = produkt.enthalten.filter((l) => l.zugabe);
+  // Unter der Überschrift „Kostenlos dazu" ohne den gleichlautenden Vorsatz; die Mail
+  // listet die Texte ohne Überschriften und braucht ihn.
+  const zugabe = produkt.enthalten
+    .filter((l) => l.zugabe)
+    .map((l) => {
+      const rest = l.text.replace(/^Kostenlos dazu:\s*/, "");
+      return { ...l, text: rest.charAt(0).toUpperCase() + rest.slice(1) };
+    });
   // Solange `garantie.freigegeben` false ist, steht hier nichts (siehe config/mentoring.ts).
   const zeigeGarantie = garantie.freigegeben && (garantie.produkte as readonly string[]).includes(link.produkt);
 
