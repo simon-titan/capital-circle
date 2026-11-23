@@ -10,7 +10,7 @@ import { trainingLinks, vornameAus, type BewerbungZeile, type TrainingZugangZeil
  * Die Handlungen rund um die Free-Kurs-Bewerbung — jeweils mit genau der Mail,
  * die das Playbook an dieses Ereignis hängt:
  *
- *   Adresse bestätigt        → A01 (einmal), Team-Benachrichtigung
+ *   Bewerbung eingegangen    → A01 (einmal), Team-Benachrichtigung
  *   Emre nimmt an            → Zugang 30 Tage, A02
  *   Emre lehnt ab            → A03, endgültig
  *   Team verlängert          → +7 Tage ab jetzt, E03
@@ -73,10 +73,12 @@ async function sende(
 }
 
 /**
- * Nach bestätigter Adresse (Link aus der Mail oder schon bestätigtes Konto):
- * Bewerbung „kommt bei Emre an". Idempotent — zweiter Aufruf tut nichts.
+ * Bewerbung „kommt bei Emre an" — direkt nach dem Absenden. Eine E-Mail-
+ * Bestätigung gibt es seit 20.11.2026 nicht mehr (Entscheidung Simon);
+ * `adresse_bestaetigt_am` markiert jetzt nur noch den Eingang bei Emre.
+ * Idempotent — zweiter Aufruf tut nichts.
  */
-export async function nachAdressbestaetigung(service: SupabaseClient, userId: string): Promise<void> {
+export async function bewerbungEingegangen(service: SupabaseClient, userId: string): Promise<void> {
   const { data } = await service
     .from("training_bewerbungen")
     .select("*")

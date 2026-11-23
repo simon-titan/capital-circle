@@ -90,8 +90,8 @@ export type TrainingTeamBewerbung = {
 
 /**
  * Empfänger wie oben, dazu `TRAINING_BEWERBUNG_EMPFAENGER` (kommagetrennt,
- * z. B. Emre selbst). Geht raus, sobald die Adresse bestätigt ist — erst dann
- * liegt die Bewerbung zur Prüfung vor. Wirft nie.
+ * z. B. Emre selbst). Geht direkt nach dem Absenden der Bewerbung raus (keine
+ * E-Mail-Bestätigung mehr, seit 20.11.2026). Wirft nie.
  */
 export async function benachrichtigeTeamBewerbung(b: TrainingTeamBewerbung): Promise<void> {
   try {
@@ -116,7 +116,7 @@ export async function benachrichtigeTeamBewerbung(b: TrainingTeamBewerbung): Pro
           jsx: (
             <BaseEmail previewText={`Neue Bewerbung: ${b.name}`}>
               <EmailHeading>Neue Bewerbung für das Free Training</EmailHeading>
-              <EmailText>Die Adresse ist bestätigt, die Bewerbung wartet auf Emres Entscheidung.</EmailText>
+              <EmailText>Die Bewerbung wartet auf Emres Entscheidung.</EmailText>
               <EmailRows rows={zeilen} />
               <EmailButton href={adminUrl}>Bewerbung prüfen</EmailButton>
             </BaseEmail>

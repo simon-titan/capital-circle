@@ -16,16 +16,19 @@ const SITE_URL = (
   "https://www.capitalcircletrading.com"
 ).replace(/\/$/, "");
 
-const SHARE_IMAGE = `${SITE_URL}${meta.shareImage}`;
-
 /**
  * `/call` — Call-Funnel (Board von Emre, 17.10.2026; Aufbau seit 08.11.2026):
  * VSL, Brief von Emre, Member Wins (Case Studies, Auszahlungen, Bewertungen),
  * Fragebogen und Calendly im Modal.
  *
  * Öffentlich: `/call` steht in `PUBLIC_PREFIXES` von `proxy.ts`. Die Bilder
- * (`/cases/`, `/nachweise/`, `termin-og`) stehen im Matcher unter den
- * Ausnahmen, sonst käme dort Login-HTML an.
+ * (`/community/`, `opengraph-image`) stehen im Matcher unter den Ausnahmen,
+ * sonst käme dort Login-HTML an.
+ *
+ * Vorschaubild für geteilte Links: `app/call/opengraph-image.png` (Alt-Text
+ * daneben), seit 20.11.2026 im Funnel-Look (Graphit, Gold-Akzent, Smaragd-Knopf).
+ * Next hängt es nur an, solange `openGraph`/`twitter` hier **kein** `images`
+ * setzen — X übernimmt es dann aus `og:image`.
  *
  * `noindex`: Die Seite ist Ziel bezahlter Anzeigen, nicht der Suche — wie
  * `/termin` und `/discord`.
@@ -45,13 +48,11 @@ export const metadata: Metadata = {
     title: meta.shareTitle,
     description: meta.shareDescription,
     locale: "de_DE",
-    images: [{ url: SHARE_IMAGE, width: 1192, height: 752, alt: meta.shareImageAlt }],
   },
   twitter: {
     card: "summary_large_image",
     title: meta.shareTitle,
     description: meta.shareDescription,
-    images: [SHARE_IMAGE],
   },
 };
 

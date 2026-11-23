@@ -3,7 +3,7 @@ import type { EmailOtpType } from "@supabase/supabase-js";
 import { TRAINING_PFAD, TRAINING_STATUS_PFAD, TRAINING_VIDEOS_PFAD } from "@/config/training";
 import { getAppUrl } from "@/lib/site-url";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { nachAdressbestaetigung } from "@/lib/training/bewerbung";
+import { bewerbungEingegangen } from "@/lib/training/bewerbung";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -62,7 +62,7 @@ export async function GET(request: Request) {
   */
   if (otp?.user && next === TRAINING_STATUS_PFAD) {
     try {
-      await nachAdressbestaetigung(createServiceClient(), otp.user.id);
+      await bewerbungEingegangen(createServiceClient(), otp.user.id);
     } catch (err) {
       console.error("[auth/confirm] Bewerbung nach Bestätigung:", err);
     }

@@ -259,16 +259,12 @@ export const bewerbung = {
   weiter: "Weiter",
   zurueck: "← Zurück",
   kontoHeadline: "Fast geschafft. Wohin dürfen wir dir die Entscheidung schicken?",
-  kontoText: "Mit deinem Konto meldest du dich nach der Freischaltung an. Wir schicken dir zuerst einen Link, mit dem du deine E-Mail-Adresse bestätigst.",
+  kontoText: "Mit deinem Konto meldest du dich nach der Freischaltung an. Emres Entscheidung schicken wir dir an diese Adresse.",
   endgueltig: "Emre prüft jede Bewerbung persönlich. Wird sie abgelehnt, ist das endgültig — eine zweite Bewerbung ist nicht möglich.",
   knopf: "Bewerbung abschicken",
   knopfEingeloggt: "Bewerbung abschicken",
   laeuft: "Wird gesendet …",
-  /** Nach dem Absenden (neues Konto): erst die Adresse bestätigen. */
-  bestaetigenTitel: "Fast geschafft. Bestätige deine E-Mail-Adresse.",
-  bestaetigenText:
-    "Wir haben dir gerade einen Link an {email} geschickt. Erst mit deiner Bestätigung kommt deine Bewerbung bei Emre an. Schau auch im Spam-Ordner nach.",
-  /** Eingeloggt abgeschickt: Adresse ist schon bestätigt. */
+  /** Nach dem Absenden (seit 20.11.2026 ohne E-Mail-Bestätigung, neues Konto landet angemeldet auf `/training/status`). */
   eingegangenTitel: "Deine Bewerbung ist eingegangen.",
   eingegangenText: "Emre schaut sich deine Antworten persönlich an. Seine Entscheidung bekommst du per E-Mail.",
   schonBeworben: "Mit dieser E-Mail-Adresse gibt es schon eine Bewerbung. Melde dich an, um ihren Stand zu sehen.",
@@ -284,10 +280,6 @@ export const bewerbungStatus = {
   offen: {
     titel: "Deine Bewerbung ist bei Emre.",
     text: "Er schaut sich deine Antworten persönlich an, bevor er über deinen Zugang entscheidet. Du musst vorerst nichts weiter tun — seine Entscheidung bekommst du per E-Mail.",
-  },
-  unbestaetigt: {
-    titel: "Bestätige zuerst deine E-Mail-Adresse.",
-    text: "Erst mit deiner Bestätigung kommt deine Bewerbung bei Emre an. Den Link haben wir dir per E-Mail geschickt.",
   },
   abgelehnt: {
     titel: "Deine Bewerbung wurde geprüft.",
@@ -442,9 +434,9 @@ export const programme = {
     text: "Du möchtest zusätzlich persönliche Unterstützung bei der Umsetzung erhalten und schneller Ergebnisse erzielen.",
     punkte: [
       "Ausbildung und Trading Journal dauerhaft",
-      "12 Monate Live-Trading und Live-Archiv",
-      "4 Monate WhatsApp-Support",
-      "1:1-Termine mit Emre (4 bzw. 12 × 60 Minuten)",
+      "3 Monate Live-Trading und Live-Archiv",
+      "3 Monate WhatsApp-Support",
+      "1:1-Termine mit Emre (Main 4 × 60 Minuten, Premium nach Bedarf)",
       "Individuelle Betreuung",
     ],
     preis: "Preis wird im Analysegespräch besprochen.",

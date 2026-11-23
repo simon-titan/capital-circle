@@ -38,6 +38,7 @@
     "kaufweg:reset": "node scripts/kaufweg-zuruecksetzen.mjs",
     "pruefe:kaufweg": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/pruefe-kaufweg-analytics.mjs",
     "db:check": "node scripts/check-migrations-applied.mjs",
+    "rechtstexte:pdf": "node scripts/rechtstexte-pdf.mjs",
     "test:mails": "npx --yes tsx --test lib/mailsystem/*.test.ts lib/crm/*.test.ts lib/finanzen/*.test.ts lib/funnel-videos.test.ts",
     "test:finanzen": "npx --yes tsx --test lib/finanzen/*.test.ts lib/crm/ergebnis.test.ts",
     "db:check-rls": "node scripts/check-rls.mjs",

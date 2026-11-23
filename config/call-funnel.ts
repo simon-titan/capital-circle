@@ -35,9 +35,7 @@ export const meta = {
   shareTitle: "Kostenloses Analysegespräch · Capital Circle",
   shareDescription:
     "Schau das Video und finde im kostenlosen Analysegespräch heraus, was zwischen dir und konstanten Ergebnissen steht.",
-  /** Vorschaubild für geteilte Links — dasselbe wie `/termin`; steht im Matcher von `proxy.ts` unter den Ausnahmen. */
-  shareImage: "/termin-og.jpg",
-  shareImageAlt: "Capital Circle: kostenloses Analysegespräch",
+  // Vorschaubild für geteilte Links: `app/call/opengraph-image.png` (+ `.alt.txt`), seit 20.11.2026.
 } as const;
 
 /**

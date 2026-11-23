@@ -17,7 +17,7 @@ import {
   Textarea,
   type ButtonProps,
 } from "@chakra-ui/react";
-import { ArrowRight, MailCheck, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 import Script from "next/script";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { BEWERBUNG_MIN_ZEICHEN, bewerbung, landing, registrierung } from "@/config/training";
@@ -58,7 +58,7 @@ import {
 type FrageId = (typeof bewerbung.fragen)[number]["id"];
 type Konto = { name: string; email: string; passwort: string };
 type FeldFehler = Partial<Record<FrageId | "kontakt" | "telefon" | keyof Konto, string>>;
-type Phase = "fragen" | "konto" | "bestaetigen" | "eingegangen";
+type Phase = "fragen" | "konto" | "eingegangen";
 
 type RegistrierungApi = { oeffne: () => void; phase: Phase };
 const Ctx = createContext<RegistrierungApi | null>(null);
@@ -221,9 +221,20 @@ export function TrainingRegistrierungProvider({
           ...nutzlast(),
         }),
       });
-      const json = (await res.json().catch(() => null)) as { ok?: boolean; error?: string; felder?: Record<string, true> } | null;
+      const json = (await res.json().catch(() => null)) as {
+        ok?: boolean;
+        error?: string;
+        felder?: Record<string, true>;
+        angemeldet?: boolean;
+        weiter?: string;
+      } | null;
       if (res.ok && json?.ok) {
-        setPhase("bestaetigen");
+        // Keine E-Mail-Bestätigung mehr: angemeldet direkt auf die Statusseite.
+        if (json.angemeldet && json.weiter) {
+          window.location.assign(json.weiter);
+          return;
+        }
+        setPhase("eingegangen");
         return;
       }
       // Fehler in den Fragen (Server prüft dieselbe Regel) → zurück zu Schritt 1.
@@ -273,28 +284,22 @@ export function TrainingRegistrierungProvider({
             ) : null}
           </Box>
           <ModalBody className="cc-scroll" px={{ base: 5, md: 8 }} pt={3} pb={{ base: 6, md: 8 }}>
-            {phase === "bestaetigen" || phase === "eingegangen" ? (
+            {phase === "eingegangen" ? (
               <Stack spacing={4} align="center" textAlign="center" role="status" py={4}>
                 <Box color="var(--cc-smaragd-hell)">
-                  {phase === "bestaetigen" ? (
-                    <MailCheck size={44} strokeWidth={1.5} aria-hidden />
-                  ) : (
-                    <CheckCircle2 size={44} strokeWidth={1.5} aria-hidden />
-                  )}
+                  <CheckCircle2 size={44} strokeWidth={1.5} aria-hidden />
                 </Box>
                 <FunnelHeadline as="h2" scale="sm">
-                  {phase === "bestaetigen" ? bewerbung.bestaetigenTitel : bewerbung.eingegangenTitel}
+                  {bewerbung.eingegangenTitel}
                 </FunnelHeadline>
                 <Text fontSize="15px" lineHeight={1.65} color="var(--cc-text-2)">
-                  {phase === "bestaetigen"
-                    ? bewerbung.bestaetigenText.replace("{email}", konto.email.trim())
-                    : bewerbung.eingegangenText}
+                  {bewerbung.eingegangenText}
                 </Text>
                 <Button
                   variant="line"
                   onClick={() => {
                     schliesse();
-                    if (phase === "eingegangen") window.location.reload();
+                    window.location.reload();
                   }}
                 >
                   Schließen
