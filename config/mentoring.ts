@@ -109,7 +109,7 @@ const ZUGABE_PLATTFORM: Leistung[] = [
 ];
 
 const LIVE_DETAIL = "Live-Trading 3× pro Woche, Daily Bias und Trade Recaps";
-const WHATSAPP_ZEIT = "Montag bis Sonntag, 20:00–21:00 Uhr, Feiertage ausgenommen";
+const WHATSAPP_ZEIT = "Antwort innerhalb von 24 Stunden, am Wochenende bis Montag";
 const EINS_ZU_EINS_DETAIL = "je 60 Minuten, innerhalb der 3 Monate; nicht genutzte Termine verfallen";
 const EINS_ZU_EINS_PREMIUM =
   "Anzahl und Takt legst du mit Emre gemeinsam fest, keine Obergrenze; mindestens 12 × 60 Minuten in den 3 Monaten";
